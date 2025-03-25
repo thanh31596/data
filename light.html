@@ -1,0 +1,3232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightGBM Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root {
+            --primary: #4285F4;
+            --secondary: #34A853;
+            --tertiary: #FBBC05;
+            --error: #EA4335;
+            --dark: #202124;
+            --light: #F8F9FA;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .animation-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px var(--shadow);
+            padding: 20px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            height: 600px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .button:hover {
+            background-color: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(66, 133, 244, 0.3);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .button.secondary {
+            background-color: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        
+        .button.secondary:hover {
+            background-color: #f1f5fe;
+        }
+        
+        .button.reset {
+            background-color: #f1f1f1;
+            color: #666;
+            border: none;
+        }
+        
+        .button.reset:hover {
+            background-color: #e6e6e6;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 0 10px;
+        }
+        
+        .slider-label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        
+        .slider {
+            flex-grow: 1;
+            max-width: 200px;
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(66, 133, 244, 0.5);
+        }
+        
+        .slider-value {
+            font-weight: bold;
+            color: var(--primary);
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .phases {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .phase {
+            text-align: center;
+            position: relative;
+            flex: 1;
+        }
+        
+        .phase-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #d3d3d3;
+            margin: 0 auto 10px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .phase-line {
+            position: absolute;
+            height: 3px;
+            background-color: #d3d3d3;
+            top: 10px;
+            left: 0;
+            right: 0;
+            z-index: 1;
+        }
+        
+        .phase:first-child .phase-line {
+            left: 50%;
+            right: 0;
+        }
+        
+        .phase:last-child .phase-line {
+            left: 0;
+            right: 50%;
+        }
+        
+        .phase-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+        
+        .phase.active .phase-dot {
+            background-color: var(--primary);
+            transform: scale(1.2);
+            box-shadow: 0 0 0 5px rgba(66, 133, 244, 0.2);
+        }
+        
+        .phase.active .phase-label {
+            color: var(--primary);
+            font-weight: bold;
+            opacity: 1;
+        }
+        
+        .phase.completed .phase-dot {
+            background-color: var(--secondary);
+        }
+        
+        .phase.completed .phase-line {
+            background-color: var(--secondary);
+        }
+        
+        .explanation {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 5px 15px var(--shadow);
+            transition: all 0.3s ease;
+            transform: translateY(0);
+            z-index: 10;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .explanation.hidden {
+            transform: translateY(200px);
+        }
+        
+        .explanation-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .svg-container {
+            width: 100%;
+            height: 500px;
+            position: relative;
+        }
+        
+        /* Animation-specific styles */
+        .data-point {
+            fill: var(--primary);
+            stroke: white;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .data-point:hover {
+            fill: var(--tertiary);
+            transform: scale(1.2);
+        }
+        
+        .data-table {
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        
+        .data-table th {
+            background-color: #f1f5fe;
+            color: var(--primary);
+        }
+        
+        .tree-node {
+            fill: white;
+            stroke: var(--primary);
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .tree-node-text {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        
+        .tree-node-leaf {
+            fill: #e1f5e9;
+            stroke: var(--secondary);
+        }
+        
+        .tree-link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 2;
+        }
+        
+        .prediction-path {
+            fill: none;
+            stroke: var(--tertiary);
+            stroke-width: 3;
+            stroke-dasharray: 5;
+            opacity: 0.8;
+        }
+        
+        .moving-data {
+            fill: var(--primary);
+            stroke: white;
+            stroke-width: 2;
+        }
+        
+        .highlight {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 15px 0 10px;
+        }
+        
+        .model-section {
+            background-color: #f8f9fd;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+            padding: 10px;
+        }
+        
+        .tree-ensemble {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        .tree-thumbnail {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tree-thumbnail:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tree-thumbnail.active {
+            border-color: var(--primary);
+            border-width: 2px;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(66, 133, 244, 0.2);
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        
+        #current-step-display {
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+            font-size: 1.1rem;
+            height: 27px;
+        }
+        
+        /* Tooltip style */
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 200px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        /* Feature importance visualization */
+        .feature-bar {
+            fill: var(--primary);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-bar:hover {
+            fill: var(--tertiary);
+        }
+        
+        .axis text {
+            font-size: 12px;
+        }
+        
+        .axis path, .axis line {
+            stroke: #ccc;
+        }
+        
+        /* Animation control panel */
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        /* Data flow styles */
+        .data-flow-path {
+            fill: none;
+            stroke: #bbb;
+            stroke-width: 1;
+            stroke-dasharray: 4, 2;
+        }
+        
+        .prediction-box {
+            fill: white;
+            stroke: var(--primary);
+            stroke-width: 2;
+            rx: 5;
+            ry: 5;
+        }
+        
+        .prediction-text {
+            font-size: 14px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-weight: bold;
+            fill: var(--primary);
+        }
+        
+        .section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        
+        .section.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        /* Step indicator */
+        .step-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .step-dot.active {
+            background-color: var(--primary);
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LightGBM: Stephen Explaination</h1>
+            <p class="subtitle">Visualizing the complete workflow of LightGBM: from data ingestion through model training to prediction</p>
+        </header>
+        
+        <div class="controls">
+            <button id="play-pause-btn" class="button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Play Animation
+            </button>
+            
+            <button id="next-step-btn" class="button secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+                Next Step
+            </button>
+            
+            <button id="prev-step-btn" class="button secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Previous Step
+            </button>
+            
+            <button id="reset-btn" class="button reset">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 2v6h6"></path>
+                    <path d="M21 12A9 9 0 0 0 6 5.3L3 8"></path>
+                    <path d="M21 22v-6h-6"></path>
+                    <path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"></path>
+                </svg>
+                Reset
+            </button>
+            
+            <div class="slider-container">
+                <div class="slider-label">Animation Speed</div>
+                <input type="range" min="1" max="3" step="0.5" value="1.5" class="slider" id="speed-slider">
+                <div class="slider-value" id="speed-value">1.5x</div>
+            </div>
+        </div>
+        
+        <div id="current-step-display"></div>
+        
+        <div class="phases">
+            <div class="phase" id="phase-data">
+                <div class="phase-dot"></div>
+                <div class="phase-line"></div>
+                <div class="phase-label">Data Ingestion</div>
+            </div>
+            <div class="phase" id="phase-processing">
+                <div class="phase-dot"></div>
+                <div class="phase-line"></div>
+                <div class="phase-label">Data Processing</div>
+            </div>
+            <div class="phase" id="phase-training">
+                <div class="phase-dot"></div>
+                <div class="phase-line"></div>
+                <div class="phase-label">Model Training</div>
+            </div>
+            <div class="phase" id="phase-prediction">
+                <div class="phase-dot"></div>
+                <div class="phase-line"></div>
+                <div class="phase-label">Prediction</div>
+            </div>
+        </div>
+        
+        <div class="animation-container">
+            <div id="section-data-ingestion" class="section active">
+                <h2 class="section-title">Data Preparation</h2>
+                <div id="data-vis"></div>
+            </div>
+            
+            <div id="section-data-processing" class="section">
+                <h2 class="section-title">Feature Processing & Gradient Boosting Setup</h2>
+                <div id="processing-vis"></div>
+            </div>
+            
+            <div id="section-training" class="section">
+                <h2 class="section-title">Training LightGBM Model</h2>
+                <div id="training-vis"></div>
+            </div>
+            
+            <div id="section-prediction" class="section">
+                <h2 class="section-title">Making Predictions with LightGBM</h2>
+                <div id="prediction-vis"></div>
+            </div>
+            
+            <!-- <div id="explanation" class="explanation">
+                <div class="explanation-title">Welcome to LightGBM Animation</div>
+                <p>This interactive animation walks you through how LightGBM works - from data ingestion to prediction. Use the controls above to navigate through the steps or play the full animation.</p>
+            </div> -->
+        </div>
+        
+        <div class="step-indicators" id="step-indicators">
+            <!-- Step indicators will be dynamically added here -->
+        </div>
+    </div>
+    
+    <div id="tooltip" class="tooltip"></div>
+    
+    <script>
+        // Animation configuration and state
+        const config = {
+            animationSpeed: 1.5,
+            currentPhase: 'data',
+            isPlaying: false,
+            currentStep: 0,
+            phaseSteps: {
+                data: 5,
+                processing: 6,
+                training: 8,
+                prediction: 6
+            },
+            totalSteps: 25,
+            stepDelay: 2000, // milliseconds between steps
+            animationTimeline: null,
+            width: 1100,
+            height: 450,
+            margin: {top: 40, right: 40, bottom: 40, left: 40}
+        };
+        
+        // Sample data for visualization
+        const sampleData = [
+            {id: 1, studyHours: 4, sleepQuality: 3, score: 75},
+            {id: 2, studyHours: 6, sleepQuality: 4, score: 82},
+            {id: 3, studyHours: 3, sleepQuality: 2, score: 68},
+            {id: 4, studyHours: 7, sleepQuality: 3, score: 85},
+            {id: 5, studyHours: 5, sleepQuality: 5, score: 79},
+            {id: 6, studyHours: 8, sleepQuality: 4, score: 90},
+            {id: 7, studyHours: 2, sleepQuality: 2, score: 65},
+            {id: 8, studyHours: 5, sleepQuality: 3, score: 78},
+            {id: 9, studyHours: 9, sleepQuality: 5, score: 94},
+            {id: 10, studyHours: 4, sleepQuality: 4, score: 77}
+        ];
+        
+        // New test data for prediction demo
+        const testData = {id: 11, studyHours: 6, sleepQuality: 3};
+        
+        // LightGBM parameters
+        const lightGBMParams = {
+            learningRate: 0.1,
+            maxDepth: 3,
+            numTrees: 3,
+            objective: 'regression',
+            metric: 'mae',
+            featureFraction: 0.8,
+            subsample: 0.8
+        };
+        
+        // DOM Elements
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const nextStepBtn = document.getElementById('next-step-btn');
+        const prevStepBtn = document.getElementById('prev-step-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
+        const explanation = document.getElementById('explanation');
+        const currentStepDisplay = document.getElementById('current-step-display');
+        const stepIndicators = document.getElementById('step-indicators');
+        
+        // Phase elements
+        const phaseData = document.getElementById('phase-data');
+        const phaseProcessing = document.getElementById('phase-processing');
+        const phaseTraining = document.getElementById('phase-training');
+        const phasePrediction = document.getElementById('phase-prediction');
+        
+        // Section elements
+        const sectionDataIngestion = document.getElementById('section-data-ingestion');
+        const sectionDataProcessing = document.getElementById('section-data-processing');
+        const sectionTraining = document.getElementById('section-training');
+        const sectionPrediction = document.getElementById('section-prediction');
+        
+        // Create svg containers for each section
+        const dataVisSvg = d3.select('#data-vis')
+            .append('svg')
+            .attr('width', config.width)
+            .attr('height', config.height);
+            
+        const processingVisSvg = d3.select('#processing-vis')
+            .append('svg')
+            .attr('width', config.width)
+            .attr('height', config.height);
+            
+        const trainingVisSvg = d3.select('#training-vis')
+            .append('svg')
+            .attr('width', config.width)
+            .attr('height', config.height);
+            
+        const predictionVisSvg = d3.select('#prediction-vis')
+            .append('svg')
+            .attr('width', config.width)
+            .attr('height', config.height);
+        
+        // Step descriptions
+        const stepDescriptions = [
+            // Data Ingestion Phase
+            "Welcome to the LightGBM visualization. We'll start with the data ingestion phase.",
+            "Here's our dataset: student study hours, sleep quality, and exam scores.",
+            "First, we'll visualize the data to see if there are any patterns.",
+            "LightGBM inputs need to be converted to numerical format.",
+            "Now our data is ready to be processed by LightGBM.",
+            
+            // Data Processing Phase
+            "Let's examine how LightGBM processes the data for training.",
+            "LightGBM efficiently creates histogram bins for feature values to speed up training.",
+            "Features are organized in a special structure called 'Gradient-based One-Side Sampling'.",
+            "LightGBM uses a leaf-wise growth strategy instead of level-wise growth.",
+            "For each iteration, the algorithm focuses on samples with higher gradients.",
+            "Initial predictions are set to the average target value.",
+            
+            // Training Phase
+            "Now we'll build the LightGBM model through iterative tree construction.",
+            "For the first tree, we calculate the gradients (residuals) of our initial prediction.",
+            "LightGBM finds the best split points that minimize the loss function.",
+            "The tree splits data based on features that provide the most information gain.",
+            "After building the first tree, we update predictions using the learning rate.",
+            "For the second tree, we calculate new gradients based on updated predictions.",
+            "Each new tree focuses on correcting the errors made by the ensemble so far.",
+            "The final model is a weighted sum of all trees in the ensemble.",
+            
+            // Prediction Phase
+            "Now let's see how LightGBM makes predictions on new data.",
+            "A new data point enters the model for prediction.",
+            "The data point traverses each tree in the ensemble based on feature values.",
+            "Each tree contributes to the final prediction based on the leaf node it reaches.",
+            "Contributions from all trees are summed to get the final prediction.",
+            "The final prediction for our test data is ready!"
+        ];
+        
+        // Create step indicators
+        for (let i = 0; i < config.totalSteps; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'step-dot';
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => goToStep(i));
+            stepIndicators.appendChild(dot);
+        }
+        
+        // Initialize explanation text
+        currentStepDisplay.textContent = stepDescriptions[0];
+        
+        // Initialize phase indicators
+        updatePhaseIndicators();
+        
+        // Tooltip setup
+        const tooltip = d3.select('#tooltip');
+        
+        // Event listeners
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        nextStepBtn.addEventListener('click', nextStep);
+        prevStepBtn.addEventListener('click', prevStep);
+        resetBtn.addEventListener('click', resetAnimation);
+        speedSlider.addEventListener('input', updateSpeed);
+        
+        // Initialize visualizations
+        initializeDataVisualization();
+        initializeProcessingVisualization();
+        initializeTrainingVisualization();
+        initializePredictionVisualization();
+        
+        // Update speed function
+        function updateSpeed() {
+            config.animationSpeed = parseFloat(speedSlider.value);
+            speedValue.textContent = `${config.animationSpeed}x`;
+        }
+        
+        // Toggle play/pause
+        function togglePlayPause() {
+            config.isPlaying = !config.isPlaying;
+            
+            if (config.isPlaying) {
+                playPauseBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    Pause
+                `;
+                playAnimation();
+            } else {
+                playPauseBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Play
+                `;
+                clearTimeout(config.animationTimeline);
+            }
+        }
+        
+        // Play animation
+        function playAnimation() {
+            if (!config.isPlaying) return;
+            
+            if (config.currentStep < config.totalSteps - 1) {
+                config.animationTimeline = setTimeout(() => {
+                    nextStep();
+                    playAnimation();
+                }, config.stepDelay / config.animationSpeed);
+            } else {
+                config.isPlaying = false;
+                playPauseBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Play
+                `;
+            }
+        }
+        
+        // Next step
+        function nextStep() {
+            if (config.currentStep < config.totalSteps - 1) {
+                config.currentStep++;
+                updateStep();
+            }
+        }
+        
+        // Previous step
+        function prevStep() {
+            if (config.currentStep > 0) {
+                config.currentStep--;
+                updateStep();
+            }
+        }
+        
+        // Go to specific step
+        function goToStep(stepIndex) {
+            config.currentStep = stepIndex;
+            updateStep();
+        }
+        
+        // Update current step
+        function updateStep() {
+            // Update step indicators
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                if (index === config.currentStep) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+            
+            // Update explanation
+            currentStepDisplay.textContent = stepDescriptions[config.currentStep];
+            
+            // Determine current phase
+            determineCurrentPhase();
+            
+            // Update phase indicators
+            updatePhaseIndicators();
+            
+            // Update active section
+            updateActiveSection();
+            
+            // Trigger step-specific animations
+            animateCurrentStep();
+        }
+        
+        // Reset animation
+        function resetAnimation() {
+            clearTimeout(config.animationTimeline);
+            config.isPlaying = false;
+            config.currentStep = 0;
+            
+            playPauseBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Play
+            `;
+            
+            updateStep();
+            
+            // Reset all visualizations
+            resetDataVisualization();
+            resetProcessingVisualization();
+            resetTrainingVisualization();
+            resetPredictionVisualization();
+        }
+        
+        // Determine current phase based on step
+        function determineCurrentPhase() {
+            if (config.currentStep < 5) {
+                config.currentPhase = 'data';
+            } else if (config.currentStep < 11) {
+                config.currentPhase = 'processing';
+            } else if (config.currentStep < 19) {
+                config.currentPhase = 'training';
+            } else {
+                config.currentPhase = 'prediction';
+            }
+        }
+        
+        // Update phase indicators
+        function updatePhaseIndicators() {
+            // Reset all phases
+            phaseData.classList.remove('active', 'completed');
+            phaseProcessing.classList.remove('active', 'completed');
+            phaseTraining.classList.remove('active', 'completed');
+            phasePrediction.classList.remove('active', 'completed');
+            
+            // Update based on current phase
+            switch (config.currentPhase) {
+                case 'data':
+                    phaseData.classList.add('active');
+                    break;
+                case 'processing':
+                    phaseData.classList.add('completed');
+                    phaseProcessing.classList.add('active');
+                    break;
+                case 'training':
+                    phaseData.classList.add('completed');
+                    phaseProcessing.classList.add('completed');
+                    phaseTraining.classList.add('active');
+                    break;
+                case 'prediction':
+                    phaseData.classList.add('completed');
+                    phaseProcessing.classList.add('completed');
+                    phaseTraining.classList.add('completed');
+                    phasePrediction.classList.add('active');
+                    break;
+            }
+        }
+        
+        // Update active section
+        function updateActiveSection() {
+            // Hide all sections
+            sectionDataIngestion.classList.remove('active');
+            sectionDataProcessing.classList.remove('active');
+            sectionTraining.classList.remove('active');
+            sectionPrediction.classList.remove('active');
+            
+            // Show current section
+            switch (config.currentPhase) {
+                case 'data':
+                    sectionDataIngestion.classList.add('active');
+                    break;
+                case 'processing':
+                    sectionDataProcessing.classList.add('active');
+                    break;
+                case 'training':
+                    sectionTraining.classList.add('active');
+                    break;
+                case 'prediction':
+                    sectionPrediction.classList.add('active');
+                    break;
+            }
+        }
+        
+        // Trigger step-specific animations
+        function animateCurrentStep() {
+            // Define step-specific animations based on current step
+            switch (config.currentStep) {
+                // Data Ingestion Phase animations
+                case 0:
+                    animateDataStep0();
+                    break;
+                case 1:
+                    animateDataStep1();
+                    break;
+                case 2:
+                    animateDataStep2();
+                    break;
+                case 3:
+                    animateDataStep3();
+                    break;
+                case 4:
+                    animateDataStep4();
+                    break;
+                    
+                // Data Processing Phase animations
+                case 5:
+                    animateProcessingStep0();
+                    break;
+                case 6:
+                    animateProcessingStep1();
+                    break;
+                case 7:
+                    animateProcessingStep2();
+                    break;
+                case 8:
+                    animateProcessingStep3();
+                    break;
+                case 9:
+                    animateProcessingStep4();
+                    break;
+                case 10:
+                    animateProcessingStep5();
+                    break;
+                    
+                // Training Phase animations
+                case 11:
+                    animateTrainingStep0();
+                    break;
+                case 12:
+                    animateTrainingStep1();
+                    break;
+                case 13:
+                    animateTrainingStep2();
+                    break;
+                case 14:
+                    animateTrainingStep3();
+                    break;
+                case 15:
+                    animateTrainingStep4();
+                    break;
+                case 16:
+                    animateTrainingStep5();
+                    break;
+                case 17:
+                    animateTrainingStep6();
+                    break;
+                case 18:
+                    animateTrainingStep7();
+                    break;
+                    
+                // Prediction Phase animations
+                case 19:
+                    animatePredictionStep0();
+                    break;
+                case 20:
+                    animatePredictionStep1();
+                    break;
+                case 21:
+                    animatePredictionStep2();
+                    break;
+                case 22:
+                    animatePredictionStep3();
+                    break;
+                case 23:
+                    animatePredictionStep4();
+                    break;
+                case 24:
+                    animatePredictionStep5();
+                    break;
+            }
+        }
+        
+        // Initialize data visualization
+        function initializeDataVisualization() {
+            const margin = {top: 50, right: 50, bottom: 50, left: 50};
+            const width = config.width - margin.left - margin.right;
+            const height = config.height - margin.top - margin.bottom;
+            
+            // Create group for the visualization
+            const g = dataVisSvg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`)
+                .attr('id', 'data-vis-group');
+            
+            // Create scales
+            const xScale = d3.scaleLinear()
+                .domain([1, 10])
+                .range([0, width]);
+                
+            const yScale = d3.scaleLinear()
+                .domain([1, 5])
+                .range([height, 0]);
+                
+            const sizeScale = d3.scaleLinear()
+                .domain([60, 95])
+                .range([6, 15]);
+            
+            // Add x and y axes
+            g.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+                
+            g.append('g')
+                .attr('class', 'y-axis')
+                .call(d3.axisLeft(yScale));
+            
+            // Add axis labels
+            g.append('text')
+                .attr('class', 'x-label')
+                .attr('text-anchor', 'middle')
+                .attr('x', width / 2)
+                .attr('y', height + 35)
+                .text('Study Hours');
+                
+            g.append('text')
+                .attr('class', 'y-label')
+                .attr('text-anchor', 'middle')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -35)
+                .text('Sleep Quality');
+                
+            // Create data points (initially hidden)
+            g.selectAll('.data-point')
+                .data(sampleData)
+                .enter()
+                .append('circle')
+                .attr('class', 'data-point')
+                .attr('cx', d => xScale(d.studyHours))
+                .attr('cy', d => yScale(d.sleepQuality))
+                .attr('r', d => sizeScale(d.score))
+                .attr('opacity', 0)
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`ID: ${d.id}<br>Study Hours: ${d.studyHours}<br>Sleep Quality: ${d.sleepQuality}<br>Score: ${d.score}`)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 20) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+                
+            // Create legend
+            const legend = g.append('g')
+                .attr('class', 'legend')
+                .attr('transform', `translate(${width - 120}, 20)`);
+                
+            legend.append('text')
+                .attr('x', 0)
+                .attr('y', -10)
+                .text('Exam Score');
+                
+            legend.append('circle')
+                .attr('cx', 10)
+                .attr('cy', 10)
+                .attr('r', sizeScale(65))
+                .attr('class', 'data-point');
+                
+            legend.append('text')
+                .attr('x', 25)
+                .attr('y', 15)
+                .text('65');
+                
+            legend.append('circle')
+                .attr('cx', 10)
+                .attr('cy', 40)
+                .attr('r', sizeScale(80))
+                .attr('class', 'data-point');
+                
+            legend.append('text')
+                .attr('x', 25)
+                .attr('y', 45)
+                .text('80');
+                
+            legend.append('circle')
+                .attr('cx', 10)
+                .attr('cy', 70)
+                .attr('r', sizeScale(95))
+                .attr('class', 'data-point');
+                
+            legend.append('text')
+                .attr('x', 25)
+                .attr('y', 75)
+                .text('95');
+        }
+        
+        // Data visualization step animations
+        function animateDataStep0() {
+            // Introduction - no data yet
+            dataVisSvg.selectAll('.data-point')
+                .transition()
+                .duration(500)
+                .attr('opacity', 0);
+        }
+        
+        function animateDataStep1() {
+            // Show data table
+            const tableG = dataVisSvg.select('#data-vis-group').append('g')
+                .attr('id', 'data-table-group')
+                .attr('transform', 'translate(50, 50)');
+                
+            const table = tableG.append('foreignObject')
+                .attr('width', 400)
+                .attr('height', 300)
+                .attr('opacity', 0)
+                .html(`
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Study Hours</th>
+                                <th>Sleep Quality</th>
+                                <th>Exam Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sampleData.slice(0, 5).map(d => `
+                                <tr>
+                                    <td>${d.id}</td>
+                                    <td>${d.studyHours}</td>
+                                    <td>${d.sleepQuality}</td>
+                                    <td>${d.score}</td>
+                                </tr>
+                            `).join('')}
+                            <tr>
+                                <td colspan="4">... (${sampleData.length - 5} more rows)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `);
+                
+            table.transition()
+                .duration(800)
+                .attr('opacity', 1);
+        }
+        
+        function animateDataStep2() {
+            // Remove table and show scatter plot
+            dataVisSvg.select('#data-table-group')
+                .transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+                
+            // Show data points with animation
+            dataVisSvg.selectAll('.data-point')
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100)
+                .attr('opacity', 0.8);
+        }
+        
+        function animateDataStep3() {
+            // Highlight features for processing
+            const g = dataVisSvg.select('#data-vis-group');
+            
+            // Add processing annotation
+            const annotation = g.append('g')
+                .attr('id', 'processing-annotation')
+                .attr('transform', 'translate(350, 150)')
+                .attr('opacity', 0);
+                
+            annotation.append('rect')
+                .attr('width', 220)
+                .attr('height', 120)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2);
+                
+            annotation.append('text')
+                .attr('x', 10)
+                .attr('y', 25)
+                .attr('font-weight', 'bold')
+                .text('Data Processing');
+                
+            annotation.append('text')
+                .attr('x', 10)
+                .attr('y', 50)
+                .text('• Convert to numerical format');
+                
+            annotation.append('text')
+                .attr('x', 10)
+                .attr('y', 75)
+                .text('• Extract feature statistics');
+                
+            annotation.append('text')
+                .attr('x', 10)
+                .attr('y', 100)
+                .text('• Organize for LightGBM');
+                
+            // Animate annotation
+            annotation.transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Pulse animation for data points
+            dataVisSvg.selectAll('.data-point')
+                .classed('highlight', true);
+        }
+        
+        function animateDataStep4() {
+            // Show data ready for model
+            dataVisSvg.select('#processing-annotation')
+                .transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+                
+            dataVisSvg.selectAll('.data-point')
+                .classed('highlight', false);
+                
+            // Create data flow element
+            const g = dataVisSvg.select('#data-vis-group');
+            
+            const dataFlow = g.append('g')
+                .attr('id', 'data-flow')
+                .attr('opacity', 0);
+                
+            // Draw arrow from data to model
+            dataFlow.append('path')
+                .attr('d', 'M250,200 C350,200 350,200 450,200')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow)');
+                
+            // Add model box
+            dataFlow.append('rect')
+                .attr('x', 450)
+                .attr('y', 150)
+                .attr('width', 100)
+                .attr('height', 100)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2);
+                
+            dataFlow.append('text')
+                .attr('x', 500)
+                .attr('y', 200)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('LightGBM');
+                
+            // Add arrow marker
+            dataVisSvg.append('defs')
+                .append('marker')
+                .attr('id', 'arrow')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 8)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', 'var(--primary)');
+                
+            // Animate data flow
+            dataFlow.transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Moving data animation
+            const movingData = g.append('circle')
+                .attr('class', 'moving-data')
+                .attr('r', 8)
+                .attr('cx', 250)
+                .attr('cy', 200);
+                
+            movingData.transition()
+                .duration(1500)
+                .attr('cx', 450)
+                .remove();
+        }
+        
+        // Reset data visualization
+        function resetDataVisualization() {
+            dataVisSvg.selectAll('#data-table-group, #processing-annotation, #data-flow, .moving-data')
+                .remove();
+                
+            dataVisSvg.selectAll('.data-point')
+                .attr('opacity', 0)
+                .classed('highlight', false);
+        }
+        
+        // Initialize processing visualization
+        function initializeProcessingVisualization() {
+            const g = processingVisSvg.append('g')
+                .attr('id', 'processing-vis-group')
+                .attr('transform', `translate(${config.margin.left},${config.margin.top})`);
+            
+            // Create dataset representation
+            const datasetG = g.append('g')
+                .attr('id', 'dataset-group')
+                .attr('transform', 'translate(50, 50)');
+                
+            datasetG.append('rect')
+                .attr('width', 150)
+                .attr('height', 200)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', '#ccc')
+                .attr('stroke-width', 1);
+                
+            // Add rows
+            for (let i = 0; i < 8; i++) {
+                datasetG.append('rect')
+                    .attr('x', 10)
+                    .attr('y', 15 + i * 20)
+                    .attr('width', 130)
+                    .attr('height', 15)
+                    .attr('rx', 2)
+                    .attr('ry', 2)
+                    .attr('fill', '#f5f5f5')
+                    .attr('stroke', '#eee');
+            }
+            
+            // Create histogram bins representation
+            const histogramG = g.append('g')
+                .attr('id', 'histogram-group')
+                .attr('transform', 'translate(300, 50)')
+                .attr('opacity', 0);
+                
+            histogramG.append('rect')
+                .attr('width', 200)
+                .attr('height', 200)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', '#ccc')
+                .attr('stroke-width', 1);
+                
+            // Add histogram title
+            histogramG.append('text')
+                .attr('x', 100)
+                .attr('y', 15)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Feature Histograms');
+                
+            // Add histograms for study hours
+            histogramG.append('text')
+                .attr('x', 10)
+                .attr('y', 40)
+                .text('Study Hours:');
+                
+            const studyHoursG = histogramG.append('g')
+                .attr('transform', 'translate(15, 50)');
+                
+            for (let i = 0; i < 5; i++) {
+                const height = 20 + Math.random() * 30;
+                studyHoursG.append('rect')
+                    .attr('x', i * 30)
+                    .attr('y', 50 - height)
+                    .attr('width', 25)
+                    .attr('height', height)
+                    .attr('fill', 'var(--primary)')
+                    .attr('opacity', 0.7);
+            }
+            
+            // Add histograms for sleep quality
+            histogramG.append('text')
+                .attr('x', 10)
+                .attr('y', 120)
+                .text('Sleep Quality:');
+                
+            const sleepQualityG = histogramG.append('g')
+                .attr('transform', 'translate(15, 130)');
+                
+            for (let i = 0; i < 5; i++) {
+                const height = 20 + Math.random() * 30;
+                sleepQualityG.append('rect')
+                    .attr('x', i * 30)
+                    .attr('y', 50 - height)
+                    .attr('width', 25)
+                    .attr('height', height)
+                    .attr('fill', 'var(--tertiary)')
+                    .attr('opacity', 0.7);
+            }
+            
+            // Create GOSS representation
+            const gossG = g.append('g')
+                .attr('id', 'goss-group')
+                .attr('transform', 'translate(550, 50)')
+                .attr('opacity', 0);
+                
+            gossG.append('rect')
+                .attr('width', 150)
+                .attr('height', 200)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', '#ccc')
+                .attr('stroke-width', 1);
+                
+            // Add GOSS title
+            gossG.append('text')
+                .attr('x', 75)
+                .attr('y', 15)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('GOSS');
+                
+            // Add gradient samples
+            const samples = gossG.append('g')
+                .attr('transform', 'translate(15, 30)');
+                
+            // High gradient samples (red)
+            for (let i = 0; i < 4; i++) {
+                samples.append('rect')
+                    .attr('x', 10)
+                    .attr('y', i * 20)
+                    .attr('width', 100)
+                    .attr('height', 15)
+                    .attr('rx', 2)
+                    .attr('ry', 2)
+                    .attr('fill', 'var(--error)')
+                    .attr('opacity', 0.7);
+            }
+            
+            // Low gradient samples (green)
+            for (let i = 0; i < 4; i++) {
+                samples.append('rect')
+                    .attr('x', 10)
+                    .attr('y', 100 + i * 20)
+                    .attr('width', 100)
+                    .attr('height', 15)
+                    .attr('rx', 2)
+                    .attr('ry', 2)
+                    .attr('fill', 'var(--secondary)')
+                    .attr('opacity', 0.4);
+            }
+            
+            // Add divider
+            samples.append('line')
+                .attr('x1', 0)
+                .attr('y1', 90)
+                .attr('x2', 120)
+                .attr('y2', 90)
+                .attr('stroke', '#ccc')
+                .attr('stroke-width', 1)
+                .attr('stroke-dasharray', '3,3');
+                
+            samples.append('text')
+                .attr('x', 60)
+                .attr('y', 85)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '10px')
+                .text('High Gradients');
+                
+            samples.append('text')
+                .attr('x', 60)
+                .attr('y', 175)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '10px')
+                .text('Low Gradients');
+                
+            // Create leaf-wise growth representation
+            const treeG = g.append('g')
+                .attr('id', 'tree-growth-group')
+                .attr('transform', 'translate(150, 300)')
+                .attr('opacity', 0);
+                
+            // Level-wise tree
+            const levelWiseG = treeG.append('g')
+                .attr('transform', 'translate(0, 0)');
+                
+            levelWiseG.append('text')
+                .attr('x', 75)
+                .attr('y', -20)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Level-wise Growth');
+                
+            // Draw simple level-wise tree
+            drawSimpleTree(levelWiseG, 'level', 75, 10, 150, 120);
+            
+            // Leaf-wise tree
+            const leafWiseG = treeG.append('g')
+                .attr('transform', 'translate(300, 0)');
+                
+            leafWiseG.append('text')
+                .attr('x', 75)
+                .attr('y', -20)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Leaf-wise Growth (LightGBM)');
+                
+            // Draw simple leaf-wise tree
+            drawSimpleTree(leafWiseG, 'leaf', 75, 10, 150, 120);
+            
+            // Create baseline prediction box
+            const baselineG = g.append('g')
+                .attr('id', 'baseline-group')
+                .attr('transform', 'translate(250, 300)')
+                .attr('opacity', 0);
+                
+            baselineG.append('rect')
+                .attr('width', 200)
+                .attr('height', 80)
+                .attr('rx', 8)
+                .attr('ry', 8)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2);
+                
+            baselineG.append('text')
+                .attr('x', 100)
+                .attr('y', 30)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Initial Prediction');
+                
+            baselineG.append('text')
+                .attr('x', 100)
+                .attr('y', 60)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '1.5em')
+                .attr('fill', 'var(--primary)')
+                .text('78.3');
+        }
+        
+        // Helper function to draw simple trees
+        function drawSimpleTree(g, type, rootX, rootY, width, height) {
+            // Create nodes and connections based on tree type
+            if (type === 'level') {
+                // Level 0 (root)
+                g.append('circle')
+                    .attr('cx', rootX)
+                    .attr('cy', rootY)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                // Level 1
+                g.append('circle')
+                    .attr('cx', rootX - width/4)
+                    .attr('cy', rootY + height/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                g.append('circle')
+                    .attr('cx', rootX + width/4)
+                    .attr('cy', rootY + height/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                // Level 2
+                g.append('circle')
+                    .attr('cx', rootX - width/2.5)
+                    .attr('cy', rootY + height*2/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                g.append('circle')
+                    .attr('cx', rootX - width/8)
+                    .attr('cy', rootY + height*2/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                g.append('circle')
+                    .attr('cx', rootX + width/8)
+                    .attr('cy', rootY + height*2/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                g.append('circle')
+                    .attr('cx', rootX + width/2.5)
+                    .attr('cy', rootY + height*2/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                // Connections
+                g.append('line')
+                    .attr('x1', rootX)
+                    .attr('y1', rootY + 15)
+                    .attr('x2', rootX - width/4)
+                    .attr('y2', rootY + height/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX)
+                    .attr('y1', rootY + 15)
+                    .attr('x2', rootX + width/4)
+                    .attr('y2', rootY + height/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX - width/4)
+                    .attr('y1', rootY + height/3 + 15)
+                    .attr('x2', rootX - width/2.5)
+                    .attr('y2', rootY + height*2/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX - width/4)
+                    .attr('y1', rootY + height/3 + 15)
+                    .attr('x2', rootX - width/8)
+                    .attr('y2', rootY + height*2/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX + width/4)
+                    .attr('y1', rootY + height/3 + 15)
+                    .attr('x2', rootX + width/8)
+                    .attr('y2', rootY + height*2/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX + width/4)
+                    .attr('y1', rootY + height/3 + 15)
+                    .attr('x2', rootX + width/2.5)
+                    .attr('y2', rootY + height*2/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                // Add numbers for split order
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX)
+                    .attr('y', rootY)
+                    .text('1');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX - width/4)
+                    .attr('y', rootY + height/3)
+                    .text('2');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX + width/4)
+                    .attr('y', rootY + height/3)
+                    .text('3');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX - width/2.5)
+                    .attr('y', rootY + height*2/3)
+                    .text('4');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX - width/8)
+                    .attr('y', rootY + height*2/3)
+                    .text('5');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX + width/8)
+                    .attr('y', rootY + height*2/3)
+                    .text('6');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX + width/2.5)
+                    .attr('y', rootY + height*2/3)
+                    .text('7');
+                
+            } else if (type === 'leaf') {
+                // LightGBM leaf-wise growth (different order)
+                // Level 0 (root)
+                g.append('circle')
+                    .attr('cx', rootX)
+                    .attr('cy', rootY)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                // Level 1
+                g.append('circle')
+                    .attr('cx', rootX - width/4)
+                    .attr('cy', rootY + height/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                g.append('circle')
+                    .attr('cx', rootX + width/4)
+                    .attr('cy', rootY + height/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                // Level 2 (selective growth)
+                g.append('circle')
+                    .attr('cx', rootX - width/2.5)
+                    .attr('cy', rootY + height*2/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                g.append('circle')
+                    .attr('cx', rootX - width/8)
+                    .attr('cy', rootY + height*2/3)
+                    .attr('r', 15)
+                    .attr('class', 'tree-node');
+                    
+                // Connections
+                g.append('line')
+                    .attr('x1', rootX)
+                    .attr('y1', rootY + 15)
+                    .attr('x2', rootX - width/4)
+                    .attr('y2', rootY + height/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX)
+                    .attr('y1', rootY + 15)
+                    .attr('x2', rootX + width/4)
+                    .attr('y2', rootY + height/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX - width/4)
+                    .attr('y1', rootY + height/3 + 15)
+                    .attr('x2', rootX - width/2.5)
+                    .attr('y2', rootY + height*2/3 - 15)
+                    .attr('class', 'tree-link');
+                    
+                g.append('line')
+                    .attr('x1', rootX - width/4)
+                    .attr('y1', rootY + height/3 + 15)
+                    .attr('x2', rootX - width/8)
+                    .attr('y2', rootY + height*2/3 - 15)
+                    .attr('class', 'tree-link');
+                
+                // Add numbers for split order
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX)
+                    .attr('y', rootY)
+                    .text('1');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX - width/4)
+                    .attr('y', rootY + height/3)
+                    .text('2');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX + width/4)
+                    .attr('y', rootY + height/3)
+                    .text('4');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX - width/2.5)
+                    .attr('y', rootY + height*2/3)
+                    .text('3');
+                    
+                g.append('text')
+                    .attr('class', 'tree-node-text')
+                    .attr('x', rootX - width/8)
+                    .attr('y', rootY + height*2/3)
+                    .text('5');
+            }
+        }
+        
+        // Processing visualization step animations
+        function animateProcessingStep0() {
+            // Introduce processing phase
+            processingVisSvg.select('#dataset-group')
+                .transition()
+                .duration(500)
+                .attr('opacity', 1);
+                
+            processingVisSvg.select('#histogram-group')
+                .attr('opacity', 0);
+                
+            processingVisSvg.select('#goss-group')
+                .attr('opacity', 0);
+                
+            processingVisSvg.select('#tree-growth-group')
+                .attr('opacity', 0);
+                
+            processingVisSvg.select('#baseline-group')
+                .attr('opacity', 0);
+        }
+        
+        function animateProcessingStep1() {
+            // Show histogram bins
+            processingVisSvg.select('#histogram-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Show data flowing to histograms
+            const datasetG = processingVisSvg.select('#dataset-group');
+            const histogramG = processingVisSvg.select('#histogram-group');
+            
+            // Create data flow element
+            const dataFlow = processingVisSvg.select('#processing-vis-group')
+                .append('g')
+                .attr('id', 'data-flow-processing');
+                
+            // Draw arrow from data to histograms
+            dataFlow.append('path')
+                .attr('d', 'M200,150 C250,150 250,150 300,150')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-processing)');
+                
+            // Add arrow marker
+            processingVisSvg.append('defs')
+                .append('marker')
+                .attr('id', 'arrow-processing')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 8)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', 'var(--primary)');
+                
+            // Moving data animation
+            const movingData = processingVisSvg.select('#processing-vis-group')
+                .append('circle')
+                .attr('class', 'moving-data')
+                .attr('r', 8)
+                .attr('cx', 200)
+                .attr('cy', 150);
+                
+            movingData.transition()
+                .duration(1500)
+                .attr('cx', 300)
+                .remove();
+        }
+        
+        function animateProcessingStep2() {
+            // Show GOSS
+            processingVisSvg.select('#goss-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Draw arrow from histograms to GOSS
+            processingVisSvg.select('#data-flow-processing')
+                .remove();
+                
+            const dataFlow = processingVisSvg.select('#processing-vis-group')
+                .append('g')
+                .attr('id', 'data-flow-goss');
+                
+            dataFlow.append('path')
+                .attr('d', 'M500,150 C525,150 525,150 550,150')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-processing)');
+                
+            // Moving data animation
+            const movingData = processingVisSvg.select('#processing-vis-group')
+                .append('circle')
+                .attr('class', 'moving-data')
+                .attr('r', 8)
+                .attr('cx', 500)
+                .attr('cy', 150);
+                
+            movingData.transition()
+                .duration(1500)
+                .attr('cx', 550)
+                .remove();
+        }
+        
+        function animateProcessingStep3() {
+            // Show leaf-wise tree growth
+            processingVisSvg.select('#tree-growth-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Highlight differences in tree growth
+            setTimeout(() => {
+                // Add growing animation to leaf-wise tree
+                const leafNodes = processingVisSvg.selectAll('#tree-growth-group > g:nth-child(2) circle');
+                
+                leafNodes.each(function(d, i) {
+                    d3.select(this)
+                        .transition()
+                        .delay(i * 400)
+                        .duration(300)
+                        .attr('r', 18)
+                        .transition()
+                        .duration(300)
+                        .attr('r', 15);
+                });
+            }, 1000);
+        }
+        
+        function animateProcessingStep4() {
+            // Highlight differences in gradient sampling
+            processingVisSvg.select('#goss-group')
+                .selectAll('rect')
+                .transition()
+                .duration(500)
+                .attr('opacity', 0.4)
+                .transition()
+                .duration(500)
+                .attr('opacity', 0.7);
+                
+            // Highlight high gradient samples
+            setTimeout(() => {
+                // Highlight high gradient samples with animation
+                processingVisSvg.select('#goss-group')
+                    .selectAll('rect:nth-child(-n+4)')
+                    .transition()
+                    .duration(500)
+                    .attr('opacity', 1)
+                    .attr('stroke', 'var(--primary)')
+                    .attr('stroke-width', 1);
+            }, 1000);
+        }
+        
+        function animateProcessingStep5() {
+            // Show baseline predictions
+            processingVisSvg.select('#baseline-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Add initial prediction value animation
+            processingVisSvg.select('#baseline-group text:nth-child(3)')
+                .transition()
+                .duration(1000)
+                .tween("text", function() {
+                    const i = d3.interpolate(0, 78.3);
+                    return function(t) {
+                        this.textContent = i(t).toFixed(1);
+                    };
+                });
+        }
+        
+        // Reset processing visualization
+        function resetProcessingVisualization() {
+            processingVisSvg.select('#data-flow-processing').remove();
+            processingVisSvg.select('#data-flow-goss').remove();
+            processingVisSvg.selectAll('.moving-data').remove();
+            
+            processingVisSvg.select('#dataset-group')
+                .attr('opacity', 1);
+                
+            processingVisSvg.select('#histogram-group')
+                .attr('opacity', 0);
+                
+            processingVisSvg.select('#goss-group')
+                .attr('opacity', 0);
+                
+            processingVisSvg.select('#tree-growth-group')
+                .attr('opacity', 0);
+                
+            processingVisSvg.select('#baseline-group')
+                .attr('opacity', 0);
+                
+            // Reset GOSS highlighting
+            processingVisSvg.select('#goss-group')
+                .selectAll('rect')
+                .attr('opacity', 0.7)
+                .attr('stroke', 'none');
+        }
+        
+        // Initialize training visualization
+        function initializeTrainingVisualization() {
+            const g = trainingVisSvg.append('g')
+                .attr('id', 'training-vis-group')
+                .attr('transform', `translate(${config.margin.left},${config.margin.top})`);
+                
+            // Create baseline prediction box
+            const baselineG = g.append('g')
+                .attr('id', 'training-baseline-group')
+                .attr('transform', 'translate(50, 50)');
+                
+            baselineG.append('rect')
+                .attr('width', 150)
+                .attr('height', 60)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2);
+                
+            baselineG.append('text')
+                .attr('x', 75)
+                .attr('y', 25)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Initial Prediction');
+                
+            baselineG.append('text')
+                .attr('x', 75)
+                .attr('y', 45)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '1.2em')
+                .attr('fill', 'var(--primary)')
+                .text('78.3');
+                
+            // Create tree section
+            const treeSection = g.append('g')
+                .attr('id', 'tree-section')
+                .attr('transform', 'translate(250, 20)');
+                
+            // Tree 1
+            const tree1G = treeSection.append('g')
+                .attr('id', 'tree-1-group')
+                .attr('transform', 'translate(0, 0)')
+                .attr('opacity', 0);
+                
+            tree1G.append('text')
+                .attr('x', 90)
+                .attr('y', 15)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Tree 1');
+                
+            // Draw first tree
+            drawDetailedTree(tree1G, 90, 50, 180, 140, 1);
+            
+            // Tree 2
+            const tree2G = treeSection.append('g')
+                .attr('id', 'tree-2-group')
+                .attr('transform', 'translate(200, 0)')
+                .attr('opacity', 0);
+                
+            tree2G.append('text')
+                .attr('x', 90)
+                .attr('y', 15)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Tree 2');
+                
+            // Draw second tree
+            drawDetailedTree(tree2G, 90, 50, 180, 140, 2);
+            
+            // Tree 3
+            const tree3G = treeSection.append('g')
+                .attr('id', 'tree-3-group')
+                .attr('transform', 'translate(400, 0)')
+                .attr('opacity', 0);
+                
+            tree3G.append('text')
+                .attr('x', 90)
+                .attr('y', 15)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Tree 3');
+                
+            // Draw third tree
+            drawDetailedTree(tree3G, 90, 50, 180, 140, 3);
+            
+            // Create gradient section
+            const gradientSection = g.append('g')
+                .attr('id', 'gradient-section')
+                .attr('transform', 'translate(50, 200)')
+                .attr('opacity', 0);
+                
+            gradientSection.append('text')
+                .attr('x', 0)
+                .attr('y', 15)
+                .attr('font-weight', 'bold')
+                .text('Gradients (Residuals):');
+                
+            // Sample data rows with residuals
+            const sampleRows = gradientSection.append('g')
+                .attr('transform', 'translate(10, 30)');
+                
+            for (let i = 0; i < 4; i++) {
+                sampleRows.append('rect')
+                    .attr('x', 0)
+                    .attr('y', i * 30)
+                    .attr('width', 300)
+                    .attr('height', 25)
+                    .attr('fill', '#f5f5f5')
+                    .attr('stroke', '#e0e0e0')
+                    .attr('rx', 3)
+                    .attr('ry', 3);
+                    
+                sampleRows.append('text')
+                    .attr('x', 15)
+                    .attr('y', i * 30 + 17)
+                    .text(`Row ${i+1}:`);
+                    
+                sampleRows.append('text')
+                    .attr('x', 80)
+                    .attr('y', i * 30 + 17)
+                    .text(`Target = ${75 + i * 5}`);
+                    
+                sampleRows.append('text')
+                    .attr('x', 175)
+                    .attr('y', i * 30 + 17)
+                    .text(`Pred = 78.3`);
+                    
+                sampleRows.append('text')
+                    .attr('x', 260)
+                    .attr('y', i * 30 + 17)
+                    .attr('class', 'gradient-value')
+                    .text(`= ${(75 + i * 5 - 78.3).toFixed(1)}`);
+            }
+            
+            // Create final model section
+            const finalModelSection = g.append('g')
+                .attr('id', 'final-model-section')
+                .attr('transform', 'translate(400, 250)')
+                .attr('opacity', 0);
+                
+            finalModelSection.append('rect')
+                .attr('width', 200)
+                .attr('height', 100)
+                .attr('rx', 8)
+                .attr('ry', 8)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--secondary)')
+                .attr('stroke-width', 2);
+                
+            finalModelSection.append('text')
+                .attr('x', 100)
+                .attr('y', 30)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Final LightGBM Model');
+                
+            finalModelSection.append('text')
+                .attr('x', 100)
+                .attr('y', 60)
+                .attr('text-anchor', 'middle')
+                .text('Baseline + λ(Tree1 + Tree2 + Tree3)');
+                
+            // Accuracy metrics
+            finalModelSection.append('text')
+                .attr('x', 100)
+                .attr('y', 85)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '0.9em')
+                .text('MAE: 2.1, RMSE: 3.4');
+        }
+        
+        // Helper function to draw more detailed trees
+        function drawDetailedTree(g, rootX, rootY, width, height, treeNum) {
+            // Root node
+            g.append('circle')
+                .attr('cx', rootX)
+                .attr('cy', rootY)
+                .attr('r', 20)
+                .attr('class', 'tree-node');
+                
+            g.append('text')
+                .attr('class', 'tree-node-text')
+                .attr('x', rootX)
+                .attr('y', rootY - 5)
+                .attr('font-size', '10px')
+                .text(() => {
+                    if (treeNum === 1) return 'Study Hours';
+                    if (treeNum === 2) return 'Sleep';
+                    return 'Study Hours';
+                });
+                
+            g.append('text')
+                .attr('class', 'tree-node-text')
+                .attr('x', rootX)
+                .attr('y', rootY + 8)
+                .attr('font-size', '10px')
+                .text(() => {
+                    if (treeNum === 1) return '≤ 5?';
+                    if (treeNum === 2) return '≤ 3?';
+                    return '≤ 7?';
+                });
+                
+            // Left child
+            g.append('circle')
+                .attr('cx', rootX - width/3)
+                .attr('cy', rootY + height/2.5)
+                .attr('r', 20)
+                .attr('class', 'tree-node-leaf');
+                
+            g.append('text')
+                .attr('class', 'tree-node-text')
+                .attr('x', rootX - width/3)
+                .attr('y', rootY + height/2.5)
+                .text(() => {
+                    if (treeNum === 1) return '-3.1';
+                    if (treeNum === 2) return '-2.6';
+                    return '-1.5';
+                });
+                
+            // Right child
+            g.append('circle')
+                .attr('cx', rootX + width/3)
+                .attr('cy', rootY + height/2.5)
+                .attr('r', 20)
+                .attr('class', 'tree-node');
+                
+            g.append('text')
+                .attr('class', 'tree-node-text')
+                .attr('x', rootX + width/3)
+                .attr('y', rootY + height/2.5 - 5)
+                .attr('font-size', '10px')
+                .text(() => {
+                    if (treeNum === 1) return 'Sleep';
+                    if (treeNum === 2) return 'Study Hours';
+                    return 'Sleep';
+                });
+                
+            g.append('text')
+                .attr('class', 'tree-node-text')
+                .attr('x', rootX + width/3)
+                .attr('y', rootY + height/2.5 + 8)
+                .attr('font-size', '10px')
+                .text(() => {
+                    if (treeNum === 1) return '≤ 3?';
+                    if (treeNum === 2) return '≤ 6?';
+                    return '≤ 4?';
+                });
+                
+            // Right's children
+            g.append('circle')
+                .attr('cx', rootX + width/6)
+                .attr('cy', rootY + height)
+                .attr('r', 20)
+                .attr('class', 'tree-node-leaf');
+                
+            g.append('text')
+                .attr('class', 'tree-node-text')
+                .attr('x', rootX + width/6)
+                .attr('y', rootY + height)
+                .text(() => {
+                    if (treeNum === 1) return '2.2';
+                    if (treeNum === 2) return '-1.4';
+                    return '1.8';
+                });
+                
+            g.append('circle')
+                .attr('cx', rootX + width/2)
+                .attr('cy', rootY + height)
+                .attr('r', 20)
+                .attr('class', 'tree-node-leaf');
+                
+            g.append('text')
+                .attr('class', 'tree-node-text')
+                .attr('x', rootX + width/2)
+                .attr('y', rootY + height)
+                .text(() => {
+                    if (treeNum === 1) return '5.4';
+                    if (treeNum === 2) return '2.8';
+                    return '3.7';
+                });
+                
+            // Connections
+            g.append('line')
+                .attr('x1', rootX)
+                .attr('y1', rootY + 20)
+                .attr('x2', rootX - width/3)
+                .attr('y2', rootY + height/2.5 - 20)
+                .attr('class', 'tree-link');
+                
+            g.append('line')
+                .attr('x1', rootX)
+                .attr('y1', rootY + 20)
+                .attr('x2', rootX + width/3)
+                .attr('y2', rootY + height/2.5 - 20)
+                .attr('class', 'tree-link');
+                
+            g.append('line')
+                .attr('x1', rootX + width/3)
+                .attr('y1', rootY + height/2.5 + 20)
+                .attr('x2', rootX + width/6)
+                .attr('y2', rootY + height - 20)
+                .attr('class', 'tree-link');
+                
+            g.append('line')
+                .attr('x1', rootX + width/3)
+                .attr('y1', rootY + height/2.5 + 20)
+                .attr('x2', rootX + width/2)
+                .attr('y2', rootY + height - 20)
+                .attr('class', 'tree-link');
+                
+            // Add labels to connections
+            g.append('text')
+                .attr('x', rootX - width/6)
+                .attr('y', rootY + height/5)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '12px')
+                .text('Yes');
+                
+            g.append('text')
+                .attr('x', rootX + width/6)
+                .attr('y', rootY + height/5)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '12px')
+                .text('No');
+                
+            g.append('text')
+                .attr('x', rootX + width/4)
+                .attr('y', rootY + height*0.7)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '12px')
+                .text('Yes');
+                
+            g.append('text')
+                .attr('x', rootX + width*0.4)
+                .attr('y', rootY + height*0.7)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '12px')
+                .text('No');
+        }
+        
+        // Training visualization step animations
+        function animateTrainingStep0() {
+            // Show baseline prediction
+            trainingVisSvg.select('#training-baseline-group')
+                .attr('opacity', 1);
+                
+            trainingVisSvg.select('#tree-1-group')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#tree-2-group')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#tree-3-group')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#gradient-section')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#final-model-section')
+                .attr('opacity', 0);
+        }
+        
+        function animateTrainingStep1() {
+            // Show gradients calculation
+            trainingVisSvg.select('#gradient-section')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Animate gradient values
+            trainingVisSvg.selectAll('.gradient-value')
+                .each(function(d, i) {
+                    const target = 75 + i * 5;
+                    const initialPred = 78.3;
+                    const gradient = target - initialPred;
+                    
+                    d3.select(this)
+                        .transition()
+                        .duration(1000)
+                        .tween("text", function() {
+                            const interpolator = d3.interpolateNumber(0, gradient);
+                            return function(t) {
+                                this.textContent = `= ${interpolator(t).toFixed(1)}`;
+                                this.setAttribute('fill', gradient < 0 ? 'var(--error)' : 'var(--secondary)');
+                            };
+                        });
+                });
+        }
+        
+        function animateTrainingStep2() {
+            // Show first tree
+            trainingVisSvg.select('#tree-1-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Add data flow from gradients to tree
+            const gradientSection = trainingVisSvg.select('#gradient-section');
+            const tree1G = trainingVisSvg.select('#tree-1-group');
+            
+            // Create data flow element
+            const dataFlow = trainingVisSvg.select('#training-vis-group')
+                .append('g')
+                .attr('id', 'data-flow-tree1');
+                
+            // Draw arrow from gradients to tree
+            dataFlow.append('path')
+                .attr('d', 'M200,230 C250,230 250,100 310,100')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-training)');
+                
+            // Add arrow marker
+            trainingVisSvg.append('defs')
+                .append('marker')
+                .attr('id', 'arrow-training')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 8)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', 'var(--primary)');
+                
+            // Moving data animation
+            const movingData = trainingVisSvg.select('#training-vis-group')
+                .append('circle')
+                .attr('class', 'moving-data')
+                .attr('r', 8)
+                .attr('cx', 200)
+                .attr('cy', 230);
+                
+            movingData.transition()
+                .duration(1500)
+                .attr('cx', 310)
+                .attr('cy', 100)
+                .remove();
+        }
+        
+        function animateTrainingStep3() {
+            // Highlight tree structure and splits
+            trainingVisSvg.select('#tree-1-group').selectAll('circle')
+                .transition()
+                .duration(500)
+                .attr('r', 22)
+                .transition()
+                .duration(500)
+                .attr('r', 20);
+                
+            // Add split explanation
+            const tree1G = trainingVisSvg.select('#tree-1-group');
+            const treePos = tree1G.node().getBoundingClientRect();
+            
+            const splitExplanation = trainingVisSvg.select('#training-vis-group')
+                .append('g')
+                .attr('id', 'split-explanation')
+                .attr('transform', 'translate(275, 20)')
+                .attr('opacity', 0);
+                
+            splitExplanation.append('rect')
+                .attr('width', 180)
+                .attr('height', 60)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--tertiary)')
+                .attr('stroke-width', 1);
+                
+            splitExplanation.append('text')
+                .attr('x', 90)
+                .attr('y', 20)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Finding best splits');
+                
+            splitExplanation.append('text')
+                .attr('x', 90)
+                .attr('y', 40)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '0.9em')
+                .text('Minimize loss function');
+                
+            splitExplanation.transition()
+                .duration(800)
+                .attr('opacity', 1);
+        }
+        
+        function animateTrainingStep4() {
+            // Remove split explanation
+            trainingVisSvg.select('#split-explanation')
+                .transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+                
+            // Create updated predictions
+            const updatedPreds = trainingVisSvg.select('#training-vis-group')
+                .append('g')
+                .attr('id', 'updated-predictions')
+                .attr('transform', 'translate(50, 350)')
+                .attr('opacity', 0);
+                
+            updatedPreds.append('text')
+                .attr('x', 0)
+                .attr('y', 0)
+                .attr('font-weight', 'bold')
+                .text('Updated Predictions (after Tree 1):');
+                
+            // Sample updated predictions
+            for (let i = 0; i < 4; i++) {
+                const target = 75 + i * 5;
+                const initialPred = 78.3;
+                const treeContribution = i < 2 ? -3.1 : (i === 2 ? 2.2 : 5.4);
+                const learningRate = 0.1;
+                const newPred = initialPred + (learningRate * treeContribution);
+                
+                updatedPreds.append('rect')
+                    .attr('x', 0)
+                    .attr('y', 15 + i * 30)
+                    .attr('width', 350)
+                    .attr('height', 25)
+                    .attr('fill', '#f5f5f5')
+                    .attr('stroke', '#e0e0e0')
+                    .attr('rx', 3)
+                    .attr('ry', 3);
+                    
+                updatedPreds.append('text')
+                    .attr('x', 15)
+                    .attr('y', 15 + i * 30 + 17)
+                    .text(`Row ${i+1}:`);
+                    
+                updatedPreds.append('text')
+                    .attr('x', 80)
+                    .attr('y', 15 + i * 30 + 17)
+                    .text(`Target = ${target}`);
+                    
+                updatedPreds.append('text')
+                    .attr('x', 175)
+                    .attr('y', 15 + i * 30 + 17)
+                    .text(`78.3 + 0.1×(${treeContribution})`);
+                    
+                updatedPreds.append('text')
+                    .attr('x', 300)
+                    .attr('y', 15 + i * 30 + 17)
+                    .attr('class', 'updated-pred-value')
+                    .text(`= ${newPred.toFixed(1)}`);
+            }
+            
+            updatedPreds.transition()
+                .duration(800)
+                .attr('opacity', 1);
+        }
+        
+        function animateTrainingStep5() {
+            // Show second tree
+            trainingVisSvg.select('#tree-2-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Update gradients for second tree
+            const gradientValues = trainingVisSvg.selectAll('.gradient-value');
+            
+            gradientValues.each(function(d, i) {
+                const target = 75 + i * 5;
+                const initialPred = 78.3;
+                const treeContribution = i < 2 ? -3.1 : (i === 2 ? 2.2 : 5.4);
+                const learningRate = 0.1;
+                const newPred = initialPred + (learningRate * treeContribution);
+                const newGradient = target - newPred;
+                
+                d3.select(this)
+                    .transition()
+                    .duration(1000)
+                    .tween("text", function() {
+                        const oldValue = parseFloat(this.textContent.split('= ')[1]);
+                        const interpolator = d3.interpolateNumber(oldValue, newGradient);
+                        return function(t) {
+                            this.textContent = `= ${interpolator(t).toFixed(1)}`;
+                            this.setAttribute('fill', newGradient < 0 ? 'var(--error)' : 'var(--secondary)');
+                        };
+                    });
+            });
+            
+            // Remove first tree data flow
+            trainingVisSvg.select('#data-flow-tree1').remove();
+            
+            // Add data flow from gradients to second tree
+            const dataFlow = trainingVisSvg.select('#training-vis-group')
+                .append('g')
+                .attr('id', 'data-flow-tree2');
+                
+            // Draw arrow from gradients to tree
+            dataFlow.append('path')
+                .attr('d', 'M200,230 C250,230 300,100 410,100')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-training)');
+                
+            // Moving data animation
+            const movingData = trainingVisSvg.select('#training-vis-group')
+                .append('circle')
+                .attr('class', 'moving-data')
+                .attr('r', 8)
+                .attr('cx', 200)
+                .attr('cy', 230);
+                
+            movingData.transition()
+                .duration(1500)
+                .attr('cx', 410)
+                .attr('cy', 100)
+                .remove();
+        }
+        
+        function animateTrainingStep6() {
+            // Show third tree and focus on ensemble
+            trainingVisSvg.select('#tree-3-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Remove second tree data flow
+            trainingVisSvg.select('#data-flow-tree2').remove();
+            
+            // Remove updated predictions
+            trainingVisSvg.select('#updated-predictions')
+                .transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+                
+            // Highlight all trees
+            trainingVisSvg.selectAll('#tree-1-group, #tree-2-group, #tree-3-group').selectAll('circle')
+                .transition()
+                .duration(500)
+                .attr('r', 22)
+                .transition()
+                .duration(500)
+                .attr('r', 20);
+        }
+        
+        function animateTrainingStep7() {
+            // Show final model
+            trainingVisSvg.select('#final-model-section')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Add connections from trees to final model
+            const finalModelFlow = trainingVisSvg.select('#training-vis-group')
+                .append('g')
+                .attr('id', 'final-model-flow');
+                
+            // Draw arrow from trees to final model
+            finalModelFlow.append('path')
+                .attr('d', 'M340,150 C340,200 400,250 400,300')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--secondary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-training)');
+                
+            finalModelFlow.append('path')
+                .attr('d', 'M450,150 C450,200 450,250 450,300')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--secondary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-training)');
+                
+            finalModelFlow.append('path')
+                .attr('d', 'M550,150 C550,200 500,250 500,300')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--secondary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-training)');
+                
+            // Add baseline contribution
+            finalModelFlow.append('path')
+                .attr('d', 'M125,80 C200,80 300,250 400,300')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-training)');
+                
+            // Final model glow effect
+            trainingVisSvg.select('#final-model-section rect')
+                .classed('highlight', true);
+        }
+        
+        // Reset training visualization
+        function resetTrainingVisualization() {
+            trainingVisSvg.selectAll('#data-flow-tree1, #data-flow-tree2, #split-explanation, #updated-predictions, #final-model-flow')
+                .remove();
+                
+            trainingVisSvg.select('#training-baseline-group')
+                .attr('opacity', 1);
+                
+            trainingVisSvg.select('#tree-1-group')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#tree-2-group')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#tree-3-group')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#gradient-section')
+                .attr('opacity', 0);
+                
+            trainingVisSvg.select('#final-model-section')
+                .attr('opacity', 0)
+                .select('rect')
+                .classed('highlight', false);
+                
+            // Reset gradient values
+            trainingVisSvg.selectAll('.gradient-value')
+                .text((d, i) => {
+                    const target = 75 + i * 5;
+                    const initialPred = 78.3;
+                    return `= ${(target - initialPred).toFixed(1)}`;
+                });
+        }
+        
+        // Initialize prediction visualization
+        function initializePredictionVisualization() {
+            const g = predictionVisSvg.append('g')
+                .attr('id', 'prediction-vis-group')
+                .attr('transform', `translate(${config.margin.left},${config.margin.top})`);
+                
+            // Create trained model box
+            const modelG = g.append('g')
+                .attr('id', 'trained-model-group')
+                .attr('transform', 'translate(300, 50)');
+                
+            modelG.append('rect')
+                .attr('width', 200)
+                .attr('height', 100)
+                .attr('rx', 8)
+                .attr('ry', 8)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--secondary)')
+                .attr('stroke-width', 2);
+                
+            modelG.append('text')
+                .attr('x', 100)
+                .attr('y', 30)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Trained LightGBM Model');
+                
+            modelG.append('text')
+                .attr('x', 100)
+                .attr('y', 60)
+                .attr('text-anchor', 'middle')
+                .text('Baseline + λ(Tree1 + Tree2 + Tree3)');
+                
+            // Create test data point
+            const testDataG = g.append('g')
+                .attr('id', 'test-data-group')
+                .attr('transform', 'translate(50, 75)')
+                .attr('opacity', 0);
+                
+            testDataG.append('rect')
+                .attr('width', 180)
+                .attr('height', 80)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2);
+                
+            testDataG.append('text')
+                .attr('x', 90)
+                .attr('y', 25)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('New Data Point');
+                
+            testDataG.append('text')
+                .attr('x', 30)
+                .attr('y', 50)
+                .text('Study Hours:');
+                
+            testDataG.append('text')
+                .attr('x', 120)
+                .attr('y', 50)
+                .attr('font-weight', 'bold')
+                .text('6');
+                
+            testDataG.append('text')
+                .attr('x', 30)
+                .attr('y', 70)
+                .text('Sleep Quality:');
+                
+            testDataG.append('text')
+                .attr('x', 120)
+                .attr('y', 70)
+                .attr('font-weight', 'bold')
+                .text('3');
+                
+            // Create tree traversal visualization
+            const traversalG = g.append('g')
+                .attr('id', 'traversal-group')
+                .attr('transform', 'translate(150, 180)')
+                .attr('opacity', 0);
+                
+            // Draw sample tree for traversal
+            const treeG = traversalG.append('g')
+                .attr('transform', 'translate(0, 0)');
+                
+            treeG.append('text')
+                .attr('x', 150)
+                .attr('y', -20)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Traversing Trees for Prediction');
+                
+            // Draw a simplified tree for traversal demonstration
+            drawDetailedTree(treeG, 150, 50, 300, 150, 1);
+            
+            // Add traversal path
+            treeG.append('path')
+                .attr('id', 'traversal-path')
+                .attr('d', 'M150,50 L250,125 L200,200')
+                .attr('class', 'prediction-path')
+                .attr('opacity', 0);
+                
+            // Create prediction aggregation visualization
+            const predictionG = g.append('g')
+                .attr('id', 'prediction-aggregation-group')
+                .attr('transform', 'translate(550, 200)')
+                .attr('opacity', 0);
+                
+            predictionG.append('rect')
+                .attr('width', 150)
+                .attr('height', 180)
+                .attr('rx', 5)
+                .attr('ry', 5)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--secondary)')
+                .attr('stroke-width', 2);
+                
+            predictionG.append('text')
+                .attr('x', 75)
+                .attr('y', 25)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Prediction Calculation');
+                
+            predictionG.append('text')
+                .attr('x', 20)
+                .attr('y', 60)
+                .text('Baseline:');
+                
+            predictionG.append('text')
+                .attr('x', 110)
+                .attr('y', 60)
+                .attr('font-weight', 'bold')
+                .text('78.3');
+                
+            predictionG.append('text')
+                .attr('x', 20)
+                .attr('y', 85)
+                .text('Tree 1:');
+                
+            predictionG.append('text')
+                .attr('x', 110)
+                .attr('y', 85)
+                .attr('font-weight', 'bold')
+                .text('2.2 × 0.1');
+                
+            predictionG.append('text')
+                .attr('x', 20)
+                .attr('y', 110)
+                .text('Tree 2:');
+                
+            predictionG.append('text')
+                .attr('x', 110)
+                .attr('y', 110)
+                .attr('font-weight', 'bold')
+                .text('-1.4 × 0.1');
+                
+            predictionG.append('text')
+                .attr('x', 20)
+                .attr('y', 135)
+                .text('Tree 3:');
+                
+            predictionG.append('text')
+                .attr('x', 110)
+                .attr('y', 135)
+                .attr('font-weight', 'bold')
+                .text('1.8 × 0.1');
+                
+            predictionG.append('line')
+                .attr('x1', 20)
+                .attr('y1', 145)
+                .attr('x2', 130)
+                .attr('y2', 145)
+                .attr('stroke', '#ccc');
+                
+            predictionG.append('text')
+                .attr('x', 20)
+                .attr('y', 165)
+                .text('Final:');
+                
+            predictionG.append('text')
+                .attr('x', 110)
+                .attr('y', 165)
+                .attr('id', 'final-prediction')
+                .attr('font-weight', 'bold')
+                .text('80.9');
+                
+            // Create final prediction box
+            const finalPredictionG = g.append('g')
+                .attr('id', 'final-prediction-group')
+                .attr('transform', 'translate(250, 350)')
+                .attr('opacity', 0);
+                
+            finalPredictionG.append('rect')
+                .attr('width', 250)
+                .attr('height', 80)
+                .attr('rx', 10)
+                .attr('ry', 10)
+                .attr('fill', 'white')
+                .attr('stroke', 'var(--tertiary)')
+                .attr('stroke-width', 3);
+                
+            finalPredictionG.append('text')
+                .attr('x', 125)
+                .attr('y', 30)
+                .attr('text-anchor', 'middle')
+                .attr('font-weight', 'bold')
+                .text('Predicted Exam Score');
+                
+            finalPredictionG.append('text')
+                .attr('x', 125)
+                .attr('y', 60)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '1.8em')
+                .attr('fill', 'var(--primary)')
+                .text('80.9');
+        }
+        
+        // Prediction visualization step animations
+        function animatePredictionStep0() {
+            // Introduce prediction phase
+            predictionVisSvg.select('#trained-model-group')
+                .attr('opacity', 1);
+                
+            predictionVisSvg.select('#test-data-group')
+                .attr('opacity', 0);
+                
+            predictionVisSvg.select('#traversal-group')
+                .attr('opacity', 0);
+                
+            predictionVisSvg.select('#prediction-aggregation-group')
+                .attr('opacity', 0);
+                
+            predictionVisSvg.select('#final-prediction-group')
+                .attr('opacity', 0);
+        }
+        
+        function animatePredictionStep1() {
+            // Show test data point
+            predictionVisSvg.select('#test-data-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Show data flowing to model
+            const dataFlow = predictionVisSvg.select('#prediction-vis-group')
+                .append('g')
+                .attr('id', 'prediction-data-flow');
+                
+            // Draw arrow from data to model
+            dataFlow.append('path')
+                .attr('d', 'M230,100 C265,100 265,100 300,100')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--primary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-prediction)');
+                
+            // Add arrow marker
+            predictionVisSvg.append('defs')
+                .append('marker')
+                .attr('id', 'arrow-prediction')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 8)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', 'var(--primary)');
+                
+            // Moving data animation
+            const movingData = predictionVisSvg.select('#prediction-vis-group')
+                .append('circle')
+                .attr('class', 'moving-data')
+                .attr('r', 8)
+                .attr('cx', 230)
+                .attr('cy', 100);
+                
+            movingData.transition()
+                .duration(1500)
+                .attr('cx', 300)
+                .remove();
+        }
+        
+        function animatePredictionStep2() {
+            // Show tree traversal visualization
+            predictionVisSvg.select('#traversal-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Animate traversal path
+            setTimeout(() => {
+                predictionVisSvg.select('#traversal-path')
+                    .transition()
+                    .duration(1500)
+                    .attr('opacity', 1);
+                    
+                // Highlight nodes in traversal path
+                const traversalNodes = predictionVisSvg.selectAll('#traversal-group circle');
+                
+                traversalNodes.each(function(d, i) {
+                    if (i === 0 || i === 2 || i === 5) {
+                        d3.select(this)
+                            .transition()
+                            .delay(i * 500)
+                            .duration(300)
+                            .attr('r', 22)
+                            .attr('fill', 'var(--tertiary)')
+                            .transition()
+                            .duration(300)
+                            .attr('r', 20)
+                            .attr('fill', i === 5 ? '#e1f5e9' : 'white');
+                    }
+                });
+            }, 800);
+        }
+        
+        function animatePredictionStep3() {
+            // Show prediction aggregation
+            predictionVisSvg.select('#prediction-aggregation-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Show tree output flowing to prediction calculation
+            const treeOutputFlow = predictionVisSvg.select('#prediction-vis-group')
+                .append('g')
+                .attr('id', 'tree-output-flow');
+                
+            // Draw arrow from trees to prediction calculation
+            treeOutputFlow.append('path')
+                .attr('d', 'M350,200 C450,200 450,250 550,250')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--secondary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-prediction)');
+        }
+        
+        function animatePredictionStep4() {
+            // Highlight prediction calculation
+            predictionVisSvg.select('#prediction-aggregation-group rect')
+                .transition()
+                .duration(500)
+                .attr('stroke-width', 3)
+                .transition()
+                .duration(500)
+                .attr('stroke-width', 2);
+                
+            // Animate final prediction value calculation
+            predictionVisSvg.select('#final-prediction')
+                .transition()
+                .duration(1500)
+                .tween("text", function() {
+                    const i = d3.interpolate(78.3, 80.9);
+                    return function(t) {
+                        this.textContent = i(t).toFixed(1);
+                    };
+                });
+        }
+        
+        function animatePredictionStep5() {
+            // Show final prediction
+            predictionVisSvg.select('#final-prediction-group')
+                .transition()
+                .duration(800)
+                .attr('opacity', 1);
+                
+            // Add flow from calculation to final prediction
+            const finalPredictionFlow = predictionVisSvg.select('#prediction-vis-group')
+                .append('g')
+                .attr('id', 'final-prediction-flow');
+                
+            // Draw arrow from calculation to final prediction
+            finalPredictionFlow.append('path')
+                .attr('d', 'M625,300 C625,325 550,350 500,350')
+                .attr('class', 'data-flow-path')
+                .attr('stroke', 'var(--tertiary)')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrow-prediction)');
+                
+            // Highlight final prediction box
+            predictionVisSvg.select('#final-prediction-group rect')
+                .classed('highlight', true);
+        }
+        
+        // Reset prediction visualization
+        function resetPredictionVisualization() {
+            predictionVisSvg.selectAll('#prediction-data-flow, #tree-output-flow, #final-prediction-flow')
+                .remove();
+                
+            predictionVisSvg.select('#trained-model-group')
+                .attr('opacity', 1);
+                
+            predictionVisSvg.select('#test-data-group')
+                .attr('opacity', 0);
+                
+            predictionVisSvg.select('#traversal-group')
+                .attr('opacity', 0);
+                
+            predictionVisSvg.select('#prediction-aggregation-group')
+                .attr('opacity', 0);
+                
+            predictionVisSvg.select('#final-prediction-group')
+                .attr('opacity', 0)
+                .select('rect')
+                .classed('highlight', false);
+                
+            // Reset traversal path
+            predictionVisSvg.select('#traversal-path')
+                .attr('opacity', 0);
+                
+            // Reset highlighted nodes
+            predictionVisSvg.selectAll('#traversal-group circle')
+                .attr('r', 20)
+                .attr('fill', function() {
+                    return d3.select(this).classed('tree-node-leaf') ? '#e1f5e9' : 'white';
+                });
+        }
+    </script>
+</body>
+</html>
