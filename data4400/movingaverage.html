@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Moving Average Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 40px;
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+        }
+        .slider-value {
+            margin-left: 10px;
+            width: 30px;
+            text-align: center;
+        }
+        .annotation {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            margin-right: 8px;
+        }
+        .raw-data {
+            background-color: #3498db;
+        }
+        .ma-line {
+            background-color: #e67e22;
+        }
+        .ma-window {
+            background-color: rgba(230, 126, 34, 0.2);
+            border: 1px dashed #e67e22;
+            position: absolute;
+            cursor: move;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+        }
+        .data-point {
+            cursor: pointer;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Moving Average (MA)</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">Window Size</label>
+                <div class="slider-container">
+                    <input type="range" id="window-size" min="2" max="10" value="3" class="slider">
+                    <span class="slider-value" id="window-size-value">3</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Noise Level</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="noise" value="low"> Low
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="noise" value="medium" checked> Medium
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="noise" value="high"> High
+                    </label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Visualize Window</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="checkbox" id="show-window" checked> Show Window
+                    </label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <button id="reset-btn">Reset Visualization</button>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color raw-data"></div>
+                <span>Raw Data</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color ma-line"></div>
+                <span>Moving Average</span>
+            </div>
+        </div>
+        
+        <div class="chart-container" id="chart">
+            <div class="tooltip" id="tooltip"></div>
+            <svg width="100%" height="100%" viewBox="0 0 800 400">
+                <!-- Time axis -->
+                <line x1="50" y1="350" x2="750" y2="350" stroke="#333" stroke-width="2"/>
+                
+                <!-- Value axis -->
+                <line x1="50" y1="50" x2="50" y2="350" stroke="#333" stroke-width="2"/>
+                
+                <!-- Axis labels -->
+                <text x="400" y="390" text-anchor="middle">Time</text>
+                <text x="20" y="200" text-anchor="middle" transform="rotate(-90,20,200)">Value</text>
+                
+                <!-- Grid lines -->
+                <line x1="50" y1="200" x2="750" y2="200" stroke="#ddd" stroke-width="1" stroke-dasharray="5,5"/>
+                <line x1="50" y1="100" x2="750" y2="100" stroke="#ddd" stroke-width="1" stroke-dasharray="5,5"/>
+                <line x1="50" y1="300" x2="750" y2="300" stroke="#ddd" stroke-width="1" stroke-dasharray="5,5"/>
+                
+                <!-- Data points will be generated by JavaScript -->
+                <g id="raw-data-points"></g>
+                
+                <!-- Moving average line will be generated by JavaScript -->
+                <g id="ma-line"></g>
+                
+                <!-- Window visualization -->
+                <g id="ma-window"></g>
+                
+                <!-- Arrow marker definition -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+                    </marker>
+                </defs>
+                
+                <!-- Dynamic annotation will be added by JavaScript -->
+                <g id="annotations"></g>
+            </svg>
+        </div>
+        
+        <div class="annotation">
+            <p><strong>Moving Average (MA)</strong> is a technique to smooth out short-term fluctuations in time series data, 
+            highlighting longer-term trends or cycles. It calculates the average of a specific number of consecutive data points 
+            (the "window") as it moves across the dataset.</p>
+            
+            <p><strong>Interactive Features:</strong></p>
+            <ul>
+                <li><strong>Window Size Slider:</strong> Adjust to see how different window sizes affect smoothness and lag.</li>
+                <li><strong>Noise Level:</strong> Experiment with different levels of noise in the raw data.</li>
+                <li><strong>Visualize Window:</strong> See which data points are included in each moving average calculation.</li>
+                <li><strong>Click on Points:</strong> Click on any moving average point to see how it was calculated.</li>
+                <li><strong>Drag Window:</strong> Move the window manually to see how the average changes at different positions.</li>
+            </ul>
+            
+            <p>Try increasing the window size and observe how the line becomes smoother but less responsive to changes. The trade-off between noise reduction and lag is a key consideration when choosing a moving average window size.</p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let rawData = [];
+        let dataPoints = 25;
+        let pointSpacing = 700 / (dataPoints - 1);
+        let startX = 50;
+        let windowSize = 3;
+        let noiseLevel = 'medium';
+        let isDragging = false;
+        let dragOffset = 0;
+        let currentWindowPosition = 0;
+        
+        // Generate initial data
+        function generateData() {
+            rawData = [];
+            let baseValue = 200;
+            let trend = -1;
+            
+            // Set noise multiplier based on selected level
+            let noiseMultiplier = 1;
+            if (noiseLevel === 'low') noiseMultiplier = 0.5;
+            if (noiseLevel === 'high') noiseMultiplier = 2;
+            
+            for (let i = 0; i < dataPoints; i++) {
+                // Add trend, seasonal component, and noise
+                let seasonal = 20 * Math.sin(i / 4);
+                let noise = noiseMultiplier * (Math.random() * 40 - 20);
+                let value = baseValue + (trend * i) + seasonal + noise;
+                
+                // Ensure value stays within reasonable bounds
+                value = Math.max(100, Math.min(300, value));
+                
+                rawData.push({
+                    x: startX + (i * pointSpacing),
+                    y: value,
+                    index: i
+                });
+            }
+        }
+        
+        // Calculate moving average
+        function calculateMA() {
+            const maData = [];
+            
+            for (let i = 0; i <= rawData.length - windowSize; i++) {
+                let sum = 0;
+                let windowData = [];
+                
+                for (let j = 0; j < windowSize; j++) {
+                    sum += rawData[i + j].y;
+                    windowData.push(rawData[i + j]);
+                }
+                
+                const avgValue = sum / windowSize;
+                
+                maData.push({
+                    x: rawData[i + Math.floor(windowSize / 2)].x,
+                    y: avgValue,
+                    index: i + Math.floor(windowSize / 2),
+                    window: windowData
+                });
+            }
+            
+            return maData;
+        }
+        
+        // Update chart visualization
+        function updateChart() {
+            // Get calculated MA data
+            const maData = calculateMA();
+            
+            // Update raw data points
+            let rawDataPointsHTML = '';
+            for (let point of rawData) {
+                rawDataPointsHTML += `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#3498db" class="data-point" data-index="${point.index}"/>`;
+            }
+            document.getElementById('raw-data-points').innerHTML = rawDataPointsHTML;
+            
+            // Create raw data polyline
+            let rawDataPathPoints = rawData.map(point => `${point.x},${point.y}`).join(' ');
+            document.getElementById('raw-data-points').innerHTML += `
+                <polyline points="${rawDataPathPoints}" fill="none" stroke="#3498db" stroke-width="2"/>
+            `;
+            
+            // Update MA line
+            let maPathPoints = maData.map(point => `${point.x},${point.y}`).join(' ');
+            document.getElementById('ma-line').innerHTML = `
+                <polyline points="${maPathPoints}" fill="none" stroke="#e67e22" stroke-width="3"/>
+            `;
+            
+            // Add clickable points on the MA line
+            for (let point of maData) {
+                document.getElementById('ma-line').innerHTML += `
+                    <circle cx="${point.x}" cy="${point.y}" r="5" fill="#e67e22" stroke="#fff" stroke-width="1" 
+                    class="data-point" data-index="${point.index}" data-ma="true" />
+                `;
+            }
+            
+            // Update window visualization based on position
+            updateMAWindow(currentWindowPosition);
+            
+            // Add event listeners to MA points
+            setTimeout(() => {
+                document.querySelectorAll('.data-point[data-ma="true"]').forEach(point => {
+                    point.addEventListener('click', showMACalculation);
+                });
+            }, 0);
+        }
+        
+        // Update the MA window visualization
+        function updateMAWindow(position) {
+            if (!document.getElementById('show-window').checked) {
+                document.getElementById('ma-window').innerHTML = '';
+                return;
+            }
+            
+            const pointIndex = Math.min(Math.max(0, position), rawData.length - windowSize);
+            currentWindowPosition = pointIndex;
+            
+            if (rawData.length < windowSize) return;
+            
+            const startPoint = rawData[pointIndex];
+            const endPoint = rawData[pointIndex + windowSize - 1];
+            
+            let windowData = [];
+            let sum = 0;
+            
+            for (let i = 0; i < windowSize; i++) {
+                windowData.push(rawData[pointIndex + i]);
+                sum += rawData[pointIndex + i].y;
+            }
+            
+            const avgY = sum / windowSize;
+            const middlePointIndex = pointIndex + Math.floor(windowSize / 2);
+            const middlePoint = rawData[middlePointIndex];
+            
+            document.getElementById('ma-window').innerHTML = `
+                <rect x="${startPoint.x - 5}" y="70" width="${endPoint.x - startPoint.x + 10}" height="260" 
+                      class="ma-window" data-position="${pointIndex}" />
+                <circle cx="${middlePoint.x}" cy="${avgY}" r="6" fill="#e67e22" stroke="#fff" stroke-width="2" />
+                <line x1="${middlePoint.x}" y1="70" x2="${middlePoint.x}" y2="330" stroke="#e67e22" 
+                      stroke-width="1" stroke-dasharray="3,3" />
+            `;
+            
+            // Make window draggable
+            const windowElem = document.querySelector('.ma-window');
+            if (windowElem) {
+                windowElem.addEventListener('mousedown', startDrag);
+            }
+        }
+        
+        // Show calculation for an MA point
+        function showMACalculation(event) {
+            const index = parseInt(event.target.getAttribute('data-index'));
+            const maData = calculateMA();
+            const maPoint = maData.find(p => p.index === index);
+            
+            if (!maPoint) return;
+            
+            // Calculate position for tooltip
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.left = (maPoint.x + 10) + 'px';
+            tooltip.style.top = (maPoint.y - 100) + 'px';
+            
+            // Create tooltip content
+            let tooltipContent = '<strong>Moving Average Calculation:</strong><br>';
+            tooltipContent += 'Values: ';
+            
+            for (let i = 0; i < maPoint.window.length; i++) {
+                tooltipContent += Math.round(maPoint.window[i].y);
+                if (i < maPoint.window.length - 1) tooltipContent += ' + ';
+            }
+            
+            tooltipContent += ` = ${Math.round(maPoint.window.reduce((sum, p) => sum + p.y, 0))}<br>`;
+            tooltipContent += `Average: ${Math.round(maPoint.window.reduce((sum, p) => sum + p.y, 0))} / ${windowSize} = ${Math.round(maPoint.y)}`;
+            
+            tooltip.innerHTML = tooltipContent;
+            tooltip.style.display = 'block';
+            
+            // Hide tooltip after 5 seconds
+            setTimeout(() => {
+                tooltip.style.display = 'none';
+            }, 5000);
+            
+            // Highlight the window
+            updateMAWindow(index - Math.floor(windowSize / 2));
+            
+            // Add calculation annotation
+            document.getElementById('annotations').innerHTML = `
+                <text x="${maPoint.x + 20}" y="80" font-size="14" font-weight="bold">Window Size: ${windowSize}</text>
+                <text x="${maPoint.x + 20}" y="100" font-size="14">Average: ${Math.round(maPoint.y)}</text>
+            `;
+        }
+        
+        // Drag handlers for the MA window
+        function startDrag(event) {
+            isDragging = true;
+            const rect = event.target.getBoundingClientRect();
+            dragOffset = event.clientX - rect.left;
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        
+        function drag(event) {
+            if (!isDragging) return;
+            
+            const chartRect = document.getElementById('chart').getBoundingClientRect();
+            const relativeX = event.clientX - chartRect.left - dragOffset;
+            
+            // Convert position to data index
+            const position = Math.round((relativeX - startX) / pointSpacing);
+            
+            // Ensure position is within valid range
+            if (position >= 0 && position <= rawData.length - windowSize) {
+                updateMAWindow(position);
+            }
+        }
+        
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        // Initialize the visualization
+        function init() {
+            // Generate initial data
+            generateData();
+            updateChart();
+            
+            // Set up event listeners
+            document.getElementById('window-size').addEventListener('input', function() {
+                windowSize = parseInt(this.value);
+                document.getElementById('window-size-value').textContent = windowSize;
+                updateChart();
+            });
+            
+            document.querySelectorAll('input[name="noise"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    noiseLevel = this.value;
+                    generateData();
+                    updateChart();
+                });
+            });
+            
+            document.getElementById('show-window').addEventListener('change', function() {
+                updateChart();
+            });
+            
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                windowSize = 3;
+                document.getElementById('window-size').value = 3;
+                document.getElementById('window-size-value').textContent = 3;
+                
+                document.querySelector('input[name="noise"][value="medium"]').checked = true;
+                noiseLevel = 'medium';
+                
+                document.getElementById('show-window').checked = true;
+                
+                document.getElementById('annotations').innerHTML = '';
+                document.getElementById('tooltip').style.display = 'none';
+                
+                currentWindowPosition = 0;
+                
+                generateData();
+                updateChart();
+            });
+        }
+        
+        // Start the visualization when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Prophet Model Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 40px;
+        }
+        .main-plot, .component-plot {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px;
+        }
+        .subplot {
+            height: 150px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .annotation {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            margin-right: 8px;
+        }
+        .historical {
+            background-color: #3498db;
+        }
+        .forecast {
+            background-color: #3498db;
+            border-top: 1px dashed #3498db;
+        }
+        .interval {
+            background-color: #d6eaf8;
+        }
+        .trend {
+            background-color: #2ecc71;
+        }
+        .yearly {
+            background-color: #e74c3c;
+        }
+        .weekly {
+            background-color: #9b59b6;
+        }
+        .holiday {
+            background-color: #f39c12;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+        }
+        .slider-value {
+            margin-left: 10px;
+            width: 30px;
+            text-align: center;
+        }
+        .toggle-btn {
+            padding: 5px 10px;
+            margin-right: 5px;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .toggle-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        .holiday-editor {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .holiday-input {
+            display: flex;
+            gap: 10px;
+        }
+        .holiday-input input {
+            flex: 1;
+            padding: 5px;
+        }
+        .holiday-input button {
+            padding: 5px 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .holiday-list {
+            margin-top: 10px;
+        }
+        .holiday-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .holiday-item button {
+            padding: 2px 5px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Prophet Forecasting Model</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">Forecast Horizon (months)</label>
+                <div class="slider-container">
+                    <input type="range" id="forecast-horizon" min="3" max="24" value="12" class="slider">
+                    <span class="slider-value" id="forecast-horizon-value">12</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Trend Flexibility</label>
+                <div class="slider-container">
+                    <input type="range" id="trend-flexibility" min="1" max="10" value="5" class="slider">
+                    <span class="slider-value" id="trend-flexibility-value">5</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Components</label>
+                <div>
+                    <button class="toggle-btn active" data-component="yearly">Yearly Seasonality</button>
+                    <button class="toggle-btn active" data-component="weekly">Weekly Seasonality</button>
+                    <button class="toggle-btn active" data-component="holidays">Holiday Effects</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Confidence Interval</label>
+                <div>
+                    <button class="toggle-btn active" id="confidence-toggle">Show Interval</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color historical"></div>
+                <span>Historical Data</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color forecast"></div>
+                <span>Forecast</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color interval"></div>
+                <span>Confidence Interval</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color trend"></div>
+                <span>Trend Component</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color yearly"></div>
+                <span>Yearly Seasonality</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color weekly"></div>
+                <span>Weekly Seasonality</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color holiday"></div>
+                <span>Holiday Effect</span>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="main-plot">
+                <h2>Forecast Plot</h2>
+                <div class="tooltip" id="main-tooltip"></div>
+                
+                <svg width="100%" height="400" viewBox="0 0 800 400" id="main-plot-svg">
+                    <!-- Background grid -->
+                    <line x1="50" y1="50" x2="50" y2="350" stroke="#ccc" stroke-width="1"/>
+                    <line x1="50" y1="350" x2="750" y2="350" stroke="#ccc" stroke-width="1"/>
+                    <line x1="50" y1="250" x2="750" y2="250" stroke="#ccc" stroke-width="1" stroke-dasharray="3,3"/>
+                    <line x1="50" y1="150" x2="750" y2="150" stroke="#ccc" stroke-width="1" stroke-dasharray="3,3"/>
+                    
+                    <!-- Axis labels -->
+                    <text x="400" y="390" text-anchor="middle" font-size="14">Time</text>
+                    <text x="20" y="200" text-anchor="middle" transform="rotate(-90,20,200)" font-size="14">Value</text>
+                    
+                    <!-- Content will be dynamically generated -->
+                </svg>
+                
+                <div class="holiday-editor">
+                    <label class="control-label">Add Holiday Event</label>
+                    <div class="holiday-input">
+                        <input type="text" id="holiday-name" placeholder="Name (e.g., Black Friday)">
+                        <input type="number" id="holiday-month" placeholder="Month (1-12)" min="1" max="12">
+                        <input type="number" id="holiday-day" placeholder="Day (1-31)" min="1" max="31">
+                        <button id="add-holiday-btn">Add Holiday</button>
+                    </div>
+                    <div class="holiday-list" id="holiday-list">
+                        <!-- Holiday items will be dynamically added -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="component-plot">
+                <h2>Component Breakdown</h2>
+                <div class="tooltip" id="component-tooltip"></div>
+                
+                <!-- Trend Component -->
+                <div class="subplot" id="trend-subplot">
+                    <svg width="100%" height="100%" viewBox="0 0 800 150">
+                        <!-- Axis -->
+                        <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                        <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                        
+                        <!-- Label -->
+                        <text x="30" y="75" text-anchor="end" font-size="12">Trend</text>
+                        
+                        <!-- Content will be dynamically generated -->
+                    </svg>
+                </div>
+                
+                <!-- Yearly Seasonality Component -->
+                <div class="subplot" id="yearly-subplot">
+                    <svg width="100%" height="100%" viewBox="0 0 800 150">
+                        <!-- Axis -->
+                        <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                        <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                        
+                        <!-- Label -->
+                        <text x="30" y="75" text-anchor="end" font-size="12">Yearly</text>
+                        
+                        <!-- Content will be dynamically generated -->
+                    </svg>
+                </div>
+                
+                <!-- Weekly Seasonality Component -->
+                <div class="subplot" id="weekly-subplot">
+                    <svg width="100%" height="100%" viewBox="0 0 800 150">
+                        <!-- Axis -->
+                        <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                        <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                        
+                        <!-- Label -->
+                        <text x="30" y="75" text-anchor="end" font-size="12">Weekly</text>
+                        
+                        <!-- Content will be dynamically generated -->
+                    </svg>
+                </div>
+                
+                <!-- Holiday Effects Component -->
+                <div class="subplot" id="holiday-subplot">
+                    <svg width="100%" height="100%" viewBox="0 0 800 150">
+                        <!-- Axis -->
+                        <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                        <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                        
+                        <!-- Label -->
+                        <text x="30" y="75" text-anchor="end" font-size="12">Holidays</text>
+                        
+                        <!-- Content will be dynamically generated -->
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="annotation">
+            <p><strong>Prophet</strong> is a forecasting procedure developed by Facebook that excels at producing high-quality forecasts for time series data with strong seasonal effects and several seasons of historical data.</p>
+            
+            <p><strong>Interactive Features:</strong></p>
+            <ul>
+                <li><strong>Forecast Horizon Slider:</strong> Adjust how far into the future the model predicts (3-24 months).</li>
+                <li><strong>Trend Flexibility:</strong> Control how sensitive the trend is to changes in the data (more flexibility = more changepoints).</li>
+                <li><strong>Component Toggles:</strong> Turn on/off yearly seasonality, weekly seasonality, and holiday effects.</li>
+                <li><strong>Confidence Interval:</strong> Toggle the uncertainty bounds around the forecast.</li>
+                <li><strong>Holiday Editor:</strong> Add or remove specific holiday events to see their impact on the forecast.</li>
+            </ul>
+            
+            <p>Experiment with different settings to see how they affect the forecast. Try adding major holidays like Black Friday or New Year's to see how Prophet incorporates these events into its predictions.</p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let forecastHorizon = 12;
+        let trendFlexibility = 5;
+        let showConfidenceInterval = true;
+        let activeComponents = {
+            yearly: true,
+            weekly: true,
+            holidays: true
+        };
+        let holidays = [
+            { name: "Black Friday", month: 11, day: 29, effect: 30 },
+            { name: "Christmas", month: 12, day: 25, effect: 20 }
+        ];
+        
+        // Time configuration
+        const startDate = new Date(2023, 0, 1); // Jan 1, 2023
+        const historicalMonths = 12;
+        const totalTimespan = historicalMonths + forecastHorizon;
+        const pointSpacing = 700 / totalTimespan;
+        const startX = 50;
+        
+        // Generate time points
+        function generateTimePoints() {
+            const points = [];
+            for (let i = 0; i < totalTimespan; i++) {
+                const date = new Date(startDate);
+                date.setMonth(date.getMonth() + i);
+                
+                points.push({
+                    x: startX + (i * pointSpacing),
+                    date: new Date(date),
+                    index: i,
+                    isHistorical: i < historicalMonths
+                });
+            }
+            return points;
+        }
+        
+        // Generate trend component
+        function generateTrend(timePoints) {
+            const trendPoints = [];
+            const initialValue = 250;
+            const finalValue = 100;
+            
+            // Calculate number of changepoints based on flexibility
+            const numChangepoints = Math.max(1, Math.floor(trendFlexibility / 2));
+            const changepoints = [];
+            
+            // Generate random changepoints in historical data
+            for (let i = 0; i < numChangepoints; i++) {
+                const changeIdx = Math.floor(Math.random() * (historicalMonths - 2)) + 1;
+                if (!changepoints.includes(changeIdx)) {
+                    changepoints.push(changeIdx);
+                }
+            }
+            
+            // Sort changepoints
+            changepoints.sort((a, b) => a - b);
+            
+            // Add one more changepoint for forecast saturation
+            const forecastChangepoint = historicalMonths + Math.floor(forecastHorizon / 3);
+            changepoints.push(forecastChangepoint);
+            
+            // Calculate segment slopes
+            const segments = changepoints.length + 1;
+            const segmentLengths = [];
+            
+            // First segment
+            segmentLengths.push(changepoints[0]);
+            
+            // Middle segments
+            for (let i = 0; i < changepoints.length - 1; i++) {
+                segmentLengths.push(changepoints[i + 1] - changepoints[i]);
+            }
+            
+            // Last segment
+            segmentLengths.push(totalTimespan - changepoints[changepoints.length - 1]);
+            
+            // Calculate total drop and distribute it among segments with some randomness
+            const totalDrop = initialValue - finalValue;
+            const segmentDrops = [];
+            let remainingDrop = totalDrop;
+            
+            for (let i = 0; i < segments - 1; i++) {
+                const segmentPortion = Math.random() * 0.8 + 0.1; // 10% to 90%
+                const drop = Math.round(remainingDrop * segmentPortion);
+                segmentDrops.push(drop);
+                remainingDrop -= drop;
+            }
+            
+            // Last segment gets what's left
+            segmentDrops.push(remainingDrop);
+            
+            // Generate trend values
+            let currentIndex = 0;
+            let currentValue = initialValue;
+            
+            for (let i = 0; i < segments; i++) {
+                const segmentLength = segmentLengths[i];
+                const segmentDrop = segmentDrops[i];
+                const segmentSlope = segmentDrop / segmentLength;
+                
+                for (let j = 0; j < segmentLength; j++) {
+                    if (currentIndex >= timePoints.length) break;
+                    
+                    const point = timePoints[currentIndex];
+                    trendPoints.push({
+                        x: point.x,
+                        y: currentValue,
+                        date: point.date,
+                        index: currentIndex,
+                        isHistorical: point.isHistorical,
+                        isChangepoint: changepoints.includes(currentIndex)
+                    });
+                    
+                    currentValue -= segmentSlope;
+                    currentIndex++;
+                }
+            }
+            
+            return {
+                points: trendPoints,
+                changepoints: changepoints.map(idx => timePoints[idx])
+            };
+        }
+        
+        // Generate yearly seasonality
+        function generateYearlySeasonality(timePoints) {
+            const seasonalPoints = [];
+            
+            for (let point of timePoints) {
+                // Create yearly seasonal pattern with summer peak and winter trough
+                const month = point.date.getMonth();
+                // Sinusoidal pattern with peak in July and trough in January
+                const angle = ((month + 5) % 12) / 12 * 2 * Math.PI;
+                const value = 35 * Math.sin(angle);
+                
+                seasonalPoints.push({
+                    x: point.x,
+                    y: 75 + value,
+                    rawValue: value,
+                    date: point.date,
+                    index: point.index,
+                    isHistorical: point.isHistorical,
+                    month: month + 1
+                });
+            }
+            
+            return seasonalPoints;
+        }
+        
+        // Generate weekly seasonality
+        function generateWeeklySeasonality() {
+            const weekdayEffects = [
+                { day: "Mon", effect: -5 },
+                { day: "Tue", effect: -2 },
+                { day: "Wed", effect: 0 },
+                { day: "Thu", effect: 2 },
+                { day: "Fri", effect: 10 },
+                { day: "Sat", effect: 15 },
+                { day: "Sun", effect: 5 }
+            ];
+            
+            return weekdayEffects;
+        }
+        
+        // Generate holiday effects
+        function generateHolidayEffects(timePoints) {
+            const holidayPoints = [];
+            
+            // Check each timepoint for holidays
+            for (let point of timePoints) {
+                const month = point.date.getMonth() + 1;
+                const day = point.date.getDate();
+                
+                const matchedHoliday = holidays.find(h => h.month === month && h.day === day);
+                
+                if (matchedHoliday) {
+                    holidayPoints.push({
+                        x: point.x,
+                        y: 75 - matchedHoliday.effect, // Negative because downward is higher sales
+                        effect: matchedHoliday.effect,
+                        name: matchedHoliday.name,
+                        date: point.date,
+                        index: point.index,
+                        isHistorical: point.isHistorical
+                    });
+                }
+            }
+            
+            return holidayPoints;
+        }
+        
+        // Combine components to generate forecast
+        function generateForecast(trend, yearlySeasonality, weeklyEffects, holidayEffects) {
+            const forecastPoints = [];
+            const confidenceInterval = [];
+            
+            // Generate the series by combining components
+            for (let i = 0; i < trend.points.length; i++) {
+                const point = trend.points[i];
+                let value = point.y;
+                
+                // Add yearly seasonality if active
+                if (activeComponents.yearly && yearlySeasonality[i]) {
+                    value += yearlySeasonality[i].rawValue;
+                }
+                
+                // Add weekly seasonality effect if active (simulated)
+                if (activeComponents.weekly) {
+                    const dayOfWeek = point.date.getDay();
+                    value += weeklyEffects[dayOfWeek].effect;
+                }
+                
+                // Add holiday effect if active
+                if (activeComponents.holidays) {
+                    const holiday = holidayEffects.find(h => 
+                        h.date.getFullYear() === point.date.getFullYear() && 
+                        h.date.getMonth() === point.date.getMonth() && 
+                        h.date.getDate() === point.date.getDate()
+                    );
+                    
+                    if (holiday) {
+                        value += holiday.effect;
+                    }
+                }
+                
+                // Add some noise for historical data
+                if (point.isHistorical) {
+                    value += (Math.random() * 10) - 5;
+                }
+                
+                forecastPoints.push({
+                    x: point.x,
+                    y: value,
+                    date: point.date,
+                    index: i,
+                    isHistorical: point.isHistorical
+                });
+                
+                // Generate confidence interval for forecast points
+                if (!point.isHistorical) {
+                    // Wider interval as we go further into the future
+                    const interval = 10 + (i - historicalMonths) * 2;
+                    
+                    confidenceInterval.push({
+                        x: point.x,
+                        y: value,
+                        upper: value + interval,
+                        lower: value - interval,
+                        date: point.date,
+                        index: i
+                    });
+                }
+            }
+            
+            return {
+                forecast: forecastPoints,
+                confidence: confidenceInterval
+            };
+        }
+        
+        // Format date for display
+        function formatDate(date) {
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+        
+        // Draw the main forecast plot
+        function drawMainPlot(forecast, confidenceInterval, holidayEffects) {
+            const svg = document.getElementById('main-plot-svg');
+            
+            // Clear previous content
+            svg.innerHTML = '';
+            
+            // Add grid lines
+            svg.innerHTML += `
+                <line x1="50" y1="50" x2="50" y2="350" stroke="#ccc" stroke-width="1"/>
+                <line x1="50" y1="350" x2="750" y2="350" stroke="#ccc" stroke-width="1"/>
+                <line x1="50" y1="250" x2="750" y2="250" stroke="#ccc" stroke-width="1" stroke-dasharray="3,3"/>
+                <line x1="50" y1="150" x2="750" y2="150" stroke="#ccc" stroke-width="1" stroke-dasharray="3,3"/>
+                
+                <!-- Axis labels -->
+                <text x="400" y="390" text-anchor="middle" font-size="14">Time</text>
+                <text x="20" y="200" text-anchor="middle" transform="rotate(-90,20,200)" font-size="14">Value</text>
+            `;
+            
+            // Draw confidence interval if enabled
+            if (showConfidenceInterval) {
+                let intervalPath = "M";
+                
+                // Upper bound
+                for (let i = 0; i < confidenceInterval.length; i++) {
+                    const point = confidenceInterval[i];
+                    intervalPath += `${point.x},${point.upper} `;
+                }
+                
+                // Lower bound (in reverse)
+                intervalPath += "L";
+                for (let i = confidenceInterval.length - 1; i >= 0; i--) {
+                    const point = confidenceInterval[i];
+                    intervalPath += `${point.x},${point.lower} `;
+                }
+                
+                intervalPath += "Z";
+                
+                svg.innerHTML += `<path d="${intervalPath}" fill="#d6eaf8"/>`;
+            }
+            
+            // Split historical and forecast data
+            const historical = forecast.filter(p => p.isHistorical);
+            const forecastData = forecast.filter(p => !p.isHistorical);
+            
+            // Draw historical data
+            const historicalPath = historical.map(p => `${p.x},${p.y}`).join(' ');
+            svg.innerHTML += `<polyline points="${historicalPath}" fill="none" stroke="#3498db" stroke-width="3"/>`;
+            
+            // Draw forecast
+            const forecastPath = forecastData.map(p => `${p.x},${p.y}`).join(' ');
+            svg.innerHTML += `<polyline points="${forecastPath}" fill="none" stroke="#3498db" stroke-width="3" stroke-dasharray="5,5"/>`;
+            
+            // Vertical separator for forecast start
+            const forecastStart = forecast[historicalMonths].x;
+            svg.innerHTML += `
+                <line x1="${forecastStart}" y1="50" x2="${forecastStart}" y2="350" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+                <text x="${forecastStart}" y="370" text-anchor="middle" font-size="12">Forecast Start</text>
+            `;
+            
+            // Add time labels
+            const timeLabels = [];
+            for (let i = 0; i < forecast.length; i += 3) {
+                if (i < forecast.length) {
+                    timeLabels.push({
+                        x: forecast[i].x,
+                        date: formatDate(forecast[i].date)
+                    });
+                }
+            }
+            
+            for (let label of timeLabels) {
+                svg.innerHTML += `<text x="${label.x}" y="370" text-anchor="middle" font-size="10">${label.date}</text>`;
+            }
+            
+            // Add holiday markers
+            for (let holiday of holidayEffects) {
+                if (activeComponents.holidays) {
+                    svg.innerHTML += `
+                        <line x1="${holiday.x}" y1="50" x2="${holiday.x}" y2="350" stroke="#f39c12" stroke-width="1"/>
+                        <text x="${holiday.x}" y="40" text-anchor="middle" font-size="10" fill="#f39c12">${holiday.name}</text>
+                    `;
+                }
+            }
+            
+            // Add data points with hover effect
+            for (let point of forecast) {
+                svg.innerHTML += `
+                    <circle cx="${point.x}" cy="${point.y}" r="4" fill="${point.isHistorical ? '#3498db' : '#3498db'}" 
+                            class="data-point" data-index="${point.index}" data-date="${formatDate(point.date)}" 
+                            stroke="#fff" stroke-width="1" opacity="0.7"/>
+                `;
+            }
+        }
+        
+        // Draw the trend component
+        function drawTrendComponent(trend) {
+            const svg = document.querySelector('#trend-subplot svg');
+            
+            // Clear previous content
+            svg.innerHTML = '';
+            
+            // Add axes
+            svg.innerHTML += `
+                <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                <text x="30" y="75" text-anchor="end" font-size="12">Trend</text>
+            `;
+            
+            // Draw trend line
+            const trendPath = trend.points.map(p => `${p.x},${p.y / 4 + 25}`).join(' ');
+            svg.innerHTML += `<polyline points="${trendPath}" fill="none" stroke="#2ecc71" stroke-width="2"/>`;
+            
+            // Add changepoint markers
+            for (let point of trend.points) {
+                if (point.isChangepoint) {
+                    const y = point.y / 4 + 25;
+                    svg.innerHTML += `
+                        <line x1="${point.x}" y1="${y-15}" x2="${point.x}" y2="${y+15}" stroke="#333" stroke-width="1" stroke-dasharray="3,3"/>
+                        <circle cx="${point.x}" cy="${y}" r="3" fill="#333"/>
+                    `;
+                }
+            }
+            
+            // Add annotation for trend flexibility
+            svg.innerHTML += `
+                <text x="650" y="30" text-anchor="middle" font-size="10">Trend Flexibility: ${trendFlexibility}</text>
+                <text x="650" y="45" text-anchor="middle" font-size="10">Changepoints: ${trend.changepoints.length}</text>
+            `;
+        }
+        
+        // Draw the yearly seasonality component
+        function drawYearlyComponent(seasonality) {
+            const svg = document.querySelector('#yearly-subplot svg');
+            
+            // Clear previous content
+            svg.innerHTML = '';
+            
+            // Add axes
+            svg.innerHTML += `
+                <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                <text x="30" y="75" text-anchor="end" font-size="12">Yearly</text>
+            `;
+            
+            if (!activeComponents.yearly) {
+                svg.innerHTML += `<text x="400" y="75" text-anchor="middle" font-size="12" fill="#999">Component disabled</text>`;
+                return;
+            }
+            
+            // Draw seasonality line
+            const seasonalPath = seasonality.map(p => `${p.x},${p.y}`).join(' ');
+            svg.innerHTML += `<polyline points="${seasonalPath}" fill="none" stroke="#e74c3c" stroke-width="2"/>`;
+            
+            // Add month labels
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const firstYear = seasonality.filter(p => p.date.getFullYear() === startDate.getFullYear());
+            
+            for (let i = 0; i < 12; i++) {
+                const point = firstYear.find(p => p.month === i + 1);
+                if (point) {
+                    svg.innerHTML += `<text x="${point.x}" y="140" text-anchor="middle" font-size="9">${months[i]}</text>`;
+                }
+            }
+            
+            // Annotate peaks and troughs
+            const summer = firstYear.find(p => p.month === 7);
+            const winter = firstYear.find(p => p.month === 1);
+            
+            if (summer) {
+                svg.innerHTML += `
+                    <text x="${summer.x}" y="30" text-anchor="middle" font-size="10">Summer Peak</text>
+                    <line x1="${summer.x}" y1="35" x2="${summer.x}" y2="${summer.y}" stroke="#e74c3c" stroke-width="1"/>
+                `;
+            }
+            
+            if (winter) {
+                svg.innerHTML += `
+                    <text x="${winter.x}" y="110" text-anchor="middle" font-size="10">Winter Trough</text>
+                    <line x1="${winter.x}" y1="105" x2="${winter.x}" y2="${winter.y}" stroke="#e74c3c" stroke-width="1"/>
+                `;
+            }
+        }
+        
+        // Draw the weekly seasonality component
+        function drawWeeklyComponent(weeklyEffects) {
+            const svg = document.querySelector('#weekly-subplot svg');
+            
+            // Clear previous content
+            svg.innerHTML = '';
+            
+            // Add axes
+            svg.innerHTML += `
+                <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                <text x="30" y="75" text-anchor="end" font-size="12">Weekly</text>
+            `;
+            
+            if (!activeComponents.weekly) {
+                svg.innerHTML += `<text x="400" y="75" text-anchor="middle" font-size="12" fill="#999">Component disabled</text>`;
+                return;
+            }
+            
+            // Draw weekly bars
+            const barWidth = 50;
+            const barSpacing = 30;
+            const startX = 100;
+            
+            for (let i = 0; i < weeklyEffects.length; i++) {
+                const effect = weeklyEffects[i];
+                const x = startX + (i * (barWidth + barSpacing));
+                const height = Math.abs(effect.effect) * 2;
+                const y = effect.effect > 0 ? 75 - height : 75;
+                
+                svg.innerHTML += `
+                    <rect x="${x}" y="${y}" width="${barWidth}" height="${height}" fill="#9b59b6"/>
+                    <text x="${x + barWidth/2}" y="140" text-anchor="middle" font-size="10">${effect.day}</text>
+                `;
+            }
+            
+            // Add annotation
+            svg.innerHTML += `
+                <text x="640" y="30" text-anchor="middle" font-size="10">Weekend Effect</text>
+                <path d="M640,35 L640,45" stroke="#9b59b6" stroke-width="1"/>
+            `;
+        }
+        
+        // Draw the holiday effects component
+        function drawHolidayComponent(holidayEffects) {
+            const svg = document.querySelector('#holiday-subplot svg');
+            
+            // Clear previous content
+            svg.innerHTML = '';
+            
+            // Add axes
+            svg.innerHTML += `
+                <line x1="50" y1="75" x2="750" y2="75" stroke="#ccc" stroke-width="1"/>
+                <line x1="50" y1="20" x2="50" y2="130" stroke="#ccc" stroke-width="1"/>
+                <text x="30" y="75" text-anchor="end" font-size="12">Holidays</text>
+            `;
+            
+            if (!activeComponents.holidays || holidayEffects.length === 0) {
+                svg.innerHTML += `<text x="400" y="75" text-anchor="middle" font-size="12" fill="#999">
+                    ${!activeComponents.holidays ? 'Component disabled' : 'No holidays defined'}
+                </text>`;
+                return;
+            }
+            
+            // Draw holiday spikes
+            for (let holiday of holidayEffects) {
+                const height = holiday.effect;
+                
+                svg.innerHTML += `
+                    <line x1="${holiday.x}" y1="75" x2="${holiday.x}" y2="${75 - height}" 
+                          stroke="#f39c12" stroke-width="5" ${!holiday.isHistorical ? 'stroke-dasharray="5,5"' : ''}/>
+                    <text x="${holiday.x}" y="${75 - height - 10}" text-anchor="middle" font-size="10">${holiday.name}</text>
+                `;
+            }
+        }
+        
+        // Update the visualization
+        function updateVisualization() {
+            // Generate data
+            const timePoints = generateTimePoints();
+            const trend = generateTrend(timePoints);
+            const yearlySeasonality = generateYearlySeasonality(timePoints);
+            const weeklyEffects = generateWeeklySeasonality();
+            const holidayEffects = generateHolidayEffects(timePoints);
+            
+            // Generate forecast
+            const { forecast, confidence } = generateForecast(
+                trend, 
+                yearlySeasonality, 
+                weeklyEffects, 
+                holidayEffects
+            );
+            
+            // Draw all components
+            drawMainPlot(forecast, confidence, holidayEffects);
+            drawTrendComponent(trend);
+            drawYearlyComponent(yearlySeasonality);
+            drawWeeklyComponent(weeklyEffects);
+            drawHolidayComponent(holidayEffects);
+            
+            // Add tooltips to data points
+            setTimeout(() => {
+                document.querySelectorAll('.data-point').forEach(point => {
+                    point.addEventListener('mouseover', function() {
+                        const tooltip = document.getElementById('main-tooltip');
+                        const date = this.getAttribute('data-date');
+                        tooltip.innerHTML = `Date: ${date}<br>Value: ${Math.round(this.getAttribute('cy'))}`;
+                        tooltip.style.left = (parseInt(this.getAttribute('cx')) + 10) + 'px';
+                        tooltip.style.top = (parseInt(this.getAttribute('cy')) - 40) + 'px';
+                        tooltip.style.display = 'block';
+                    });
+                    
+                    point.addEventListener('mouseout', function() {
+                        document.getElementById('main-tooltip').style.display = 'none';
+                    });
+                });
+            }, 0);
+            
+            // Update holiday list
+            updateHolidayList();
+        }
+        
+        // Update the holiday list display
+        function updateHolidayList() {
+            const list = document.getElementById('holiday-list');
+            list.innerHTML = '';
+            
+            for (let i = 0; i < holidays.length; i++) {
+                const holiday = holidays[i];
+                list.innerHTML += `
+                    <div class="holiday-item">
+                        <span>${holiday.name} (${holiday.month}/${holiday.day})</span>
+                        <button class="remove-holiday" data-index="${i}">Remove</button>
+                    </div>
+                `;
+            }
+            
+            // Add event listeners for remove buttons
+            setTimeout(() => {
+                document.querySelectorAll('.remove-holiday').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        holidays.splice(index, 1);
+                        updateVisualization();
+                    });
+                });
+            }, 0);
+        }
+        
+        // Initialize the visualization
+        function init() {
+            updateVisualization();
+            
+            // Set up event listeners
+            document.getElementById('forecast-horizon').addEventListener('input', function() {
+                forecastHorizon = parseInt(this.value);
+                document.getElementById('forecast-horizon-value').textContent = forecastHorizon;
+                updateVisualization();
+            });
+            
+            document.getElementById('trend-flexibility').addEventListener('input', function() {
+                trendFlexibility = parseInt(this.value);
+                document.getElementById('trend-flexibility-value').textContent = trendFlexibility;
+                updateVisualization();
+            });
+            
+            document.querySelectorAll('.toggle-btn[data-component]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const component = this.getAttribute('data-component');
+                    activeComponents[component] = !activeComponents[component];
+                    this.classList.toggle('active');
+                    updateVisualization();
+                });
+            });
+            
+            document.getElementById('confidence-toggle').addEventListener('click', function() {
+                showConfidenceInterval = !showConfidenceInterval;
+                this.classList.toggle('active');
+                updateVisualization();
+            });
+            
+            document.getElementById('add-holiday-btn').addEventListener('click', function() {
+                const name = document.getElementById('holiday-name').value.trim();
+                const month = parseInt(document.getElementById('holiday-month').value);
+                const day = parseInt(document.getElementById('holiday-day').value);
+                
+                if (name && !isNaN(month) && !isNaN(day) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    holidays.push({
+                        name,
+                        month,
+                        day,
+                        effect: Math.floor(Math.random() * 30) + 10 // Random effect between 10-40
+                    });
+                    
+                    // Clear inputs
+                    document.getElementById('holiday-name').value = '';
+                    document.getElementById('holiday-month').value = '';
+                    document.getElementById('holiday-day').value = '';
+                    
+                    updateVisualization();
+                } else {
+                    alert('Please enter a valid holiday name, month (1-12), and day (1-31).');
+                }
+            });
+        }
+        
+        // Start the visualization when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
