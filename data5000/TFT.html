@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Understanding Temporal Fusion Transformers</title>
+  <!-- Importing a futuristic font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #1a1a1a;
+      --container-bg: #2b2b2b;
+      --text-color: #00FFFF;       /* Neon Cyan */
+      --heading-color: #FF00FF;    /* Neon Magenta */
+      --accent-color: #39FF14;     /* Neon Green */
+      --tab-bg: #333333;
+      --tab-border: #00FFFF;
+    }
+    
+    body {
+      font-family: 'Roboto', sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: var(--bg-color);
+    }
+    
+    h1, h2, h3 {
+      color: var(--heading-color);
+    }
+    
+    .container {
+      background-color: var(--container-bg);
+      border: 1px solid var(--text-color);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px var(--text-color);
+      margin-bottom: 20px;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--text-color);
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background-color: var(--tab-bg);
+      color: var(--text-color);
+      border: 1px solid var(--tab-border);
+      border-radius: 5px 5px 0 0;
+      margin-right: 5px;
+      transition: background-color 0.3s;
+    }
+    
+    .tab.active {
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 15px;
+      border: 1px solid var(--text-color);
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      background-color: var(--container-bg);
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    #tft-diagram svg {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    .component {
+      cursor: pointer;
+      transition: fill 0.3s;
+    }
+    
+    .component:hover {
+      fill-opacity: 0.8;
+    }
+    
+    .tooltip {
+      position: absolute;
+      background-color: rgba(0,0,0,0.8);
+      color: var(--text-color);
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      max-width: 300px;
+      z-index: 100;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .slider-container {
+      margin: 15px 0;
+    }
+    
+    .slider {
+      width: 100%;
+      margin: 10px 0;
+    }
+    
+    button {
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+      border: none;
+      padding: 10px 15px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #66ff66;
+    }
+    
+    .explanation {
+      background-color: rgba(0, 255, 255, 0.1);
+      border-left: 6px solid var(--text-color);
+      padding: 10px 20px;
+      margin: 15px 0;
+    }
+    
+    .step {
+      display: flex;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+    
+    .step-number {
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      margin-right: 20px;
+      flex-shrink: 0;
+    }
+    
+    .step-content {
+      flex-grow: 1;
+    }
+    
+    .timeline {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      position: relative;
+      height: 100px;
+    }
+    
+    .time-point {
+      position: absolute;
+      text-align: center;
+      width: 60px;
+      margin-left: -30px;
+    }
+    
+    .time-point-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: var(--accent-color);
+      margin: 0 auto 5px;
+    }
+    
+    .time-line {
+      position: absolute;
+      width: 100%;
+      height: 4px;
+      background-color: var(--text-color);
+      top: 8px;
+    }
+    
+    #attention-demo {
+      position: relative;
+      height: 400px;
+      border: 1px solid var(--text-color);
+      margin: 20px 0;
+      overflow: hidden;
+    }
+    
+    .data-point {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background-color: #00BFFF;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.5s;
+    }
+    
+    .attention-line {
+      position: absolute;
+      height: 2px;
+      background-color: rgba(255, 20, 147, 0.7);
+      transform-origin: right center;
+      transition: all 0.5s;
+    }
+    
+    .result-point {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background-color: #FFFF00;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.5s;
+    }
+    
+    .example-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    
+    .example-card {
+      flex: 1;
+      min-width: 300px;
+      border: 1px solid var(--text-color);
+      border-radius: 8px;
+      padding: 15px;
+      background-color: var(--container-bg);
+    }
+    
+    .chart-container {
+      width: 100%;
+      height: 250px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Understanding Temporal Fusion Transformers</h1>
+  <p>Stephen's sleepless nights resulted in these diagrams</p>
+  
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="openTab(event, 'intro')">Introduction</button>
+      <button class="tab" onclick="openTab(event, 'components')">TFT Components</button>
+      <button class="tab" onclick="openTab(event, 'attention')">Attention Mechanism</button>
+      <button class="tab" onclick="openTab(event, 'prediction')">Making Predictions</button>
+      <button class="tab" onclick="openTab(event, 'example')">Real World Example</button>
+    </div>
+    
+    <div id="intro" class="tab-content active">
+      <h2>What is Time Series Forecasting?</h2>
+      <p>Time series forecasting is about predicting future values based on past observations. Think of it like predicting:</p>
+      <ul>
+        <li>Tomorrow's weather based on weather patterns from the past few days</li>
+        <li>Next month's sales based on previous months' sales</li>
+        <li>Stock prices for next week based on previous trends</li>
+      </ul>
+      
+      <div class="timeline">
+        <div class="time-line"></div>
+        <div class="time-point" style="left: 10%;">
+          <div class="time-point-dot"></div>
+          <div>Past</div>
+        </div>
+        <div class="time-point" style="left: 30%;">
+          <div class="time-point-dot"></div>
+          <div>Recent</div>
+        </div>
+        <div class="time-point" style="left: 50%;">
+          <div class="time-point-dot"></div>
+          <div>Now</div>
+        </div>
+        <div class="time-point" style="left: 70%;">
+          <div class="time-point-dot" style="background-color: #FFFF00;"></div>
+          <div>Near Future</div>
+        </div>
+        <div class="time-point" style="left: 90%;">
+          <div class="time-point-dot" style="background-color: #FFFF00;"></div>
+          <div>Far Future</div>
+        </div>
+      </div>
+      
+      <h2>The Challenge</h2>
+      <p>Making accurate predictions is tricky because:</p>
+      <ul>
+        <li>Recent events might be more important than older ones</li>
+        <li>Some patterns repeat (like seasonal sales)</li>
+        <li>Special events (like holidays) affect normal patterns</li>
+        <li>Different factors influence the outcome in complex ways</li>
+      </ul>
+      
+      <h2>What is a Temporal Fusion Transformer (TFT)?</h2>
+      <div class="explanation">
+        <p>A Temporal Fusion Transformer is like a super-smart forecasting assistant that:</p>
+        <ul>
+          <li>Learns which past events are most important</li>
+          <li>Considers different types of information</li>
+          <li>Can predict multiple steps into the future</li>
+          <li>Shows you which factors influenced its predictions</li>
+        </ul>
+      </div>
+      
+      <button onclick="openTab(null, 'components')">Next: TFT Components →</button>
+    </div>
+    
+    <div id="components" class="tab-content">
+      <h2>The Building Blocks of a TFT</h2>
+      
+      <div id="tft-diagram">
+        <svg width="900" height="500" viewBox="0 0 900 500">
+          <!-- Background -->
+          <rect width="900" height="500" fill="#2b2b2b" rx="10" ry="10"></rect>
+          
+          <!-- Input Section -->
+          <g id="input-section">
+            <rect x="50" y="50" width="200" height="400" fill="#0033CC" rx="10" ry="10" class="component" data-tooltip="Input data comes in three types: static features, known future inputs, and historical time series."></rect>
+            <text x="150" y="30" text-anchor="middle" font-weight="bold" fill="var(--text-color)">Inputs</text>
+            
+            <!-- Static Features -->
+            <rect x="70" y="80" width="160" height="100" fill="#0055FF" rx="5" ry="5" class="component" data-tooltip="Static features don't change over time (e.g., store location, customer age)"></rect>
+            <text x="150" y="130" text-anchor="middle" fill="var(--text-color)">Static Features</text>
+            
+            <!-- Known Future Inputs -->
+            <rect x="70" y="200" width="160" height="100" fill="#0055FF" rx="5" ry="5" class="component" data-tooltip="Future information we already know (e.g., upcoming holidays, planned promotions)"></rect>
+            <text x="150" y="250" text-anchor="middle" fill="var(--text-color)">Known Future Inputs</text>
+            
+            <!-- Historical Values -->
+            <rect x="70" y="320" width="160" height="100" fill="#0055FF" rx="5" ry="5" class="component" data-tooltip="Past observations of the value we're trying to predict"></rect>
+            <text x="150" y="370" text-anchor="middle" fill="var(--text-color)">Historical Values</text>
+          </g>
+          
+          <!-- Processing Section -->
+          <g id="processing-section">
+            <rect x="300" y="50" width="350" height="400" fill="#2b2b2b" rx="10" ry="10"></rect>
+            <text x="475" y="30" text-anchor="middle" font-weight="bold" fill="var(--text-color)">Processing</text>
+            
+            <!-- Variable Selection -->
+            <rect x="320" y="80" width="310" height="80" fill="#0088FF" rx="5" ry="5" class="component" data-tooltip="Decides which input features are most important for making predictions"></rect>
+            <text x="475" y="120" text-anchor="middle" fill="var(--text-color)">Variable Selection</text>
+            
+            <!-- Temporal Processing -->
+            <rect x="320" y="180" width="310" height="80" fill="#0088FF" rx="5" ry="5" class="component" data-tooltip="Processes time-based patterns like trends and seasonality"></rect>
+            <text x="475" y="220" text-anchor="middle" fill="var(--text-color)">Temporal Processing</text>
+            
+            <!-- Self-Attention Layer -->
+            <rect x="320" y="280" width="310" height="80" fill="#0088FF" rx="5" ry="5" class="component" data-tooltip="The magic of the transformer - focuses on relevant time points"></rect>
+            <text x="475" y="320" text-anchor="middle" fill="var(--text-color)">Self-Attention Layer</text>
+            
+            <!-- Position-wise Feed-forward -->
+            <rect x="320" y="380" width="310" height="50" fill="#0088FF" rx="5" ry="5" class="component" data-tooltip="Final processing to integrate all the information"></rect>
+            <text x="475" y="405" text-anchor="middle" fill="var(--text-color)">Position-wise Feed-forward</text>
+          </g>
+          
+          <!-- Output Section -->
+          <g id="output-section">
+            <rect x="700" y="50" width="150" height="400" fill="#2b2b2b" rx="10" ry="10"></rect>
+            <text x="775" y="30" text-anchor="middle" font-weight="bold" fill="var(--text-color)">Outputs</text>
+            
+            <!-- Predictions -->
+            <rect x="720" y="100" width="110" height="100" fill="#00CCFF" rx="5" ry="5" class="component" data-tooltip="Forecasts for multiple future time points"></rect>
+            <text x="775" y="150" text-anchor="middle" fill="var(--text-color)">Predictions</text>
+            
+            <!-- Interpretability -->
+            <rect x="720" y="230" width="110" height="100" fill="#00CCFF" rx="5" ry="5" class="component" data-tooltip="Explains which inputs contributed most to the predictions"></rect>
+            <text x="775" y="280" text-anchor="middle" fill="var(--text-color)">Feature Importance</text>
+          </g>
+          
+          <!-- Arrows -->
+          <g id="arrows">
+            <!-- Input to Processing -->
+            <path d="M 250 150 L 300 150" stroke="var(--text-color)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"></path>
+            <path d="M 250 250 L 300 250" stroke="var(--text-color)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"></path>
+            <path d="M 250 350 L 300 350" stroke="var(--text-color)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"></path>
+            
+            <!-- Processing Flow -->
+            <path d="M 475 160 L 475 180" stroke="var(--text-color)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"></path>
+            <path d="M 475 260 L 475 280" stroke="var(--text-color)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"></path>
+            <path d="M 475 360 L 475 380" stroke="var(--text-color)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"></path>
+            
+            <!-- Processing to Output -->
+            <path d="M 630 250 L 700 250" stroke="var(--text-color)" stroke-width="2" fill="none" marker-end="url(#arrowhead)"></path>
+          </g>
+          
+          <!-- Arrow Definitions -->
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-color)"></polygon>
+            </marker>
+          </defs>
+        </svg>
+        
+        <div class="tooltip" id="component-tooltip"></div>
+      </div>
+      
+      <h3>How TFT Processes Information:</h3>
+      
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>Gather Different Types of Inputs</h4>
+          <p>The TFT uses three types of information:</p>
+          <ul>
+            <li><strong>Static Features:</strong> Information that doesn't change over time (like a store's location or size)</li>
+            <li><strong>Known Future Inputs:</strong> Information about the future we already know (like upcoming holidays or planned promotions)</li>
+            <li><strong>Historical Values:</strong> What happened in the past (like previous sales or stock prices)</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h4>Filter Out What's Important</h4>
+          <p>The Variable Selection layer identifies which features are most important for making predictions. Not all information is equally valuable!</p>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>Process Time Patterns</h4>
+          <p>The Temporal Processing layer looks for patterns that repeat over time, like seasonal trends.</p>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h4>Use Attention to Focus</h4>
+          <p>The Self-Attention layer is the heart of the Transformer. It decides which historical points are most relevant for prediction. This is like remembering that sales always spike before holidays.</p>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h4>Generate Predictions and Explanations</h4>
+          <p>The model makes predictions for multiple future time points and tells you which features influenced those predictions.</p>
+        </div>
+      </div>
+      
+      <button onclick="openTab(null, 'attention')">Next: Attention Mechanism →</button>
+    </div>
+    
+    <div id="attention" class="tab-content">
+      <h2>The Magic of Attention</h2>
+      <p>The attention mechanism is what makes Transformers special. It helps the model "pay attention" to the most relevant parts of the input data.</p>
+      
+      <div class="explanation">
+        <p><strong>Think of attention like this:</strong> When a teacher looks at a student's past test scores to predict their future performance, they don't weight all tests equally. Recent tests might matter more, but a dramatic improvement or decline on any test is particularly noteworthy.</p>
+      </div>
+      
+      <h3>Interactive Attention Demo</h3>
+      <p>In this demo, the red point represents a prediction. The blue points are historical data. The brightness of the lines shows how much "attention" each past point gets in making the prediction.</p>
+      
+      <div class="slider-container">
+        <label for="pattern-selector">Select pattern:</label>
+        <select id="pattern-selector" onchange="updateAttentionDemo()">
+          <option value="recent">Recent values matter most</option>
+          <option value="seasonal">Seasonal pattern (every 3rd point)</option>
+          <option value="outlier">Outlier detection</option>
+        </select>
+      </div>
+      
+      <div id="attention-demo"></div>
+      
+      <h3>How Attention Works:</h3>
+      <ol>
+        <li>For each time point to be predicted, the model calculates how relevant each historical point is</li>
+        <li>It assigns "attention weights" - higher weights mean more influence</li>
+        <li>The model can attend to points that aren't necessarily recent but are relevant (like same season last year)</li>
+        <li>This allows the model to capture complex patterns beyond simple trends</li>
+      </ol>
+      
+      <div class="explanation">
+        <p><strong>Key Insight:</strong> Unlike simpler forecasting methods, Transformers don't assume that recent points are always most important. They learn which points matter based on the data.</p>
+      </div>
+      
+      <button onclick="openTab(null, 'prediction')">Next: Making Predictions →</button>
+    </div>
+    
+    <div id="prediction" class="tab-content">
+      <h2>How TFT Makes Predictions</h2>
+      
+      <p>Let's use a retail sales forecasting example to see how TFT generates predictions:</p>
+      
+      <div class="example-container">
+        <div class="example-card">
+          <h3>Input: Static Features</h3>
+          <ul>
+            <li>Store Size: Large</li>
+            <li>Store Location: Shopping Mall</li>
+            <li>Store Type: Electronics</li>
+          </ul>
+          <p><em>These never change and help establish baseline expectations</em></p>
+        </div>
+        
+        <div class="example-card">
+          <h3>Input: Known Future Inputs</h3>
+          <ul>
+            <li>Upcoming Holiday: Yes (in 2 days)</li>
+            <li>Planned Promotion: 20% off (starts in 3 days)</li>
+            <li>Weather Forecast: Rainy</li>
+          </ul>
+          <p><em>Information we already know about the future</em></p>
+        </div>
+        
+        <div class="example-card">
+          <h3>Input: Historical Values</h3>
+          <div class="chart-container" id="historical-chart"></div>
+          <p><em>Past sales data (last 30 days)</em></p>
+        </div>
+      </div>
+      
+      <h3>Step 1: Variable Selection</h3>
+      <p>The TFT first decides which variables are most important for this particular prediction:</p>
+      <div id="variable-importance" style="height: 200px;"></div>
+      
+      <h3>Step 2: Attention Mechanism</h3>
+      <p>Next, it determines which historical time points are most relevant:</p>
+      <div id="attention-weights" style="height: 200px;"></div>
+      
+      <h3>Step 3: Generate Future Predictions</h3>
+      <p>Finally, the model produces predictions for multiple future time points:</p>
+      <div id="prediction-chart" style="height: 300px;"></div>
+      
+      <button onclick="openTab(null, 'example')">Next: Real World Example →</button>
+    </div>
+    
+    <div id="example" class="tab-content">
+      <h2>Real World Example: Retail Sales Forecasting</h2>
+      
+      <p>Let's explore how a TFT can help predict sales for a retail store chain.</p>
+      
+      <div class="slider-container">
+        <label for="store-selector">Select store:</label>
+        <select id="store-selector" onchange="updateStoreExample()">
+          <option value="store1">Downtown Store</option>
+          <option value="store2">Mall Store</option>
+          <option value="store3">Suburban Store</option>
+        </select>
+      </div>
+      
+      <div id="store-info">
+        <h3>Store Details:</h3>
+        <div id="store-details"></div>
+      </div>
+      
+      <div id="store-charts">
+        <div id="sales-history-chart" style="height: 300px;"></div>
+        <div id="importance-chart" style="height: 200px;"></div>
+        <div id="prediction-results" style="height: 300px;"></div>
+      </div>
+      
+      <h3>Why TFT Works Well for This Problem</h3>
+      <div class="explanation">
+        <p>The Temporal Fusion Transformer is especially good at retail forecasting because:</p>
+        <ul>
+          <li>It handles multiple types of inputs (store information, promotions, historical sales)</li>
+          <li>It captures seasonal patterns (weekly cycles, holiday effects)</li>
+          <li>It provides interpretable results so business owners can understand what drives sales</li>
+          <li>It can predict multiple days into the future, allowing for better inventory planning</li>
+        </ul>
+      </div>
+      
+      <h3>Conclusion</h3>
+      <p>The Temporal Fusion Transformer provides a powerful way to make time series predictions while also explaining the factors that influence those predictions. This combination of accuracy and interpretability makes it valuable for many real-world applications.</p>
+    </div>
+  </div>
+  
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    // Tab functionality
+    function openTab(evt, tabName) {
+      // Hide all tab content
+      var tabContent = document.getElementsByClassName("tab-content");
+      for (var i = 0; i < tabContent.length; i++) {
+        tabContent[i].classList.remove("active");
+      }
+      
+      // Remove active class from all tabs
+      var tabs = document.getElementsByClassName("tab");
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove("active");
+      }
+      
+      // Show the specific tab and add the active class
+      document.getElementById(tabName).classList.add("active");
+      
+      // If event exists (user clicked), add active class to the clicked button
+      if (evt) {
+        evt.currentTarget.classList.add("active");
+      } else {
+        // Find the tab for the specified tabName and make it active
+        for (var i = 0; i < tabs.length; i++) {
+          if (tabs[i].textContent.toLowerCase().includes(tabName.toLowerCase())) {
+            tabs[i].classList.add("active");
+            break;
+          }
+        }
+      }
+      
+      // Initialize the content of the tab that was just opened
+      if (tabName === 'components') {
+        initializeComponentsTab();
+      } else if (tabName === 'attention') {
+        initializeAttentionTab();
+      } else if (tabName === 'prediction') {
+        initializePredictionTab();
+      } else if (tabName === 'example') {
+        initializeExampleTab();
+      }
+    }
+    
+    // Initialize components tab
+    function initializeComponentsTab() {
+      // Add tooltip functionality
+      const components = document.querySelectorAll('.component');
+      const tooltip = document.getElementById('component-tooltip');
+      
+      components.forEach(component => {
+        component.addEventListener('mouseenter', function(e) {
+          const tooltipText = this.getAttribute('data-tooltip');
+          tooltip.textContent = tooltipText;
+          tooltip.style.visibility = 'visible';
+          tooltip.style.opacity = 1;
+          
+          // Position the tooltip near the mouse
+          const rect = this.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          tooltip.style.left = rect.left + window.pageXOffset + rect.width / 2 - 150 + 'px';
+          tooltip.style.top = rect.top + scrollTop - 50 + 'px';
+        });
+        
+        component.addEventListener('mouseleave', function() {
+          tooltip.style.visibility = 'hidden';
+          tooltip.style.opacity = 0;
+        });
+      });
+    }
+    
+    // Initialize attention tab
+    function initializeAttentionTab() {
+      // Set up the attention demo
+      updateAttentionDemo();
+    }
+    
+    // Updated interactive attention demo function
+    function updateAttentionDemo() {
+    const demoContainer = document.getElementById('attention-demo');
+    demoContainer.innerHTML = ''; // Clear previous demo
+    const width = demoContainer.clientWidth;
+    const height = demoContainer.clientHeight;
+    
+    // Generate data points based on selected pattern
+    const pattern = document.getElementById('pattern-selector').value;
+    const numPoints = 10;
+    const points = [];
+    
+    // Adjusted: Confine points to the left half of the container
+    for (let i = 0; i < numPoints; i++) {
+      let x = 50 + ((width/2) - 50) * (i / (numPoints - 1));
+      let y;
+      
+      if (pattern === 'recent') {
+        y = height / 2 - 20 * i + Math.random() * 20;
+      } else if (pattern === 'seasonal') {
+        y = height / 2 + (i % 3 === 0 ? -80 : 0) + Math.random() * 20;
+      } else if (pattern === 'outlier') {
+        y = height / 2 + (i === 3 ? -120 : 0) + Math.random() * 20;
+      }
+      
+      points.push({ x, y });
+      
+      // Create the data point element
+      const pointElement = document.createElement('div');
+      pointElement.className = 'data-point';
+      pointElement.style.left = x + 'px';
+      pointElement.style.top = y + 'px';
+      demoContainer.appendChild(pointElement);
+    }
+    
+    // Add the prediction point (positioned relative to the last data point)
+    const predictionX = points[points.length - 1].x + 100;
+    let predictionY;
+    
+    if (pattern === 'recent') {
+      predictionY = points[points.length - 1].y - 20;
+    } else if (pattern === 'seasonal') {
+      predictionY = points[points.length - 3].y;
+    } else if (pattern === 'outlier') {
+      const validPoints = points.filter((p, i) => i !== 3);
+      predictionY = validPoints[validPoints.length - 1].y;
+    }
+    
+    const predictionElement = document.createElement('div');
+    predictionElement.className = 'result-point';
+    predictionElement.style.left = predictionX + 'px';
+    predictionElement.style.top = predictionY + 'px';
+    demoContainer.appendChild(predictionElement);
+    
+    // Draw attention lines between data points and the prediction point
+    points.forEach((point, i) => {
+      const attentionLine = document.createElement('div');
+      attentionLine.className = 'attention-line';
+      
+      // Determine attention weight based on the selected pattern
+      let attentionWeight;
+      if (pattern === 'recent') {
+        attentionWeight = i / (points.length - 1);
+      } else if (pattern === 'seasonal') {
+        attentionWeight = (i % 3 === 0) ? 1.0 : 0.2;
+      } else if (pattern === 'outlier') {
+        attentionWeight = (i === 3) ? 0.1 : 0.7;
+      }
+      
+      // Calculate line parameters for the connection
+      const dx = predictionX - point.x;
+      const dy = predictionY - point.y;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      
+      attentionLine.style.width = length + 'px';
+      attentionLine.style.left = point.x + 'px';
+      attentionLine.style.top = point.y + 'px';
+      attentionLine.style.transform = `rotate(${angle}deg)`;
+      attentionLine.style.opacity = attentionWeight;
+      
+      demoContainer.appendChild(attentionLine);
+    });
+  }
+    // Initialize prediction tab
+    function initializePredictionTab() {
+      // Create the historical chart
+      const historicalData = Array(30).fill().map((_, i) => ({
+        day: i + 1,
+        sales: 1000 + 200 * Math.sin(i / 7 * Math.PI) + Math.random() * 100
+      }));
+      
+      const svg = d3.select("#historical-chart")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 600 200");
+        
+      const margin = {top: 20, right: 30, bottom: 30, left: 50};
+      const width = 600 - margin.left - margin.right;
+      const height = 200 - margin.top - margin.bottom;
+      
+      const x = d3.scaleLinear()
+        .domain([1, 30])
+        .range([0, width]);
+        
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(historicalData, d => d.sales) * 1.1])
+        .range([height, 0]);
+        
+      const line = d3.line()
+        .x(d => x(d.day))
+        .y(d => y(d.sales));
+        
+      const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+      g.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).ticks(5));
+        
+      g.append("g")
+        .call(d3.axisLeft(y));
+        
+      g.append("path")
+        .datum(historicalData)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 1.5)
+        .attr("d", line);
+        
+      // Create the variable importance chart
+      const importanceData = [
+        {variable: "Holiday", importance: 0.85},
+        {variable: "Promotion", importance: 0.75},
+        {variable: "Day of Week", importance: 0.65},
+        {variable: "Store Size", importance: 0.45},
+        {variable: "Weather", importance: 0.40},
+        {variable: "Store Type", importance: 0.35}
+      ];
+      
+      const impSvg = d3.select("#variable-importance")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 600 200");
+        
+      const impG = impSvg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+      const xImp = d3.scaleLinear()
+        .domain([0, 1])
+        .range([0, width]);
+        
+      const yImp = d3.scaleBand()
+        .domain(importanceData.map(d => d.variable))
+        .range([0, height])
+        .padding(0.1);
+        
+      impG.selectAll(".bar")
+        .data(importanceData)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", 0)
+        .attr("y", d => yImp(d.variable))
+        .attr("width", d => xImp(d.importance))
+        .attr("height", yImp.bandwidth())
+        .attr("fill", "steelblue");
+        
+      impG.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(xImp).ticks(5));
+        
+      impG.append("g")
+        .call(d3.axisLeft(yImp));
+        
+      // Create the attention weights chart
+      const attentionData = historicalData.map((d, i) => ({
+        day: d.day,
+        weight: i < 26 ? 0.1 + Math.random() * 0.1 : 0.5 + Math.random() * 0.4
+      }));
+      
+      const attSvg = d3.select("#attention-weights")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 600 200");
+        
+      const attG = attSvg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+      const xAtt = d3.scaleLinear()
+        .domain([1, 30])
+        .range([0, width]);
+        
+      const yAtt = d3.scaleLinear()
+        .domain([0, 1])
+        .range([height, 0]);
+        
+      attG.selectAll(".bar")
+        .data(attentionData)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", d => xAtt(d.day) - 3)
+        .attr("y", d => yAtt(d.weight))
+        .attr("width", 6)
+        .attr("height", d => height - yAtt(d.weight))
+        .attr("fill", d => d3.interpolateBlues(d.weight));
+        
+      attG.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(xAtt).ticks(5));
+        
+      attG.append("g")
+        .call(d3.axisLeft(yAtt).ticks(5));
+        
+      // Create the prediction chart
+      const predData = historicalData.slice(-5).map(d => d.sales);
+      const futureData = Array(10).fill().map((_, i) => {
+        if (i === 1) {
+          return 1500; // Holiday spike
+        } else if (i >= 3 && i <= 5) {
+          return 1300; // Promotion effect
+        } else {
+          return 1100 + Math.random() * 100;
+        }
+      });
+      
+      const combinedData = predData.concat(futureData);
+      
+      const predSvg = d3.select("#prediction-chart")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 600 300");
+        
+      const predMargin = {top: 20, right: 30, bottom: 30, left: 50};
+      const predWidth = 600 - predMargin.left - predMargin.right;
+      const predHeight = 300 - predMargin.top - predMargin.bottom;
+      
+      const predG = predSvg.append("g")
+        .attr("transform", `translate(${predMargin.left},${predMargin.top})`);
+        
+      const xPred = d3.scaleLinear()
+        .domain([0, combinedData.length - 1])
+        .range([0, predWidth]);
+        
+      const yPred = d3.scaleLinear()
+        .domain([0, d3.max(combinedData) * 1.1])
+        .range([predHeight, 0]);
+        
+      // Line for historical data
+      predG.append("path")
+        .datum(d3.range(predData.length).map(i => ({x: i, y: predData[i]})))
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 2)
+        .attr("d", d3.line()
+          .x(d => xPred(d.x))
+          .y(d => yPred(d.y)));
+        
+      // Line for predictions
+      predG.append("path")
+        .datum(d3.range(predData.length - 1, predData.length + futureData.length).map(i => ({
+          x: i, 
+          y: i < predData.length ? predData[i] : futureData[i - predData.length]
+        })))
+        .attr("fill", "none")
+        .attr("stroke", "red")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "5,5")
+        .attr("d", d3.line()
+          .x(d => xPred(d.x))
+          .y(d => yPred(d.y)));
+        
+      // Add dots for predictions
+      predG.selectAll(".prediction-dot")
+        .data(d3.range(predData.length, predData.length + futureData.length).map(i => ({
+          x: i, 
+          y: futureData[i - predData.length]
+        })))
+        .enter().append("circle")
+        .attr("class", "prediction-dot")
+        .attr("cx", d => xPred(d.x))
+        .attr("cy", d => yPred(d.y))
+        .attr("r", 4)
+        .attr("fill", "red");
+        
+      // Add vertical line to separate history from predictions
+      predG.append("line")
+        .attr("x1", xPred(predData.length - 1))
+        .attr("x2", xPred(predData.length - 1))
+        .attr("y1", 0)
+        .attr("y2", predHeight)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "5,5");
+        
+      // Add text labels
+      predG.append("text")
+        .attr("x", xPred(2))
+        .attr("y", 20)
+        .text("Historical Data")
+        .attr("fill", "steelblue");
+        
+      predG.append("text")
+        .attr("x", xPred(predData.length + 2))
+        .attr("y", 20)
+        .text("Predictions")
+        .attr("fill", "red");
+        
+      // Add axes
+      predG.append("g")
+        .attr("transform", `translate(0,${predHeight})`)
+        .call(d3.axisBottom(xPred).ticks(5).tickFormat(d => {
+          if (d < predData.length) {
+            return "Day -" + (predData.length - d);
+          } else {
+            return "Day +" + (d - predData.length + 1);
+          }
+        }));
+        
+      predG.append("g")
+        .call(d3.axisLeft(yPred));
+        
+      // Add annotations
+      predG.append("text")
+        .attr("x", xPred(predData.length + 1))
+        .attr("y", yPred(1500) - 10)
+        .text("Holiday")
+        .attr("fill", "red")
+        .attr("font-size", "12px");
+        
+      predG.append("text")
+        .attr("x", xPred(predData.length + 4))
+        .attr("y", yPred(1300) - 10)
+        .text("Promotion")
+        .attr("fill", "red")
+        .attr("font-size", "12px");
+    }
+    
+    // Initialize example tab
+    function initializeExampleTab() {
+      updateStoreExample();
+    }
+    
+    // Update store example based on selected store
+    function updateStoreExample() {
+      const store = document.getElementById('store-selector').value;
+      const storeDetails = document.getElementById('store-details');
+      
+      // Clear previous content
+      document.getElementById('sales-history-chart').innerHTML = '';
+      document.getElementById('importance-chart').innerHTML = '';
+      document.getElementById('prediction-results').innerHTML = '';
+      
+      // Set store details
+      if (store === 'store1') {
+        storeDetails.innerHTML = `
+          <p><strong>Location:</strong> Downtown shopping district</p>
+          <p><strong>Size:</strong> Small (1,500 sq ft)</p>
+          <p><strong>Special Events:</strong> Local festival next week</p>
+        `;
+        createStoreCharts('Downtown Store', 'urban', true);
+      } else if (store === 'store2') {
+        storeDetails.innerHTML = `
+          <p><strong>Location:</strong> Enclosed shopping mall</p>
+          <p><strong>Size:</strong> Medium (3,000 sq ft)</p>
+          <p><strong>Special Events:</strong> Black Friday sale coming up</p>
+        `;
+        createStoreCharts('Mall Store', 'mall', true);
+      } else if (store === 'store3') {
+        storeDetails.innerHTML = `
+          <p><strong>Location:</strong> Suburban strip mall</p>
+          <p><strong>Size:</strong> Large (5,000 sq ft)</p>
+          <p><strong>Special Events:</strong> None upcoming</p>
+        `;
+        createStoreCharts('Suburban Store', 'suburban', false);
+      }
+    }
+    
+    // Create store charts
+    function createStoreCharts(storeName, storeType, hasEvent) {
+      // Create historical sales data
+      const days = 60;
+      const salesData = [];
+      
+      for (let i = 0; i < days; i++) {
+        let sales;
+        
+        if (storeType === 'urban') {
+          // Downtown store has weekday peaks
+          sales = 2000 + 800 * Math.sin((i % 7) / 7 * 2 * Math.PI) + Math.random() * 200;
+        } else if (storeType === 'mall') {
+          // Mall store has weekend peaks
+          sales = 3000 + 1200 * Math.sin(((i % 7) - 2) / 7 * 2 * Math.PI) + Math.random() * 300;
+        } else {
+          // Suburban store is more consistent with mild weekend peaks
+          sales = 4000 + 600 * Math.sin(((i % 7) - 2) / 7 * 2 * Math.PI) + Math.random() * 400;
+        }
+        
+        salesData.push({
+          day: i + 1,
+          sales: sales
+        });
+      }
+      
+      // Create sales history chart
+      const svg = d3.select("#sales-history-chart")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 800 300");
+        
+      const margin = {top: 20, right: 30, bottom: 50, left: 60};
+      const width = 800 - margin.left - margin.right;
+      const height = 300 - margin.top - margin.bottom;
+      
+      const x = d3.scaleLinear()
+        .domain([1, days])
+        .range([0, width]);
+        
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(salesData, d => d.sales) * 1.1])
+        .range([height, 0]);
+        
+      const line = d3.line()
+        .x(d => x(d.day))
+        .y(d => y(d.sales));
+        
+      const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+      g.append("path")
+        .datum(salesData)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 1.5)
+        .attr("d", line);
+        
+      // Add title
+      svg.append("text")
+        .attr("x", width / 2 + margin.left)
+        .attr("y", margin.top / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("font-weight", "bold")
+        .text(`${storeName} - Historical Sales Data`);
+        
+      // Add axes
+      g.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).ticks(10))
+        .append("text")
+        .attr("x", width / 2)
+        .attr("y", 40)
+        .attr("fill", "#00FFFF")
+        .style("font-size", "14px")
+        .text("Day");
+        
+      g.append("g")
+        .call(d3.axisLeft(y))
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -50)
+        .attr("x", -height / 2)
+        .attr("fill", "#00FFFF")
+        .style("font-size", "14px")
+        .attr("text-anchor", "middle")
+        .text("Sales ($)");
+        
+      // Create importance chart
+      const importanceData = [
+        {feature: "Day of Week", importance: storeType === 'urban' ? 0.85 : (storeType === 'mall' ? 0.9 : 0.6)},
+        {feature: "Special Events", importance: hasEvent ? 0.75 : 0.3},
+        {feature: "Weather", importance: storeType === 'mall' ? 0.4 : 0.65},
+        {feature: "Previous Day Sales", importance: 0.55},
+        {feature: "Season", importance: 0.5}
+      ];
+      
+      const impSvg = d3.select("#importance-chart")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 800 200");
+        
+      const impMargin = {top: 40, right: 30, bottom: 50, left: 160};
+      const impWidth = 800 - impMargin.left - impMargin.right;
+      const impHeight = 200 - impMargin.top - impMargin.bottom;
+      
+      const impG = impSvg.append("g")
+        .attr("transform", `translate(${impMargin.left},${impMargin.top})`);
+        
+      const xImp = d3.scaleLinear()
+        .domain([0, 1])
+        .range([0, impWidth]);
+        
+      const yImp = d3.scaleBand()
+        .domain(importanceData.map(d => d.feature))
+        .range([0, impHeight])
+        .padding(0.1);
+        
+      impG.selectAll(".bar")
+        .data(importanceData)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", 0)
+        .attr("y", d => yImp(d.feature))
+        .attr("width", d => xImp(d.importance))
+        .attr("height", yImp.bandwidth())
+        .attr("fill", "steelblue");
+        
+      // Add title
+      impSvg.append("text")
+        .attr("x", impWidth / 2 + impMargin.left)
+        .attr("y", impMargin.top / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("font-weight", "bold")
+        .text("Feature Importance");
+        
+      // Add axes
+      impG.append("g")
+        .attr("transform", `translate(0,${impHeight})`)
+        .call(d3.axisBottom(xImp).ticks(5))
+        .append("text")
+        .attr("x", impWidth / 2)
+        .attr("y", 40)
+        .attr("fill", "#00FFFF")
+        .style("font-size", "14px")
+        .text("Importance Score");
+        
+      impG.append("g")
+        .call(d3.axisLeft(yImp));
+        
+      // Create prediction chart
+      const predDays = 7;
+      const historicalData = salesData.slice(-14);
+      const predictionData = [];
+      
+      for (let i = 0; i < predDays; i++) {
+        let baseSales;
+        
+        if (storeType === 'urban') {
+          // Downtown store predictions
+          baseSales = 2000 + 800 * Math.sin(((days + i) % 7) / 7 * 2 * Math.PI);
+          if (hasEvent && i >= 3 && i <= 5) {
+            baseSales *= 1.3; // Festival effect
+          }
+        } else if (storeType === 'mall') {
+          // Mall store predictions
+          baseSales = 3000 + 1200 * Math.sin((((days + i) % 7) - 2) / 7 * 2 * Math.PI);
+          if (hasEvent && i >= 5) {
+            baseSales *= 1.5; // Black Friday effect
+          }
+        } else {
+          // Suburban store predictions
+          baseSales = 4000 + 600 * Math.sin((((days + i) % 7) - 2) / 7 * 2 * Math.PI);
+        }
+        
+        predictionData.push({
+          day: days + i + 1,
+          sales: baseSales,
+          lower: baseSales * 0.9,
+          upper: baseSales * 1.1
+        });
+      }
+      
+      const predSvg = d3.select("#prediction-results")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 800 300");
+        
+      const predMargin = {top: 40, right: 30, bottom: 50, left: 60};
+      const predWidth = 800 - predMargin.left - predMargin.right;
+      const predHeight = 300 - predMargin.top - predMargin.bottom;
+      
+      const predG = predSvg.append("g")
+        .attr("transform", `translate(${predMargin.left},${predMargin.top})`);
+        
+      const combinedData = historicalData.concat(predictionData);
+      
+      const xPred = d3.scaleLinear()
+        .domain([d3.min(combinedData, d => d.day), d3.max(combinedData, d => d.day)])
+        .range([0, predWidth]);
+        
+      const yPred = d3.scaleLinear()
+        .domain([0, d3.max(combinedData, d => d.upper ? d.upper : d.sales) * 1.1])
+        .range([predHeight, 0]);
+        
+      // Add confidence interval
+      predG.selectAll(".confidence")
+        .data(predictionData)
+        .enter().append("rect")
+        .attr("class", "confidence")
+        .attr("x", d => xPred(d.day) - 5)
+        .attr("y", d => yPred(d.upper))
+        .attr("width", 10)
+        .attr("height", d => yPred(d.lower) - yPred(d.upper))
+        .attr("fill", "rgba(255, 0, 0, 0.2)");
+        
+      // Historical line
+      predG.append("path")
+        .datum(historicalData)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 2)
+        .attr("d", d3.line()
+          .x(d => xPred(d.day))
+          .y(d => yPred(d.sales)));
+        
+      // Prediction line
+      predG.append("path")
+        .datum(predictionData)
+        .attr("fill", "none")
+        .attr("stroke", "red")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "5,5")
+        .attr("d", d3.line()
+          .x(d => xPred(d.day))
+          .y(d => yPred(d.sales)));
+        
+      // Add dots for predictions
+      predG.selectAll(".prediction-dot")
+        .data(predictionData)
+        .enter().append("circle")
+        .attr("class", "prediction-dot")
+        .attr("cx", d => xPred(d.day))
+        .attr("cy", d => yPred(d.sales))
+        .attr("r", 4)
+        .attr("fill", "red");
+        
+      // Add vertical line to separate history from predictions
+      predG.append("line")
+        .attr("x1", xPred(days))
+        .attr("x2", xPred(days))
+        .attr("y1", 0)
+        .attr("y2", predHeight)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "5,5");
+        
+      // Add title
+      predSvg.append("text")
+        .attr("x", predWidth / 2 + predMargin.left)
+        .attr("y", predMargin.top / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("font-weight", "bold")
+        .text(`${storeName} - 7-Day Sales Forecast`);
+        
+      // Add text labels
+      predG.append("text")
+        .attr("x", xPred(historicalData[5].day))
+        .attr("y", 20)
+        .text("Historical Data")
+        .attr("fill", "steelblue");
+        
+      predG.append("text")
+        .attr("x", xPred(predictionData[2].day))
+        .attr("y", 20)
+        .text("Predictions")
+        .attr("fill", "red");
+        
+      // Add axes
+      predG.append("g")
+        .attr("transform", `translate(0,${predHeight})`)
+        .call(d3.axisBottom(xPred).ticks(10))
+        .append("text")
+        .attr("x", predWidth / 2)
+        .attr("y", 40)
+        .attr("fill", "#00FFFF")
+        .style("font-size", "14px")
+        .text("Day");
+        
+      predG.append("g")
+        .call(d3.axisLeft(yPred))
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -50)
+        .attr("x", -predHeight / 2)
+        .attr("fill", "#00FFFF")
+        .style("font-size", "14px")
+        .attr("text-anchor", "middle")
+        .text("Sales ($)");
+        
+      // Add annotations for special events
+      if (hasEvent) {
+        if (storeType === 'urban') {
+          predG.append("text")
+            .attr("x", xPred(days + 4))
+            .attr("y", yPred(2000 * 1.3) - 10)
+            .text("Festival")
+            .attr("fill", "red")
+            .attr("font-size", "12px");
+        } else if (storeType === 'mall') {
+          predG.append("text")
+            .attr("x", xPred(days + 6))
+            .attr("y", yPred(3000 * 1.5) - 10)
+            .text("Black Friday")
+            .attr("fill", "red")
+            .attr("font-size", "12px");
+        }
+      }
+    }
+    
+    // Initialize the first tab
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeComponentsTab();
+    });
+  </script>
+</body>
+</html>
