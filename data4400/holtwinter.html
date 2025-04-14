@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exponential Smoothing Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: right;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        .toggle-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .formula {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-left: 4px solid #4CAF50;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        
+        .tab.active {
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background-color: white;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .highlight {
+            background-color: #ffeb3b;
+            animation: highlight 2s ease-in-out;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: #ffeb3b; }
+            100% { background-color: transparent; }
+        }
+        
+        select, input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .calculation-step {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            transition: background-color 0.5s ease;
+        }
+        
+        .calculation-step.active {
+            background-color: #e3f2fd;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Exponential Smoothing Methods</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="simple">Simple Exponential Smoothing</div>
+            <div class="tab" data-tab="double">Double Exponential Smoothing (Holt)</div>
+            <div class="tab" data-tab="triple">Triple Exponential Smoothing (Holt-Winters)</div>
+        </div>
+        
+        <div id="simple" class="tab-content active">
+            <h2>Simple Exponential Smoothing</h2>
+            <p>Used for time series data with no clear trend or seasonality.</p>
+            
+            <div class="formula">
+                F<sub>t+1</sub> = α × Y<sub>t</sub> + (1 - α) × F<sub>t</sub>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="ses-alpha">Alpha (α): <span id="ses-alpha-value">0.2</span></label><br>
+                    <input type="range" id="ses-alpha" min="0.1" max="0.9" step="0.1" value="0.2">
+                </div>
+                
+                <div class="control-group">
+                    <button id="ses-show-calculations" class="toggle-button">Show Calculations</button>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="ses-chart"></canvas>
+            </div>
+            
+            <div id="ses-calculations" style="display: none;">
+                <h3>Step-by-Step Calculations</h3>
+                <div id="ses-steps"></div>
+                <table id="ses-table">
+                    <thead>
+                        <tr>
+                            <th>Time (t)</th>
+                            <th>Actual Value (Y<sub>t</sub>)</th>
+                            <th>Forecast (F<sub>t</sub>)</th>
+                            <th>Calculation</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="double" class="tab-content">
+            <h2>Double Exponential Smoothing (Holt's Method)</h2>
+            <p>Used for time series data with a trend but no seasonality.</p>
+            
+            <div class="formula">
+                Level: L<sub>t</sub> = α × Y<sub>t</sub> + (1 - α) × (L<sub>t-1</sub> + T<sub>t-1</sub>)<br>
+                Trend: T<sub>t</sub> = β × (L<sub>t</sub> - L<sub>t-1</sub>) + (1 - β) × T<sub>t-1</sub><br>
+                Forecast: F<sub>t+m</sub> = L<sub>t</sub> + m × T<sub>t</sub>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="des-alpha">Alpha (α): <span id="des-alpha-value">0.2</span></label><br>
+                    <input type="range" id="des-alpha" min="0.1" max="0.9" step="0.1" value="0.2">
+                </div>
+                
+                <div class="control-group">
+                    <label for="des-beta">Beta (β): <span id="des-beta-value">0.1</span></label><br>
+                    <input type="range" id="des-beta" min="0.1" max="0.9" step="0.1" value="0.1">
+                </div>
+                
+                <div class="control-group">
+                    <button id="des-show-calculations" class="toggle-button">Show Calculations</button>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="des-chart"></canvas>
+            </div>
+            
+            <div id="des-calculations" style="display: none;">
+                <h3>Step-by-Step Calculations</h3>
+                <div id="des-steps"></div>
+                <table id="des-table">
+                    <thead>
+                        <tr>
+                            <th>Time (t)</th>
+                            <th>Actual Value (Y<sub>t</sub>)</th>
+                            <th>Level (L<sub>t</sub>)</th>
+                            <th>Trend (T<sub>t</sub>)</th>
+                            <th>Forecast (F<sub>t</sub>)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="triple" class="tab-content">
+            <h2>Triple Exponential Smoothing (Holt-Winters Method)</h2>
+            <p>Used for time series data with both trend and seasonality.</p>
+            
+            <div class="formula">
+                Level: L<sub>t</sub> = α × (Y<sub>t</sub> / S<sub>t-s</sub>) + (1 - α) × (L<sub>t-1</sub> + T<sub>t-1</sub>)<br>
+                Trend: T<sub>t</sub> = β × (L<sub>t</sub> - L<sub>t-1</sub>) + (1 - β) × T<sub>t-1</sub><br>
+                Seasonal: S<sub>t</sub> = γ × (Y<sub>t</sub> / L<sub>t</sub>) + (1 - γ) × S<sub>t-s</sub><br>
+                Forecast: F<sub>t+m</sub> = (L<sub>t</sub> + m × T<sub>t</sub>) × S<sub>t-s+m</sub>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="tes-alpha">Alpha (α): <span id="tes-alpha-value">0.2</span></label><br>
+                    <input type="range" id="tes-alpha" min="0.1" max="0.9" step="0.1" value="0.2">
+                </div>
+                
+                <div class="control-group">
+                    <label for="tes-beta">Beta (β): <span id="tes-beta-value">0.1</span></label><br>
+                    <input type="range" id="tes-beta" min="0.1" max="0.9" step="0.1" value="0.1">
+                </div>
+                
+                <div class="control-group">
+                    <label for="tes-gamma">Gamma (γ): <span id="tes-gamma-value">0.1</span></label><br>
+                    <input type="range" id="tes-gamma" min="0.1" max="0.9" step="0.1" value="0.1">
+                </div>
+                
+                <div class="control-group">
+                    <label for="season-length">Season Length: <span id="season-length-value">4</span></label><br>
+                    <select id="season-length">
+                        <option value="4">Quarterly (4)</option>
+                        <option value="12">Monthly (12)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <button id="tes-show-calculations" class="toggle-button">Show Calculations</button>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="tes-chart"></canvas>
+            </div>
+            
+            <div id="tes-calculations" style="display: none;">
+                <h3>Step-by-Step Calculations</h3>
+                <div id="tes-steps"></div>
+                <table id="tes-table">
+                    <thead>
+                        <tr>
+                            <th>Time (t)</th>
+                            <th>Actual Value (Y<sub>t</sub>)</th>
+                            <th>Level (L<sub>t</sub>)</th>
+                            <th>Trend (T<sub>t</sub>)</th>
+                            <th>Seasonal (S<sub>t</sub>)</th>
+                            <th>Forecast (F<sub>t</sub>)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Sample data - Quarterly sales over 3 years with trend and seasonality
+        const data = [
+            { time: 1, value: 100 },
+            { time: 2, value: 110 },
+            { time: 3, value: 140 },
+            { time: 4, value: 170 },
+            { time: 5, value: 120 },
+            { time: 6, value: 130 },
+            { time: 7, value: 160 },
+            { time: 8, value: 190 },
+            { time: 9, value: 140 },
+            { time: 10, value: 150 },
+            { time: 11, value: 180 },
+            { time: 12, value: 210 }
+        ];
+        
+        // Get the values as arrays
+        const times = data.map(d => d.time);
+        const values = data.map(d => d.value);
+        
+        // Initialize UI elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab functionality
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs and tab contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Add active class to current tab and tab content
+                    this.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Simple Exponential Smoothing
+            initSimpleExponentialSmoothing();
+            
+            // Double Exponential Smoothing
+            initDoubleExponentialSmoothing();
+            
+            // Triple Exponential Smoothing
+            initTripleExponentialSmoothing();
+            
+            // Update all visualizations
+            updateAllVisualizations();
+        });
+        
+        // ======= Simple Exponential Smoothing (SES) =======
+        let sesChart;
+        let sesAlpha = 0.2;
+        
+        function initSimpleExponentialSmoothing() {
+            // Handle alpha parameter change
+            const sesAlphaSlider = document.getElementById('ses-alpha');
+            const sesAlphaValue = document.getElementById('ses-alpha-value');
+            
+            sesAlphaSlider.addEventListener('input', function() {
+                sesAlpha = parseFloat(this.value);
+                sesAlphaValue.textContent = sesAlpha.toFixed(1);
+                updateSES();
+            });
+            
+            // Handle show calculations button
+            const sesShowCalcButton = document.getElementById('ses-show-calculations');
+            const sesCalculations = document.getElementById('ses-calculations');
+            
+            sesShowCalcButton.addEventListener('click', function() {
+                const isHidden = sesCalculations.style.display === 'none';
+                sesCalculations.style.display = isHidden ? 'block' : 'none';
+                this.textContent = isHidden ? 'Hide Calculations' : 'Show Calculations';
+                
+                if (isHidden) {
+                    updateSESCalculations();
+                }
+            });
+            
+            // Initialize chart
+            const ctx = document.getElementById('ses-chart').getContext('2d');
+            sesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: times,
+                    datasets: [
+                        {
+                            label: 'Actual',
+                            data: values,
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'SES Forecast',
+                            data: [],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateSES() {
+            const forecast = simpleExponentialSmoothing(values, sesAlpha);
+            
+            // Update chart
+            sesChart.data.datasets[1].data = forecast;
+            sesChart.update();
+            
+            // If calculations are visible, update them
+            const sesCalculations = document.getElementById('ses-calculations');
+            if (sesCalculations.style.display !== 'none') {
+                updateSESCalculations();
+            }
+        }
+        
+        function updateSESCalculations() {
+            const table = document.getElementById('ses-table').getElementsByTagName('tbody')[0];
+            const stepsDiv = document.getElementById('ses-steps');
+            
+            // Clear existing content
+            table.innerHTML = '';
+            stepsDiv.innerHTML = '';
+            
+            // Perform calculations and build table
+            const forecast = [];
+            let previousForecast = values[0]; // Initialize with the first value
+            
+            // Add text explanation
+            stepsDiv.innerHTML = `
+                <div class="calculation-step">
+                    <p>Simple Exponential Smoothing uses a weighted average of the most recent observation and the most recent forecast.</p>
+                    <p>The formula is: F<sub>t+1</sub> = α × Y<sub>t</sub> + (1 - α) × F<sub>t</sub></p>
+                    <p>Where:</p>
+                    <ul>
+                        <li>F<sub>t+1</sub> is the forecast for the next period</li>
+                        <li>Y<sub>t</sub> is the actual value at time t</li>
+                        <li>F<sub>t</sub> is the forecast for the current period</li>
+                        <li>α is the smoothing parameter (0 < α < 1)</li>
+                    </ul>
+                    <p>For the first period, we typically use the first actual value as the initial forecast.</p>
+                </div>
+            `;
+            
+            // First row is special (no forecast)
+            let row = table.insertRow();
+            row.insertCell(0).innerHTML = 1;
+            row.insertCell(1).innerHTML = values[0].toFixed(2);
+            row.insertCell(2).innerHTML = "—";
+            row.insertCell(3).innerHTML = "Initial value";
+            
+            forecast.push(null); // No forecast for the first period
+            
+            for (let t = 1; t < values.length; t++) {
+                const currentForecast = sesAlpha * values[t-1] + (1 - sesAlpha) * previousForecast;
+                forecast.push(currentForecast);
+                
+                // Add to table
+                row = table.insertRow();
+                row.insertCell(0).innerHTML = t + 1;
+                row.insertCell(1).innerHTML = values[t].toFixed(2);
+                row.insertCell(2).innerHTML = currentForecast.toFixed(2);
+                row.insertCell(3).innerHTML = `${sesAlpha} × ${values[t-1].toFixed(2)} + (1 - ${sesAlpha}) × ${previousForecast.toFixed(2)} = ${currentForecast.toFixed(2)}`;
+                
+                previousForecast = currentForecast;
+            }
+            
+            // Add one more forecast for the next period
+            const nextForecast = sesAlpha * values[values.length-1] + (1 - sesAlpha) * previousForecast;
+            forecast.push(nextForecast);
+            
+            row = table.insertRow();
+            row.insertCell(0).innerHTML = values.length + 1;
+            row.insertCell(1).innerHTML = "—";
+            row.insertCell(2).innerHTML = nextForecast.toFixed(2);
+            row.insertCell(3).innerHTML = `${sesAlpha} × ${values[values.length-1].toFixed(2)} + (1 - ${sesAlpha}) × ${previousForecast.toFixed(2)} = ${nextForecast.toFixed(2)}`;
+            
+            // Highlight effect for the table
+            setTimeout(() => {
+                table.querySelectorAll('tr').forEach(row => {
+                    row.classList.add('highlight');
+                });
+            }, 100);
+        }
+        
+        function simpleExponentialSmoothing(values, alpha) {
+            const forecast = [];
+            forecast.push(null); // No forecast for the first period
+            
+            let previousForecast = values[0]; // Initialize with the first value
+            
+            for (let t = 1; t < values.length; t++) {
+                const currentForecast = alpha * values[t-1] + (1 - alpha) * previousForecast;
+                forecast.push(currentForecast);
+                previousForecast = currentForecast;
+            }
+            
+            // Add one more forecast for the next period
+            const nextForecast = alpha * values[values.length-1] + (1 - alpha) * previousForecast;
+            forecast.push(nextForecast);
+            
+            return forecast;
+        }
+        
+        // ======= Double Exponential Smoothing (Holt) =======
+        let desChart;
+        let desAlpha = 0.2;
+        let desBeta = 0.1;
+        
+        function initDoubleExponentialSmoothing() {
+            // Handle alpha parameter change
+            const desAlphaSlider = document.getElementById('des-alpha');
+            const desAlphaValue = document.getElementById('des-alpha-value');
+            
+            desAlphaSlider.addEventListener('input', function() {
+                desAlpha = parseFloat(this.value);
+                desAlphaValue.textContent = desAlpha.toFixed(1);
+                updateDES();
+            });
+            
+            // Handle beta parameter change
+            const desBetaSlider = document.getElementById('des-beta');
+            const desBetaValue = document.getElementById('des-beta-value');
+            
+            desBetaSlider.addEventListener('input', function() {
+                desBeta = parseFloat(this.value);
+                desBetaValue.textContent = desBeta.toFixed(1);
+                updateDES();
+            });
+            
+            // Handle show calculations button
+            const desShowCalcButton = document.getElementById('des-show-calculations');
+            const desCalculations = document.getElementById('des-calculations');
+            
+            desShowCalcButton.addEventListener('click', function() {
+                const isHidden = desCalculations.style.display === 'none';
+                desCalculations.style.display = isHidden ? 'block' : 'none';
+                this.textContent = isHidden ? 'Hide Calculations' : 'Show Calculations';
+                
+                if (isHidden) {
+                    updateDESCalculations();
+                }
+            });
+            
+            // Initialize chart
+            const ctx = document.getElementById('des-chart').getContext('2d');
+            desChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: times.concat([times.length + 1, times.length + 2]),
+                    datasets: [
+                        {
+                            label: 'Actual',
+                            data: values.concat([null, null]),
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'DES Forecast',
+                            data: [],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateDES() {
+            const result = doubleExponentialSmoothing(values, desAlpha, desBeta);
+            
+            // Update chart
+            desChart.data.datasets[1].data = result.forecast;
+            desChart.update();
+            
+            // If calculations are visible, update them
+            const desCalculations = document.getElementById('des-calculations');
+            if (desCalculations.style.display !== 'none') {
+                updateDESCalculations();
+            }
+        }
+        
+        function updateDESCalculations() {
+            const table = document.getElementById('des-table').getElementsByTagName('tbody')[0];
+            const stepsDiv = document.getElementById('des-steps');
+            
+            // Clear existing content
+            table.innerHTML = '';
+            stepsDiv.innerHTML = '';
+            
+            // Add text explanation
+            stepsDiv.innerHTML = `
+                <div class="calculation-step">
+                    <p>Double Exponential Smoothing (Holt's method) extends simple exponential smoothing to handle data with a trend.</p>
+                    <p>The formulas are:</p>
+                    <p>Level: L<sub>t</sub> = α × Y<sub>t</sub> + (1 - α) × (L<sub>t-1</sub> + T<sub>t-1</sub>)</p>
+                    <p>Trend: T<sub>t</sub> = β × (L<sub>t</sub> - L<sub>t-1</sub>) + (1 - β) × T<sub>t-1</sub></p>
+                    <p>Forecast: F<sub>t+m</sub> = L<sub>t</sub> + m × T<sub>t</sub></p>
+                    <p>Where:</p>
+                    <ul>
+                        <li>L<sub>t</sub> is the level (or smoothed value) at time t</li>
+                        <li>T<sub>t</sub> is the trend at time t</li>
+                        <li>Y<sub>t</sub> is the actual value at time t</li>
+                        <li>F<sub>t+m</sub> is the forecast for m periods ahead</li>
+                        <li>α is the level smoothing parameter (0 < α < 1)</li>
+                        <li>β is the trend smoothing parameter (0 < β < 1)</li>
+                    </ul>
+                    <p>For initialization, we typically use:</p>
+                    <ul>
+                        <li>L<sub>0</sub> = Y<sub>1</sub> (first observation)</li>
+                        <li>T<sub>0</sub> = Y<sub>2</sub> - Y<sub>1</sub> (initial trend)</li>
+                    </ul>
+                </div>
+            `;
+            
+            // Perform calculations
+            const result = doubleExponentialSmoothing(values, desAlpha, desBeta, true);
+            
+            // Build table
+            for (let t = 0; t < result.level.length; t++) {
+                const row = table.insertRow();
+                
+                if (t === 0) {
+                    // Initial values
+                    row.insertCell(0).innerHTML = t + 1;
+                    row.insertCell(1).innerHTML = values[t].toFixed(2);
+                    row.insertCell(2).innerHTML = result.level[t].toFixed(2);
+                    row.insertCell(3).innerHTML = result.trend[t].toFixed(2);
+                    row.insertCell(4).innerHTML = "—";
+                } else {
+                    // Regular calculations
+                    row.insertCell(0).innerHTML = t + 1;
+                    row.insertCell(1).innerHTML = t < values.length ? values[t].toFixed(2) : "—";
+                    row.insertCell(2).innerHTML = result.level[t].toFixed(2);
+                    row.insertCell(3).innerHTML = result.trend[t].toFixed(2);
+                    row.insertCell(4).innerHTML = result.forecast[t].toFixed(2);
+                }
+            }
+            
+            // Highlight effect for the table
+            setTimeout(() => {
+                table.querySelectorAll('tr').forEach(row => {
+                    row.classList.add('highlight');
+                });
+            }, 100);
+        }
+        
+        function doubleExponentialSmoothing(values, alpha, beta, includeDetails = false) {
+            const n = values.length;
+            const level = Array(n + 2).fill(0);
+            const trend = Array(n + 2).fill(0);
+            const forecast = Array(n + 2).fill(null);
+            
+            // Initialize level and trend
+            level[0] = values[0];
+            trend[0] = values[1] - values[0];
+            
+            // Calculate level, trend and forecast
+            for (let t = 1; t < n; t++) {
+                // Previous level plus trend is the one-step forecast
+                forecast[t] = level[t-1] + trend[t-1];
+                
+                // Update level
+                level[t] = alpha * values[t] + (1 - alpha) * (level[t-1] + trend[t-1]);
+                
+                // Update trend
+                trend[t] = beta * (level[t] - level[t-1]) + (1 - beta) * trend[t-1];
+            }
+            
+            // Generate forecasts for the next two periods
+            forecast[n] = level[n-1] + trend[n-1];
+            level[n] = level[n-1] + trend[n-1]; // Approximating level for forecast calculation
+            trend[n] = trend[n-1]; // Trend continues unchanged
+            
+            forecast[n+1] = level[n] + trend[n];
+            
+            if (includeDetails) {
+                return { level, trend, forecast };
+            } else {
+                return { forecast };
+            }
+        }
+        
+        // ======= Triple Exponential Smoothing (Holt-Winters) =======
+        let tesChart;
+        let tesAlpha = 0.2;
+        let tesBeta = 0.1;
+        let tesGamma = 0.1;
+        let seasonLength = 4;
+        
+        function initTripleExponentialSmoothing() {
+            // Handle alpha parameter change
+            const tesAlphaSlider = document.getElementById('tes-alpha');
+            const tesAlphaValue = document.getElementById('tes-alpha-value');
+            
+            tesAlphaSlider.addEventListener('input', function() {
+                tesAlpha = parseFloat(this.value);
+                tesAlphaValue.textContent = tesAlpha.toFixed(1);
+                updateTES();
+            });
+            
+            // Handle beta parameter change
+            const tesBetaSlider = document.getElementById('tes-beta');
+            const tesBetaValue = document.getElementById('tes-beta-value');
+            
+            tesBetaSlider.addEventListener('input', function() {
+                tesBeta = parseFloat(this.value);
+                tesBetaValue.textContent = tesBeta.toFixed(1);
+                updateTES();
+            });
+            
+            // Handle gamma parameter change
+            const tesGammaSlider = document.getElementById('tes-gamma');
+            const tesGammaValue = document.getElementById('tes-gamma-value');
+            
+            tesGammaSlider.addEventListener('input', function() {
+                tesGamma = parseFloat(this.value);
+                tesGammaValue.textContent = tesGamma.toFixed(1);
+                updateTES();
+            });
+            
+            // Handle season length change
+            const seasonLengthSelect = document.getElementById('season-length');
+            const seasonLengthValue = document.getElementById('season-length-value');
+            
+            seasonLengthSelect.addEventListener('change', function() {
+                seasonLength = parseInt(this.value);
+                seasonLengthValue.textContent = seasonLength;
+                updateTES();
+            });
+            
+            // Handle show calculations button
+            const tesShowCalcButton = document.getElementById('tes-show-calculations');
+            const tesCalculations = document.getElementById('tes-calculations');
+            
+            tesShowCalcButton.addEventListener('click', function() {
+                const isHidden = tesCalculations.style.display === 'none';
+                tesCalculations.style.display = isHidden ? 'block' : 'none';
+                this.textContent = isHidden ? 'Hide Calculations' : 'Show Calculations';
+                
+                if (isHidden) {
+                    updateTESCalculations();
+                }
+            });
+            
+            // Initialize chart
+            const ctx = document.getElementById('tes-chart').getContext('2d');
+            tesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: times.concat([times.length + 1, times.length + 2, times.length + 3, times.length + 4]),
+                    datasets: [
+                        {
+                            label: 'Actual',
+                            data: values.concat([null, null, null, null]),
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'TES Forecast',
+                            data: [],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateTES() {
+            // Check if we have enough data for the selected season length
+            if (values.length < seasonLength * 2) {
+                alert(`Not enough data for a season length of ${seasonLength}. Need at least ${seasonLength * 2} data points.`);
+                return;
+            }
+            
+            const result = tripleExponentialSmoothing(values, tesAlpha, tesBeta, tesGamma, seasonLength);
+            
+            // Update chart
+            tesChart.data.datasets[1].data = result.forecast;
+            tesChart.update();
+            
+            console.log("TES Forecast data:", result.forecast);
+            
+            // If calculations are visible, update them
+            const tesCalculations = document.getElementById('tes-calculations');
+            if (tesCalculations.style.display !== 'none') {
+                updateTESCalculations();
+            }
+        }
+        
+        function updateTESCalculations() {
+            const table = document.getElementById('tes-table').getElementsByTagName('tbody')[0];
+            const stepsDiv = document.getElementById('tes-steps');
+            
+            // Clear existing content
+            table.innerHTML = '';
+            stepsDiv.innerHTML = '';
+            
+            // Add text explanation
+            stepsDiv.innerHTML = `
+                <div class="calculation-step">
+                    <p>Triple Exponential Smoothing (Holt-Winters method) extends Holt's method to include seasonality.</p>
+                    <p>The formulas for the multiplicative seasonal method are:</p>
+                    <p>Level: L<sub>t</sub> = α × (Y<sub>t</sub> / S<sub>t-s</sub>) + (1 - α) × (L<sub>t-1</sub> + T<sub>t-1</sub>)</p>
+                    <p>Trend: T<sub>t</sub> = β × (L<sub>t</sub> - L<sub>t-1</sub>) + (1 - β) × T<sub>t-1</sub></p>
+                    <p>Seasonal: S<sub>t</sub> = γ × (Y<sub>t</sub> / L<sub>t</sub>) + (1 - γ) × S<sub>t-s</sub></p>
+                    <p>Forecast: F<sub>t+m</sub> = (L<sub>t</sub> + m × T<sub>t</sub>) × S<sub>t-s+m</sub></p>
+                    <p>Where:</p>
+                    <ul>
+                        <li>L<sub>t</sub> is the level at time t</li>
+                        <li>T<sub>t</sub> is the trend at time t</li>
+                        <li>S<sub>t</sub> is the seasonal component at time t</li>
+                        <li>Y<sub>t</sub> is the actual value at time t</li>
+                        <li>F<sub>t+m</sub> is the forecast for m periods ahead</li>
+                        <li>s is the length of seasonality</li>
+                        <li>α is the level smoothing parameter (0 < α < 1)</li>
+                        <li>β is the trend smoothing parameter (0 < β < 1)</li>
+                        <li>γ is the seasonal smoothing parameter (0 < γ < 1)</li>
+                    </ul>
+                    <p>For initialization, we need:</p>
+                    <ul>
+                        <li>Initial level (typically average of first season)</li>
+                        <li>Initial trend (typically average change per period in first season)</li>
+                        <li>Initial seasonal factors (typically value / average for each period in first season)</li>
+                    </ul>
+                </div>
+            `;
+            
+            // Check if we have enough data for the selected season length
+            if (values.length < seasonLength * 2) {
+                stepsDiv.innerHTML += `<div class="calculation-step">
+                    <p><strong>Warning:</strong> Not enough data for a season length of ${seasonLength}. Need at least ${seasonLength * 2} data points.</p>
+                </div>`;
+                return;
+            }
+            
+            // Perform calculations
+            const result = tripleExponentialSmoothing(values, tesAlpha, tesBeta, tesGamma, seasonLength, true);
+            
+            // Build table
+            for (let t = 0; t < result.level.length; t++) {
+                if (t < result.forecast.length) {
+                    const row = table.insertRow();
+                    
+                    row.insertCell(0).innerHTML = t + 1;
+                    row.insertCell(1).innerHTML = t < values.length ? values[t].toFixed(2) : "—";
+                    row.insertCell(2).innerHTML = result.level[t].toFixed(2);
+                    row.insertCell(3).innerHTML = result.trend[t].toFixed(2);
+                    row.insertCell(4).innerHTML = result.seasonal[t].toFixed(2);
+                    row.insertCell(5).innerHTML = result.forecast[t] ? result.forecast[t].toFixed(2) : "—";
+                }
+            }
+            
+            // Highlight effect for the table
+            setTimeout(() => {
+                table.querySelectorAll('tr').forEach(row => {
+                    row.classList.add('highlight');
+                });
+            }, 100);
+        }
+        
+        function tripleExponentialSmoothing(values, alpha, beta, gamma, seasonLength, includeDetails = false) {
+            const n = values.length;
+            const level = Array(n + seasonLength).fill(0);
+            const trend = Array(n + seasonLength).fill(0);
+            const seasonal = Array(n + seasonLength).fill(0);
+            const forecast = Array(n + seasonLength).fill(null);
+            
+            // Initialize level, trend, and seasonal components
+            // Level is average of first season
+            let sum = 0;
+            for (let i = 0; i < seasonLength; i++) {
+                sum += values[i];
+            }
+            level[0] = sum / seasonLength;
+            
+            // Initial trend is average change per period in first season
+            let trendSum = 0;
+            for (let i = 0; i < seasonLength; i++) {
+                if (i + seasonLength < n) {
+                    trendSum += (values[i + seasonLength] - values[i]) / seasonLength;
+                }
+            }
+            trend[0] = trendSum / seasonLength;
+            
+            // Initial seasonal factors
+            for (let i = 0; i < seasonLength; i++) {
+                seasonal[i] = values[i] / level[0];
+            }
+            
+            // We can't forecast the first season
+            for (let i = 0; i < seasonLength; i++) {
+                forecast[i] = null;
+            }
+            
+            // Calculate level, trend, seasonal, and forecast
+            for (let t = seasonLength; t < n; t++) {
+                // Calculate forecast for this period using data from the previous season
+                const s_idx = t % seasonLength;
+                forecast[t] = (level[t-seasonLength] + trend[t-seasonLength] * seasonLength) * seasonal[s_idx];
+                
+                // Update level
+                level[t] = alpha * (values[t] / seasonal[s_idx]) + (1 - alpha) * (level[t-1] + trend[t-1]);
+                
+                // Update trend
+                trend[t] = beta * (level[t] - level[t-1]) + (1 - beta) * trend[t-1];
+                
+                // Update seasonal
+                seasonal[t] = gamma * (values[t] / level[t]) + (1 - gamma) * seasonal[s_idx];
+            }
+            
+            // Generate forecasts for future periods
+            for (let t = n; t < n + seasonLength; t++) {
+                const m = t - n + 1; // Forecast horizon
+                const s_idx = t % seasonLength; // Season index
+                
+                forecast[t] = (level[n-1] + m * trend[n-1]) * seasonal[s_idx];
+                
+                // For completeness, extend level and trend
+                level[t] = level[n-1] + m * trend[n-1];
+                trend[t] = trend[n-1];
+                
+                // Extend seasonal factors (use the same seasonal indices)
+                seasonal[t] = seasonal[s_idx];
+            }
+            
+            if (includeDetails) {
+                return { level, trend, seasonal, forecast };
+            } else {
+                return { forecast };
+            }
+        }
+        
+        // Update all visualizations
+        function updateAllVisualizations() {
+            updateSES();
+            updateDES();
+            updateTES();
+        }
+    </script>
+</body>
+</html>
