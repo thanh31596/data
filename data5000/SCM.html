@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthetic Control Method Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .chart-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .chart {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            position: relative;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+        .explanation {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .controls {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .timeline-container {
+            margin: 20px 0;
+        }
+        .weights-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .weight-control {
+            flex: 1;
+            min-width: 220px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .weight-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .treatment-effect {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 25px 0;
+            padding: 15px;
+            background-color: #f4a460;
+            border-radius: 8px;
+            color: white;
+            transition: background-color 0.5s;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        canvas {
+            background-color: white;
+        }
+        .treatment-line {
+            position: absolute;
+            top: 20px;
+            bottom: 20px;
+            width: 2px;
+            background-color: #fa8072;
+            z-index: 1;
+            transition: left 0.5s;
+        }
+        .concept-list {
+            margin-top: 30px;
+        }
+        .concept-list li {
+            margin-bottom: 10px;
+        }
+        /* Use warm palette colors as specified */
+        .warm-color-1 {
+            color: #ff7f50; /* coral */
+        }
+        .warm-color-2 {
+            color: #ffd700; /* gold */
+        }
+        .warm-color-3 {
+            color: #fa8072; /* salmon */
+        }
+        .warm-color-4 {
+            color: #f4a460; /* sandy brown */
+        }
+    </style>
+</head>
+<body>
+    <h1>Synthetic Control Method Visualization</h1>
+    
+    <div class="explanation">
+        <h3>What is the Synthetic Control Method?</h3>
+        <p>The Synthetic Control Method (SCM) helps us estimate what would have happened if a policy or intervention hadn't occurred. It works by creating a "synthetic" version of the treated entity using a weighted combination of similar untreated entities.</p>
+        <p>In this example, we want to know if a policy in California affected its GDP growth. We create a "Synthetic California" using weighted parts of Nevada, Oregon, and Washington to estimate what would have happened without the policy.</p>
+    </div>
+    
+    <div class="container">
+        <div class="controls">
+            <h3>Timeline</h3>
+            <div class="timeline-container">
+                <p>Drag to change when the policy intervention occurred:</p>
+                <input type="range" min="2" max="5" value="4" class="timeline" id="treatment-period">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <span>2017</span>
+                    <span>2018</span>
+                    <span>2019</span>
+                    <span>2020</span>
+                    <span>2021</span>
+                    <span>2022</span>
+                </div>
+                <p>The policy intervention occurred in: <span id="treatment-year">2020</span></p>
+            </div>
+            
+            <h3>Control Unit Weights</h3>
+            <p>Adjust the weights of each state to build your "Synthetic California":</p>
+            
+            <div class="weights-container">
+                <div class="weight-control">
+                    <div class="weight-label">
+                        <span>Nevada</span>
+                        <span id="nevada-value">30%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="30" id="nevada" class="weight">
+                </div>
+                <div class="weight-control">
+                    <div class="weight-label">
+                        <span>Oregon</span>
+                        <span id="oregon-value">25%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="25" id="oregon" class="weight">
+                </div>
+                <div class="weight-control">
+                    <div class="weight-label">
+                        <span>Washington</span>
+                        <span id="washington-value">45%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="45" id="washington" class="weight">
+                </div>
+            </div>
+            
+            <div class="treatment-effect" id="treatment-effect">
+                Estimated Treatment Effect: +15%
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-row">
+                <div class="chart">
+                    <div class="chart-title">Real vs. Synthetic California Comparison</div>
+                    <div class="treatment-line" id="treatment-line"></div>
+                    <canvas id="comparison-chart" width="600" height="250"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-row">
+                <div class="chart">
+                    <div class="chart-title">Economic Growth of Individual States</div>
+                    <div class="treatment-line" id="treatment-line-states"></div>
+                    <canvas id="states-chart" width="600" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff7f50;"></div>
+                <span>Real California</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ffd700;"></div>
+                <span>Synthetic California</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #fa8072;"></div>
+                <span>Treatment Time</span>
+            </div>
+        </div>
+        
+        <div class="concept-list">
+            <h3>Key SCM Concepts Illustrated:</h3>
+            <ul>
+                <li><strong>Weighted combination:</strong> The synthetic control is built from weighted pieces of control units (states).</li>
+                <li><strong>Pre-treatment fit:</strong> Before the intervention, synthetic California should match real California closely.</li>
+                <li><strong>Post-treatment gap:</strong> After intervention, any gap between real and synthetic California represents the treatment effect.</li>
+                <li><strong>Counterfactual:</strong> Synthetic California shows what would have happened without the intervention.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Base data for our visualization - GDP growth percentages for different states
+        const baseData = {
+            years: [2017, 2018, 2019, 2020, 2021, 2022],
+            california: [5, 10, 15, 20, 35, 38], // Actual data
+            nevada: [5, 8, 14, 18, 22, 25],
+            oregon: [6, 11, 16, 19, 23, 26],
+            washington: [4, 9, 14, 21, 24, 28]
+        };
+        
+        // DOM Elements
+        const treatmentSlider = document.getElementById('treatment-period');
+        const treatmentYear = document.getElementById('treatment-year');
+        const nvSlider = document.getElementById('nevada');
+        const orSlider = document.getElementById('oregon');
+        const waSlider = document.getElementById('washington');
+        const nvValue = document.getElementById('nevada-value');
+        const orValue = document.getElementById('oregon-value');
+        const waValue = document.getElementById('washington-value');
+        const treatmentEffect = document.getElementById('treatment-effect');
+        const treatmentLine = document.getElementById('treatment-line');
+        const treatmentLineStates = document.getElementById('treatment-line-states');
+        
+        // Canvas for charts
+        const comparisonChart = document.getElementById('comparison-chart');
+        const statesChart = document.getElementById('states-chart');
+        const comparisonCtx = comparisonChart.getContext('2d');
+        const statesCtx = statesChart.getContext('2d');
+        
+        // Initialize visualization
+        updateVisualization();
+        
+        // Event listeners
+        treatmentSlider.addEventListener('input', function() {
+            const treatmentPeriod = parseInt(this.value);
+            const yearIndex = treatmentPeriod - 1; // Convert to 0-based index
+            treatmentYear.textContent = baseData.years[yearIndex];
+            updateVisualization();
+        });
+        
+        [nvSlider, orSlider, waSlider].forEach(slider => {
+            slider.addEventListener('input', function() {
+                // Update the weight value display
+                const value = this.value;
+                const id = this.id;
+                document.getElementById(`${id}-value`).textContent = `${value}%`;
+                
+                // Normalize weights to ensure they sum to 100%
+                normalizeWeights(id);
+                
+                // Update the visualization
+                updateVisualization();
+            });
+        });
+        
+        // Function to normalize weights to sum to 100%
+        function normalizeWeights(changedId) {
+            const nvWeight = parseInt(nvSlider.value);
+            const orWeight = parseInt(orSlider.value);
+            const waWeight = parseInt(waSlider.value);
+            
+            const sum = nvWeight + orWeight + waWeight;
+            
+            if (sum === 0) return; // Avoid division by zero
+            
+            // If sum is not 100, adjust the other two sliders proportionally
+            if (sum !== 100) {
+                if (changedId === 'nevada') {
+                    // Adjust Oregon and Washington
+                    const orRatio = orWeight / (orWeight + waWeight || 1);
+                    const remaining = 100 - nvWeight;
+                    
+                    const newOrWeight = Math.round(remaining * orRatio);
+                    const newWaWeight = remaining - newOrWeight;
+                    
+                    orSlider.value = newOrWeight;
+                    waSlider.value = newWaWeight;
+                    orValue.textContent = `${newOrWeight}%`;
+                    waValue.textContent = `${newWaWeight}%`;
+                } 
+                else if (changedId === 'oregon') {
+                    // Adjust Nevada and Washington
+                    const nvRatio = nvWeight / (nvWeight + waWeight || 1);
+                    const remaining = 100 - orWeight;
+                    
+                    const newNvWeight = Math.round(remaining * nvRatio);
+                    const newWaWeight = remaining - newNvWeight;
+                    
+                    nvSlider.value = newNvWeight;
+                    waSlider.value = newWaWeight;
+                    nvValue.textContent = `${newNvWeight}%`;
+                    waValue.textContent = `${newWaWeight}%`;
+                }
+                else if (changedId === 'washington') {
+                    // Adjust Nevada and Oregon
+                    const nvRatio = nvWeight / (nvWeight + orWeight || 1);
+                    const remaining = 100 - waWeight;
+                    
+                    const newNvWeight = Math.round(remaining * nvRatio);
+                    const newOrWeight = remaining - newNvWeight;
+                    
+                    nvSlider.value = newNvWeight;
+                    orSlider.value = newOrWeight;
+                    nvValue.textContent = `${newNvWeight}%`;
+                    orValue.textContent = `${newOrWeight}%`;
+                }
+            }
+        }
+        
+        // Function to update the visualization based on current settings
+        function updateVisualization() {
+            const treatmentPeriod = parseInt(treatmentSlider.value);
+            
+            // Get current weights as percentages
+            const nvWeight = parseInt(nvSlider.value) / 100;
+            const orWeight = parseInt(orSlider.value) / 100;
+            const waWeight = parseInt(waSlider.value) / 100;
+            
+            // Generate synthetic data based on weights
+            const syntheticData = [];
+            
+            for (let i = 0; i < baseData.years.length; i++) {
+                if (i < treatmentPeriod - 1) {
+                    // For pre-treatment periods, synthetic California matches real California
+                    syntheticData.push(baseData.california[i]);
+                } else {
+                    // For periods after treatment, we use weighted combination of control states
+                    const synthetic = nvWeight * baseData.nevada[i] +
+                                    orWeight * baseData.oregon[i] +
+                                    waWeight * baseData.washington[i];
+                    syntheticData.push(synthetic);
+                }
+            }
+            
+            // Position the treatment line
+            const chartWidth = comparisonChart.width;
+            const padding = 40; // Same padding used in chart drawing
+            const chartAreaWidth = chartWidth - (padding * 2);
+            const segmentWidth = chartAreaWidth / (baseData.years.length - 1);
+            
+            // Calculate position including the left padding
+            const treatmentPosition = padding + ((treatmentPeriod - 1) * segmentWidth);
+            
+            // Convert to percentage of container width for CSS positioning
+            const treatmentPercent = (treatmentPosition / chartWidth) * 100;
+            
+            treatmentLine.style.left = `${treatmentPercent}%`;
+            treatmentLineStates.style.left = `${treatmentPercent}%`;
+            
+            // Draw the comparison chart
+            drawComparisonChart(comparisonCtx, baseData.california, syntheticData, baseData.years);
+            
+            // Draw the states chart
+            drawStatesChart(statesCtx, baseData, baseData.years);
+            
+            // Calculate and display treatment effect
+            const lastPeriod = baseData.years.length - 1;
+            const effect = Math.round(baseData.california[lastPeriod] - syntheticData[lastPeriod]);
+            
+            const effectText = effect >= 0 ? 
+                `Estimated Treatment Effect: +${effect}%` : 
+                `Estimated Treatment Effect: ${effect}%`;
+            
+            treatmentEffect.textContent = effectText;
+            treatmentEffect.style.backgroundColor = effect >= 0 ? '#f4a460' : '#fa8072';
+        }
+        
+        // Function to draw the comparison chart
+        function drawComparisonChart(ctx, realData, syntheticData, years) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            const padding = 40;
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding * 2;
+            
+            // Find max value for scaling
+            const maxValue = Math.max(...realData, ...syntheticData) * 1.1;
+            
+            // Draw axes
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw y-axis labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.font = '12px Arial';
+            ctx.fillStyle = '#333';
+            for (let i = 0; i <= 4; i++) {
+                const y = height - padding - (i * chartHeight / 4);
+                const value = Math.round(i * maxValue / 4);
+                ctx.fillText(`${value}%`, padding - 5, y);
+                
+                // Draw horizontal gridlines
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // Draw x-axis labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const segmentWidth = chartWidth / (years.length - 1);
+            for (let i = 0; i < years.length; i++) {
+                const x = padding + i * segmentWidth;
+                ctx.fillText(years[i].toString(), x, height - padding + 5);
+            }
+            
+            // Draw real California line
+            ctx.beginPath();
+            for (let i = 0; i < realData.length; i++) {
+                const x = padding + i * segmentWidth;
+                const y = height - padding - (realData[i] / maxValue * chartHeight);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.strokeStyle = '#ff7f50';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Draw synthetic California line
+            ctx.beginPath();
+            for (let i = 0; i < syntheticData.length; i++) {
+                const x = padding + i * segmentWidth;
+                const y = height - padding - (syntheticData[i] / maxValue * chartHeight);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Add data points
+            for (let i = 0; i < realData.length; i++) {
+                const x = padding + i * segmentWidth;
+                
+                // Real California point
+                const yReal = height - padding - (realData[i] / maxValue * chartHeight);
+                ctx.beginPath();
+                ctx.arc(x, yReal, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ff7f50';
+                ctx.fill();
+                
+                // Synthetic California point
+                const ySynthetic = height - padding - (syntheticData[i] / maxValue * chartHeight);
+                ctx.beginPath();
+                ctx.arc(x, ySynthetic, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ffd700';
+                ctx.fill();
+                
+                // Add value labels
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#333';
+                ctx.fillText(`${Math.round(realData[i])}%`, x, yReal - 15);
+                ctx.fillText(`${Math.round(syntheticData[i])}%`, x, ySynthetic + 15);
+            }
+            
+            // Add chart title
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#333';
+            ctx.fillText('GDP Growth: Real vs. Synthetic California', width / 2, 15);
+        }
+        
+        // Function to draw the states chart
+        function drawStatesChart(ctx, data, years) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            const padding = 40;
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding * 2;
+            
+            // Find max value for scaling
+            const allValues = [
+                ...data.california,
+                ...data.nevada,
+                ...data.oregon,
+                ...data.washington
+            ];
+            const maxValue = Math.max(...allValues) * 1.1;
+            
+            // Draw axes
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw y-axis labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.font = '12px Arial';
+            ctx.fillStyle = '#333';
+            for (let i = 0; i <= 4; i++) {
+                const y = height - padding - (i * chartHeight / 4);
+                const value = Math.round(i * maxValue / 4);
+                ctx.fillText(`${value}%`, padding - 5, y);
+                
+                // Draw horizontal gridlines
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // Draw x-axis labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const segmentWidth = chartWidth / (years.length - 1);
+            for (let i = 0; i < years.length; i++) {
+                const x = padding + i * segmentWidth;
+                ctx.fillText(years[i].toString(), x, height - padding + 5);
+            }
+            
+            // Draw lines for each state
+            const states = ['california', 'nevada', 'oregon', 'washington'];
+            const colors = ['#ff7f50', '#4682b4', '#32cd32', '#9370db'];
+            
+            states.forEach((state, index) => {
+                const stateData = data[state];
+                
+                // Draw line
+                ctx.beginPath();
+                for (let i = 0; i < stateData.length; i++) {
+                    const x = padding + i * segmentWidth;
+                    const y = height - padding - (stateData[i] / maxValue * chartHeight);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.strokeStyle = colors[index];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Add data points
+                for (let i = 0; i < stateData.length; i++) {
+                    const x = padding + i * segmentWidth;
+                    const y = height - padding - (stateData[i] / maxValue * chartHeight);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = colors[index];
+                    ctx.fill();
+                }
+                
+                // Add state label at the end of the line
+                const lastX = padding + (stateData.length - 1) * segmentWidth;
+                const lastY = height - padding - (stateData[stateData.length - 1] / maxValue * chartHeight);
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = colors[index];
+                ctx.fillText(state.charAt(0).toUpperCase() + state.slice(1), lastX + 10, lastY);
+            });
+            
+            // Add chart title
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#333';
+            ctx.fillText('GDP Growth by State', width / 2, 15);
+            
+            // Add mini legend
+            const legendY = padding / 2;
+            const legendX = padding;
+            const spacing = 140;
+            
+            states.forEach((state, index) => {
+                const x = legendX + index * spacing;
+                
+                // Draw color box
+                ctx.fillStyle = colors[index];
+                ctx.fillRect(x, legendY - 5, 10, 10);
+                
+                // Draw state name
+                ctx.font = '11px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#333';
+                ctx.fillText(state.charAt(0).toUpperCase() + state.slice(1), x + 15, legendY);
+            });
+        }
+    </script>
+</body>
+</html>
