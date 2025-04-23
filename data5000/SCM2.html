@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teaching Counterfactual Analysis and Synthetic Control Method</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+            margin-top: 1.5em;
+        }
+        h1 {
+            text-align: center;
+            color: #e67e22;
+            margin-bottom: 1em;
+            padding-bottom: 0.5em;
+            border-bottom: 2px solid #e67e22;
+        }
+        .section {
+            background-color: white;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .callout {
+            background-color: #f8eee7;
+            border-left: 4px solid #e67e22;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .activity {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .example {
+            background-color: #e8f8e8;
+            border-left: 4px solid #2ecc71;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .definition {
+            background-color: #f0e6f4;
+            border-left: 4px solid #9b59b6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            position: relative;
+        }
+        .definition::before {
+            content: "Definition";
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background-color: #9b59b6;
+            color: white;
+            padding: 0 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        .visualbox {
+            width: 100%;
+            height: 300px;
+            background-color: #f5f5f5;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            position: relative;
+        }
+        .timeline {
+            width: 90%;
+            height: 5px;
+            background-color: #ccc;
+            position: absolute;
+            top: 150px;
+        }
+        .timeline::before {
+            content: "Time";
+            position: absolute;
+            right: -30px;
+            top: -10px;
+        }
+        .timeline-point {
+            width: 10px;
+            height: 10px;
+            background-color: #333;
+            border-radius: 50%;
+            position: absolute;
+            top: -2.5px;
+        }
+        .treatment-line {
+            height: 200px;
+            width: 2px;
+            background-color: #e74c3c;
+            position: absolute;
+            top: 50px;
+            left: 50%;
+        }
+        .treatment-label {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        .steps {
+            counter-reset: step;
+            padding-left: 0;
+        }
+        .steps li {
+            list-style-type: none;
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 15px;
+        }
+        .steps li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 30px;
+            height: 30px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .assessment {
+            background-color: #ffeaa7;
+            border-left: 4px solid #fdcb6e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            margin: 30px 0;
+        }
+        .interactive-element {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .slider-container {
+            margin: 20px 0;
+        }
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .weight-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .weight-box {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .weight-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-color: #ddd;
+            position: relative;
+        }
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px;
+            height: 1px;
+            background-color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .effect-arrow {
+            position: absolute;
+            right: 100px;
+            height: 80px;
+            width: 2px;
+            background-color: #333;
+        }
+        .effect-arrow::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -4px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 10px solid #333;
+        }
+        .effect-label {
+            position: absolute;
+            right: 110px;
+            font-weight: bold;
+        }
+        /* Warm palette colors as specified */
+        .warm-color-1 {
+            color: #ff7f50; /* coral */
+        }
+        .warm-color-2 {
+            color: #ffd700; /* gold */
+        }
+        .warm-color-3 {
+            color: #fa8072; /* salmon */
+        }
+        .warm-color-4 {
+            color: #f4a460; /* sandy brown */
+        }
+        .data-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            h2 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Teaching Counterfactual Analysis &amp; Synthetic Control Method</h1>
+    <p style="text-align: center; font-style: italic; margin-bottom: 30px;">A practical guide for making complex causal inference concepts accessible to students</p>
+    
+    <div class="section">
+        <h2>1. Start with Relatable Analogies</h2>
+        <p>Begin with concrete, everyday examples to build intuition before introducing formal concepts.</p>
+        
+        <div class="grid">
+            <div class="card">
+                <h3>The Road Trip Analogy</h3>
+                <div class="callout">
+                    <p>"Imagine you're planning a road trip and have two route options: Highway A or Highway B. You choose Highway A and arrive in 3 hours. But how do you know if that was the best choice? You can't go back in time and try Highway B."</p>
+                </div>
+                <p>This illustrates the <strong>fundamental problem of causal inference</strong> - we never observe both outcomes for the same unit at the same time.</p>
+            </div>
+            
+            <div class="card">
+                <h3>The Recipe Analogy for SCM</h3>
+                <div class="callout">
+                    <p>"Imagine you love a restaurant's secret sauce but can't access their recipe. To recreate it, you mix different proportions of ketchup, mayo, spices, etc. until you match the taste."</p>
+                </div>
+                <p>That's what Synthetic Control Method does - we "recreate" California using 30% Nevada + 45% Washington + 25% Oregon to see what would have happened without a policy intervention.</p>
+            </div>
+        </div>
+        
+        <div class="example">
+            <h3>Classroom Demonstration: Secret Recipe Game</h3>
+            <p>Set up a demonstration with colored water in clear cups:</p>
+            <ol>
+                <li>Show students a "target" purple liquid (represents California)</li>
+                <li>Give them 3 other colored liquids: red (Nevada), blue (Washington), yellow (Oregon)</li>
+                <li>Challenge them to mix these in different proportions to match the target purple</li>
+                <li>Explain: "This is exactly how SCM works - finding the right weights to create a match"</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>2. Visual Storytelling of Counterfactuals</h2>
+        
+        <div class="definition">
+            <p>A <strong>counterfactual</strong> is what would have happened to a treated unit if it had not received the treatment. It's the alternative reality we never observe but need to estimate.</p>
+        </div>
+        
+        <div class="visualbox">
+            <div class="timeline"></div>
+            <div class="timeline-point" style="left: 20%;"></div>
+            <div class="timeline-point" style="left: 40%;"></div>
+            <div class="timeline-point" style="left: 60%;"></div>
+            <div class="timeline-point" style="left: 80%;"></div>
+            <div class="treatment-line" style="left: 50%;"></div>
+            <div class="treatment-label">Treatment</div>
+            
+            <svg width="90%" height="200" style="position: absolute; top: 50px;">
+                <!-- Pre-treatment data -->
+                <polyline points="50,100 90,90 130,110 170,100 210,95" 
+                    stroke="#ff7f50" stroke-width="3" fill="none" />
+                <polyline points="50,100 90,90 130,110 170,100 210,95" 
+                    stroke="#ffd700" stroke-width="3" fill="none" stroke-dasharray="5,5" />
+                
+                <!-- Post-treatment data -->
+                <polyline points="210,95 250,85 290,75 330,65" 
+                    stroke="#ff7f50" stroke-width="3" fill="none" />
+                <polyline points="210,95 250,105 290,110 330,115" 
+                    stroke="#ffd700" stroke-width="3" fill="none" stroke-dasharray="5,5" />
+                
+                <!-- Labels -->
+                <text x="290" y="60" fill="#ff7f50" font-weight="bold">Actual</text>
+                <text x="290" y="130" fill="#ffd700" font-weight="bold">Counterfactual</text>
+                
+                <!-- Treatment effect arrow -->
+                <line x1="330" y1="65" x2="330" y2="115" stroke="#333" stroke-width="1" />
+                <polygon points="330,65 325,75 335,75" fill="#333" />
+                <text x="340" y="90" fill="#333" font-weight="bold">Effect</text>
+            </svg>
+        </div>
+        
+        <div class="callout">
+            <h3>Key Teaching Point:</h3>
+            <p>The treatment effect is the gap between what <strong>actually happened</strong> and what <strong>would have happened</strong> without the intervention. This difference represents the causal impact of the treatment.</p>
+        </div>
+        
+        <h3>Alternative Visual: Bar Chart Comparison</h3>
+        <div class="chart-container">
+            <div style="display: flex; height: 100%; align-items: flex-end; justify-content: center;">
+                <div style="text-align: center; margin: 0 50px;">
+                    <div style="height: 200px; width: 100px; background-color: #ff7f50; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                        $300K
+                    </div>
+                    <p>Actual House<br>Price</p>
+                </div>
+                <div style="text-align: center; margin: 0 50px;">
+                    <div style="height: 160px; width: 100px; background-color: #ffd700; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                        $285K
+                    </div>
+                    <p>Counterfactual<br>(No Fireplace)</p>
+                </div>
+                <div style="position: absolute; left: 55%; top: 30%; transform: translateX(-50%);">
+                    <div style="width: 30px; height: 40px; border-left: 2px solid black; border-right: 2px solid black; display: flex; align-items: center; justify-content: center;">
+                        <span style="background: white; padding: 5px;">+$15K</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Interactive Exploration of Synthetic Control Method</h2>
+        
+        <div class="definition">
+            <p>The <strong>Synthetic Control Method (SCM)</strong> creates a weighted combination of control units that closely resembles the treated unit before intervention, then uses these weights to estimate what would have happened without treatment.</p>
+        </div>
+        
+        <div class="interactive-element">
+            <h3>Build Your Own Synthetic California</h3>
+            <p>Adjust the weights of control states to create a synthetic California that matches the real California's tobacco consumption before the policy:</p>
+            
+            <div class="slider-container">
+                <label for="nevada-slider">Nevada: <span id="nevada-value">30</span>%</label>
+                <input type="range" id="nevada-slider" class="slider" min="0" max="100" value="30">
+            </div>
+            
+            <div class="slider-container">
+                <label for="oregon-slider">Oregon: <span id="oregon-value">25</span>%</label>
+                <input type="range" id="oregon-slider" class="slider" min="0" max="100" value="25">
+            </div>
+            
+            <div class="slider-container">
+                <label for="washington-slider">Washington: <span id="washington-value">45</span>%</label>
+                <input type="range" id="washington-slider" class="slider" min="0" max="100" value="45">
+            </div>
+            
+            <div class="weight-display">
+                <div class="weight-box">
+                    <div class="weight-label">Nevada</div>
+                    <div id="nv-display">30%</div>
+                </div>
+                <div class="weight-box">
+                    <div class="weight-label">Oregon</div>
+                    <div id="or-display">25%</div>
+                </div>
+                <div class="weight-box">
+                    <div class="weight-label">Washington</div>
+                    <div id="wa-display">45%</div>
+                </div>
+            </div>
+            
+            <div class="visualbox" style="height: 400px; margin-top: 30px;">
+                <div style="position: relative; width: 90%; height: 350px;">
+                    <!-- X-axis -->
+                    <div style="position: absolute; bottom: 50px; left: 50px; right: 50px; height: 2px; background-color: #333;"></div>
+                    <!-- X-axis labels -->
+                    <div style="position: absolute; bottom: 30px; left: 50px; text-align: center;">1980</div>
+                    <div style="position: absolute; bottom: 30px; left: 190px; text-align: center;">1985</div>
+                    <div style="position: absolute; bottom: 30px; left: 330px; text-align: center;">1990</div>
+                    <div style="position: absolute; bottom: 30px; left: 470px; text-align: center;">1995</div>
+                    <div style="position: absolute; bottom: 30px; left: 610px; text-align: center;">2000</div>
+
+                    <!-- Y-axis -->
+                    <div style="position: absolute; bottom: 50px; left: 50px; width: 2px; height: 250px; background-color: #333;"></div>
+                    <!-- Y-axis labels -->
+                    <div style="position: absolute; left: 20px; bottom: 46px;">0</div>
+                    <div style="position: absolute; left: 20px; bottom: 96px;">50</div>
+                    <div style="position: absolute; left: 20px; bottom: 146px;">100</div>
+                    <div style="position: absolute; left: 20px; bottom: 196px;">150</div>
+                    <div style="position: absolute; left: 20px; bottom: 246px;">200</div>
+                    <div style="position: absolute; left: 20px; bottom: 296px;">250</div>
+
+                    <!-- Treatment line -->
+                    <div style="position: absolute; bottom: 50px; left: 330px; width: 2px; height: 250px; background-color: #fa8072; stroke-dasharray: 5,5;"></div>
+                    <div style="position: absolute; left: 330px; bottom: 310px; text-align: center; color: #fa8072; font-weight: bold;">Policy Implemented (1988)</div>
+
+                    <!-- Real California line (pre-treatment) -->
+                    <div style="position: absolute; bottom: 200px; left: 50px; width: 280px; height: 3px; background-color: #ff7f50;"></div>
+                    <!-- Real California line (post-treatment) -->
+                    <div style="position: absolute; bottom: 200px; left: 330px; width: 80px; height: 3px; background-color: #ff7f50; transform: rotate(-10deg); transform-origin: left;"></div>
+                    <div style="position: absolute; bottom: 120px; left: 410px; width: 200px; height: 3px; background-color: #ff7f50; transform: rotate(-20deg); transform-origin: left;"></div>
+
+                    <!-- Synthetic California line (pre-treatment) -->
+                    <div style="position: absolute; bottom: 200px; left: 50px; width: 280px; height: 3px; background-color: #ffd700; stroke-dasharray: 5,5;"></div>
+                    <!-- Synthetic California line (post-treatment) -->
+                    <div style="position: absolute; bottom: 200px; left: 330px; width: 80px; height: 3px; background-color: #ffd700; transform: rotate(-3deg); transform-origin: left; stroke-dasharray: 5,5;"></div>
+                    <div style="position: absolute; bottom: 190px; left: 410px; width: 200px; height: 3px; background-color: #ffd700; transform: rotate(-2deg); transform-origin: left; stroke-dasharray: 5,5;"></div>
+
+                    <!-- Effect arrow -->
+                    <div style="position: absolute; bottom: 120px; left: 610px; width: 2px; height: 70px; background-color: #333;"></div>
+                    <div style="position: absolute; bottom: 155px; left: 620px; text-align: left; font-weight: bold;">Effect:<br>-80 packs<br>per capita</div>
+
+                    <!-- Legend -->
+                    <div style="position: absolute; top: 20px; left: 50px; display: flex; align-items: center;">
+                        <div style="width: 20px; height: 3px; background-color: #ff7f50; margin-right: 5px;"></div>
+                        <span>Real California</span>
+                    </div>
+                    <div style="position: absolute; top: 20px; left: 200px; display: flex; align-items: center;">
+                        <div style="width: 20px; height: 3px; background-color: #ffd700; margin-right: 5px;"></div>
+                        <span>Synthetic California</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="treatment-effect" style="text-align: center; font-weight: bold; margin-top: 15px; padding: 10px; background-color: #f4a460; color: white; border-radius: 5px;">
+                Estimated Treatment Effect: 80 fewer cigarette packs per capita
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>4. Classroom Teaching Plan</h2>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'day1')">Day 1</div>
+            <div class="tab" onclick="openTab(event, 'day2')">Day 2</div>
+            <div class="tab" onclick="openTab(event, 'day3')">Day 3</div>
+        </div>
+        
+        <div id="day1" class="tab-content active">
+            <h3>Day 1: Introduction to Counterfactual Thinking</h3>
+            <ol class="steps">
+                <li>Start class with a thought experiment: "What if you had chosen a different major?" Ask students to discuss how they would determine if they made the right choice.</li>
+                <li>Introduce the "fundamental problem of causal inference" using the road trip analogy.</li>
+                <li>Discuss good and bad counterfactuals using examples (naive before/after, simple comparisons).</li>
+                <li>Activity: Give students news headlines and ask them to identify the implicit counterfactual claims.</li>
+                <li>Homework: Find a "What if?" question in their own lives and brainstorm ways to estimate the answer.</li>
+            </ol>
+            
+            <div class="example">
+                <h4>Sample Headlines for Activity:</h4>
+                <div class="data-item">"New Tax Policy Boosts Economy by 3%" (Implicit counterfactual: Without the tax policy, the economy would have grown less)</div>
+                <div class="data-item">"Study Shows Education Program Increases Test Scores" (Implicit counterfactual: Without the program, scores would be lower)</div>
+                <div class="data-item">"Adding a Fireplace Increases Home Value by $15,000" (Implicit counterfactual: Without a fireplace, the home would be worth $15,000 less)</div>
+            </div>
+        </div>
+        
+        <div id="day2" class="tab-content">
+            <h3>Day 2: Building to Synthetic Control</h3>
+            <ol class="steps">
+                <li>Review the California tobacco control program case study.</li>
+                <li>Ask: "How could we estimate what would have happened without the program?"</li>
+                <li>Walk through problems with simple before/after or single comparison state approaches.</li>
+                <li>Introduce SCM as "building a better comparison" using the recipe analogy.</li>
+                <li>Demonstrate the interactive tool to show how SCM works.</li>
+                <li>Class exercise: In small groups, use the provided dataset to create synthetic controls manually.</li>
+            </ol>
+            
+            <div class="callout">
+                <h4>Case Study: California Tobacco Control Program (Data-Focused)</h4>
+                <p>In 1988, California implemented a tobacco control program with increased taxes and anti-smoking initiatives. Looking at the data:</p>
+                <table>
+                    <tr>
+                        <th>Year</th>
+                        <th>California</th>
+                        <th>Nevada</th>
+                        <th>Oregon</th>
+                        <th>Washington</th>
+                    </tr>
+                    <tr>
+                        <td>1985</td>
+                        <td>120</td>
+                        <td>140</td>
+                        <td>125</td>
+                        <td>115</td>
+                    </tr>
+                    <tr>
+                        <td>1990</td>
+                        <td>100</td>
+                        <td>135</td>
+                        <td>120</td>
+                        <td>110</td>
+                    </tr>
+                    <tr>
+                        <td>1995</td>
+                        <td>80</td>
+                        <td>130</td>
+                        <td>115</td>
+                        <td>105</td>
+                    </tr>
+                    <tr>
+                        <td>2000</td>
+                        <td>60</td>
+                        <td>125</td>
+                        <td>110</td>
+                        <td>100</td>
+                    </tr>
+                </table>
+                <p>The challenge: Which state is the best comparison? Or should we use a combination?</p>
+            </div>
+        </div>
+        
+        <div id="day3" class="tab-content">
+            <h3>Day 3: Hands-on SCM Application</h3>
+            <ol class="steps">
+                <li>Provide this GDP dataset for 5 states (State A implemented a policy in 2020):</li>
+                <div class="data-item">
+                    <table>
+                        <tr>
+                            <th>Year</th>
+                            <th>State A<br>(Treated)</th>
+                            <th>State B</th>
+                            <th>State C</th>
+                            <th>State D</th>
+                            <th>State E</th>
+                        </tr>
+                        <tr>
+                            <td>2018</td>
+                            <td>100</td>
+                            <td>90</td>
+                            <td>110</td>
+                            <td>105</td>
+                            <td>95</td>
+                        </tr>
+                        <tr>
+                            <td>2019</td>
+                            <td>105</td>
+                            <td>92</td>
+                            <td>114</td>
+                            <td>108</td>
+                            <td>98</td>
+                        </tr>
+                        <tr>
+                            <td>2020</td>
+                            <td>115</td>
+                            <td>94</td>
+                            <td>117</td>
+                            <td>110</td>
+                            <td>100</td>
+                        </tr>
+                        <tr>
+                            <td>2021</td>
+                            <td>130</td>
+                            <td>97</td>
+                            <td>120</td>
+                            <td>112</td>
+                            <td>103</td>
+                        </tr>
+                    </table>
+                </div>
+                <li>Walk students through creating a synthetic control in a spreadsheet:</li>
+                <div class="activity">
+                    <h4>Step-by-Step SCM Activity:</h4>
+                    <ol>
+                        <li>Try different weights for States B, C, D, and E</li>
+                        <li>Calculate weighted average for pre-treatment years (2018-2019)</li>
+                        <li>Compare with State A's pre-treatment values</li>
+                        <li>Find weights that minimize pre-treatment differences</li>
+                        <li>Use these weights to calculate synthetic values for 2020-2021</li>
+                        <li>Calculate treatment effect as actual minus synthetic</li>
+                    </ol>
+                </div>
+                <li>Discuss and compare results across student groups.</li>
+                <li>Explain data-driven assumption checks and limitations.</li>
+                <li>Final discussion: When would SCM be appropriate vs. other methods?</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>5. Simplifying Technical Language</h2>
+        
+        <table>
+            <tr>
+                <th>Technical Term</th>
+                <th>Student-Friendly Language</th>
+                <th>Visual/Data Example</th>
+            </tr>
+            <tr>
+                <td>Counterfactual</td>
+                <td>"What would have happened otherwise"</td>
+                <td>The dashed line showing predicted cigarette sales without the policy</td>
+            </tr>
+            <tr>
+                <td>Synthetic Control Weights</td>
+                <td>"Recipe proportions" or "Mixing ingredients"</td>
+                <td>Nevada: 30%, Oregon: 25%, Washington: 45%</td>
+            </tr>
+            <tr>
+                <td>Pre-treatment fit</td>
+                <td>"How well our copy matches before the change"</td>
+                <td>How closely synthetic California tracks real California before 1988</td>
+            </tr>
+            <tr>
+                <td>Treatment effect</td>
+                <td>"The difference our change made"</td>
+                <td>80 fewer cigarette packs per capita by 2000</td>
+            </tr>
+            <tr>
+                <td>Donor pool</td>
+                <td>"Available comparison ingredients"</td>
+                <td>The states we can use to build our synthetic version (Nevada, Oregon, etc.)</td>
+            </tr>
+            <tr>
+                <td>Covariates</td>
+                <td>"Important matching characteristics"</td>
+                <td>Demographics, economy, smoking regulations before treatment</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>6. Assessment Ideas</h2>
+        
+        <div class="grid">
+            <div class="card">
+                <h3>Visual Interpretation Quiz</h3>
+                <p>Show students this SCM graph and ask:</p>
+                <div class="visualbox" style="height: 250px;">
+                    <div style="position: relative; width: 90%; height: 200px;">
+                        <!-- Simple SCM visualization -->
+                        <div style="position: absolute; bottom: 50px; left: 50px; right: 50px; height: 2px; background-color: #333;"></div>
+                        <div style="position: absolute; bottom: 50px; left: 50px; width: 2px; height: 150px; background-color: #333;"></div>
+                        <div style="position: absolute; bottom: 50px; left: 250px; width: 2px; height: 150px; background-color: #fa8072; stroke-dasharray: 5,5;"></div>
+                        
+                        <!-- Lines -->
+                        <div style="position: absolute; bottom: 125px; left: 50px; width: 200px; height: 3px; background-color: #ff7f50;"></div>
+                        <div style="position: absolute; bottom: 125px; left: 50px; width: 200px; height: 3px; background-color: #ffd700; stroke-dasharray: 5,5;"></div>
+                        <div style="position: absolute; bottom: 125px; left: 250px; width: 200px; height: 3px; background-color: #ff7f50; transform: rotate(-30deg); transform-origin: left;"></div>
+                        <div style="position: absolute; bottom: 125px; left: 250px; width: 200px; height: 3px; background-color: #ffd700; transform: rotate(-5deg); transform-origin: left; stroke-dasharray: 5,5;"></div>
+                        
+                        <!-- Effect arrow -->
+                        <div style="position: absolute; bottom: 60px; left: 450px; width: 2px; height: 50px; background-color: #333;"></div>
+                        <div style="position: absolute; bottom: 85px; left: 455px; font-size: 12px;">?</div>
+                    </div>
+                </div>
+                <p><strong>Questions:</strong></p>
+                <ol>
+                    <li>When did the intervention occur?</li>
+                    <li>What is the estimated treatment effect?</li>
+                    <li>Was the intervention successful?</li>
+                </ol>
+            </div>
+            
+            <div class="card">
+                <h3>Data-Driven SCM Assignment</h3>
+                <p>Provide this mini-dataset and have students:</p>
+                <div class="data-item">
+                    <table style="font-size: 0.9em;">
+                        <tr>
+                            <th>Year</th>
+                            <th>Treated</th>
+                            <th>Control 1</th>
+                            <th>Control 2</th>
+                            <th>Control 3</th>
+                        </tr>
+                        <tr>
+                            <td>2018</td>
+                            <td>10</td>
+                            <td>12</td>
+                            <td>8</td>
+                            <td>9</td>
+                        </tr>
+                        <tr>
+                            <td>2019</td>
+                            <td>11</td>
+                            <td>13</td>
+                            <td>9</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>2020*</td>
+                            <td>15</td>
+                            <td>14</td>
+                            <td>10</td>
+                            <td>11</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="text-align: center; font-style: italic;">*Treatment implemented in 2020</td>
+                        </tr>
+                    </table>
+                </div>
+                <ol>
+                    <li>Find the optimal weights for Control units</li>
+                    <li>Calculate the synthetic counterfactual</li>
+                    <li>Determine the treatment effect</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="assessment">
+            <h3>Sample Quiz Question: Fireplace Counterfactual</h3>
+            <p><strong>Question:</strong> The chart below shows a counterfactual analysis of houses with and without fireplaces:</p>
+            <div style="text-align: center; margin: 15px 0;">
+                <svg width="500" height="250">
+                    <rect x="0" y="0" width="500" height="250" fill="#f8f9fa" />
+                    <text x="250" y="25" text-anchor="middle" font-weight="bold">House Price Distribution With and Without Fireplaces</text>
+                    
+                    <!-- Axes -->
+                    <line x1="50" y1="200" x2="450" y1="200" y2="200" stroke="black" stroke-width="2" />
+                    <line x1="50" y1="50" x2="50" y1="200" y2="200" stroke="black" stroke-width="2" />
+                    
+                    <!-- X-axis labels -->
+                    <text x="100" y="220" text-anchor="middle">$200k</text>
+                    <text x="200" y="220" text-anchor="middle">$250k</text>
+                    <text x="300" y="220" text-anchor="middle">$300k</text>
+                    <text x="400" y="220" text-anchor="middle">$350k</text>
+                    
+                    <!-- Current distribution curve -->
+                    <path d="M50,200 Q150,100 250,80 Q350,100 450,200" fill="none" stroke="#ff7f50" stroke-width="3" />
+                    
+                    <!-- Counterfactual distribution curve -->
+                    <path d="M50,200 Q130,130 200,90 Q280,110 350,150 Q400,180 450,200" fill="none" stroke="#ffd700" stroke-width="3" stroke-dasharray="5,5" />
+                    
+                    <!-- Means -->
+                    <line x1="250" y1="200" x2="250" y1="180" stroke="#ff7f50" stroke-width="2" />
+                    <text x="250" y="170" text-anchor="middle" font-size="12" fill="#ff7f50">Mean: $300k</text>
+                    
+                    <line x1="200" y1="200" x2="200" y1="180" stroke="#ffd700" stroke-width="2" />
+                    <text x="200" y="170" text-anchor="middle" font-size="12" fill="#ffd700">Mean: $285k</text>
+                    
+                    <!-- Legend -->
+                    <rect x="60" y="50" width="15" height="15" fill="#ff7f50" />
+                    <text x="80" y="63" text-anchor="start" font-size="12">With Fireplaces</text>
+                    
+                    <line x1="60" y1="80" x2="75" y1="80" stroke="#ffd700" stroke-width="3" stroke-dasharray="5,5" />
+                    <text x="80" y="83" text-anchor="start" font-size="12">Without Fireplaces (Counterfactual)</text>
+                </svg>
+            </div>
+            <p><strong>Based on this data visualization, what is the estimated causal effect of adding a fireplace to a house?</strong></p>
+            <ol type="a">
+                <li>No effect; fireplaces are purely decorative</li>
+                <li>An increase of approximately $15,000 in home value</li>
+                <li>A decrease in home value due to maintenance costs</li>
+                <li>Cannot be determined from this data</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>7. Common Student Challenges & Solutions</h2>
+        
+        <table>
+            <tr>
+                <th>Common Challenge</th>
+                <th>Data-Driven Teaching Solution</th>
+            </tr>
+            <tr>
+                <td>Confusing counterfactuals with predictions</td>
+                <td>Show side-by-side visuals: counterfactual (alternative present) vs. forecast (future prediction)</td>
+            </tr>
+            <tr>
+                <td>Struggling with weight optimization</td>
+                <td>Use interactive tools where students can adjust weights and see pre-treatment fit improve</td>
+            </tr>
+            <tr>
+                <td>Difficulty identifying good control units</td>
+                <td>Show pre-treatment trend charts for multiple potential controls and discuss similarities/differences</td>
+            </tr>
+            <tr>
+                <td>Overconfidence in results</td>
+                <td>Use placebo tests where students apply SCM to units that didn't receive treatment</td>
+            </tr>
+            <tr>
+                <td>Poor understanding of when to use SCM</td>
+                <td>Present datasets with varying characteristics and ask which would be suited for SCM vs. other methods</td>
+            </tr>
+        </table>
+    </div>
+    
+    <script>
+        // Function to handle tabs
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            var tabContent = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContent.length; i++) {
+                tabContent[i].classList.remove("active");
+            }
+            
+            // Remove "active" class from all tabs
+            var tabs = document.getElementsByClassName("tab");
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove("active");
+            }
+            
+            // Show the current tab and add "active" class to the button
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+        
+        // Slider functionality
+        const nevadaSlider = document.getElementById('nevada-slider');
+        const oregonSlider = document.getElementById('oregon-slider');
+        const washingtonSlider = document.getElementById('washington-slider');
+        
+        const nevadaValue = document.getElementById('nevada-value');
+        const oregonValue = document.getElementById('oregon-value');
+        const washingtonValue = document.getElementById('washington-value');
+        
+        const nvDisplay = document.getElementById('nv-display');
+        const orDisplay = document.getElementById('or-display');
+        const waDisplay = document.getElementById('wa-display');
+        
+        // Update values when sliders change
+        nevadaSlider.addEventListener('input', updateValues);
+        oregonSlider.addEventListener('input', updateValues);
+        washingtonSlider.addEventListener('input', updateValues);
+        
+        function updateValues() {
+            // Get current values
+            let nv = parseInt(nevadaSlider.value);
+            let or = parseInt(oregonSlider.value);
+            let wa = parseInt(washingtonSlider.value);
+            
+            // Calculate sum
+            const sum = nv + or + wa;
+            
+            // Normalize to 100%
+            if (sum > 0) {
+                nv = Math.round((nv / sum) * 100);
+                or = Math.round((or / sum) * 100);
+                wa = 100 - nv - or; // Ensure they sum to exactly 100
+            }
+            
+            // Update display values
+            nevadaValue.textContent = nv;
+            oregonValue.textContent = or;
+            washingtonValue.textContent = wa;
+            
+            nvDisplay.textContent = nv + '%';
+            orDisplay.textContent = or + '%';
+            waDisplay.textContent = wa + '%';
+            
+            // In a real implementation, this would update the chart
+            // and recalculate the treatment effect
+        }
+    </script>
+</body>
+</html>
