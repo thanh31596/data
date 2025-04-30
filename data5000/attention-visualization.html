@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attention Mechanism Visualization</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f8fa;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin: 30px 0 20px;
+        }
+        .explanation {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .attention-grid-container {
+            margin-top: 30px;
+            position: relative;
+        }
+        .tokens-row, .tokens-column {
+            display: flex;
+            position: relative;
+        }
+        .tokens-column {
+            flex-direction: column;
+            position: absolute;
+            left: -120px;
+            top: 120px;
+        }
+        .token-label {
+            width: 100px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+            font-weight: bold;
+        }
+        .attention-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            gap: 5px;
+            margin-top: 120px;
+            margin-left: 120px;
+        }
+        .attention-cell {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .attention-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .highlight-row, .highlight-col {
+            background-color: rgba(52, 152, 219, 0.3);
+        }
+        .vector-visualization {
+            display: flex;
+            flex-direction: column;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .vector-row {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .vector-label {
+            width: 120px;
+            font-weight: bold;
+        }
+        .vector-cells {
+            display: flex;
+            flex-grow: 1;
+            height: 40px;
+        }
+        .vector-cell {
+            flex-grow: 1;
+            margin: 0 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .formula-box {
+            margin: 30px 0;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-left: 4px solid #3498db;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .step-explanation {
+            margin-top: 30px;
+        }
+        .step-container {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .step-card {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            position: relative;
+        }
+        .step-number {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 30px;
+            height: 30px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .play-animation {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #2ecc71;
+        }
+        .attention-legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 15px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border-radius: 3px;
+        }
+        .active-token {
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 4px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Attention Mechanism Visualization</h1>
+        
+        <div class="explanation">
+            <p>The <strong>attention mechanism</strong> is the core innovation of transformer models. It allows the model to focus on different parts of the input sequence when producing each output element. Instead of processing a sequence step by step (like RNNs), attention computes a weighted sum of all input elements based on their relevance.</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="example-select">Choose example:</label>
+                <select id="example-select">
+                    <option value="simple">Simple sentence</option>
+                    <option value="ambiguity">Ambiguous pronoun</option>
+                    <option value="translation">Translation example</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="focus-token">Focus on token:</label>
+                <select id="focus-token">
+                    <!-- Will be populated dynamically -->
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="attention-head">Attention head:</label>
+                <select id="attention-head">
+                    <option value="1">Head 1 (syntax)</option>
+                    <option value="2">Head 2 (semantics)</option>
+                    <option value="3">Head 3 (coreference)</option>
+                </select>
+            </div>
+        </div>
+        
+        <button id="play-animation" class="play-animation">▶️ Play Animation</button>
+        
+        <div class="attention-visualization">
+            <div class="attention-grid-container">
+                <div class="tokens-row" id="tokens-row">
+                    <!-- Token labels will be added here -->
+                </div>
+                
+                <div class="tokens-column" id="tokens-column">
+                    <!-- Token labels will be added here -->
+                </div>
+                
+                <div class="attention-grid" id="attention-grid">
+                    <!-- Attention cells will be added here -->
+                </div>
+                
+                <svg class="connections" id="connections"></svg>
+            </div>
+            
+            <div class="attention-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: rgba(52, 152, 219, 0.1);"></div>
+                    <span>Low attention</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: rgba(52, 152, 219, 0.5);"></div>
+                    <span>Medium attention</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: rgba(52, 152, 219, 0.9);"></div>
+                    <span>High attention</span>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Under the Hood: How Attention Works</h2>
+        
+        <div class="vector-visualization" id="vector-visualization">
+            <h3>Query, Key, Value Vectors for Selected Token</h3>
+            
+            <div class="vector-row">
+                <div class="vector-label">Query (Q):</div>
+                <div class="vector-cells" id="query-vector">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <div class="vector-row">
+                <div class="vector-label">Key (K):</div>
+                <div class="vector-cells" id="key-vector">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <div class="vector-row">
+                <div class="vector-label">Value (V):</div>
+                <div class="vector-cells" id="value-vector">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <div class="vector-row">
+                <div class="vector-label">Attention:</div>
+                <div class="vector-cells" id="attention-scores">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <div class="vector-row">
+                <div class="vector-label">Output:</div>
+                <div class="vector-cells" id="output-vector">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="formula-box">
+            <p>Attention(Q, K, V) = softmax(QK<sup>T</sup> / √d<sub>k</sub>)V</p>
+            <p>Where:</p>
+            <p>- Q: Query vector (what we're looking for)</p>
+            <p>- K: Key vector (what might match our query)</p>
+            <p>- V: Value vector (information to retrieve)</p>
+            <p>- d<sub>k</sub>: Dimension of the key vector (scaling factor)</p>
+        </div>
+        
+        <div class="step-explanation">
+            <h3>Self-Attention Algorithm Step by Step</h3>
+            
+            <div class="step-container">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h4>Project to Q, K, V</h4>
+                    <p>Each token embedding is linearly projected to create query, key, and value vectors using learned weights.</p>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h4>Calculate Attention Scores</h4>
+                    <p>For each query token, compute its dot product with all key tokens to measure compatibility.</p>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h4>Scale and Softmax</h4>
+                    <p>Scale the scores by 1/√d<sub>k</sub> and apply softmax to get a probability distribution over all tokens.</p>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h4>Weighted Sum</h4>
+                    <p>Use the attention weights to create a weighted sum of the value vectors, producing the output.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Example data - different attention patterns
+        const examples = {
+            simple: {
+                tokens: ["The", "cat", "sat", "on", "the", "mat", ".", "<PAD>"],
+                heads: {
+                    1: [  // Head 1 - Syntax focused
+                        [0.80, 0.04, 0.02, 0.02, 0.10, 0.01, 0.01, 0.00],
+                        [0.05, 0.75, 0.08, 0.04, 0.05, 0.02, 0.01, 0.00],
+                        [0.02, 0.12, 0.75, 0.05, 0.01, 0.04, 0.01, 0.00],
+                        [0.03, 0.05, 0.10, 0.70, 0.05, 0.05, 0.02, 0.00],
+                        [0.10, 0.02, 0.03, 0.05, 0.75, 0.03, 0.02, 0.00],
+                        [0.02, 0.03, 0.08, 0.10, 0.05, 0.70, 0.02, 0.00],
+                        [0.03, 0.05, 0.10, 0.05, 0.03, 0.04, 0.70, 0.00],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30]
+                    ],
+                    2: [  // Head 2 - Semantic focused
+                        [0.60, 0.05, 0.05, 0.05, 0.20, 0.05, 0.00, 0.00],
+                        [0.05, 0.60, 0.10, 0.05, 0.05, 0.15, 0.00, 0.00],
+                        [0.05, 0.20, 0.50, 0.10, 0.05, 0.10, 0.00, 0.00],
+                        [0.05, 0.05, 0.15, 0.50, 0.05, 0.20, 0.00, 0.00],
+                        [0.20, 0.05, 0.05, 0.05, 0.60, 0.05, 0.00, 0.00],
+                        [0.05, 0.15, 0.10, 0.20, 0.05, 0.45, 0.00, 0.00],
+                        [0.10, 0.10, 0.15, 0.15, 0.10, 0.15, 0.25, 0.00],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30]
+                    ],
+                    3: [  // Head 3 - Another pattern
+                        [0.70, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.00],
+                        [0.05, 0.50, 0.10, 0.05, 0.15, 0.10, 0.05, 0.00],
+                        [0.05, 0.15, 0.50, 0.15, 0.05, 0.05, 0.05, 0.00],
+                        [0.05, 0.05, 0.15, 0.40, 0.05, 0.25, 0.05, 0.00],
+                        [0.05, 0.15, 0.05, 0.05, 0.50, 0.15, 0.05, 0.00],
+                        [0.05, 0.10, 0.05, 0.15, 0.15, 0.45, 0.05, 0.00],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.40, 0.00],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30]
+                    ]
+                },
+                qkv: {
+                    q: [0.6, -0.3, 0.8, 0.2, -0.5, 0.7, 0.1, -0.4],
+                    k: [0.7, -0.2, 0.6, 0.3, -0.4, 0.5, 0.2, -0.3],
+                    v: [0.5, -0.1, 0.7, 0.4, -0.3, 0.6, 0.3, -0.2]
+                }
+            },
+            ambiguity: {
+                tokens: ["John", "gave", "Peter", "his", "book", "because", "he", "enjoyed"],
+                heads: {
+                    1: [  // Head 1 - Syntactic patterns
+                        [0.80, 0.10, 0.02, 0.02, 0.02, 0.02, 0.01, 0.01],
+                        [0.15, 0.65, 0.08, 0.02, 0.05, 0.03, 0.01, 0.01],
+                        [0.05, 0.10, 0.70, 0.05, 0.05, 0.03, 0.01, 0.01],
+                        [0.05, 0.05, 0.10, 0.60, 0.10, 0.05, 0.03, 0.02],
+                        [0.03, 0.15, 0.05, 0.12, 0.55, 0.05, 0.03, 0.02],
+                        [0.05, 0.10, 0.10, 0.05, 0.05, 0.55, 0.05, 0.05],
+                        [0.03, 0.05, 0.05, 0.05, 0.02, 0.10, 0.60, 0.10],
+                        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.15, 0.55]
+                    ],
+                    2: [  // Head 2 - Semantic patterns
+                        [0.60, 0.05, 0.05, 0.10, 0.05, 0.05, 0.05, 0.05],
+                        [0.10, 0.60, 0.10, 0.05, 0.05, 0.05, 0.03, 0.02],
+                        [0.05, 0.10, 0.55, 0.05, 0.05, 0.10, 0.05, 0.05],
+                        [0.15, 0.05, 0.10, 0.50, 0.05, 0.05, 0.05, 0.05],
+                        [0.05, 0.05, 0.15, 0.10, 0.55, 0.05, 0.03, 0.02],
+                        [0.05, 0.05, 0.05, 0.05, 0.05, 0.65, 0.05, 0.05],
+                        [0.30, 0.05, 0.30, 0.05, 0.05, 0.05, 0.15, 0.05],
+                        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.10, 0.60]
+                    ],
+                    3: [  // Head 3 - Coreference resolution (notice "his" attends to "John")
+                        [0.70, 0.05, 0.05, 0.05, 0.05, 0.05, 0.03, 0.02],
+                        [0.10, 0.65, 0.05, 0.05, 0.05, 0.05, 0.03, 0.02],
+                        [0.05, 0.10, 0.65, 0.05, 0.05, 0.05, 0.03, 0.02],
+                        [0.50, 0.05, 0.15, 0.20, 0.03, 0.03, 0.02, 0.02],
+                        [0.05, 0.15, 0.05, 0.15, 0.50, 0.05, 0.03, 0.02],
+                        [0.05, 0.05, 0.05, 0.05, 0.05, 0.65, 0.05, 0.05],
+                        [0.55, 0.05, 0.10, 0.05, 0.05, 0.05, 0.10, 0.05],
+                        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.10, 0.60]
+                    ]
+                },
+                qkv: {
+                    q: [0.5, 0.2, -0.3, 0.8, 0.1, -0.6, 0.4, -0.2],
+                    k: [0.6, 0.1, -0.4, 0.7, 0.2, -0.5, 0.3, -0.1],
+                    v: [0.4, 0.3, -0.2, 0.6, 0.3, -0.4, 0.5, -0.3]
+                }
+            },
+            translation: {
+                tokens: ["Je", "suis", "étudiant", "en", "informatique", ".", "<PAD>", "<PAD>"],
+                heads: {
+                    1: [  // Head 1
+                        [0.75, 0.10, 0.05, 0.03, 0.03, 0.02, 0.01, 0.01],
+                        [0.15, 0.65, 0.08, 0.04, 0.04, 0.02, 0.01, 0.01],
+                        [0.05, 0.20, 0.60, 0.05, 0.05, 0.03, 0.01, 0.01],
+                        [0.05, 0.05, 0.05, 0.70, 0.10, 0.03, 0.01, 0.01],
+                        [0.03, 0.05, 0.07, 0.15, 0.60, 0.08, 0.01, 0.01],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.45, 0.03, 0.02],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30, 0.10],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30]
+                    ],
+                    2: [  // Head 2
+                        [0.65, 0.15, 0.05, 0.05, 0.05, 0.03, 0.01, 0.01],
+                        [0.10, 0.60, 0.15, 0.05, 0.05, 0.03, 0.01, 0.01],
+                        [0.05, 0.15, 0.55, 0.10, 0.10, 0.03, 0.01, 0.01],
+                        [0.05, 0.05, 0.10, 0.65, 0.10, 0.03, 0.01, 0.01],
+                        [0.05, 0.05, 0.15, 0.10, 0.55, 0.08, 0.01, 0.01],
+                        [0.10, 0.10, 0.10, 0.10, 0.15, 0.40, 0.03, 0.02],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30, 0.10],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30]
+                    ],
+                    3: [  // Head 3
+                        [0.70, 0.10, 0.05, 0.05, 0.05, 0.03, 0.01, 0.01],
+                        [0.15, 0.65, 0.08, 0.04, 0.04, 0.02, 0.01, 0.01],
+                        [0.05, 0.10, 0.70, 0.05, 0.05, 0.03, 0.01, 0.01],
+                        [0.05, 0.05, 0.05, 0.75, 0.05, 0.03, 0.01, 0.01],
+                        [0.05, 0.05, 0.05, 0.15, 0.60, 0.08, 0.01, 0.01],
+                        [0.05, 0.05, 0.05, 0.05, 0.10, 0.65, 0.03, 0.02],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30, 0.10],
+                        [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.30]
+                    ]
+                },
+                qkv: {
+                    q: [0.4, -0.3, 0.7, 0.2, -0.5, 0.6, 0.1, -0.4],
+                    k: [0.6, -0.2, 0.5, 0.3, -0.4, 0.4, 0.2, -0.3],
+                    v: [0.5, -0.3, 0.6, 0.2, -0.4, 0.5, 0.3, -0.2]
+                }
+            }
+        };
+        
+        // Function to initialize the visualization
+        function initVisualization() {
+            const exampleSelect = document.getElementById('example-select');
+            const focusTokenSelect = document.getElementById('focus-token');
+            const attentionHeadSelect = document.getElementById('attention-head');
+            const playAnimationBtn = document.getElementById('play-animation');
+            
+            // Update token options when example changes
+            exampleSelect.addEventListener('change', function() {
+                updateTokenOptions();
+                updateVisualization();
+            });
+            
+            // Update visualization when any control changes
+            focusTokenSelect.addEventListener('change', updateVisualization);
+            attentionHeadSelect.addEventListener('change', updateVisualization);
+            
+            // Play animation button
+            playAnimationBtn.addEventListener('click', playAnimation);
+            
+            // Initial setup
+            updateTokenOptions();
+            updateVisualization();
+        }
+        
+        // Update token options in the dropdown
+        function updateTokenOptions() {
+            const exampleKey = document.getElementById('example-select').value;
+            const focusTokenSelect = document.getElementById('focus-token');
+            const tokens = examples[exampleKey].tokens;
+            
+            // Clear existing options
+            focusTokenSelect.innerHTML = '';
+            
+            // Add token options
+            tokens.forEach((token, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `"${token}" (${index})`;
+                focusTokenSelect.appendChild(option);
+            });
+        }
+        
+        // Update the visualization based on current selections
+        function updateVisualization() {
+            const exampleKey = document.getElementById('example-select').value;
+            const focusTokenIndex = parseInt(document.getElementById('focus-token').value);
+            const attentionHeadIndex = document.getElementById('attention-head').value;
+            
+            const example = examples[exampleKey];
+            const tokens = example.tokens;
+            const attentionMatrix = example.heads[attentionHeadIndex];
+            
+            // Update tokens row
+            const tokensRow = document.getElementById('tokens-row');
+            tokensRow.innerHTML = '';
+            tokens.forEach((token, index) => {
+                const tokenLabel = document.createElement('div');
+                tokenLabel.className = 'token-label';
+                tokenLabel.textContent = token;
+                if (index === focusTokenIndex) {
+                    tokenLabel.classList.add('active-token');
+                }
+                tokensRow.appendChild(tokenLabel);
+            });
+            
+            // Update tokens column
+            const tokensColumn = document.getElementById('tokens-column');
+            tokensColumn.innerHTML = '';
+            tokens.forEach((token, index) => {
+                const tokenLabel = document.createElement('div');
+                tokenLabel.className = 'token-label';
+                tokenLabel.textContent = token;
+                if (index === focusTokenIndex) {
+                    tokenLabel.classList.add('active-token');
+                }
+                tokensColumn.appendChild(tokenLabel);
+            });
+            
+            // Update attention grid
+            const attentionGrid = document.getElementById('attention-grid');
+            attentionGrid.innerHTML = '';
+            
+            for (let i = 0; i < tokens.length; i++) {
+                for (let j = 0; j < tokens.length; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'attention-cell';
+                    
+                    const attentionValue = attentionMatrix[i][j];
+                    cell.style.backgroundColor = `rgba(52, 152, 219, ${attentionValue.toFixed(2)})`;
+                    
+                    // Show attention value in cell
+                    cell.textContent = attentionValue.toFixed(2);
+                    
+                    // Highlight the row and column of the focused token
+                    if (i === focusTokenIndex || j === focusTokenIndex) {
+                        if (i === focusTokenIndex) {
+                            cell.classList.add('highlight-row');
+                        }
+                        if (j === focusTokenIndex) {
+                            cell.classList.add('highlight-col');
+                        }
+                    }
+                    
+                    attentionGrid.appendChild(cell);
+                    
+                    // Add click handler to update focus
+                    cell.addEventListener('click', () => {
+                        document.getElementById('focus-token').value = i;
+                        updateVisualization();
+                    });
+                }
+            }
+            
+            // Update the vector visualization
+            updateVectorVisualization(example, focusTokenIndex);
+            
+            // Draw connections for the selected token
+            drawConnections(tokens, attentionMatrix, focusTokenIndex);
+        }
+        
+        // Update the vector visualization
+        function updateVectorVisualization(example, tokenIndex) {
+            const queryVector = document.getElementById('query-vector');
+            const keyVector = document.getElementById('key-vector');
+            const valueVector = document.getElementById('value-vector');
+            const attentionScores = document.getElementById('attention-scores');
+            const outputVector = document.getElementById('output-vector');
+            
+            // Clear existing content
+            queryVector.innerHTML = '';
+            keyVector.innerHTML = '';
+            valueVector.innerHTML = '';
+            attentionScores.innerHTML = '';
+            outputVector.innerHTML = '';
+            
+            // Get data
+            const qkv = example.qkv;
+            const attentionHeadIndex = document.getElementById('attention-head').value;
+            const attentionMatrix = example.heads[attentionHeadIndex];
+            const tokens = example.tokens;
+            
+            // Create dummy vectors for visualization - normally these would be higher dimensional
+            // These are vectors with 8 elements for simplicity
+            const q = qkv.q;
+            const k = qkv.k;
+            const v = qkv.v;
+            
+            // Display Q, K, V vectors
+            q.forEach(value => {
+                const cell = document.createElement('div');
+                cell.className = 'vector-cell';
+                cell.style.backgroundColor = getColorForValue(value, -1, 1);
+                cell.textContent = value.toFixed(1);
+                queryVector.appendChild(cell);
+            });
+            
+            k.forEach(value => {
+                const cell = document.createElement('div');
+                cell.className = 'vector-cell';
+                cell.style.backgroundColor = getColorForValue(value, -1, 1);
+                cell.textContent = value.toFixed(1);
+                keyVector.appendChild(cell);
+            });
+            
+            v.forEach(value => {
+                const cell = document.createElement('div');
+                cell.className = 'vector-cell';
+                cell.style.backgroundColor = getColorForValue(value, -1, 1);
+                cell.textContent = value.toFixed(1);
+                valueVector.appendChild(cell);
+            });
+            
+            // Display attention scores for focused token
+            const attentionRow = attentionMatrix[tokenIndex];
+            
+            attentionRow.forEach((value, i) => {
+                const cell = document.createElement('div');
+                cell.className = 'vector-cell';
+                cell.style.backgroundColor = `rgba(52, 152, 219, ${value.toFixed(2)})`;
+                cell.textContent = value.toFixed(2);
+                
+                // Show token label above attention score
+                const tokenLabel = document.createElement('div');
+                tokenLabel.style.fontSize = '10px';
+                tokenLabel.style.marginBottom = '2px';
+                tokenLabel.textContent = tokens[i];
+                
+                const cellContainer = document.createElement('div');
+                cellContainer.style.display = 'flex';
+                cellContainer.style.flexDirection = 'column';
+                cellContainer.style.alignItems = 'center';
+                cellContainer.style.justifyContent = 'center';
+                cellContainer.style.flexGrow = '1';
+                
+                cellContainer.appendChild(tokenLabel);
+                cellContainer.appendChild(cell);
+                
+                attentionScores.appendChild(cellContainer);
+            });
+            
+            // Display a placeholder output vector (would be weighted sum of value vectors)
+            // In reality this would be computed as weighted sum of value vectors
+            const outputValues = v.map((_, i) => {
+                let sum = 0;
+                for (let j = 0; j < attentionRow.length; j++) {
+                    sum += attentionRow[j] * (v[i] + Math.random() * 0.2 - 0.1); // Add some variation
+                }
+                return sum;
+            });
+            
+            outputValues.forEach(value => {
+                const cell = document.createElement('div');
+                cell.className = 'vector-cell';
+                cell.style.backgroundColor = getColorForValue(value, -1, 1);
+                cell.textContent = value.toFixed(1);
+                outputVector.appendChild(cell);
+            });
+        }
+        
+        // Get background color for vector cell values
+        function getColorForValue(value, min, max) {
+            const normalizedValue = (value - min) / (max - min);
+            
+            if (value > 0) {
+                return `rgba(52, 152, 219, ${normalizedValue.toFixed(2)})`;
+            } else {
+                return `rgba(231, 76, 60, ${Math.abs(normalizedValue).toFixed(2)})`;
+            }
+        }
+        
+        // Draw connections lines for the focused token
+        function drawConnections(tokens, attentionMatrix, focusedTokenIndex) {
+            const svg = document.getElementById('connections');
+            svg.innerHTML = '';
+            
+            const tokensRow = document.getElementById('tokens-row');
+            const attentionGrid = document.getElementById('attention-grid');
+            
+            // Get positions for connections
+            const gridRect = attentionGrid.getBoundingClientRect();
+            const containerRect = tokensRow.parentElement.getBoundingClientRect();
+            
+            const rowTokenElements = tokensRow.querySelectorAll('.token-label');
+            
+            // Calculate the cell size in the attention grid
+            const cellWidth = gridRect.width / tokens.length;
+            const cellHeight = gridRect.height / tokens.length;
+            
+            // Create SVG elements for connections
+            const svgWidth = containerRect.width;
+            const svgHeight = containerRect.height;
+            svg.setAttribute('width', svgWidth);
+            svg.setAttribute('height', svgHeight);
+            
+            // Get the attention weights for the focused token
+            const attentionWeights = attentionMatrix[focusedTokenIndex];
+            
+            // Draw connection lines
+            for (let i = 0; i < tokens.length; i++) {
+                const weight = attentionWeights[i];
+                if (weight < 0.1) continue; // Skip low attention weights
+                
+                // Get source position (focused token in row)
+                const sourceElement = rowTokenElements[focusedTokenIndex];
+                const sourceRect = sourceElement.getBoundingClientRect();
+                
+                // Get target position (attention grid cell center)
+                const targetCellX = gridRect.left + (i + 0.5) * cellWidth - containerRect.left;
+                const targetCellY = gridRect.top + (focusedTokenIndex + 0.5) * cellHeight - containerRect.top;
+                
+                // Create the line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', sourceRect.left + sourceRect.width / 2 - containerRect.left);
+                line.setAttribute('y1', sourceRect.bottom - containerRect.top);
+                line.setAttribute('x2', targetCellX);
+                line.setAttribute('y2', targetCellY);
+                line.setAttribute('stroke', `rgba(52, 152, 219, ${weight.toFixed(2)})`);
+                line.setAttribute('stroke-width', 2 + weight * 3);
+                
+                svg.appendChild(line);
+            }
+        }
+        
+        // Play animation showing how attention evolves token by token
+        function playAnimation() {
+            const exampleKey = document.getElementById('example-select').value;
+            const attentionHeadIndex = document.getElementById('attention-head').value;
+            const focusTokenSelect = document.getElementById('focus-token');
+            const tokens = examples[exampleKey].tokens;
+            
+            let currentToken = 0;
+            
+            // Disable controls during animation
+            document.getElementById('example-select').disabled = true;
+            document.getElementById('focus-token').disabled = true;
+            document.getElementById('attention-head').disabled = true;
+            document.getElementById('play-animation').disabled = true;
+            
+            // Animation interval
+            const interval = setInterval(() => {
+                focusTokenSelect.value = currentToken;
+                updateVisualization();
+                
+                currentToken++;
+                if (currentToken >= tokens.length) {
+                    clearInterval(interval);
+                    
+                    // Re-enable controls
+                    document.getElementById('example-select').disabled = false;
+                    document.getElementById('focus-token').disabled = false;
+                    document.getElementById('attention-head').disabled = false;
+                    document.getElementById('play-animation').disabled = false;
+                }
+            }, 1000);
+        }
+        
+        // Initialize the visualization when the page loads
+        document.addEventListener('DOMContentLoaded', initVisualization);
+    </script>
+</body>
+</html>

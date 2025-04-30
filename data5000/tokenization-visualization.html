@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tokenization Visualization</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f8fa;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .explanation {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            min-height: 60px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .tokenization-display {
+            margin-top: 30px;
+        }
+        .original-text {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .tokens-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .token {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: tokenAppear 0.5s ease-out;
+        }
+        .token-id {
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            font-size: 10px;
+            opacity: 0.7;
+        }
+        @keyframes tokenAppear {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .token-details {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .token-detail-container {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f0f0f0;
+            flex: 1;
+            min-width: 250px;
+        }
+        .vocabulary-section {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .vocabulary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .vocabulary-item {
+            background-color: #e8f4f8;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #d0e1e9;
+        }
+        .highlights {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Tokenization Visualization</h1>
+        
+        <div class="explanation">
+            <p>Tokenization is the process of breaking down text into smaller pieces called tokens. These tokens might be words, subwords, or characters depending on the tokenization strategy. Modern language models like GPT, BERT, and other transformers use subword tokenization methods (like BPE, WordPiece, or SentencePiece) to balance vocabulary size and handling of rare words.</p>
+        </div>
+        
+        <div class="input-section">
+            <textarea id="input-text" placeholder="Enter some text to tokenize...">The transformer model revolutionized natural language processing in 2017.</textarea>
+            <button id="tokenize-btn">Tokenize</button>
+        </div>
+        
+        <div class="tokenization-display">
+            <div id="original-text" class="original-text">
+                <strong>Original Text:</strong> <span id="original-display"></span>
+            </div>
+            
+            <div>
+                <strong>Tokens:</strong>
+                <div id="tokens-container" class="tokens-container"></div>
+            </div>
+            
+            <div class="token-details">
+                <div class="token-detail-container">
+                    <h3>Tokenization Statistics</h3>
+                    <p>Number of tokens: <span id="token-count" class="highlights">0</span></p>
+                    <p>Average token length: <span id="avg-token-length" class="highlights">0</span> characters</p>
+                </div>
+                
+                <div class="token-detail-container">
+                    <h3>Why Subword Tokenization?</h3>
+                    <p>❌ Word-level: Large vocabulary, can't handle unknown words</p>
+                    <p>❌ Character-level: Loses semantic meaning, very long sequences</p>
+                    <p>✅ Subword: Balance between the two approaches</p>
+                </div>
+            </div>
+            
+            <div class="vocabulary-section">
+                <h3>Sample Vocabulary (Simplified)</h3>
+                <p>In real transformer models, vocabularies typically contain 30,000 to 50,000 tokens.</p>
+                <div class="vocabulary-grid" id="vocabulary-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple vocabulary for demonstration
+        const vocabulary = [
+            "the", "transform", "er", "model", "revolution", "ized", "natural", 
+            "language", "process", "ing", "in", "20", "17", ".", "deep", "learn", 
+            "attention", "mechanism", "neural", "network", "sequential", "data",
+            "context", "window", "token", "ization", "sub", "word", "embed", "ding"
+        ];
+        
+        // Display sample vocabulary
+        function displayVocabulary() {
+            const vocabGrid = document.getElementById('vocabulary-grid');
+            vocabulary.forEach((word, index) => {
+                const vocabItem = document.createElement('div');
+                vocabItem.className = 'vocabulary-item';
+                vocabItem.textContent = `${word} (#${index})`;
+                vocabGrid.appendChild(vocabItem);
+            });
+        }
+        
+        // Simple tokenize function for demonstration (simulates subword tokenization)
+        function tokenizeText(text) {
+            // This is a simplified demonstration
+            // Real tokenizers use more complex algorithms like BPE or WordPiece
+            
+            const words = text.split(/\s+/);
+            const tokens = [];
+            
+            words.forEach(word => {
+                // Check if the word is in our vocabulary
+                if (vocabulary.includes(word.toLowerCase())) {
+                    tokens.push({text: word, id: vocabulary.indexOf(word.toLowerCase())});
+                } else {
+                    // Simple subword tokenization simulation
+                    let remainingWord = word;
+                    let foundTokens = [];
+                    
+                    // Try to find longest subword matches
+                    while (remainingWord.length > 0) {
+                        let foundMatch = false;
+                        
+                        // Try different subword lengths, starting with the longest possible
+                        for (let endPos = remainingWord.length; endPos > 0; endPos--) {
+                            const subword = remainingWord.substring(0, endPos).toLowerCase();
+                            if (vocabulary.includes(subword)) {
+                                foundTokens.push({
+                                    text: remainingWord.substring(0, endPos),
+                                    id: vocabulary.indexOf(subword)
+                                });
+                                remainingWord = remainingWord.substring(endPos);
+                                foundMatch = true;
+                                break;
+                            }
+                        }
+                        
+                        // If no subword match found, treat the first character as an unknown token
+                        if (!foundMatch) {
+                            foundTokens.push({
+                                text: remainingWord[0],
+                                id: -1 // Unknown token
+                            });
+                            remainingWord = remainingWord.substring(1);
+                        }
+                    }
+                    
+                    tokens.push(...foundTokens);
+                }
+            });
+            
+            return tokens;
+        }
+        
+        // Display tokenization results
+        function displayTokens(tokens) {
+            const tokenContainer = document.getElementById('tokens-container');
+            tokenContainer.innerHTML = '';
+            
+            // Calculate and display statistics
+            document.getElementById('token-count').textContent = tokens.length;
+            
+            const totalLength = tokens.reduce((sum, token) => sum + token.text.length, 0);
+            const avgLength = (totalLength / tokens.length).toFixed(1);
+            document.getElementById('avg-token-length').textContent = avgLength;
+            
+            // Add tokens with animation delay
+            tokens.forEach((token, index) => {
+                setTimeout(() => {
+                    const tokenElement = document.createElement('div');
+                    tokenElement.className = 'token';
+                    tokenElement.textContent = token.text;
+                    
+                    const tokenId = document.createElement('span');
+                    tokenId.className = 'token-id';
+                    tokenId.textContent = token.id >= 0 ? `#${token.id}` : 'UNK';
+                    
+                    tokenElement.appendChild(tokenId);
+                    tokenContainer.appendChild(tokenElement);
+                }, index * 100); // Stagger the animation
+            });
+        }
+        
+        // Initialize the demo
+        document.addEventListener('DOMContentLoaded', () => {
+            displayVocabulary();
+            
+            const tokenizeBtn = document.getElementById('tokenize-btn');
+            tokenizeBtn.addEventListener('click', () => {
+                const inputText = document.getElementById('input-text').value;
+                document.getElementById('original-display').textContent = inputText;
+                
+                const tokens = tokenizeText(inputText);
+                displayTokens(tokens);
+            });
+            
+            // Initialize with the default text
+            const defaultText = document.getElementById('input-text').value;
+            document.getElementById('original-display').textContent = defaultText;
+            const tokens = tokenizeText(defaultText);
+            displayTokens(tokens);
+        });
+    </script>
+</body>
+</html>

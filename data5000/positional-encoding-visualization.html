@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Positional Encoding Visualization</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f8fa;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .explanation {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .control-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        select, input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .dimension-selector {
+            margin-right: 20px;
+        }
+        .token-container {
+            display: flex;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        .token {
+            padding: 10px 15px;
+            margin-right: 10px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .token-position {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 12px;
+            color: #333;
+        }
+        .encoding-visualization {
+            margin-top: 40px;
+        }
+        canvas {
+            width: 100%;
+            height: 200px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .pattern-explanation {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .explanation-card {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+        }
+        .formula {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #3498db;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .legend {
+            display: flex;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            border-radius: 2px;
+        }
+        .highlights {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Positional Encoding Visualization</h1>
+        
+        <div class="explanation">
+            <p>Transformers rely on <span class="highlights">self-attention</span> mechanisms that process all tokens simultaneously. To capture the order of tokens, transformers add <span class="highlights">positional encodings</span> to token embeddings. These encode position information using sine and cosine functions of different frequencies.</p>
+        </div>
+        
+        <div class="control-panel">
+            <div class="control-group dimension-selector">
+                <label for="dimension-select">View dimension:</label>
+                <select id="dimension-select">
+                    <option value="all">All dimensions</option>
+                    <option value="0">Dimension 0</option>
+                    <option value="2">Dimension 2</option>
+                    <option value="4">Dimension 4</option>
+                    <option value="8">Dimension 8</option>
+                    <option value="16">Dimension 16</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="sequence-length">Sequence length:</label>
+                <input type="range" id="sequence-length" min="2" max="12" value="6" step="1">
+                <span id="sequence-length-value">6</span> tokens
+            </div>
+        </div>
+        
+        <div id="token-container" class="token-container">
+            <!-- Tokens will be added here by JavaScript -->
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(52, 152, 219, 0.7);"></div>
+                <span>Sine</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(231, 76, 60, 0.7);"></div>
+                <span>Cosine</span>
+            </div>
+        </div>
+        
+        <div class="encoding-visualization">
+            <canvas id="encoding-canvas"></canvas>
+        </div>
+        
+        <div class="formula">
+            <p>PE(pos, 2i) = sin(pos / 10000^(2i/d_model))</p>
+            <p>PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))</p>
+            <p>Where:</p>
+            <p>- pos is the position of the token in the sequence</p>
+            <p>- i is the dimension index</p>
+            <p>- d_model is the embedding dimension size</p>
+        </div>
+        
+        <div class="pattern-explanation">
+            <div class="explanation-card">
+                <h3>Why Sinusoidal Functions?</h3>
+                <p>1. <strong>Unique patterns:</strong> Each position gets a unique encoding</p>
+                <p>2. <strong>Fixed-length:</strong> Works for any sequence length without retraining</p>
+                <p>3. <strong>Smooth interpolation:</strong> Can handle positions not seen during training</p>
+            </div>
+            
+            <div class="explanation-card">
+                <h3>Varying Frequencies</h3>
+                <p>Different dimensions use different frequencies:</p>
+                <p>• Lower dimensions (e.g., 0, 2): Change slowly across positions</p>
+                <p>• Higher dimensions (e.g., 16, 32): Change rapidly across positions</p>
+                <p>This creates a unique "fingerprint" for each position</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const D_MODEL = 32; // Embedding dimension size (simplified)
+        const MAX_SEQUENCE_LENGTH = 12;
+        
+        // Calculate positional encoding for a given position and dimension
+        function getPositionalEncoding(pos, dim, d_model) {
+            const i = Math.floor(dim / 2);
+            if (dim % 2 === 0) {
+                // Even dimensions use sine
+                return Math.sin(pos / Math.pow(10000, 2 * i / d_model));
+            } else {
+                // Odd dimensions use cosine
+                return Math.cos(pos / Math.pow(10000, 2 * i / d_model));
+            }
+        }
+        
+        // Create a sample sentence to visualize
+        const sampleTokens = ["The", "transformer", "model", "uses", "positional", "encoding", "for", "sequence", "information", "in", "self", "attention"];
+        
+        // Function to update token display
+        function updateTokens(sequenceLength) {
+            const tokenContainer = document.getElementById('token-container');
+            tokenContainer.innerHTML = '';
+            
+            for (let i = 0; i < sequenceLength; i++) {
+                const tokenElement = document.createElement('div');
+                tokenElement.className = 'token';
+                tokenElement.textContent = sampleTokens[i];
+                
+                const positionLabel = document.createElement('div');
+                positionLabel.className = 'token-position';
+                positionLabel.textContent = `Position ${i}`;
+                
+                tokenElement.appendChild(positionLabel);
+                tokenContainer.appendChild(tokenElement);
+            }
+        }
+        
+        // Function to visualize the positional encodings
+        function visualizeEncodings(selectedDimension, sequenceLength) {
+            const canvas = document.getElementById('encoding-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas dimensions based on device pixel ratio for sharper rendering
+            const pixelRatio = window.devicePixelRatio || 1;
+            canvas.width = canvas.offsetWidth * pixelRatio;
+            canvas.height = canvas.offsetHeight * pixelRatio;
+            ctx.scale(pixelRatio, pixelRatio);
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Determine dimensions to display
+            let dimensions = [];
+            if (selectedDimension === "all") {
+                // Show a selection of dimensions
+                dimensions = [0, 1, 2, 3, 4, 5, 8, 9, 16, 17, 24, 25];
+            } else {
+                // Show only the selected dimension and its pair
+                const dim = parseInt(selectedDimension);
+                dimensions = [dim, dim + 1];
+            }
+            
+            // Calculate layout
+            const canvasWidth = canvas.offsetWidth;
+            const canvasHeight = canvas.offsetHeight;
+            const padding = 20;
+            const availableWidth = canvasWidth - 2 * padding;
+            const cellWidth = availableWidth / sequenceLength;
+            const availableHeight = canvasHeight - 2 * padding;
+            const cellHeight = availableHeight / dimensions.length;
+            
+            // Draw the grid
+            ctx.strokeStyle = "#ddd";
+            ctx.lineWidth = 1;
+            
+            // Vertical grid lines
+            for (let i = 0; i <= sequenceLength; i++) {
+                ctx.beginPath();
+                ctx.moveTo(padding + i * cellWidth, padding);
+                ctx.lineTo(padding + i * cellWidth, canvasHeight - padding);
+                ctx.stroke();
+            }
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= dimensions.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(padding, padding + i * cellHeight);
+                ctx.lineTo(canvasWidth - padding, padding + i * cellHeight);
+                ctx.stroke();
+            }
+            
+            // Draw dimension labels on the left
+            ctx.fillStyle = "#666";
+            ctx.font = "12px Arial";
+            ctx.textAlign = "right";
+            dimensions.forEach((dim, i) => {
+                const y = padding + i * cellHeight + cellHeight / 2 + 4;
+                ctx.fillText(`Dim ${dim}`, padding - 5, y);
+            });
+            
+            // Draw position labels on top
+            ctx.textAlign = "center";
+            for (let i = 0; i < sequenceLength; i++) {
+                const x = padding + i * cellWidth + cellWidth / 2;
+                ctx.fillText(`Pos ${i}`, x, padding - 5);
+            }
+            
+            // Draw the encodings
+            dimensions.forEach((dim, dimIndex) => {
+                for (let pos = 0; pos < sequenceLength; pos++) {
+                    const encoding = getPositionalEncoding(pos, dim, D_MODEL);
+                    
+                    // Map the encoding value (-1 to 1) to a color intensity
+                    const normalizedValue = (encoding + 1) / 2; // Map from [-1,1] to [0,1]
+                    
+                    // Choose color based on whether it's a sine or cosine
+                    let color;
+                    if (dim % 2 === 0) {
+                        // Blue for sine (even dimensions)
+                        color = `rgba(52, 152, 219, ${normalizedValue.toFixed(2)})`;
+                    } else {
+                        // Red for cosine (odd dimensions)
+                        color = `rgba(231, 76, 60, ${normalizedValue.toFixed(2)})`;
+                    }
+                    
+                    // Draw the cell
+                    const x = padding + pos * cellWidth;
+                    const y = padding + dimIndex * cellHeight;
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, cellWidth, cellHeight);
+                    
+                    // Add value text
+                    const textX = x + cellWidth / 2;
+                    const textY = y + cellHeight / 2 + 4;
+                    ctx.fillStyle = "black";
+                    ctx.fillText(encoding.toFixed(2), textX, textY);
+                }
+            });
+            
+            // Add animation for the selected dimension
+            if (selectedDimension !== "all") {
+                const dim = parseInt(selectedDimension);
+                const dimIndex = dimensions.indexOf(dim);
+                if (dimIndex !== -1) {
+                    // Highlight the selected dimension row
+                    ctx.strokeStyle = "#3498db";
+                    ctx.lineWidth = 2;
+                    const y = padding + dimIndex * cellHeight;
+                    ctx.strokeRect(padding, y, availableWidth, cellHeight);
+                }
+            }
+        }
+        
+        // Initialize the demo
+        document.addEventListener('DOMContentLoaded', () => {
+            const dimensionSelect = document.getElementById('dimension-select');
+            const sequenceLengthSlider = document.getElementById('sequence-length');
+            const sequenceLengthValue = document.getElementById('sequence-length-value');
+            
+            // Initial update
+            updateTokens(parseInt(sequenceLengthSlider.value));
+            visualizeEncodings(dimensionSelect.value, parseInt(sequenceLengthSlider.value));
+            
+            // Event listeners for controls
+            dimensionSelect.addEventListener('change', () => {
+                visualizeEncodings(dimensionSelect.value, parseInt(sequenceLengthSlider.value));
+            });
+            
+            sequenceLengthSlider.addEventListener('input', () => {
+                const length = parseInt(sequenceLengthSlider.value);
+                sequenceLengthValue.textContent = length;
+                updateTokens(length);
+                visualizeEncodings(dimensionSelect.value, length);
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                visualizeEncodings(dimensionSelect.value, parseInt(sequenceLengthSlider.value));
+            });
+        });
+    </script>
+</body>
+</html>
