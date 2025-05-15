@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAR & Granger Causality Explained</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .section {
+            background-color: white;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .highlight {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 15px 0;
+        }
+        
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        canvas {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 5px;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .model-icon {
+            text-align: center;
+            font-size: 30px;
+            color: #3498db;
+        }
+        
+        .time-series-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .time-series {
+            margin: 10px;
+            text-align: center;
+        }
+        
+        .animation-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            margin: 30px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+        }
+        
+        .series {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .var-explanation {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        
+        .var-col {
+            flex: 1;
+            min-width: 300px;
+            margin: 10px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .equation {
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-size: 18px;
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .grid-line {
+            stroke: #e6e6e6;
+            stroke-width: 1;
+        }
+        
+        .axis-line {
+            stroke: #999;
+            stroke-width: 2;
+        }
+        
+        .data-point {
+            fill: #3498db;
+            r: 3;
+        }
+        
+        .forecast-point {
+            fill: #e74c3c;
+            r: 3;
+        }
+        
+        .line {
+            fill: none;
+            stroke-width: 2;
+        }
+        
+        .granger-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .variable-box {
+            width: 120px;
+            height: 60px;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 0 40px;
+        }
+        
+        .arrow {
+            width: 100px;
+            height: 20px;
+            position: relative;
+        }
+        
+        .arrow::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #333;
+            transform: translateY(-50%);
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            border-top: 2px solid #333;
+            border-right: 2px solid #333;
+            transform: translateY(-50%) rotate(45deg);
+        }
+
+        .model-comparison {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        
+        .model-card {
+            width: 48%;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .model-title {
+            font-weight: bold;
+            color: #3498db;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .model-vis {
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Understanding VAR & Granger Causality in Time Series Forecasting</h1>
+    
+    <div class="section">
+        <h2>Vector Autoregression (VAR) Model</h2>
+        
+        <div class="highlight">
+            <p>Vector Autoregression (VAR) is a multivariate time series model that captures the linear interdependencies among multiple time series. Unlike univariate models like AR or ARIMA that focus on a single time series, VAR analyzes how multiple variables affect each other over time.</p>
+        </div>
+        
+        <div class="var-explanation">
+            <div class="var-col">
+                <h3>Key Characteristics</h3>
+                <ul>
+                    <li>Models multiple time series simultaneously</li>
+                    <li>Captures interdependencies between variables</li>
+                    <li>Each variable is influenced by its own past values and past values of other variables</li>
+                    <li>Treats all variables as potentially endogenous</li>
+                    <li>Requires stationary time series (often achieved by differencing)</li>
+                </ul>
+            </div>
+            
+            <div class="var-col">
+                <h3>Mathematical Representation</h3>
+                <p>A VAR(p) model with p lags and k variables can be written as:</p>
+                <div class="equation">
+                    Y<sub>t</sub> = c + A<sub>1</sub>Y<sub>t-1</sub> + A<sub>2</sub>Y<sub>t-2</sub> + ... + A<sub>p</sub>Y<sub>t-p</sub> + ε<sub>t</sub>
+                </div>
+                <p>Where:</p>
+                <ul>
+                    <li>Y<sub>t</sub> is a k×1 vector of variables at time t</li>
+                    <li>c is a k×1 vector of constants</li>
+                    <li>A<sub>i</sub> are k×k matrices of coefficients</li>
+                    <li>ε<sub>t</sub> is a k×1 vector of error terms</li>
+                </ul>
+            </div>
+        </div>
+        
+        <h3>Example: A VAR(1) Model with Two Variables</h3>
+        <p>Consider a VAR(1) model with two variables (stock prices and trading volume):</p>
+        
+        <div class="equation">
+            <div>Stock<sub>t</sub> = c<sub>1</sub> + a<sub>11</sub>Stock<sub>t-1</sub> + a<sub>12</sub>Volume<sub>t-1</sub> + ε<sub>1t</sub></div>
+            <div>Volume<sub>t</sub> = c<sub>2</sub> + a<sub>21</sub>Stock<sub>t-1</sub> + a<sub>22</sub>Volume<sub>t-1</sub> + ε<sub>2t</sub></div>
+        </div>
+        
+        <p>This model shows how current stock prices and trading volumes are influenced by their previous values as well as each other's previous values.</p>
+    </div>
+    
+    <div class="section">
+        <h2>Granger Causality</h2>
+        
+        <div class="highlight">
+            <p>Granger causality is a statistical concept that helps determine whether one time series is useful in forecasting another. If variable X "Granger-causes" variable Y, then past values of X contain information that helps predict Y beyond the information contained in past values of Y alone.</p>
+        </div>
+        
+        <p>It's important to note that Granger causality is not the same as true causality - it only measures predictive causality. The concept was developed by Nobel Prize-winning economist Clive Granger.</p>
+        
+        <h3>Key Points about Granger Causality</h3>
+        <ul>
+            <li>Tests whether including past values of X in a model improves predictions of Y</li>
+            <li>Based on VAR models and F-tests</li>
+            <li>Requires stationary time series</li>
+            <li>Can detect bidirectional relationships</li>
+            <li>Does not establish true causality, only "predictive causality"</li>
+        </ul>
+        
+        <div class="granger-diagram">
+            <div class="variable-box">Variable X</div>
+            <div class="arrow"></div>
+            <div class="variable-box">Variable Y</div>
+        </div>
+        
+        <h3>Testing for Granger Causality</h3>
+        <p>The process involves:</p>
+        <ol>
+            <li>Estimate a VAR model for variables X and Y</li>
+            <li>Test the null hypothesis that coefficients on lagged values of X in the Y equation are jointly zero</li>
+            <li>If we reject the null hypothesis, X "Granger-causes" Y</li>
+        </ol>
+        
+        <div class="highlight">
+            <p>Example: Testing if stock prices Granger-cause trading volume would involve determining if past stock prices help predict current trading volume beyond what past trading volume alone could predict.</p>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Sample Dataset Visualization</h2>
+        <p>Let's visualize a sample dataset of two time series variables to demonstrate VAR modeling and Granger causality.</p>
+        
+        <div class="canvas-container">
+            <canvas id="datasetCanvas" width="900" height="400"></canvas>
+        </div>
+        
+        <div class="controls">
+            <button id="generateBtn">Generate New Data</button>
+            <button id="fitVARBtn">Fit VAR Model</button>
+            <button id="forecastBtn">Show Forecasts</button>
+        </div>
+        
+        <div id="grangerResults" class="highlight" style="display: none;">
+            <h3>Granger Causality Test Results</h3>
+            <p id="grangerText"></p>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>VAR Model Animation</h2>
+        <p>The animation below demonstrates how a VAR model captures the relationships between multiple time series variables:</p>
+        
+        <div class="animation-container">
+            <svg id="varAnimation" width="100%" height="100%" viewBox="0 0 1000 400">
+                <!-- Animation will be rendered here -->
+            </svg>
+        </div>
+        
+        <div class="controls">
+            <button id="animateBtn">Run Animation</button>
+            <button id="resetAnimBtn">Reset</button>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Comparison of Time Series Forecasting Models</h2>
+        
+        <table id="modelComparison">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
+                    <th>When to Use</th>
+                    <th>Limitations</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>AR</strong><br>Autoregressive</td>
+                    <td>Models a variable as a linear combination of its past values</td>
+                    <td>
+                        <ul>
+                            <li>Univariate</li>
+                            <li>Captures linear relationships</li>
+                            <li>Requires stationarity</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Simple time series with clear autocorrelation</li>
+                            <li>When current values depend mainly on recent past values</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Cannot capture seasonal patterns</li>
+                            <li>Doesn't account for external variables</li>
+                            <li>Limited to linear relationships</li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>ARIMA</strong><br>Autoregressive Integrated Moving Average</td>
+                    <td>Combines autoregressive and moving average components with differencing for non-stationary data</td>
+                    <td>
+                        <ul>
+                            <li>Univariate</li>
+                            <li>Handles non-stationarity through differencing</li>
+                            <li>Includes moving average terms for error modeling</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Non-stationary time series</li>
+                            <li>When both trends and noise patterns are present</li>
+                            <li>Medium-term forecasting</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Cannot capture seasonality</li>
+                            <li>Struggles with complex patterns</li>
+                            <li>Doesn't account for external variables</li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>VAR</strong><br>Vector Autoregression</td>
+                    <td>Multivariate extension of AR models that captures interdependencies between multiple time series</td>
+                    <td>
+                        <ul>
+                            <li>Multivariate</li>
+                            <li>Captures interdependencies</li>
+                            <li>Treats all variables as endogenous</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Analyzing relationships between variables</li>
+                            <li>Testing for Granger causality</li>
+                            <li>When variables influence each other</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Requires stationarity</li>
+                            <li>Parameter explosion with many variables</li>
+                            <li>Cannot directly handle seasonality</li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>SARIMA</strong><br>Seasonal ARIMA</td>
+                    <td>Extension of ARIMA that incorporates seasonal components for periodic patterns</td>
+                    <td>
+                        <ul>
+                            <li>Univariate</li>
+                            <li>Handles seasonality explicitly</li>
+                            <li>Combines non-seasonal and seasonal components</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Seasonal time series (monthly, quarterly)</li>
+                            <li>When data shows repeating patterns</li>
+                            <li>Retail sales, tourism, energy consumption</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Complex parameterization</li>
+                            <li>Doesn't account for external variables</li>
+                            <li>Struggles with changing seasonality</li>
+                        </ul>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>Visual Comparison of Models</h2>
+        
+        <div class="model-comparison">
+            <div class="model-card">
+                <div class="model-title">AR (Autoregressive)</div>
+                <div class="model-vis">
+                    <svg width="100%" height="100%" viewBox="0 0 300 100">
+                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
+                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
+                        <text x="20" y="20" text-anchor="end">Y</text>
+                        <text x="270" y="95" text-anchor="end">t</text>
+                        
+                        <!-- AR Pattern -->
+                        <path d="M30,50 Q65,30 100,60 Q135,85 170,50 Q205,20 240,40 Q275,60 310,45" stroke="#3498db" stroke-width="2" fill="none"/>
+                        
+                        <!-- AR Effect Visualization -->
+                        <line x1="170" y1="50" x2="120" y2="60" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="3,3"/>
+                        <circle cx="170" cy="50" r="4" fill="#3498db"/>
+                        <circle cx="120" cy="60" r="4" fill="#9b59b6"/>
+                    </svg>
+                </div>
+                <p>AR models predict future values based on past values of the same variable. The current value (blue) is influenced by previous values (purple).</p>
+            </div>
+            
+            <div class="model-card">
+                <div class="model-title">ARIMA (Autoregressive Integrated Moving Average)</div>
+                <div class="model-vis">
+                    <svg width="100%" height="100%" viewBox="0 0 300 100">
+                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
+                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
+                        <text x="20" y="20" text-anchor="end">Y</text>
+                        <text x="270" y="95" text-anchor="end">t</text>
+                        
+                        <!-- ARIMA Pattern -->
+                        <path d="M30,60 Q50,50 70,40 Q90,30 110,35 Q130,40 150,30 Q170,20 190,30 Q210,40 230,35 Q250,30 270,20" stroke="#3498db" stroke-width="2" fill="none"/>
+                        
+                        <!-- Differencing -->
+                        <path d="M30,70 Q50,65 70,60 Q90,55 110,60 Q130,65 150,55 Q170,45 190,55 Q210,65 230,60 Q250,55 270,45" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="2,2"/>
+                        
+                        <!-- Error component -->
+                        <line x1="190" y1="30" x2="190" y2="40" stroke="#e74c3c" stroke-width="1.5"/>
+                        <line x1="210" y1="40" x2="210" y2="30" stroke="#e74c3c" stroke-width="1.5"/>
+                        <line x1="230" y1="35" x2="230" y2="45" stroke="#e74c3c" stroke-width="1.5"/>
+                    </svg>
+                </div>
+                <p>ARIMA extends AR by adding differencing (green dashed line) to handle non-stationarity and moving average components to model error terms (red vertical lines).</p>
+            </div>
+            
+            <div class="model-card">
+                <div class="model-title">VAR (Vector Autoregression)</div>
+                <div class="model-vis">
+                    <svg width="100%" height="100%" viewBox="0 0 300 100">
+                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
+                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
+                        <text x="20" y="20" text-anchor="end">Y</text>
+                        <text x="270" y="95" text-anchor="end">t</text>
+                        
+                        <!-- First series -->
+                        <path d="M30,60 Q65,40 100,50 Q135,60 170,40 Q205,20 240,30 Q275,40 310,30" stroke="#3498db" stroke-width="2" fill="none"/>
+                        
+                        <!-- Second series -->
+                        <path d="M30,40 Q65,60 100,30 Q135,20 170,60 Q205,70 240,50 Q275,30 310,50" stroke="#e74c3c" stroke-width="2" fill="none"/>
+                        
+                        <!-- Interdependence arrows -->
+                        <line x1="135" y1="20" x2="170" y2="40" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
+                        <line x1="135" y1="60" x2="170" y2="60" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
+                    </svg>
+                </div>
+                <p>VAR models multiple time series simultaneously, capturing interdependencies between variables. Each series (blue and red) influences both its own future values and the values of other series.</p>
+            </div>
+            
+            <div class="model-card">
+                <div class="model-title">SARIMA (Seasonal ARIMA)</div>
+                <div class="model-vis">
+                    <svg width="100%" height="100%" viewBox="0 0 300 100">
+                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
+                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
+                        <text x="20" y="20" text-anchor="end">Y</text>
+                        <text x="270" y="95" text-anchor="end">t</text>
+                        
+                        <!-- SARIMA Pattern -->
+                        <path d="M30,70 Q40,60 50,50 Q60,40 70,50 Q80,60 90,70 Q100,80 110,70 Q120,60 130,50 Q140,40 150,50 Q160,60 170,70 Q180,80 190,70 Q200,60 210,50 Q220,40 230,50 Q240,60 250,70 Q260,80 270,70" stroke="#3498db" stroke-width="2" fill="none"/>
+                        
+                        <!-- Seasonal Component -->
+                        <path d="M30,50 Q70,30 110,50 Q150,70 190,50 Q230,30 270,50" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="5,2"/>
+                        
+                        <!-- Trend Component -->
+                        <path d="M30,60 Q90,55 150,50 Q210,45 270,40" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="2,2"/>
+                    </svg>
+                </div>
+                <p>SARIMA extends ARIMA to handle seasonal patterns. It separates the time series into seasonal (red dashed), trend (green dashed), and irregular components for more accurate modeling of periodic data.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Application in Finance and Economics</h2>
+        <p>VAR models and Granger causality are particularly useful in financial and economic analyses:</p>
+        
+        <div class="highlight">
+            <h3>Common Applications:</h3>
+            <ul>
+                <li><strong>Stock market analysis:</strong> Examining relationships between stock prices, trading volumes, and market indices</li>
+                <li><strong>Macroeconomic forecasting:</strong> Analyzing interdependencies between GDP, inflation, unemployment, and interest rates</li>
+                <li><strong>Supply chain optimization:</strong> Modeling relationships between inventory levels, production rates, and demand</li>
+                <li><strong>Policy impact assessment:</strong> Evaluating how monetary policy changes affect various economic indicators</li>
+            </ul>
+        </div>
+        
+        <p>The VAR approach is especially valuable when dealing with Plan C from your assignment, which involves analyzing share prices and their relationships with economic indicators.</p>
+    </div>
+    
+    <script>
+        // JavaScript for interactive visualizations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sample data generation
+            function generateData(n = 100, hasRelationship = true) {
+                const series1 = [];
+                const series2 = [];
+                
+                // Initial values
+                series1.push(Math.random() * 10);
+                series2.push(Math.random() * 10);
+                
+                // Generate time series with potential Granger causality
+                for (let i = 1; i < n; i++) {
+                    // Series 1 follows an AR(1) process
+                    const newVal1 = 2 + 0.8 * series1[i-1] + (Math.random() - 0.5) * 2;
+                    series1.push(newVal1);
+                    
+                    // Series 2 is influenced by Series 1 (if hasRelationship is true)
+                    const influence = hasRelationship ? 0.4 * series1[i-1] : 0;
+                    const newVal2 = 5 + 0.6 * series2[i-1] + influence + (Math.random() - 0.5) * 2;
+                    series2.push(newVal2);
+                }
+                
+                return { series1, series2 };
+            }
+            
+            // Initialize canvas
+            const canvas = document.getElementById('datasetCanvas');
+            const ctx = canvas.getContext('2d');
+            let data = generateData();
+            let forecasts = null;
+            
+            // Draw time series
+            function drawTimeSeries() {
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw grid
+                ctx.strokeStyle = '#e6e6e6';
+                ctx.lineWidth = 1;
+                
+                // Vertical grid lines
+                for (let i = 0; i <= 10; i++) {
+                    const x = 50 + (width - 100) * i / 10;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 20);
+                    ctx.lineTo(x, height - 30);
+                    ctx.stroke();
+                }
+                
+                // Horizontal grid lines
+                for (let i = 0; i <= 5; i++) {
+                    const y = 20 + (height - 50) * i / 5;
+                    ctx.beginPath();
+                    ctx.moveTo(50, y);
+                    ctx.lineTo(width - 50, y);
+                    ctx.stroke();
+                }
+                
+                // Draw axes
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(50, height - 30);
+                ctx.lineTo(width - 50, height - 30); // x-axis
+                ctx.moveTo(50, height - 30);
+                ctx.lineTo(50, 20); // y-axis
+                ctx.stroke();
+                
+                // Find min/max values for scaling
+                const allValues = [...data.series1, ...data.series2];
+                const minVal = Math.min(...allValues);
+                const maxVal = Math.max(...allValues);
+                const valueRange = maxVal - minVal;
+                
+                // Draw data series 1
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < data.series1.length; i++) {
+                    const x = 50 + (width - 100) * i / data.series1.length;
+                    const y = height - 30 - ((data.series1[i] - minVal) / valueRange) * (height - 50);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                // Draw data series 2
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < data.series2.length; i++) {
+                    const x = 50 + (width - 100) * i / data.series2.length;
+                    const y = height - 30 - ((data.series2[i] - minVal) / valueRange) * (height - 50);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                // Draw forecasts if available
+                if (forecasts) {
+                    const n = data.series1.length;
+                    
+                    // Draw forecast for series 1
+                    ctx.strokeStyle = '#3498db';
+                    ctx.setLineDash([5, 3]);
+                    ctx.beginPath();
+                    
+                    const lastX1 = 50 + (width - 100) * (n - 1) / n;
+                    const lastY1 = height - 30 - ((data.series1[n - 1] - minVal) / valueRange) * (height - 50);
+                    ctx.moveTo(lastX1, lastY1);
+                    
+                    for (let i = 0; i < forecasts.series1.length; i++) {
+                        const x = 50 + (width - 100) * (n + i) / n;
+                        const y = height - 30 - ((forecasts.series1[i] - minVal) / valueRange) * (height - 50);
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Draw forecast for series 2
+                    ctx.strokeStyle = '#e74c3c';
+                    ctx.setLineDash([5, 3]);
+                    ctx.beginPath();
+                    
+                    const lastX2 = 50 + (width - 100) * (n - 1) / n;
+                    const lastY2 = height - 30 - ((data.series2[n - 1] - minVal) / valueRange) * (height - 50);
+                    ctx.moveTo(lastX2, lastY2);
+                    
+                    for (let i = 0; i < forecasts.series2.length; i++) {
+                        const x = 50 + (width - 100) * (n + i) / n;
+                        const y = height - 30 - ((forecasts.series2[i] - minVal) / valueRange) * (height - 50);
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                
+                // Add labels
+                ctx.fillStyle = '#333';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Time', width / 2, height - 5);
+                
+                ctx.save();
+                ctx.translate(15, height / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Value', 0, 0);
+                ctx.restore();
+                
+                // Add legend
+                ctx.fillStyle = '#3498db';
+                ctx.fillRect(width - 140, 20, 15, 15);
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'left';
+                ctx.fillText('Series 1', width - 120, 33);
+                
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(width - 140, 45, 15, 15);
+                ctx.fillStyle = '#333';
+                ctx.fillText('Series 2', width - 120, 58);
+                
+                if (forecasts) {
+                    ctx.strokeStyle = '#333';
+                    ctx.setLineDash([5, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(width - 140, 70);
+                    ctx.lineTo(width - 125, 70);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillText('Forecast', width - 120, 73);
+                }
+            }
+            
+            // Generate new data
+            document.getElementById('generateBtn').addEventListener('click', function() {
+                data = generateData(100, Math.random() > 0.3); // 70% chance of relationship
+                forecasts = null;
+                document.getElementById('grangerResults').style.display = 'none';
+                drawTimeSeries();
+            });
+            
+            // Fit VAR model (simulation)
+            document.getElementById('fitVARBtn').addEventListener('click', function() {
+                // Simulate VAR model fitting
+                const hasRelationship = Math.random() > 0.3; // 70% chance of relationship
+                
+                const grangerResults = document.getElementById('grangerResults');
+                grangerResults.style.display = 'block';
+                
+                const grangerText = document.getElementById('grangerText');
+                
+                if (hasRelationship) {
+                    const direction = Math.random() > 0.5 ? 
+                        "Series 1 Granger-causes Series 2 (p-value: 0.023)" : 
+                        "Series 2 Granger-causes Series 1 (p-value: 0.041)";
+                    grangerText.innerHTML = `<strong>Result:</strong> ${direction}<br><br>This indicates a statistically significant relationship where past values of one series help predict the other series.`;
+                } else {
+                    grangerText.innerHTML = `<strong>Result:</strong> No Granger causality detected between Series 1 and Series 2 (p-values > 0.05)<br><br>This suggests that neither series significantly helps predict the other beyond what can be predicted using each series' own past values.`;
+                }
+            });
+            
+            // Generate forecasts
+            document.getElementById('forecastBtn').addEventListener('click', function() {
+                // Simple forecast generation
+                const lastVal1 = data.series1[data.series1.length - 1];
+                const lastVal2 = data.series2[data.series2.length - 1];
+                
+                const forecast1 = [];
+                const forecast2 = [];
+                
+                let prev1 = lastVal1;
+                let prev2 = lastVal2;
+                
+                // Generate 10 forecast points
+                for (let i = 0; i < 10; i++) {
+                    // Simple AR(1) forecast with noise
+                    const next1 = 2 + 0.8 * prev1 + (Math.random() - 0.5);
+                    forecast1.push(next1);
+                    
+                    // VAR effect where series 2 is influenced by series 1
+                    const next2 = 5 + 0.6 * prev2 + 0.4 * prev1 + (Math.random() - 0.5);
+                    forecast2.push(next2);
+                    
+                    prev1 = next1;
+                    prev2 = next2;
+                }
+                
+                forecasts = { series1: forecast1, series2: forecast2 };
+                drawTimeSeries();
+            });
+            
+            // VAR Animation
+            const svg = document.getElementById('varAnimation');
+            let animationData = null;
+            
+            function setupVARAnimation() {
+                // Clear SVG
+                while (svg.firstChild) {
+                    svg.removeChild(svg.firstChild);
+                }
+                
+                // Define arrow marker
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', 'arrowhead');
+                marker.setAttribute('markerWidth', '10');
+                marker.setAttribute('markerHeight', '7');
+                marker.setAttribute('refX', '10');
+                marker.setAttribute('refY', '3.5');
+                marker.setAttribute('orient', 'auto');
+                
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+                polygon.setAttribute('fill', '#333');
+                
+                marker.appendChild(polygon);
+                defs.appendChild(marker);
+                svg.appendChild(defs);
+                
+                // Grid lines
+                for (let i = 0; i <= 10; i++) {
+                    const x = 50 + (900) * i / 10;
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', x);
+                    line.setAttribute('y1', 50);
+                    line.setAttribute('x2', x);
+                    line.setAttribute('y2', 350);
+                    line.setAttribute('class', 'grid-line');
+                    svg.appendChild(line);
+                }
+                
+                for (let i = 0; i <= 6; i++) {
+                    const y = 50 + 300 * i / 6;
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', 50);
+                    line.setAttribute('y1', y);
+                    line.setAttribute('x2', 950);
+                    line.setAttribute('y2', y);
+                    line.setAttribute('class', 'grid-line');
+                    svg.appendChild(line);
+                }
+                
+                // Axes
+                const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                xAxis.setAttribute('x1', 50);
+                xAxis.setAttribute('y1', 350);
+                xAxis.setAttribute('x2', 950);
+                xAxis.setAttribute('y2', 350);
+                xAxis.setAttribute('class', 'axis-line');
+                svg.appendChild(xAxis);
+                
+                const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                yAxis.setAttribute('x1', 50);
+                yAxis.setAttribute('y1', 350);
+                yAxis.setAttribute('x2', 50);
+                yAxis.setAttribute('y2', 50);
+                yAxis.setAttribute('class', 'axis-line');
+                svg.appendChild(yAxis);
+                
+                // Labels
+                const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                xLabel.setAttribute('x', 500);
+                xLabel.setAttribute('y', 390);
+                xLabel.setAttribute('text-anchor', 'middle');
+                xLabel.textContent = 'Time';
+                svg.appendChild(xLabel);
+                
+                const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                yLabel.setAttribute('x', 20);
+                yLabel.setAttribute('y', 200);
+                yLabel.setAttribute('text-anchor', 'middle');
+                yLabel.setAttribute('transform', 'rotate(-90, 20, 200)');
+                yLabel.textContent = 'Value';
+                svg.appendChild(yLabel);
+                
+                // Legend
+                const legend1Rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                legend1Rect.setAttribute('x', 800);
+                legend1Rect.setAttribute('y', 70);
+                legend1Rect.setAttribute('width', 15);
+                legend1Rect.setAttribute('height', 15);
+                legend1Rect.setAttribute('fill', '#3498db');
+                svg.appendChild(legend1Rect);
+                
+                const legend1Text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                legend1Text.setAttribute('x', 825);
+                legend1Text.setAttribute('y', 83);
+                legend1Text.textContent = 'Series 1';
+                svg.appendChild(legend1Text);
+                
+                const legend2Rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                legend2Rect.setAttribute('x', 800);
+                legend2Rect.setAttribute('y', 100);
+                legend2Rect.setAttribute('width', 15);
+                legend2Rect.setAttribute('height', 15);
+                legend2Rect.setAttribute('fill', '#e74c3c');
+                svg.appendChild(legend2Rect);
+                
+                const legend2Text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                legend2Text.setAttribute('x', 825);
+                legend2Text.setAttribute('y', 113);
+                legend2Text.textContent = 'Series 2';
+                svg.appendChild(legend2Text);
+                
+                // Generate animation data
+                const n = 20; // Number of points
+                animationData = generateData(n);
+                
+                // Create path elements for each series
+                const pathData1 = [];
+                const pathData2 = [];
+                
+                for (let i = 0; i < n; i++) {
+                    const x = 50 + 850 * i / (n - 1);
+                    
+                    // Scale values to fit in the SVG
+                    const y1 = 350 - 250 * (animationData.series1[i] / 15);
+                    const y2 = 350 - 250 * (animationData.series2[i] / 15);
+                    
+                    pathData1.push(i === 0 ? `M${x},${y1}` : `L${x},${y1}`);
+                    pathData2.push(i === 0 ? `M${x},${y2}` : `L${x},${y2}`);
+                }
+                
+                const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path1.setAttribute('d', pathData1.join(' '));
+                path1.setAttribute('class', 'line');
+                path1.setAttribute('stroke', '#3498db');
+                svg.appendChild(path1);
+                
+                const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path2.setAttribute('d', pathData2.join(' '));
+                path2.setAttribute('class', 'line');
+                path2.setAttribute('stroke', '#e74c3c');
+                svg.appendChild(path2);
+                
+                // Add points
+                for (let i = 0; i < n; i++) {
+                    const x = 50 + 850 * i / (n - 1);
+                    const y1 = 350 - 250 * (animationData.series1[i] / 15);
+                    const y2 = 350 - 250 * (animationData.series2[i] / 15);
+                    
+                    const point1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    point1.setAttribute('cx', x);
+                    point1.setAttribute('cy', y1);
+                    point1.setAttribute('class', 'data-point');
+                    point1.setAttribute('fill', '#3498db');
+                    point1.setAttribute('r', '4');
+                    svg.appendChild(point1);
+                    
+                    const point2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    point2.setAttribute('cx', x);
+                    point2.setAttribute('cy', y2);
+                    point2.setAttribute('class', 'data-point');
+                    point2.setAttribute('fill', '#e74c3c');
+                    point2.setAttribute('r', '4');
+                    svg.appendChild(point2);
+                }
+            }
+            
+            function runVARAnimation() {
+                // Remove existing influences
+                const influences = svg.querySelectorAll('.influence');
+                influences.forEach(influence => svg.removeChild(influence));
+                
+                // Create VAR influences
+                const n = animationData.series1.length;
+                
+                // Animate the VAR relationships
+                for (let i = n - 5; i < n - 1; i++) {
+                    const x1 = 50 + 850 * i / (n - 1);
+                    const y1_1 = 350 - 250 * (animationData.series1[i] / 15);
+                    const y1_2 = 350 - 250 * (animationData.series2[i] / 15);
+                    
+                    const x2 = 50 + 850 * (i + 1) / (n - 1);
+                    const y2_1 = 350 - 250 * (animationData.series1[i + 1] / 15);
+                    const y2_2 = 350 - 250 * (animationData.series2[i + 1] / 15);
+                    
+                    // Series 1 -> Series 1
+                    setTimeout(() => {
+                        const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line1.setAttribute('x1', x1);
+                        line1.setAttribute('y1', y1_1);
+                        line1.setAttribute('x2', x2);
+                        line1.setAttribute('y2', y2_1);
+                        line1.setAttribute('stroke', '#3498db');
+                        line1.setAttribute('stroke-width', '2');
+                        line1.setAttribute('stroke-dasharray', '5,3');
+                        line1.setAttribute('marker-end', 'url(#arrowhead)');
+                        line1.setAttribute('class', 'influence');
+                        svg.appendChild(line1);
+                        
+                        // Add coefficient
+                        const midX1 = (x1 + x2) / 2;
+                        const midY1 = (y1_1 + y2_1) / 2 - 10;
+                        
+                        const coef1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        coef1.setAttribute('x', midX1);
+                        coef1.setAttribute('y', midY1);
+                        coef1.setAttribute('text-anchor', 'middle');
+                        coef1.setAttribute('class', 'influence');
+                        coef1.textContent = 'β₁₁';
+                        svg.appendChild(coef1);
+                    }, 500 * (i - (n - 5)));
+                    
+                    // Series 2 -> Series 2
+                    setTimeout(() => {
+                        const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line2.setAttribute('x1', x1);
+                        line2.setAttribute('y1', y1_2);
+                        line2.setAttribute('x2', x2);
+                        line2.setAttribute('y2', y2_2);
+                        line2.setAttribute('stroke', '#e74c3c');
+                        line2.setAttribute('stroke-width', '2');
+                        line2.setAttribute('stroke-dasharray', '5,3');
+                        line2.setAttribute('marker-end', 'url(#arrowhead)');
+                        line2.setAttribute('class', 'influence');
+                        svg.appendChild(line2);
+                        
+                        // Add coefficient
+                        const midX2 = (x1 + x2) / 2;
+                        const midY2 = (y1_2 + y2_2) / 2 - 10;
+                        
+                        const coef2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        coef2.setAttribute('x', midX2);
+                        coef2.setAttribute('y', midY2);
+                        coef2.setAttribute('text-anchor', 'middle');
+                        coef2.setAttribute('class', 'influence');
+                        coef2.textContent = 'β₂₂';
+                        svg.appendChild(coef2);
+                    }, 500 * (i - (n - 5)) + 250);
+                    
+                    // Series 1 -> Series 2 (Granger causality)
+                    setTimeout(() => {
+                        const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line3.setAttribute('x1', x1);
+                        line3.setAttribute('y1', y1_1);
+                        line3.setAttribute('x2', x2);
+                        line3.setAttribute('y2', y2_2);
+                        line3.setAttribute('stroke', '#9b59b6');
+                        line3.setAttribute('stroke-width', '2');
+                        line3.setAttribute('stroke-dasharray', '5,3');
+                        line3.setAttribute('marker-end', 'url(#arrowhead)');
+                        line3.setAttribute('class', 'influence');
+                        svg.appendChild(line3);
+                        
+                        // Add coefficient
+                        const midX3 = (x1 + x2) / 2 + 10;
+                        const midY3 = (y1_1 + y2_2) / 2;
+                        
+                        const coef3 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        coef3.setAttribute('x', midX3);
+                        coef3.setAttribute('y', midY3);
+                        coef3.setAttribute('text-anchor', 'middle');
+                        coef3.setAttribute('class', 'influence');
+                        coef3.textContent = 'β₂₁';
+                        svg.appendChild(coef3);
+                    }, 500 * (i - (n - 5)) + 375);
+                }
+                
+                // Generate and show forecast
+                setTimeout(() => {
+                    // Create forecast points
+                    const lastX = 50 + 850;
+                    const lastY1 = 350 - 250 * (animationData.series1[n - 1] / 15);
+                    const lastY2 = 350 - 250 * (animationData.series2[n - 1] / 15);
+                    
+                    // VAR forecasts
+                    const forecastX = lastX + 50;
+                    
+                    // Use VAR equations
+                    const forecastY1 = 350 - 250 * ((2 + 0.7 * animationData.series1[n - 1] + 0.2 * animationData.series2[n - 1]) / 15);
+                    const forecastY2 = 350 - 250 * ((5 + 0.4 * animationData.series1[n - 1] + 0.5 * animationData.series2[n - 1]) / 15);
+                    
+                    // Forecast lines
+                    const forecastLine1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    forecastLine1.setAttribute('x1', lastX);
+                    forecastLine1.setAttribute('y1', lastY1);
+                    forecastLine1.setAttribute('x2', forecastX);
+                    forecastLine1.setAttribute('y2', forecastY1);
+                    forecastLine1.setAttribute('stroke', '#3498db');
+                    forecastLine1.setAttribute('stroke-width', '2');
+                    forecastLine1.setAttribute('stroke-dasharray', '5,3');
+                    forecastLine1.setAttribute('class', 'influence');
+                    svg.appendChild(forecastLine1);
+                    
+                    const forecastLine2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    forecastLine2.setAttribute('x1', lastX);
+                    forecastLine2.setAttribute('y1', lastY2);
+                    forecastLine2.setAttribute('x2', forecastX);
+                    forecastLine2.setAttribute('y2', forecastY2);
+                    forecastLine2.setAttribute('stroke', '#e74c3c');
+                    forecastLine2.setAttribute('stroke-width', '2');
+                    forecastLine2.setAttribute('stroke-dasharray', '5,3');
+                    forecastLine2.setAttribute('class', 'influence');
+                    svg.appendChild(forecastLine2);
+                    
+                    // Forecast points
+                    const forecastPoint1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    forecastPoint1.setAttribute('cx', forecastX);
+                    forecastPoint1.setAttribute('cy', forecastY1);
+                    forecastPoint1.setAttribute('class', 'forecast-point influence');
+                    forecastPoint1.setAttribute('fill', '#3498db');
+                    forecastPoint1.setAttribute('r', '4');
+                    svg.appendChild(forecastPoint1);
+                    
+                    const forecastPoint2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    forecastPoint2.setAttribute('cx', forecastX);
+                    forecastPoint2.setAttribute('cy', forecastY2);
+                    forecastPoint2.setAttribute('class', 'forecast-point influence');
+                    forecastPoint2.setAttribute('fill', '#e74c3c');
+                    forecastPoint2.setAttribute('r', '4');
+                    svg.appendChild(forecastPoint2);
+                    
+                    // Forecast label
+                    const forecastLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    forecastLabel.setAttribute('x', forecastX);
+                    forecastLabel.setAttribute('y', 30);
+                    forecastLabel.setAttribute('text-anchor', 'middle');
+                    forecastLabel.setAttribute('class', 'influence');
+                    forecastLabel.setAttribute('font-weight', 'bold');
+                    forecastLabel.textContent = 'VAR Forecast';
+                    svg.appendChild(forecastLabel);
+                    
+                    // VAR equation
+                    const equation = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    equation.setAttribute('x', 500);
+                    equation.setAttribute('y', 430);
+                    equation.setAttribute('text-anchor', 'middle');
+                    equation.setAttribute('class', 'influence');
+                    equation.innerHTML = 'Y<tspan dy="-5" font-size="80%">t</tspan><tspan dy="5"> = c + A</tspan><tspan dy="-5" font-size="80%">1</tspan><tspan dy="5">Y</tspan><tspan dy="-5" font-size="80%">t-1</tspan><tspan dy="5"> + ε</tspan><tspan dy="-5" font-size="80%">t</tspan>';
+                    svg.appendChild(equation);
+                }, 2500);
+            }
+            
+            // Set up animation
+            document.getElementById('animateBtn').addEventListener('click', function() {
+                runVARAnimation();
+            });
+            
+            document.getElementById('resetAnimBtn').addEventListener('click', function() {
+                setupVARAnimation();
+            });
+            
+            // Initialize visualizations
+            drawTimeSeries();
+            setupVARAnimation();
+        });
+    </script>
+</body>
+</html>
