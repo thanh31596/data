@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Concepts Interactive Slideshow</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .slideshow-container {
+            background-color: #fff;
+            color: #333;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        .slide {
+            display: none;
+            flex-direction: column;
+            min-height: 600px;
+            padding: 20px;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .slide-header h2 {
+            color: #2563eb;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .slide-counter {
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .slide-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 10px 0;
+        }
+        
+        .slide-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #eee;
+            padding-top: 16px;
+            margin-top: 20px;
+        }
+        
+        .nav-button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .nav-button.disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        
+        .slide-dots {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .slide-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .slide-dot.active {
+            background-color: #2563eb;
+        }
+        
+        /* Slide-specific styles */
+        .example-sentence {
+            font-size: 20px;
+            font-weight: 500;
+            color: #1e293b;
+            margin: 16px 0;
+            padding: 12px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .topics-list {
+            margin-top: 12px;
+            margin-left: 24px;
+        }
+        
+        .topics-list li {
+            margin-bottom: 8px;
+        }
+        
+        .word-tokens {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 24px 0;
+        }
+        
+        .word-token {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #e0e7ff;
+            min-width: 80px;
+        }
+        
+        .word-token .word {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .word-token .token {
+            font-size: 12px;
+            color: #4338ca;
+        }
+        
+        .token-explanation, .attention-explanation, .prediction-explanation {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .attention-weights, .prediction-weights {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 16px 0;
+        }
+        
+        .attention-weight, .prediction-weight {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 32px;
+        }
+        
+        .attention-weight .word, .prediction-weight .word {
+            min-width: 80px;
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        .weight-bar {
+            height: 20px;
+            background-color: #3b82f6;
+            border-radius: 4px;
+            min-width: 2px;
+            transition: width 0.5s;
+        }
+        
+        .weight-value {
+            min-width: 40px;
+            font-size: 14px;
+            color: #475569;
+        }
+        
+        .prediction-example h4, .attention-example h4 {
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #334155;
+        }
+        
+        .process-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .process-step {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #2563eb;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .step-content h4 {
+            margin: 0 0 8px 0;
+            color: #334155;
+        }
+        
+        .step-content p {
+            margin: 0;
+            color: #475569;
+        }
+        
+        .key-insights {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .key-insights h4 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #334155;
+        }
+        
+        .key-insights ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .key-insights li {
+            margin-bottom: 8px;
+        }
+
+        p {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slideshow-container">
+        <!-- Slide 1: Introduction -->
+        <div class="slide active" id="slide-0">
+            <div class="slide-header">
+                <h2>Understanding Large Language Models (LLMs)</h2>
+                <div class="slide-counter">Slide 1 of 5</div>
+            </div>
+            
+            <div class="slide-content">
+                <div class="intro-slide">
+                    <p>We'll explore how LLMs process the sentence:</p>
+                    <div class="example-sentence">"The dog chased the cate because it was mad"</div>
+                    <p>This presentation covers:</p>
+                    <ul class="topics-list">
+                        <li>Tokenization - How words become numbers</li>
+                        <li>Attention Mechanism - How words relate to each other</li>
+                        <li>Word Prediction - How LLMs predict what comes next</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="slide-navigation">
+                <button class="nav-button prev-button disabled">Previous</button>
+                
+                <div class="slide-dots">
+                    <div class="slide-dot active" data-slide="0"></div>
+                    <div class="slide-dot" data-slide="1"></div>
+                    <div class="slide-dot" data-slide="2"></div>
+                    <div class="slide-dot" data-slide="3"></div>
+                    <div class="slide-dot" data-slide="4"></div>
+                </div>
+                
+                <button class="nav-button next-button">Next</button>
+            </div>
+        </div>
+
+        <!-- Slide 2: Tokenization -->
+        <div class="slide" id="slide-1">
+            <div class="slide-header">
+                <h2>Step 1: Tokenization</h2>
+                <div class="slide-counter">Slide 2 of 5</div>
+            </div>
+            
+            <div class="slide-content">
+                <div class="tokenization-slide">
+                    <p>LLMs don't understand words directly. They convert words to numbers (tokens) using a dictionary.</p>
+                    <div class="tokenization-example">
+                        <div class="word-tokens" id="word-tokens">
+                            <!-- JS will insert word tokens here -->
+                        </div>
+                    </div>
+                    <div class="token-explanation">
+                        <p>The tokenizer breaks text into tokens and maps each to a unique ID.</p>
+                        <p>Common words get lower IDs. Rare words get higher IDs or are split into subwords.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="slide-navigation">
+                <button class="nav-button prev-button">Previous</button>
+                
+                <div class="slide-dots">
+                    <div class="slide-dot" data-slide="0"></div>
+                    <div class="slide-dot active" data-slide="1"></div>
+                    <div class="slide-dot" data-slide="2"></div>
+                    <div class="slide-dot" data-slide="3"></div>
+                    <div class="slide-dot" data-slide="4"></div>
+                </div>
+                
+                <button class="nav-button next-button">Next</button>
+            </div>
+        </div>
+
+        <!-- Slide 3: Attention Mechanism -->
+        <div class="slide" id="slide-2">
+            <div class="slide-header">
+                <h2>Step 2: Attention Mechanism</h2>
+                <div class="slide-counter">Slide 3 of 5</div>
+            </div>
+            
+            <div class="slide-content">
+                <div class="attention-slide">
+                    <p>Attention helps the model focus on relevant words when making predictions.</p>
+                    <p>Let's see which words the model pays attention to when processing "it" and "mad":</p>
+                    
+                    <div class="attention-example">
+                        <h4>When processing "it", attention to previous words:</h4>
+                        <div class="attention-weights" id="it-attention">
+                            <!-- JS will insert attention weights here -->
+                        </div>
+                        
+                        <h4>When processing "mad", attention to previous words:</h4>
+                        <div class="attention-weights" id="mad-attention">
+                            <!-- JS will insert attention weights here -->
+                        </div>
+                    </div>
+                    
+                    <div class="attention-explanation">
+                        <p>Notice how "it" pays most attention to "cate" (50%), suggesting "it" refers to the cate.</p>
+                        <p>And "mad" pays most attention to "dog" (65%), suggesting the dog was mad.</p>
+                        <p>This helps the model resolve ambiguity in phrases like "because it was mad".</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="slide-navigation">
+                <button class="nav-button prev-button">Previous</button>
+                
+                <div class="slide-dots">
+                    <div class="slide-dot" data-slide="0"></div>
+                    <div class="slide-dot" data-slide="1"></div>
+                    <div class="slide-dot active" data-slide="2"></div>
+                    <div class="slide-dot" data-slide="3"></div>
+                    <div class="slide-dot" data-slide="4"></div>
+                </div>
+                
+                <button class="nav-button next-button">Next</button>
+            </div>
+        </div>
+
+        <!-- Slide 4: Next Word Prediction -->
+        <div class="slide" id="slide-3">
+            <div class="slide-header">
+                <h2>Step 3: Next Word Prediction</h2>
+                <div class="slide-counter">Slide 4 of 5</div>
+            </div>
+            
+            <div class="slide-content">
+                <div class="prediction-slide">
+                    <p>At each step, the LLM predicts the probability of all possible next words.</p>
+                    
+                    <div class="prediction-example">
+                        <h4>After "The dog chased the cate because it", the model predicts:</h4>
+                        <div class="prediction-weights" id="first-prediction">
+                            <!-- JS will insert prediction weights here -->
+                        </div>
+                        
+                        <h4>After "The dog chased the cate because it was", the model predicts:</h4>
+                        <div class="prediction-weights" id="second-prediction">
+                            <!-- JS will insert prediction weights here -->
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-explanation">
+                        <p>The model uses all previous words and its learned patterns to predict the next word.</p>
+                        <p>The attention mechanism helps the model determine which previous words are most relevant.</p>
+                        <p>The model chooses "was" and then "mad" as the most probable words to continue the sentence.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="slide-navigation">
+                <button class="nav-button prev-button">Previous</button>
+                
+                <div class="slide-dots">
+                    <div class="slide-dot" data-slide="0"></div>
+                    <div class="slide-dot" data-slide="1"></div>
+                    <div class="slide-dot" data-slide="2"></div>
+                    <div class="slide-dot active" data-slide="3"></div>
+                    <div class="slide-dot" data-slide="4"></div>
+                </div>
+                
+                <button class="nav-button next-button">Next</button>
+            </div>
+        </div>
+
+        <!-- Slide 5: Summary -->
+        <div class="slide" id="slide-4">
+            <div class="slide-header">
+                <h2>LLM Process Summary</h2>
+                <div class="slide-counter">Slide 5 of 5</div>
+            </div>
+            
+            <div class="slide-content">
+                <div class="summary-slide">
+                    <div class="process-steps">
+                        <div class="process-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Tokenization</h4>
+                                <p>Convert words to token IDs using a vocabulary dictionary</p>
+                            </div>
+                        </div>
+                        
+                        <div class="process-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Attention</h4>
+                                <p>Calculate relationships between words to understand context</p>
+                            </div>
+                        </div>
+                        
+                        <div class="process-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Prediction</h4>
+                                <p>Generate probabilities for each possible next word</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="key-insights">
+                        <h4>Key Insights:</h4>
+                        <ul>
+                            <li>LLMs work with numbers, not words</li>
+                            <li>Attention helps resolve ambiguity (e.g., what "it" refers to)</li>
+                            <li>Predictions are probabilistic - the model picks the most likely next word</li>
+                            <li>The model doesn't truly "understand" - it predicts based on patterns in data</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="slide-navigation">
+                <button class="nav-button prev-button">Previous</button>
+                
+                <div class="slide-dots">
+                    <div class="slide-dot" data-slide="0"></div>
+                    <div class="slide-dot" data-slide="1"></div>
+                    <div class="slide-dot" data-slide="2"></div>
+                    <div class="slide-dot" data-slide="3"></div>
+                    <div class="slide-dot active" data-slide="4"></div>
+                </div>
+                
+                <button class="nav-button next-button disabled">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const sentence = "The dog chased the cate because it was mad";
+        const words = sentence.split(" ");
+        
+        // Mock token ID mapping
+        const tokenMap = {
+            "The": 267,
+            "the": 1,
+            "dog": 583,
+            "chased": 4829,
+            "cate": 29847, // Intentionally keeping the typo
+            "because": 112,
+            "it": 17,
+            "was": 38,
+            "mad": 1467
+        };
+        
+        // Mock attention weights (simplified for visualization)
+        const attentionWeights = {
+            "mad": {
+                "The": 0.01,
+                "dog": 0.65,
+                "chased": 0.05,
+                "the": 0.02,
+                "cate": 0.12,
+                "because": 0.04,
+                "it": 0.10,
+                "was": 0.01
+            },
+            "it": {
+                "The": 0.02,
+                "dog": 0.35,
+                "chased": 0.08,
+                "the": 0.05,
+                "cate": 0.50
+            }
+        };
+        
+        // Mock next token predictions (simplified)
+        const nextWordPredictions = {
+            "The dog chased the cate because it": {
+                "was": 0.45,
+                "is": 0.20,
+                "seems": 0.15,
+                "appears": 0.10,
+                "ran": 0.05,
+                "became": 0.03,
+                "felt": 0.02
+            },
+            "The dog chased the cate because it was": {
+                "mad": 0.30,
+                "angry": 0.25,
+                "scared": 0.20,
+                "fast": 0.10,
+                "hungry": 0.08,
+                "tired": 0.05,
+                "playful": 0.02
+            }
+        };
+
+        // DOM elements
+        const slides = document.querySelectorAll('.slide');
+        const prevButtons = document.querySelectorAll('.prev-button');
+        const nextButtons = document.querySelectorAll('.next-button');
+        const dots = document.querySelectorAll('.slide-dot');
+        
+        // Populate token slides
+        const wordTokensContainer = document.getElementById('word-tokens');
+        words.forEach(word => {
+            const tokenElement = document.createElement('div');
+            tokenElement.className = 'word-token';
+            tokenElement.innerHTML = `
+                <div class="word">${word}</div>
+                <div class="token">Token ID: ${tokenMap[word]}</div>
+            `;
+            wordTokensContainer.appendChild(tokenElement);
+        });
+        
+        // Populate attention slides
+        const itAttentionContainer = document.getElementById('it-attention');
+        Object.keys(attentionWeights["it"]).forEach(word => {
+            const weight = attentionWeights["it"][word];
+            const attentionElement = document.createElement('div');
+            attentionElement.className = 'attention-weight';
+            attentionElement.style.opacity = 0.3 + weight * 0.7;
+            attentionElement.innerHTML = `
+                <div class="word">${word}</div>
+                <div class="weight-bar" style="width: ${weight * 100}%"></div>
+                <div class="weight-value">${(weight * 100).toFixed(0)}%</div>
+            `;
+            itAttentionContainer.appendChild(attentionElement);
+        });
+        
+        const madAttentionContainer = document.getElementById('mad-attention');
+        Object.keys(attentionWeights["mad"]).forEach(word => {
+            const weight = attentionWeights["mad"][word];
+            const attentionElement = document.createElement('div');
+            attentionElement.className = 'attention-weight';
+            attentionElement.style.opacity = 0.3 + weight * 0.7;
+            attentionElement.innerHTML = `
+                <div class="word">${word}</div>
+                <div class="weight-bar" style="width: ${weight * 100}%"></div>
+                <div class="weight-value">${(weight * 100).toFixed(0)}%</div>
+            `;
+            madAttentionContainer.appendChild(attentionElement);
+        });
+        
+        // Populate prediction slides
+        const firstPredictionContainer = document.getElementById('first-prediction');
+        Object.keys(nextWordPredictions["The dog chased the cate because it"]).forEach(word => {
+            const weight = nextWordPredictions["The dog chased the cate because it"][word];
+            const predictionElement = document.createElement('div');
+            predictionElement.className = 'prediction-weight';
+            predictionElement.innerHTML = `
+                <div class="word">${word}</div>
+                <div class="weight-bar" style="width: ${weight * 100}%"></div>
+                <div class="weight-value">${(weight * 100).toFixed(0)}%</div>
+            `;
+            firstPredictionContainer.appendChild(predictionElement);
+        });
+        
+        const secondPredictionContainer = document.getElementById('second-prediction');
+        Object.keys(nextWordPredictions["The dog chased the cate because it was"]).forEach(word => {
+            const weight = nextWordPredictions["The dog chased the cate because it was"][word];
+            const predictionElement = document.createElement('div');
+            predictionElement.className = 'prediction-weight';
+            predictionElement.innerHTML = `
+                <div class="word">${word}</div>
+                <div class="weight-bar" style="width: ${weight * 100}%"></div>
+                <div class="weight-value">${(weight * 100).toFixed(0)}%</div>
+            `;
+            secondPredictionContainer.appendChild(predictionElement);
+        });
+        
+        // Navigation functions
+        let currentSlide = 0;
+        
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[index].classList.add('active');
+            
+            dots.forEach(dot => dot.classList.remove('active'));
+            dots[index].classList.add('active');
+            
+            currentSlide = index;
+            
+            // Update button states
+            prevButtons.forEach(btn => {
+                if (currentSlide === 0) {
+                    btn.classList.add('disabled');
+                } else {
+                    btn.classList.remove('disabled');
+                }
+            });
+            
+            nextButtons.forEach(btn => {
+                if (currentSlide === slides.length - 1) {
+                    btn.classList.add('disabled');
+                } else {
+                    btn.classList.remove('disabled');
+                }
+            });
+        }
+        
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        // Event listeners
+        prevButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!btn.classList.contains('disabled')) {
+                    prevSlide();
+                }
+            });
+        });
+        
+        nextButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!btn.classList.contains('disabled')) {
+                    nextSlide();
+                }
+            });
+        });
+        
+        dots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                const slideIndex = parseInt(dot.getAttribute('data-slide'));
+                showSlide(slideIndex);
+            });
+        });
+        
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
