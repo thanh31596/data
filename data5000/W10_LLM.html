@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How LLMs Work - Interactive Visualization</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2563eb;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 15px;
+        }
+        .stage-container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            margin-top: 30px;
+        }
+        .stage {
+            position: relative;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .stage:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }
+        .stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .stage-number {
+            background-color: #2563eb;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+        .stage-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+        }
+        .stage-description {
+            margin-bottom: 15px;
+        }
+        .visualization-area {
+            height: 300px;
+            border-radius: 6px;
+            background-color: #f9fafb;
+            overflow: hidden;
+            position: relative;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        button:disabled {
+            background-color: #93c5fd;
+            cursor: not-allowed;
+        }
+        .token {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            background-color: #e5e7eb;
+            font-family: monospace;
+        }
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #transformer-canvas {
+            width: 100%;
+            height: 280px;
+        }
+        #attention-canvas {
+            width: 100%;
+            height: 280px;
+        }
+        #completion-canvas {
+            width: 100%;
+            height: 280px;
+        }
+        .token-container {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .matrix-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+        }
+        .matrix-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ccc;
+            background-color: rgba(37, 99, 235, 0.1);
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .progress-bar {
+            height: 5px;
+            background-color: #e5e7eb;
+            border-radius: 2px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #2563eb;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .llm-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+        }
+        .attention-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+        }
+        .attention-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ccc;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        .completion-container {
+            text-align: center;
+        }
+        .completion-token {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #dbeafe;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .completion-token.active {
+            opacity: 1;
+            background-color: #bfdbfe;
+        }
+        .explanation {
+            margin-top: 20px;
+            background-color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #2563eb;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .nav-button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        .highlight {
+            background-color: #dbeafe;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>How Large Language Models Work</h1>
+        
+        <div class="stage-container">
+            <!-- Stage 1: Tokenization -->
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-number">1</div>
+                    <h2 class="stage-title">Tokenization</h2>
+                </div>
+                <p class="stage-description">
+                    The first step is converting text into tokens - numerical representations that the model can process.
+                </p>
+                <div id="tokenization-visualization" class="visualization-area">
+                    <div style="padding: 20px;">
+                        <div class="token-container">
+                            <div id="input-text" style="margin-bottom: 20px; font-size: 18px;">
+                                Input: "Business analytics with LLMs"
+                            </div>
+                            <div id="tokens-container"></div>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="tokenization-progress" class="progress-bar-fill"></div>
+                        </div>
+                        <div id="token-explanation" class="explanation">
+                            Each word or subword is converted into a token ID from the model's vocabulary.
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="tokenize-button">Tokenize Text</button>
+                    <button id="reset-tokenize-button" disabled>Reset</button>
+                </div>
+            </div>
+
+            <!-- Stage 2: Transformer Architecture -->
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-number">2</div>
+                    <h2 class="stage-title">Transformer Architecture</h2>
+                </div>
+                <p class="stage-description">
+                    Tokens pass through multiple transformer layers that process the sequence using self-attention mechanisms.
+                </p>
+                <div id="transformer-visualization" class="visualization-area">
+                    <canvas id="transformer-canvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button id="transform-button">Process Tokens</button>
+                    <button id="reset-transform-button" disabled>Reset</button>
+                </div>
+            </div>
+
+            <!-- Stage 3: Attention Mechanism -->
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-number">3</div>
+                    <h2 class="stage-title">Self-Attention Mechanism</h2>
+                </div>
+                <p class="stage-description">
+                    The attention mechanism helps the model understand relationships between tokens in the sequence.
+                </p>
+                <div id="attention-visualization" class="visualization-area">
+                    <div style="padding: 20px;">
+                        <div id="attention-tokens" class="token-container"></div>
+                        <div id="attention-grid-container" style="display: flex; justify-content: center; margin-top: 20px;">
+                            <div id="attention-grid" class="attention-grid"></div>
+                        </div>
+                        <div id="attention-explanation" class="explanation">
+                            Self-attention calculates how much each token should "pay attention" to every other token in the sequence.
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="attention-button">Visualize Attention</button>
+                    <button id="reset-attention-button" disabled>Reset</button>
+                </div>
+            </div>
+
+            <!-- Stage 4: Next Token Prediction -->
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-number">4</div>
+                    <h2 class="stage-title">Next Token Prediction</h2>
+                </div>
+                <p class="stage-description">
+                    The model predicts the most likely next token based on the previous tokens and their relationships.
+                </p>
+                <div id="completion-visualization" class="visualization-area">
+                    <div style="padding: 20px;">
+                        <div id="prediction-tokens" class="token-container"></div>
+                        <div style="text-align: center; margin-top: 20px; font-weight: bold;">
+                            Predicting next token...
+                        </div>
+                        <div id="prediction-container" class="completion-container">
+                            <div id="token1" class="completion-token">can</div>
+                            <div id="token2" class="completion-token">help</div>
+                            <div id="token3" class="completion-token">improve</div>
+                            <div id="token4" class="completion-token">decision</div>
+                            <div id="token5" class="completion-token">making</div>
+                        </div>
+                        <div id="prediction-explanation" class="explanation">
+                            The model calculates probabilities for every token in its vocabulary and selects the most likely next token.
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="predict-button">Predict Next Tokens</button>
+                    <button id="reset-predict-button" disabled>Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <button id="run-all-button" class="nav-button">Run Full Animation</button>
+            <button id="reset-all-button" class="nav-button" disabled>Reset All</button>
+        </div>
+    </div>
+
+    <script>
+        // Tokenization visualization
+        const tokenizeButton = document.getElementById('tokenize-button');
+        const resetTokenizeButton = document.getElementById('reset-tokenize-button');
+        const tokensContainer = document.getElementById('tokens-container');
+        const tokenizationProgress = document.getElementById('tokenization-progress');
+        
+        // Sample tokens for our example
+        const sampleTokens = [
+            { id: 3982, text: "Business" },
+            { id: 621, text: "analytics" },
+            { id: 407, text: "with" },
+            { id: 11932, text: "LLM" },
+            { id: 29401, text: "s" }
+        ];
+        
+        function animateTokenization() {
+            tokensContainer.innerHTML = '';
+            tokenizationProgress.style.width = '0%';
+            
+            let i = 0;
+            const tokenInterval = setInterval(() => {
+                if (i < sampleTokens.length) {
+                    const token = document.createElement('div');
+                    token.className = 'token';
+                    token.textContent = `"${sampleTokens[i].text}" → ${sampleTokens[i].id}`;
+                    tokensContainer.appendChild(token);
+                    
+                    tokenizationProgress.style.width = `${(i + 1) / sampleTokens.length * 100}%`;
+                    i++;
+                } else {
+                    clearInterval(tokenInterval);
+                    tokenizeButton.disabled = true;
+                    resetTokenizeButton.disabled = false;
+                }
+            }, 800);
+        }
+        
+        tokenizeButton.addEventListener('click', animateTokenization);
+        
+        resetTokenizeButton.addEventListener('click', () => {
+            tokensContainer.innerHTML = '';
+            tokenizationProgress.style.width = '0%';
+            tokenizeButton.disabled = false;
+            resetTokenizeButton.disabled = true;
+        });
+        
+        // Transformer visualization
+        const transformerCanvas = document.getElementById('transformer-canvas');
+        const ctx = transformerCanvas.getContext('2d');
+        const transformButton = document.getElementById('transform-button');
+        const resetTransformButton = document.getElementById('reset-transform-button');
+        
+        function drawTransformerLayers() {
+            const width = transformerCanvas.width;
+            const height = transformerCanvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Set up dimensions
+            const tokenCount = 5;
+            const layerCount = 3;
+            
+            const tokenWidth = 40;
+            const tokenHeight = 25;
+            const layerGap = 100;
+            const tokenGap = 15;
+            
+            const startX = width / 2 - (layerCount * layerGap) / 2;
+            const startY = height / 2 - (tokenCount * (tokenHeight + tokenGap)) / 2;
+            
+            // Draw initial tokens
+            for (let t = 0; t < tokenCount; t++) {
+                const x = startX;
+                const y = startY + t * (tokenHeight + tokenGap);
+                
+                ctx.fillStyle = '#e5e7eb';
+                ctx.fillRect(x, y, tokenWidth, tokenHeight);
+                ctx.strokeStyle = '#9ca3af';
+                ctx.strokeRect(x, y, tokenWidth, tokenHeight);
+            }
+            
+            return new Promise(resolve => {
+                // Animate tokens through layers
+                let currentLayer = 1;
+                const layerInterval = setInterval(() => {
+                    if (currentLayer <= layerCount) {
+                        // Draw connections to next layer
+                        for (let t = 0; t < tokenCount; t++) {
+                            const fromX = startX + (currentLayer - 1) * layerGap + tokenWidth;
+                            const fromY = startY + t * (tokenHeight + tokenGap) + tokenHeight / 2;
+                            
+                            for (let tt = 0; tt < tokenCount; tt++) {
+                                const toX = startX + currentLayer * layerGap;
+                                const toY = startY + tt * (tokenHeight + tokenGap) + tokenHeight / 2;
+                                
+                                ctx.beginPath();
+                                ctx.moveTo(fromX, fromY);
+                                ctx.lineTo(toX, toY);
+                                ctx.strokeStyle = `rgba(37, 99, 235, ${Math.random() * 0.4 + 0.1})`;
+                                ctx.lineWidth = Math.random() * 1.5 + 0.5;
+                                ctx.stroke();
+                            }
+                        }
+                        
+                        // Draw layer tokens
+                        for (let t = 0; t < tokenCount; t++) {
+                            const x = startX + currentLayer * layerGap;
+                            const y = startY + t * (tokenHeight + tokenGap);
+                            
+                            ctx.fillStyle = currentLayer === layerCount ? '#bfdbfe' : '#e5e7eb';
+                            ctx.fillRect(x, y, tokenWidth, tokenHeight);
+                            ctx.strokeStyle = '#9ca3af';
+                            ctx.strokeRect(x, y, tokenWidth, tokenHeight);
+                        }
+                        
+                        // Draw layer label
+                        ctx.fillStyle = '#2563eb';
+                        ctx.font = '14px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`Layer ${currentLayer}`, startX + currentLayer * layerGap + tokenWidth / 2, startY + tokenCount * (tokenHeight + tokenGap) + 25);
+                        
+                        currentLayer++;
+                    } else {
+                        clearInterval(layerInterval);
+                        transformButton.disabled = true;
+                        resetTransformButton.disabled = false;
+                        resolve();
+                    }
+                }, 1000);
+            });
+        }
+        
+        // Set initial canvas size
+        function resizeCanvas() {
+            transformerCanvas.width = transformerCanvas.offsetWidth;
+            transformerCanvas.height = transformerCanvas.offsetHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        transformButton.addEventListener('click', drawTransformerLayers);
+        
+        resetTransformButton.addEventListener('click', () => {
+            ctx.clearRect(0, 0, transformerCanvas.width, transformerCanvas.height);
+            transformButton.disabled = false;
+            resetTransformButton.disabled = true;
+        });
+        
+        // Attention mechanism visualization
+        const attentionButton = document.getElementById('attention-button');
+        const resetAttentionButton = document.getElementById('reset-attention-button');
+        const attentionTokens = document.getElementById('attention-tokens');
+        const attentionGrid = document.getElementById('attention-grid');
+        
+        function visualizeAttention() {
+            // Display tokens
+            attentionTokens.innerHTML = '';
+            sampleTokens.forEach(token => {
+                const tokenEl = document.createElement('span');
+                tokenEl.className = 'token';
+                tokenEl.textContent = token.text;
+                attentionTokens.appendChild(tokenEl);
+            });
+            
+            // Create attention grid
+            attentionGrid.innerHTML = '';
+            attentionGrid.style.gridTemplateColumns = `repeat(${sampleTokens.length}, 1fr)`;
+            
+            for (let i = 0; i < sampleTokens.length; i++) {
+                for (let j = 0; j < sampleTokens.length; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'attention-cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    attentionGrid.appendChild(cell);
+                }
+            }
+            
+            // Animate attention weights
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const cells = attentionGrid.querySelectorAll('.attention-cell');
+                    
+                    cells.forEach(cell => {
+                        const row = parseInt(cell.dataset.row);
+                        const col = parseInt(cell.dataset.col);
+                        
+                        // Sample attention weights (higher if related words)
+                        let weight = Math.random() * 0.4;
+                        
+                        // Business and analytics
+                        if ((row === 0 && col === 1) || (row === 1 && col === 0)) {
+                            weight = 0.7 + Math.random() * 0.3;
+                        }
+                        
+                        // analytics and LLM
+                        if ((row === 1 && col === 3) || (row === 3 && col === 1)) {
+                            weight = 0.8 + Math.random() * 0.2;
+                        }
+                        
+                        // LLM and s
+                        if ((row === 3 && col === 4) || (row === 4 && col === 3)) {
+                            weight = 0.9 + Math.random() * 0.1;
+                        }
+                        
+                        // Self-attention (diagonal)
+                        if (row === col) {
+                            weight = 0.6 + Math.random() * 0.2;
+                        }
+                        
+                        // Higher attention to "with"
+                        if (col === 2) {
+                            weight = 0.5 + Math.random() * 0.3;
+                        }
+                        
+                        cell.style.backgroundColor = `rgba(37, 99, 235, ${weight})`;
+                        cell.textContent = weight.toFixed(1);
+                    });
+                    
+                    attentionButton.disabled = true;
+                    resetAttentionButton.disabled = false;
+                    resolve();
+                }, 800);
+            });
+        }
+        
+        attentionButton.addEventListener('click', visualizeAttention);
+        
+        resetAttentionButton.addEventListener('click', () => {
+            attentionTokens.innerHTML = '';
+            attentionGrid.innerHTML = '';
+            attentionButton.disabled = false;
+            resetAttentionButton.disabled = true;
+        });
+        
+        // Next token prediction visualization
+        const predictButton = document.getElementById('predict-button');
+        const resetPredictButton = document.getElementById('reset-predict-button');
+        const predictionTokens = document.getElementById('prediction-tokens');
+        const completionTokens = document.querySelectorAll('.completion-token');
+        
+        function animatePrediction() {
+            // Display input tokens
+            predictionTokens.innerHTML = '';
+            sampleTokens.forEach(token => {
+                const tokenEl = document.createElement('span');
+                tokenEl.className = 'token';
+                tokenEl.textContent = token.text;
+                predictionTokens.appendChild(tokenEl);
+            });
+            
+            // Reset completion tokens
+            completionTokens.forEach(token => {
+                token.classList.remove('active');
+            });
+            
+            // Animate token prediction
+            return new Promise(resolve => {
+                let i = 0;
+                const predictionInterval = setInterval(() => {
+                    if (i < completionTokens.length) {
+                        completionTokens[i].classList.add('active');
+                        i++;
+                    } else {
+                        clearInterval(predictionInterval);
+                        predictButton.disabled = true;
+                        resetPredictButton.disabled = false;
+                        resolve();
+                    }
+                }, 800);
+            });
+        }
+        
+        predictButton.addEventListener('click', animatePrediction);
+        
+        resetPredictButton.addEventListener('click', () => {
+            predictionTokens.innerHTML = '';
+            completionTokens.forEach(token => {
+                token.classList.remove('active');
+            });
+            predictButton.disabled = false;
+            resetPredictButton.disabled = true;
+        });
+        
+        // Run all animations
+        const runAllButton = document.getElementById('run-all-button');
+        const resetAllButton = document.getElementById('reset-all-button');
+        
+        async function runAllAnimations() {
+            runAllButton.disabled = true;
+            
+            // Run tokenization
+            animateTokenization();
+            await new Promise(resolve => setTimeout(resolve, sampleTokens.length * 800 + 500));
+            
+            // Run transformer
+            await drawTransformerLayers();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Run attention
+            await visualizeAttention();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Run prediction
+            await animatePrediction();
+            
+            resetAllButton.disabled = false;
+        }
+        
+        runAllButton.addEventListener('click', runAllAnimations);
+        
+        resetAllButton.addEventListener('click', () => {
+            // Reset tokenization
+            tokensContainer.innerHTML = '';
+            tokenizationProgress.style.width = '0%';
+            tokenizeButton.disabled = false;
+            resetTokenizeButton.disabled = true;
+            
+            // Reset transformer
+            ctx.clearRect(0, 0, transformerCanvas.width, transformerCanvas.height);
+            transformButton.disabled = false;
+            resetTransformButton.disabled = true;
+            
+            // Reset attention
+            attentionTokens.innerHTML = '';
+            attentionGrid.innerHTML = '';
+            attentionButton.disabled = false;
+            resetAttentionButton.disabled = true;
+            
+            // Reset prediction
+            predictionTokens.innerHTML = '';
+            completionTokens.forEach(token => {
+                token.classList.remove('active');
+            });
+            predictButton.disabled = false;
+            resetPredictButton.disabled = true;
+            
+            runAllButton.disabled = false;
+            resetAllButton.disabled = true;
+        });
+    </script>
+</body>
+</html>
