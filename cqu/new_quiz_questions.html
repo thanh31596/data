@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSS Quiz Questions by Stephen</title>
+    <title>Additional Quiz Questions by Stephen</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -74,10 +74,47 @@
             font-size: 18px;
             font-weight: bold;
         }
+        .timer-container {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.5s;
+        }
+        .timer {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0 10px;
+        }
+        .timer.warning {
+            color: #f39c12;
+        }
+        .timer.danger {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
-    <h1>CSS Quiz Questions</h1>
+    <h1>Additional Quiz Questions</h1>
+    
+    <div class="timer-container" id="timer-container">
+        <span>Time Remaining:</span>
+        <div class="timer" id="timer">15:00</div>
+    </div>
     
     <div class="quiz-container">
         
@@ -476,8 +513,54 @@ p {
     </div>
 
     <script>
+        // Initialize timer variables
+        let timeLeft = 15 * 60; // 15 minutes in seconds
+        let timerInterval;
+        
+        // Function to format time as MM:SS
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+        
+        // Function to update the timer display
+        function updateTimer() {
+            const timerElement = document.getElementById('timer');
+            const timerContainer = document.getElementById('timer-container');
+            
+            timeLeft--;
+            
+            // Update the timer text
+            timerElement.textContent = formatTime(timeLeft);
+            
+            // Add warning colors as time gets low
+            if (timeLeft <= 60) { // Last minute
+                timerElement.className = 'timer danger';
+                timerContainer.style.backgroundColor = '#fef2f2';
+            } else if (timeLeft <= 180) { // Last 3 minutes
+                timerElement.className = 'timer warning';
+                timerContainer.style.backgroundColor = '#fef9e7';
+            }
+            
+            // Auto-submit when time is up
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('quiz-form').dispatchEvent(new Event('submit'));
+                alert('Time is up! Your quiz has been automatically submitted.');
+            }
+        }
+        
+        // Start the timer when the page loads
+        window.onload = function() {
+            timerInterval = setInterval(updateTimer, 1000);
+        };
+        
         document.getElementById('quiz-form').addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            // Clear the timer interval when the quiz is submitted
+            clearInterval(timerInterval);
             
             // Define correct answers
             const correctAnswers = {
@@ -563,6 +646,9 @@ p {
             
             document.getElementById('detailed-results').innerHTML = detailedHtml;
             document.getElementById('results').style.display = 'block';
+            
+            // Hide the timer
+            document.getElementById('timer-container').style.display = 'none';
             
             // Scroll to results
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
