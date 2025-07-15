@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA4800 - Introduction to Artificial Intelligence</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+    <style>
+        :root {
+            --cosmic-black: #0A0A16;
+            --cosmic-dark: #14142B;
+            --cyber-cyan: #00FEFE;
+            --holographic-purple: #BC00FF;
+            --neon-green: #7DFF7A;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cosmic-black);
+            color: white;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .sidebar {
+            width: 300px;
+            background-color: var(--cosmic-dark);
+            position: relative;
+            overflow-y: auto;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            border-right: 1px solid var(--glass-border);
+        }
+
+        .spline-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+            padding: 30px 20px;
+        }
+
+        .course-logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .course-logo h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: var(--neon-green);
+        }
+
+        .course-logo p {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .home-link {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+            text-decoration: none;
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .home-link:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .week-nav {
+            margin-top: 30px;
+        }
+
+        .week-nav-title {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .week-nav-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--neon-green);
+            border-radius: 50%;
+        }
+
+        .week-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .week-item {
+            padding: 15px 20px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .week-item:hover, .week-item.active {
+            background: rgba(125, 255, 122, 0.2);
+            transform: translateX(5px);
+        }
+
+        .week-item.active {
+            background: rgba(125, 255, 122, 0.2);
+            border-left: 3px solid var(--neon-green);
+        }
+
+        .week-item-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 15px;
+            background: var(--cyber-cyan);
+            position: relative;
+        }
+
+        .week-item.completed .week-item-indicator {
+            background: var(--neon-green);
+        }
+
+        .week-item.active .week-item-indicator {
+            box-shadow: 0 0 15px var(--neon-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(125, 255, 122, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(125, 255, 122, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(125, 255, 122, 0); }
+        }
+
+        .week-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .course-header {
+            margin-bottom: 50px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 30px;
+        }
+
+        .course-title {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, var(--neon-green), var(--cyber-cyan));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .course-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            max-width: 800px;
+        }
+
+        .week-content {
+            display: none;
+        }
+
+        .week-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .week-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .week-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--neon-green);
+            margin-right: 20px;
+        }
+
+        .week-details {
+            flex: 1;
+        }
+
+        .week-name {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .week-date {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .content-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .content-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+            padding: 20px;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.3);
+            border-color: var(--neon-green);
+        }
+
+        .content-icon {
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            color: var(--neon-green);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(125, 255, 122, 0.1);
+            border-radius: 12px;
+        }
+
+        .content-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .content-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .content-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--neon-green);
+            text-decoration: none;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .content-link i {
+            margin-left: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .content-link:hover {
+            color: var(--cyber-cyan);
+        }
+        .spline-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 300px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .content-link:hover i {
+            transform: translateX(5px);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 1024px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .spline-bg {
+                display: none;
+            }
+
+            .week-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+
+            .week-item {
+                flex-direction: column;
+                text-align: center;
+                padding: 15px 10px;
+            }
+
+            .week-item-indicator {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+
+        <div class="sidebar-content">
+            <div class="course-logo">
+                <h1>DATA4800</h1>
+                <p>Introduction to Artificial Intelligence</p>
+            </div>
+            
+            <a href="index.html" class="home-link">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+            
+            <div class="week-nav">
+                <h3 class="week-nav-title">Course Weeks</h3>
+                <div class="week-list">
+                    <div class="week-item completed" data-week="1">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 1</span>
+                    </div>
+                    <div class="week-item completed" data-week="2">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 2</span>
+                    </div>
+                    <div class="week-item completed" data-week="3">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 3</span>
+                    </div>
+                    <div class="week-item completed" data-week="4">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 4</span>
+                    </div>
+                    <div class="week-item completed" data-week="5">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 5</span>
+                    </div>
+                    <div class="week-item active" data-week="6">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 6</span>
+                    </div>
+                    <div class="week-item" data-week="7">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 7</span>
+                    </div>
+                    <div class="week-item" data-week="8">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 8</span>
+                    </div>
+                    <div class="week-item" data-week="9">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 9</span>
+                    </div>
+                    <div class="week-item" data-week="10">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 10</span>
+                    </div>
+                    <div class="week-item" data-week="11">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 11</span>
+                    </div>
+                    <div class="week-item" data-week="12">
+                        <div class="week-item-indicator"></div>
+                        <span class="week-title">Week 12</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <header class="course-header">
+            <h1 class="course-title">DATA4800: Introduction to Artificial Intelligence</h1>
+            <p class="course-subtitle">Explore the fundamentals of artificial intelligence, machine learning, and their applications in modern computing.</p>
+        </header>
+
+        <div class="week-content" id="week-1">
+            <div class="week-header">
+                <div class="week-number">01</div>
+                <div class="week-details">
+                    <h2 class="week-name">Introduction to Artificial Intelligence</h2>
+                    <p class="week-date">January 10 - January 16, 2025</p>
+                </div>
+            </div>
+            
+            <p>Welcome to DATA4800! This week we'll explore the fundamental concepts of artificial intelligence and its role in modern technology.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h3 class="content-title">Course Syllabus</h3>
+                    <p class="content-description">Detailed overview of course objectives, grading policy, and expectations.</p>
+                    <a href="https://elearning.kbs.edu.au/pluginfile.php/2810599/mod_resource/content/28/DATA4800_T2_2025_Subject_Outline_V1.pdf" class="content-link" target="_blank">
+                        View Syllabus <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-file-powerpoint"></i>
+                    </div>
+                    <h3 class="content-title">Lecture Slides</h3>
+                    <p class="content-description">Introduction to AI concepts and history.</p>
+                    <a href="data4800/W1_slide.html" class="content-link" target="_blank">
+                        Download Slides <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="content-title">Assignment 1</h3>
+                    <p class="content-description">Introduction to AI concepts and applications.</p>
+                    <a href="data4800/W1.html" class="content-link" target="_blank">
+                        View Assignment <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="week-content" id="week-2">
+            <div class="week-header">
+                <div class="week-number">02</div>
+                <div class="week-details">
+                    <h2 class="week-name">Introduction to Machine Learning</h2>
+                    <p class="week-date">January 17 - January 23, 2025</p>
+                </div>
+            </div>
+            
+            <p>This week we'll dive into the fundamentals of machine learning, exploring different types of learning and their applications.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h3 class="content-title">Lecture Content</h3>
+                    <p class="content-description">Machine learning fundamentals and types.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Python Notebook</h3>
+                    <p class="content-description">Introduction to ML with Python.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        Download Notebook <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="content-title">Practice Exercise</h3>
+                    <p class="content-description">Hands-on ML exercises.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Exercise <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-3">
+            <div class="week-header">
+                <div class="week-number">03</div>
+                <div class="week-details">
+                    <h2 class="week-name">Supervised Learning — Decision Trees and Random Forests</h2>
+                    <p class="week-date">January 24 - January 30, 2025</p>
+                </div>
+            </div>
+            
+            <p>Explore decision trees and random forests as powerful supervised learning algorithms for classification and regression tasks.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-tree"></i>
+                    </div>
+                    <h3 class="content-title">Decision Trees</h3>
+                    <p class="content-description">Understanding decision tree algorithms and implementation.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-forest"></i>
+                    </div>
+                    <h3 class="content-title">Random Forests</h3>
+                    <p class="content-description">Ensemble methods and random forest algorithms.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Implementation</h3>
+                    <p class="content-description">Practical implementation in Python.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Code <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-4">
+            <div class="week-header">
+                <div class="week-number">04</div>
+                <div class="week-details">
+                    <h2 class="week-name">Unsupervised Learning — Clustering and PCA</h2>
+                    <p class="week-date">January 31 - February 6, 2025</p>
+                </div>
+            </div>
+            
+            <p>Discover unsupervised learning techniques including clustering algorithms and principal component analysis for dimensionality reduction.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-object-group"></i>
+                    </div>
+                    <h3 class="content-title">Clustering Algorithms</h3>
+                    <p class="content-description">K-means, hierarchical clustering, and DBSCAN.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="content-title">Principal Component Analysis</h3>
+                    <p class="content-description">Dimensionality reduction techniques.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Practical Examples</h3>
+                    <p class="content-description">Hands-on clustering and PCA implementation.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Examples <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-5">
+            <div class="week-header">
+                <div class="week-number">05</div>
+                <div class="week-details">
+                    <h2 class="week-name">Assessment 1</h2>
+                    <p class="week-date">February 7 - February 13, 2025</p>
+                </div>
+            </div>
+            
+            <p>First major assessment covering the fundamentals of AI and machine learning concepts covered in weeks 1-4.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="content-title">Assessment Guidelines</h3>
+                    <p class="content-description">Detailed instructions and requirements for Assessment 1.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Guidelines <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3 class="content-title">Submission Deadline</h3>
+                    <p class="content-description">Important dates and submission requirements.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Schedule <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h3 class="content-title">Practice Questions</h3>
+                    <p class="content-description">Sample questions to prepare for the assessment.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Questions <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content active" id="week-6">
+            <div class="week-header">
+                <div class="week-number">06</div>
+                <div class="week-details">
+                    <h2 class="week-name">Supervised Learning — SVM and Gradient Boosting</h2>
+                    <p class="week-date">February 14 - February 20, 2025</p>
+                </div>
+            </div>
+            
+            <p>Explore support vector machines and gradient boosting algorithms for advanced supervised learning applications.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-vector-square"></i>
+                    </div>
+                    <h3 class="content-title">Support Vector Machines</h3>
+                    <p class="content-description">Understanding SVM theory and implementation.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="content-title">Gradient Boosting</h3>
+                    <p class="content-description">XGBoost, LightGBM, and ensemble methods.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Implementation</h3>
+                    <p class="content-description">Practical implementation of SVM and gradient boosting.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Code <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-7">
+            <div class="week-header">
+                <div class="week-number">07</div>
+                <div class="week-details">
+                    <h2 class="week-name">Introduction to Neural Networks</h2>
+                    <p class="week-date">February 21 - February 27, 2025</p>
+                </div>
+            </div>
+            
+            <p>Introduction to artificial neural networks, backpropagation, and deep learning fundamentals.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="content-title">Neural Network Basics</h3>
+                    <p class="content-description">Understanding neurons, layers, and activation functions.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h3 class="content-title">Backpropagation</h3>
+                    <p class="content-description">Understanding gradient descent and weight updates.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Implementation</h3>
+                    <p class="content-description">Building neural networks from scratch.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Code <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-8">
+            <div class="week-header">
+                <div class="week-number">08</div>
+                <div class="week-details">
+                    <h2 class="week-name">Image Classification with Deep CNNs</h2>
+                    <p class="week-date">February 28 - March 6, 2025</p>
+                </div>
+            </div>
+            
+            <p>Explore convolutional neural networks for image classification and computer vision applications.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <h3 class="content-title">Convolutional Neural Networks</h3>
+                    <p class="content-description">Understanding CNNs and their architecture.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h3 class="content-title">Computer Vision</h3>
+                    <p class="content-description">Image processing and feature extraction.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">CNN Implementation</h3>
+                    <p class="content-description">Building and training CNN models.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Code <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-9">
+            <div class="week-header">
+                <div class="week-number">09</div>
+                <div class="week-details">
+                    <h2 class="week-name">Assessment 2; Bayes Classification and NLP</h2>
+                    <p class="week-date">March 7 - March 13, 2025</p>
+                </div>
+            </div>
+            
+            <p>Second assessment covering advanced topics including Bayesian classification and natural language processing.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="content-title">Assessment Guidelines</h3>
+                    <p class="content-description">Detailed instructions for Assessment 2.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Guidelines <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3 class="content-title">Bayesian Classification</h3>
+                    <p class="content-description">Naive Bayes and probabilistic classification.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-language"></i>
+                    </div>
+                    <h3 class="content-title">Natural Language Processing</h3>
+                    <p class="content-description">Text processing and language models.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-10">
+            <div class="week-header">
+                <div class="week-number">10</div>
+                <div class="week-details">
+                    <h2 class="week-name">Advanced Computing and AI — Generative AI</h2>
+                    <p class="week-date">March 14 - March 20, 2025</p>
+                </div>
+            </div>
+            
+            <p>Explore generative AI models including GANs, VAEs, and transformer-based generative models.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3 class="content-title">Generative Adversarial Networks</h3>
+                    <p class="content-description">Understanding GANs and their applications.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3 class="content-title">Variational Autoencoders</h3>
+                    <p class="content-description">VAEs for image and data generation.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Implementation</h3>
+                    <p class="content-description">Building generative models in practice.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Code <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-11">
+            <div class="week-header">
+                <div class="week-number">11</div>
+                <div class="week-details">
+                    <h2 class="week-name">Advanced Computing and AI — Quantum Machine Learning</h2>
+                    <p class="week-date">March 21 - March 27, 2025</p>
+                </div>
+            </div>
+            
+            <p>Introduction to quantum computing and its applications in machine learning and AI.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-atom"></i>
+                    </div>
+                    <h3 class="content-title">Quantum Computing Basics</h3>
+                    <p class="content-description">Understanding qubits and quantum gates.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="content-title">Quantum Machine Learning</h3>
+                    <p class="content-description">Quantum algorithms for ML tasks.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Quantum Implementation</h3>
+                    <p class="content-description">Practical quantum ML examples.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Code <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-content" id="week-12">
+            <div class="week-header">
+                <div class="week-number">12</div>
+                <div class="week-details">
+                    <h2 class="week-name">Model Interpretability and Explainability</h2>
+                    <p class="week-date">March 28 - April 3, 2025</p>
+                </div>
+            </div>
+            
+            <p>Understanding how to interpret and explain AI model decisions for transparency and trust.</p>
+            
+            <div class="content-cards">
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="content-title">Model Interpretability</h3>
+                    <p class="content-description">Techniques for understanding model decisions.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3 class="content-title">Explainable AI</h3>
+                    <p class="content-description">Methods for explaining AI predictions.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Content <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="content-title">Implementation</h3>
+                    <p class="content-description">Practical interpretability tools.</p>
+                    <a href="#" class="content-link" target="_blank">
+                        View Code <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const weekItems    = document.querySelectorAll('.week-item');
+          const weekContents = document.querySelectorAll('.week-content');
+          
+          // Helper: activate a given week-item
+          function activateWeek(item) {
+            // 1) clear previous
+            weekItems.forEach(i => i.classList.remove('active'));
+            weekContents.forEach(c => c.classList.remove('active'));
+            
+            // 2) mark new active nav item
+            item.classList.add('active');
+            
+            // 3) show the matching content panel
+            const weekNum = item.dataset.week;
+            const panel   = document.getElementById(`week-${weekNum}`);
+            if (panel) panel.classList.add('active');
+            
+            // 4) on small screens, scroll content to top
+            if (window.innerWidth <= 1024) {
+              document.querySelector('.main-content').scrollTop = 0;
+            }
+          }
+          
+          // Find initial active item (or default to first)
+          const initial = document.querySelector('.week-item.active') || weekItems[0];
+          activateWeek(initial);
+          
+          // Attach click handlers
+          weekItems.forEach(item => {
+            item.addEventListener('click', () => activateWeek(item));
+          });
+        });
+      </script>
+      
+</body>
+</html> 
