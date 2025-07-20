@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Regression - Interactive Learning</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #3498db;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.24em; /* 2.8 * 0.8 */
+            color: #2c3e50;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 0.96em; /* 1.2 * 0.8 */
+            color: #7f8c8d;
+        }
+        
+        .tab-container {
+            margin-bottom: 30px;
+        }
+        
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .tab-button {
+            background: #f8f9fa;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 12.8px; /* 16 * 0.8 */
+            font-family: 'Helvetica', Arial, sans-serif;
+            color: #495057;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 140px;
+        }
+        
+        .tab-button:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+        
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            min-height: 500px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-title {
+            font-size: 1.76em; /* 2.2 * 0.8 */
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        
+        .section-subtitle {
+            font-size: 1.28em; /* 1.6 * 0.8 */
+            color: #34495e;
+            margin-bottom: 15px;
+            margin-top: 25px;
+        }
+        
+        .business-question {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .business-question h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.28em; /* 1.6 * 0.8 */
+        }
+        
+        .dataset-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        
+        .dataset-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .dataset-table th, .dataset-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .dataset-table th {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .dataset-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .feature-column {
+            background: #a8e6cf !important;
+        }
+        
+        .target-column {
+            background: #ffb3ba !important;
+        }
+        
+        .visualization-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 11.2px; /* 14 * 0.8 */
+            transition: all 0.3s;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .control-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .control-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .algorithm-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .algorithm-step {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .algorithm-step:hover {
+            transform: translateY(-5px);
+        }
+        
+        .algorithm-step h4 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 0.96em; /* 1.2 * 0.8 */
+        }
+        
+        .algorithm-step p {
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .key-concepts {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        
+        .key-concepts h3 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 1.28em; /* 1.6 * 0.8 */
+        }
+        
+        .concept-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .concept-list li {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .concept-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .slider-container {
+            margin: 20px 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #e9ecef;
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .equation-display {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em; /* 1.5 * 0.8 */
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            color: #27ae60;
+        }
+        
+        .error-display {
+            background: #fdeaea;
+            border: 2px solid #e74c3c;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.96em; /* 1.2 * 0.8 */
+            margin: 20px 0;
+            color: #e74c3c;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            border: 2px solid #27ae60;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.6em; /* 2.0 * 0.8 */
+            font-weight: bold;
+            color: #27ae60;
+            margin: 10px 0;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .legend-circle {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .back-link a {
+            background: #34495e;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+            transition: all 0.3s;
+        }
+        
+        .back-link a:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .comparison-item h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.04em; /* 1.3 * 0.8 */
+        }
+        
+        .comparison-item p, .comparison-item li {
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .toggle-container {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        
+        .toggle-btn {
+            background: white;
+            border: 2px solid #3498db;
+            color: #3498db;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 11.2px; /* 14 * 0.8 */
+        }
+        
+        .toggle-btn.active {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            height: 400px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        p {
+            font-size: 0.88em; /* 1.1 * 0.8 */
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .tab-nav {
+                flex-direction: column;
+            }
+            
+            .tab-button {
+                flex: none;
+                min-width: none;
+            }
+            
+            .algorithm-steps {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .legend {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Linear Regression</h1>
+            <p>Predicting Values Using Linear Relationships</p>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-button active" onclick="showTab('business')">Business Scenario</button>
+                <button class="tab-button" onclick="showTab('what-is')">What is Linear Regression</button>
+                <button class="tab-button" onclick="showTab('interactive')">Interactive Demo</button>
+                <button class="tab-button" onclick="showTab('how-works')">How It Works</button>
+                <button class="tab-button" onclick="showTab('evaluation')">Performance</button>
+                <button class="tab-button" onclick="showTab('when-use')">When to Use</button>
+            </div>
+            
+            <!-- Tab 1: Business Scenario -->
+            <div id="business" class="tab-content active">
+                <h2 class="section-title">Business Scenario: House Price Prediction</h2>
+                
+                <div class="business-question">
+                    <h3>Business Question</h3>
+                    <p>"Can we predict house prices based on their size? We need a simple, interpretable model that real estate agents can easily understand and explain to clients."</p>
+                </div>
+                
+                <h3 class="section-subtitle">Our Dataset: House Size and Prices</h3>
+                <p>We have data from recent house sales showing the relationship between size and price:</p>
+                
+                <div class="dataset-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>House #</th>
+                                <th class="feature-column">Size (sq ft)</th>
+                                <th class="target-column">Price ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td class="feature-column">1,000</td>
+                                <td class="target-column">$300,000</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td class="feature-column">1,500</td>
+                                <td class="target-column">$400,000</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td class="feature-column">2,000</td>
+                                <td class="target-column">$500,000</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td class="feature-column">2,500</td>
+                                <td class="target-column">$550,000</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td class="feature-column">3,000</td>
+                                <td class="target-column">$600,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-circle" style="background: #a8e6cf;"></div>
+                        <span>Feature (House Size)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-circle" style="background: #ffb3ba;"></div>
+                        <span>Target (House Price)</span>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>Understanding the Data</h3>
+                    <ul class="concept-list">
+                        <li><strong>Feature:</strong> House size is our input variable (what we know)</li>
+                        <li><strong>Target:</strong> House price is what we want to predict</li>
+                        <li><strong>Relationship:</strong> There appears to be a linear relationship - larger houses cost more</li>
+                        <li><strong>Goal:</strong> Find the best straight line through these points to predict prices</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Tab 2: What is Linear Regression -->
+            <div id="what-is" class="tab-content">
+                <h2 class="section-title">What is Linear Regression?</h2>
+                
+                <p>Linear regression is a statistical method that models the relationship between two variables by fitting a straight line to observed data points.</p>
+                
+                <div class="key-concepts">
+                    <h3>Think of it Like This</h3>
+                    <ul class="concept-list">
+                        <li><strong>Goal:</strong> Find the best straight line through your data points</li>
+                        <li><strong>Input:</strong> One variable (house size) predicts another (price)</li>
+                        <li><strong>Output:</strong> A linear equation that can predict new values</li>
+                        <li><strong>Simple:</strong> Easy to understand and explain to others</li>
+                    </ul>
+                </div>
+                
+                <div class="algorithm-steps">
+                    <div class="algorithm-step">
+                        <h4>The Linear Equation</h4>
+                        <p><strong>y = mx + b</strong><br>
+                        Where y is price, x is size, m is slope, b is intercept</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Slope (m)</h4>
+                        <p>How much price increases per square foot. Example: $200 per sq ft</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Intercept (b)</h4>
+                        <p>Base price when size is zero. Example: $100,000 base cost</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Best Fit</h4>
+                        <p>The line that minimizes the distance between all points and the line</p>
+                    </div>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Advantages of Linear Regression</h4>
+                        <ul>
+                            <li>Simple and easy to understand</li>
+                            <li>Fast to compute and train</li>
+                            <li>Provides interpretable coefficients</li>
+                            <li>Works well for linear relationships</li>
+                            <li>No complex parameters to tune</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>When Linear Regression Works Best</h4>
+                        <ul>
+                            <li>Clear linear relationship in data</li>
+                            <li>Need to explain model decisions</li>
+                            <li>Want to understand feature importance</li>
+                            <li>Have clean data with few outliers</li>
+                            <li>Quick baseline model needed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 3: Interactive Demo -->
+            <div id="interactive" class="tab-content">
+                <h2 class="section-title">Interactive Linear Regression Demo</h2>
+                <p>Adjust the line parameters to see how they affect the fit. The goal is to minimize the error between the line and the data points.</p>
+                
+                <div class="visualization-container">
+                    <div class="equation-display">
+                        Price = <span id="slope-value">200</span> × Size + $<span id="intercept-value">100,000</span>
+                    </div>
+                    
+                    <div class="error-display">
+                        Mean Squared Error: $<span id="mse-value">0</span>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Slope: $<span id="slope-display">200</span> per sq ft</span>
+                            <span>How much price increases per square foot</span>
+                        </div>
+                        <input type="range" min="0" max="400" value="200" class="slider" id="slope-slider">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Intercept: $<span id="intercept-display">100,000</span></span>
+                            <span>Base price of the house</span>
+                        </div>
+                        <input type="range" min="0" max="300000" value="100000" step="10000" class="slider" id="intercept-slider">
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="control-btn" id="best-fit-btn">Find Best Fit Line</button>
+                        <button class="control-btn" id="reset-btn">Reset</button>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <div class="toggle-btn active" id="show-errors-btn">Show Errors</div>
+                        <div class="toggle-btn" id="show-predicted-btn">Show Predicted Points</div>
+                    </div>
+                    
+                    <div class="chart-container" id="chart"></div>
+                </div>
+            </div>
+            
+            <!-- Tab 4: How It Works -->
+            <div id="how-works" class="tab-content">
+                <h2 class="section-title">How Linear Regression Works</h2>
+                
+                <div class="algorithm-steps">
+                    <div class="algorithm-step">
+                        <h4>1. Plot the Data</h4>
+                        <p>Place all house data points on a graph with size on x-axis and price on y-axis</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>2. Draw a Line</h4>
+                        <p>Start with any line through the data points</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>3. Measure Errors</h4>
+                        <p>Calculate the vertical distance from each point to the line</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>4. Square the Errors</h4>
+                        <p>Square each distance to make all errors positive and penalize large errors more</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>5. Find the Minimum</h4>
+                        <p>Use calculus to find the line that minimizes the sum of squared errors</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>6. Make Predictions</h4>
+                        <p>Use the equation to predict prices for new house sizes</p>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>The Mathematics (Simplified)</h3>
+                    <ul class="concept-list">
+                        <li><strong>Least Squares Method:</strong> Finds the line that minimizes squared errors</li>
+                        <li><strong>Normal Equation:</strong> Mathematical formula to calculate optimal slope and intercept</li>
+                        <li><strong>Residuals:</strong> The differences between actual and predicted values</li>
+                        <li><strong>R-squared:</strong> Measures how well the line fits the data (0-100%)</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>What Makes a Good Fit?</h4>
+                        <ul>
+                            <li><strong>Low MSE:</strong> Points are close to the line</li>
+                            <li><strong>High R-squared:</strong> Line explains most of the variation</li>
+                            <li><strong>Even Distribution:</strong> Errors are randomly scattered</li>
+                            <li><strong>No Patterns:</strong> Residuals don't show trends</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Common Issues</h4>
+                        <ul>
+                            <li><strong>Outliers:</strong> Extreme points can skew the line</li>
+                            <li><strong>Non-linear Data:</strong> Curved relationships need other methods</li>
+                            <li><strong>Multiple Factors:</strong> Price depends on more than just size</li>
+                            <li><strong>Noise:</strong> Random variations affect accuracy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 5: Performance Evaluation -->
+            <div id="evaluation" class="tab-content">
+                <h2 class="section-title">Model Performance Evaluation</h2>
+                <p>Let's evaluate how well our linear regression model performs on the house price data:</p>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>R-squared</h4>
+                        <div class="metric-value">92%</div>
+                        <p>92% of price variation is explained by house size</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Mean Squared Error</h4>
+                        <div class="metric-value">$8,000</div>
+                        <p>Average squared error in price predictions</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Mean Absolute Error</h4>
+                        <div class="metric-value">$6,500</div>
+                        <p>Average absolute error in price predictions</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Slope Coefficient</h4>
+                        <div class="metric-value">$180</div>
+                        <p>Price increases $180 per square foot</p>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>What These Results Mean for Business</h3>
+                    <ul class="concept-list">
+                        <li><strong>High R-squared (92%):</strong> House size is an excellent predictor of price</li>
+                        <li><strong>Low MAE ($6,500):</strong> Predictions are typically within $6,500 of actual price</li>
+                        <li><strong>Clear Slope ($180/sq ft):</strong> Easy to explain to clients and agents</li>
+                        <li><strong>Reliable Tool:</strong> Can be used confidently for price estimates</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Business Impact</h4>
+                        <ul>
+                            <li><strong>Pricing Strategy:</strong> Set competitive prices based on size</li>
+                            <li><strong>Market Analysis:</strong> Understand price per square foot trends</li>
+                            <li><strong>Client Communication:</strong> Explain pricing clearly with simple formula</li>
+                            <li><strong>Investment Decisions:</strong> Evaluate property values quickly</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Model Limitations</h4>
+                        <ul>
+                            <li><strong>Oversimplified:</strong> Price depends on many factors (location, age, condition)</li>
+                            <li><strong>Linear Assumption:</strong> May not capture all price relationships</li>
+                            <li><strong>Market Changes:</strong> Model needs updates as market conditions change</li>
+                            <li><strong>Outliers:</strong> Luxury or unique properties may not fit well</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 6: When to Use -->
+            <div id="when-use" class="tab-content">
+                <h2 class="section-title">When to Use Linear Regression</h2>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Perfect for Linear Regression</h4>
+                        <ul>
+                            <li><strong>Linear relationships</strong> between variables</li>
+                            <li><strong>Need interpretability</strong> - want to explain predictions</li>
+                            <li><strong>Baseline model</strong> - quick first attempt</li>
+                            <li><strong>Small datasets</strong> - works well with limited data</li>
+                            <li><strong>Continuous targets</strong> - predicting numerical values</li>
+                            <li><strong>Fast predictions</strong> needed in real-time</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Consider Other Methods When</h4>
+                        <ul>
+                            <li><strong>Non-linear patterns</strong> in your data</li>
+                            <li><strong>Complex relationships</strong> between many variables</li>
+                            <li><strong>Categorical predictions</strong> needed</li>
+                            <li><strong>High accuracy required</strong> over interpretability</li>
+                            <li><strong>Many outliers</strong> present in data</li>
+                            <li><strong>Curved or stepped</strong> relationships</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="algorithm-steps">
+                    <div class="algorithm-step">
+                        <h4>Business Applications</h4>
+                        <p>Sales forecasting, price prediction, demand planning, financial modeling</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Alternative Algorithms</h4>
+                        <p>Polynomial regression for curves, Random Forest for complex patterns</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Next Steps</h4>
+                        <p>Add more features, try non-linear models, regularization techniques</p>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>Decision Framework: Choose Linear Regression When</h3>
+                    <ul class="concept-list">
+                        <li><strong>Relationship Type:</strong> Clear linear relationship visible in scatter plot</li>
+                        <li><strong>Business Need:</strong> Need to explain how predictions are made</li>
+                        <li><strong>Data Quality:</strong> Clean data with few outliers</li>
+                        <li><strong>Problem Type:</strong> Predicting continuous numerical values</li>
+                        <li><strong>Model Purpose:</strong> Quick insights or baseline for comparison</li>
+                        <li><strong>Audience:</strong> Non-technical stakeholders who need simple explanations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="#" onclick="history.back()">← Back to Main Presentation</a>
+        </div>
+    </div>
+
+    <script>
+        // Sample dataset - house size vs price
+        const dataset = [
+            { size: 1000, price: 300000 },
+            { size: 1500, price: 400000 },
+            { size: 2000, price: 500000 },
+            { size: 2500, price: 550000 },
+            { size: 3000, price: 600000 }
+        ];
+        
+        // Tab functionality
+        function showTab(tabName) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'interactive' && !document.querySelector('#chart svg')) {
+                setTimeout(() => {
+                    initializeVisualization();
+                }, 100);
+            }
+        }
+        
+        // Chart variables
+        let svg, xScale, yScale, line, slope = 200, intercept = 100000;
+        
+        function initializeVisualization() {
+            const container = d3.select("#chart");
+            container.selectAll("*").remove();
+            
+            const margin = { top: 40, right: 30, bottom: 60, left: 80 };
+            const width = 600 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+            
+            xScale = d3.scaleLinear()
+                .domain([0, d3.max(dataset, d => d.size) + 500])
+                .range([0, width]);
+            
+            yScale = d3.scaleLinear()
+                .domain([0, d3.max(dataset, d => d.price) + 100000])
+                .range([height, 0]);
+            
+            svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            // Add axes
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d + " sq ft"));
+            
+            svg.append("g")
+                .call(d3.axisLeft(yScale).ticks(5).tickFormat(d => "$" + d/1000 + "k"));
+            
+            // Add labels
+            svg.append("text")
+                .attr("transform", `translate(${width/2}, ${height + 50})`)
+                .style("text-anchor", "middle")
+                .style("fill", "#3498db")
+                .style("font-weight", "bold")
+                .text("House Size (sq ft)");
+            
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -60)
+                .attr("x", -height/2)
+                .style("text-anchor", "middle")
+                .style("fill", "#3498db")
+                .style("font-weight", "bold")
+                .text("House Price ($)");
+            
+            // Add title
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", -10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("fill", "#2c3e50")
+                .style("font-weight", "bold")
+                .text("House Size vs Price Prediction");
+            
+            // Draw data points
+            svg.selectAll(".point")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("class", "point")
+                .attr("cx", d => xScale(d.size))
+                .attr("cy", d => yScale(d.price))
+                .attr("r", 8)
+                .attr("fill", "#3498db")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2);
+            
+            // Draw initial regression line
+            line = svg.append("line")
+                .attr("class", "regression-line")
+                .attr("x1", xScale(0))
+                .attr("y1", yScale(intercept))
+                .attr("x2", xScale(3500))
+                .attr("y2", yScale(slope * 3500 + intercept))
+                .attr("stroke", "#e74c3c")
+                .attr("stroke-width", 3)
+                .attr("stroke-dasharray", "5,5");
+            
+            updateRegressionLine();
+        }
+        
+        function updateRegressionLine() {
+            if (!line) return;
+            
+            line.attr("y1", yScale(intercept))
+                .attr("y2", yScale(slope * 3500 + intercept));
+            
+            document.getElementById("slope-value").textContent = slope;
+            document.getElementById("intercept-value").textContent = intercept.toLocaleString();
+            document.getElementById("slope-display").textContent = slope;
+            document.getElementById("intercept-display").textContent = intercept.toLocaleString();
+            
+            const mse = calculateMSE();
+            document.getElementById("mse-value").textContent = Math.round(mse).toLocaleString();
+            
+            updateErrorLines();
+        }
+        
+        function calculateMSE() {
+            let sumSquaredErrors = 0;
+            dataset.forEach(d => {
+                const predicted = slope * d.size + intercept;
+                const error = d.price - predicted;
+                sumSquaredErrors += error * error;
+            });
+            return sumSquaredErrors / dataset.length;
+        }
+        
+        function updateErrorLines() {
+            if (!svg) return;
+            
+            svg.selectAll(".error-line").remove();
+            svg.selectAll(".predicted-point").remove();
+            
+            if (document.getElementById("show-errors-btn").classList.contains("active")) {
+                dataset.forEach(d => {
+                    const predicted = slope * d.size + intercept;
+                    
+                    svg.append("line")
+                        .attr("class", "error-line")
+                        .attr("x1", xScale(d.size))
+                        .attr("y1", yScale(d.price))
+                        .attr("x2", xScale(d.size))
+                        .attr("y2", yScale(predicted))
+                        .attr("stroke", "#e74c3c")
+                        .attr("stroke-width", 2)
+                        .attr("stroke-dasharray", "3,3");
+                });
+            }
+            
+            if (document.getElementById("show-predicted-btn").classList.contains("active")) {
+                dataset.forEach(d => {
+                    const predicted = slope * d.size + intercept;
+                    
+                    svg.append("circle")
+                        .attr("class", "predicted-point")
+                        .attr("cx", xScale(d.size))
+                        .attr("cy", yScale(predicted))
+                        .attr("r", 6)
+                        .attr("fill", "#e74c3c")
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 2);
+                });
+            }
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById("slope-slider")) {
+                document.getElementById("slope-slider").addEventListener("input", function() {
+                    slope = parseInt(this.value);
+                    updateRegressionLine();
+                });
+                
+                document.getElementById("intercept-slider").addEventListener("input", function() {
+                    intercept = parseInt(this.value);
+                    updateRegressionLine();
+                });
+                
+                document.getElementById("best-fit-btn").addEventListener("click", function() {
+                    const meanX = d3.mean(dataset, d => d.size);
+                    const meanY = d3.mean(dataset, d => d.price);
+                    
+                    let numerator = 0;
+                    let denominator = 0;
+                    
+                    dataset.forEach(d => {
+                        numerator += (d.size - meanX) * (d.price - meanY);
+                        denominator += Math.pow(d.size - meanX, 2);
+                    });
+                    
+                    slope = Math.round(numerator / denominator);
+                    intercept = Math.round(meanY - slope * meanX);
+                    
+                    document.getElementById("slope-slider").value = slope;
+                    document.getElementById("intercept-slider").value = intercept;
+                    
+                    line.attr("stroke-dasharray", "0");
+                    updateRegressionLine();
+                });
+                
+                document.getElementById("reset-btn").addEventListener("click", function() {
+                    slope = 200;
+                    intercept = 100000;
+                    
+                    document.getElementById("slope-slider").value = slope;
+                    document.getElementById("intercept-slider").value = intercept;
+                    
+                    line.attr("stroke-dasharray", "5,5");
+                    updateRegressionLine();
+                });
+                
+                document.getElementById("show-errors-btn").addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    updateRegressionLine();
+                });
+                
+                document.getElementById("show-predicted-btn").addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    updateRegressionLine();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

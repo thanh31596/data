@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Forest - Interactive Learning</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #3498db;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.24em; /* 2.8 * 0.8 */
+            color: #2c3e50;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 0.96em; /* 1.2 * 0.8 */
+            color: #7f8c8d;
+        }
+        
+        .tab-container {
+            margin-bottom: 30px;
+        }
+        
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .tab-button {
+            background: #f8f9fa;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 12.8px; /* 16 * 0.8 */
+            font-family: 'Helvetica', Arial, sans-serif;
+            color: #495057;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 140px;
+        }
+        
+        .tab-button:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+        
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            min-height: 500px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-title {
+            font-size: 1.76em; /* 2.2 * 0.8 */
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        
+        .section-subtitle {
+            font-size: 1.28em; /* 1.6 * 0.8 */
+            color: #34495e;
+            margin-bottom: 15px;
+            margin-top: 25px;
+        }
+        
+        .business-question {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .business-question h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.28em; /* 1.6 * 0.8 */
+        }
+        
+        .dataset-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        
+        .dataset-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .dataset-table th, .dataset-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .dataset-table th {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .dataset-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .feature-column {
+            background: #a8e6cf !important;
+        }
+        
+        .target-column {
+            background: #ffb3ba !important;
+        }
+        
+        .approve-class {
+            background: #d5f4e6 !important;
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .reject-class {
+            background: #fdeaea !important;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .visualization-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 11.2px; /* 14 * 0.8 */
+            transition: all 0.3s;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .control-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .control-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .algorithm-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .algorithm-step {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .algorithm-step:hover {
+            transform: translateY(-5px);
+        }
+        
+        .algorithm-step h4 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 0.96em; /* 1.2 * 0.8 */
+        }
+        
+        .algorithm-step p {
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .key-concepts {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        
+        .key-concepts h3 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 1.28em; /* 1.6 * 0.8 */
+        }
+        
+        .concept-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .concept-list li {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .concept-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            border: 2px solid #27ae60;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.6em; /* 2.0 * 0.8 */
+            font-weight: bold;
+            color: #27ae60;
+            margin: 10px 0;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .legend-circle {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .back-link a {
+            background: #34495e;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+            transition: all 0.3s;
+        }
+        
+        .back-link a:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .comparison-item h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.04em; /* 1.3 * 0.8 */
+        }
+        
+        .comparison-item p, .comparison-item li {
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        /* Random Forest Specific Styles */
+        .forest-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+        }
+        
+        .tree-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .decision-tree {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .decision-tree:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .decision-tree.voting {
+            border-color: #f39c12;
+            background: #fef9e7;
+        }
+        
+        .tree-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .tree-prediction {
+            font-size: 1.04em; /* 1.3 * 0.8 */
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .tree-prediction.approve {
+            color: #27ae60;
+        }
+        
+        .tree-prediction.reject {
+            color: #e74c3c;
+        }
+        
+        .tree-confidence {
+            font-size: 0.8em; /* 1.0 * 0.8 */
+            color: #7f8c8d;
+        }
+        
+        .ensemble-result {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .ensemble-result.reject {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .voting-summary {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .voting-summary h4 {
+            color: #27ae60;
+            margin-bottom: 15px;
+            font-size: 1.04em; /* 1.3 * 0.8 */
+        }
+        
+        .vote-bars {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        
+        .vote-bar {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .vote-count {
+            height: 40px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .vote-count.approve {
+            background: #27ae60;
+        }
+        
+        .vote-count.reject {
+            background: #e74c3c;
+        }
+        
+        .slider-container {
+            margin: 20px 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.88em; /* 1.1 * 0.8 */
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #e9ecef;
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        p {
+            font-size: 0.88em; /* 1.1 * 0.8 */
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .tab-nav {
+                flex-direction: column;
+            }
+            
+            .tab-button {
+                flex: none;
+                min-width: none;
+            }
+            
+            .algorithm-steps, .tree-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .legend {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Random Forest</h1>
+            <p>The Power of Many Trees Working Together</p>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-button active" onclick="showTab('business')">Business Scenario</button>
+                <button class="tab-button" onclick="showTab('what-is')">What is Random Forest</button>
+                <button class="tab-button" onclick="showTab('interactive')">Interactive Demo</button>
+                <button class="tab-button" onclick="showTab('how-works')">How It Works</button>
+                <button class="tab-button" onclick="showTab('evaluation')">Performance</button>
+                <button class="tab-button" onclick="showTab('when-use')">When to Use</button>
+            </div>
+            
+            <!-- Tab 1: Business Scenario -->
+            <div id="business" class="tab-content active">
+                <h2 class="section-title">Business Scenario: Loan Approval System</h2>
+                
+                <div class="business-question">
+                    <h3>Business Question</h3>
+                    <p>"Can we improve our loan approval accuracy by combining multiple decision models? We need a robust system that considers complex patterns and provides high accuracy while handling various customer profiles."</p>
+                </div>
+                
+                <h3 class="section-subtitle">Our Dataset: Loan Application Information</h3>
+                <p>We have data from loan applications showing customer characteristics and approval decisions:</p>
+                
+                <div class="dataset-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Application ID</th>
+                                <th class="feature-column">Credit Score</th>
+                                <th class="feature-column">Annual Income</th>
+                                <th class="feature-column">Employment Years</th>
+                                <th class="feature-column">Debt Ratio</th>
+                                <th class="target-column">Approval Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>App 001</td>
+                                <td class="feature-column">720</td>
+                                <td class="feature-column">$65,000</td>
+                                <td class="feature-column">5</td>
+                                <td class="feature-column">25%</td>
+                                <td class="approve-class">Approved</td>
+                            </tr>
+                            <tr>
+                                <td>App 002</td>
+                                <td class="feature-column">580</td>
+                                <td class="feature-column">$35,000</td>
+                                <td class="feature-column">2</td>
+                                <td class="feature-column">60%</td>
+                                <td class="reject-class">Rejected</td>
+                            </tr>
+                            <tr>
+                                <td>App 003</td>
+                                <td class="feature-column">650</td>
+                                <td class="feature-column">$55,000</td>
+                                <td class="feature-column">8</td>
+                                <td class="feature-column">35%</td>
+                                <td class="approve-class">Approved</td>
+                            </tr>
+                            <tr>
+                                <td>App 004</td>
+                                <td class="feature-column">480</td>
+                                <td class="feature-column">$28,000</td>
+                                <td class="feature-column">1</td>
+                                <td class="feature-column">75%</td>
+                                <td class="reject-class">Rejected</td>
+                            </tr>
+                            <tr>
+                                <td>App 005</td>
+                                <td class="feature-column">750</td>
+                                <td class="feature-column">$85,000</td>
+                                <td class="feature-column">12</td>
+                                <td class="feature-column">15%</td>
+                                <td class="approve-class">Approved</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-circle" style="background: #a8e6cf;"></div>
+                        <span>Features (Applicant Characteristics)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-circle" style="background: #ffb3ba;"></div>
+                        <span>Target (Approval Decision)</span>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>Understanding the Data</h3>
+                    <ul class="concept-list">
+                        <li><strong>Features:</strong> Credit score, income, employment history, and debt ratio</li>
+                        <li><strong>Target:</strong> Loan approval decision (Approved/Rejected)</li>
+                        <li><strong>Complexity:</strong> Multiple factors interact in complex ways to determine approval</li>
+                        <li><strong>Goal:</strong> Build a robust system that outperforms any single decision model</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Tab 2: What is Random Forest -->
+            <div id="what-is" class="tab-content">
+                <h2 class="section-title">What is Random Forest?</h2>
+                
+                <p>Random Forest is an ensemble method that combines many decision trees to make more accurate and reliable predictions. It's like having a committee of experts vote on each decision instead of relying on just one expert.</p>
+                
+                <div class="key-concepts">
+                    <h3>Think of it Like This</h3>
+                    <ul class="concept-list">
+                        <li><strong>Medical Diagnosis:</strong> Getting opinions from 100 different doctors instead of just one</li>
+                        <li><strong>Investment Decision:</strong> Consulting multiple financial advisors before making a choice</li>
+                        <li><strong>Democracy:</strong> Multiple voters make better decisions than a single dictator</li>
+                        <li><strong>Wisdom of Crowds:</strong> The average guess of many people is often more accurate than any individual</li>
+                    </ul>
+                </div>
+                
+                <div class="algorithm-steps">
+                    <div class="algorithm-step">
+                        <h4>Bootstrap Sampling</h4>
+                        <p>Create different training sets by randomly sampling with replacement</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Random Features</h4>
+                        <p>Each tree uses only a random subset of features for each split</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Build Trees</h4>
+                        <p>Train many decision trees independently on different data samples</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Voting</h4>
+                        <p>Combine predictions through majority vote (classification) or averaging (regression)</p>
+                    </div>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Single Decision Tree vs Random Forest</h4>
+                        <ul>
+                            <li><strong>Single Tree:</strong> Fast, interpretable, but prone to overfitting</li>
+                            <li><strong>Random Forest:</strong> More accurate, robust, but less interpretable</li>
+                            <li><strong>Single Tree:</strong> Can be unstable - small data changes cause big tree changes</li>
+                            <li><strong>Random Forest:</strong> Stable - many trees reduce impact of individual variations</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Why Random Forest Works</h4>
+                        <ul>
+                            <li><strong>Reduces Overfitting:</strong> Individual trees may overfit, but ensemble generalizes better</li>
+                            <li><strong>Handles Noise:</strong> Random variations in individual trees cancel out</li>
+                            <li><strong>Feature Importance:</strong> Can identify which features matter most across all trees</li>
+                            <li><strong>Out-of-Bag Error:</strong> Built-in validation without separate test set</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 3: Interactive Demo -->
+            <div id="interactive" class="tab-content">
+                <h2 class="section-title">Interactive Random Forest Demo</h2>
+                <p>Watch how multiple decision trees vote together to make a loan decision. See how the ensemble is more robust than any individual tree!</p>
+                
+                <div class="visualization-container">
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Number of Trees: <span id="tree-count">5</span></span>
+                            <span>More trees = more stable predictions</span>
+                        </div>
+                        <input type="range" min="3" max="15" value="5" class="slider" id="tree-slider">
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="control-btn" id="new-application-btn">Evaluate New Application</button>
+                        <button class="control-btn" id="step-vote-btn" style="display: none;">Show Voting Process</button>
+                        <button class="control-btn" id="reset-forest-btn">Reset Forest</button>
+                    </div>
+                    
+                    <div class="forest-container">
+                        <h4 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">The Random Forest Committee</h4>
+                        <div class="tree-grid" id="forest-trees">
+                            <!-- Trees will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="voting-summary" id="voting-results" style="display: none;">
+                        <h4>Committee Voting Results</h4>
+                        <div class="vote-bars">
+                            <div class="vote-bar">
+                                <div class="vote-count approve" id="approve-votes">0</div>
+                                <div>Approve Votes</div>
+                            </div>
+                            <div class="vote-bar">
+                                <div class="vote-count reject" id="reject-votes">0</div>
+                                <div>Reject Votes</div>
+                            </div>
+                        </div>
+                        <p id="voting-explanation"></p>
+                    </div>
+                    
+                    <div class="ensemble-result" id="final-decision" style="display: none;">
+                        <h3 id="decision-text">Committee Decision</h3>
+                        <p id="decision-confidence"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 4: How It Works -->
+            <div id="how-works" class="tab-content">
+                <h2 class="section-title">How Random Forest Algorithm Works</h2>
+                
+                <div class="algorithm-steps">
+                    <div class="algorithm-step">
+                        <h4>1. Bootstrap Sampling</h4>
+                        <p>Create N different datasets by randomly sampling from original data with replacement</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>2. Random Feature Selection</h4>
+                        <p>For each tree, randomly select a subset of features to consider at each split</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>3. Build Decision Trees</h4>
+                        <p>Train N decision trees independently on their respective bootstrap samples</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>4. Make Predictions</h4>
+                        <p>Each tree makes its own prediction for new data points</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>5. Aggregate Results</h4>
+                        <p>Combine predictions through majority voting (classification) or averaging (regression)</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>6. Calculate Confidence</h4>
+                        <p>The proportion of trees agreeing indicates confidence in the prediction</p>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>Key Random Forest Concepts</h3>
+                    <ul class="concept-list">
+                        <li><strong>Bootstrap Aggregating (Bagging):</strong> Training each tree on a different random sample reduces overfitting</li>
+                        <li><strong>Random Subspace Method:</strong> Using random features at each split increases tree diversity</li>
+                        <li><strong>Out-of-Bag (OOB) Error:</strong> Each tree is tested on data it wasn't trained on for built-in validation</li>
+                        <li><strong>Feature Importance:</strong> Measures how much each feature contributes across all trees</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Why Randomness Helps</h4>
+                        <ul>
+                            <li><strong>Diverse Trees:</strong> Different data and features create varied decision patterns</li>
+                            <li><strong>Error Reduction:</strong> Individual tree errors cancel out when averaged</li>
+                            <li><strong>Bias-Variance Tradeoff:</strong> Reduces variance without significantly increasing bias</li>
+                            <li><strong>Robust Predictions:</strong> Less sensitive to outliers and noise in training data</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Hyperparameters to Tune</h4>
+                        <ul>
+                            <li><strong>Number of Trees:</strong> More trees usually improve performance up to a point</li>
+                            <li><strong>Max Features:</strong> Number of features considered at each split</li>
+                            <li><strong>Max Depth:</strong> Maximum depth of individual trees</li>
+                            <li><strong>Min Samples Split:</strong> Minimum samples required to split a node</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 5: Performance Evaluation -->
+            <div id="evaluation" class="tab-content">
+                <h2 class="section-title">Model Performance Evaluation</h2>
+                <p>Let's evaluate how well our Random Forest model performs on the loan approval task:</p>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>Accuracy</h4>
+                        <div class="metric-value">96%</div>
+                        <p>Correctly predicted 192 out of 200 loan decisions</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Precision</h4>
+                        <div class="metric-value">94%</div>
+                        <p>Of approved loans, 94% were good decisions</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Recall</h4>
+                        <div class="metric-value">97%</div>
+                        <p>Correctly identified 97% of creditworthy applicants</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Feature Importance</h4>
+                        <div class="metric-value">Top: Credit Score</div>
+                        <p>Most influential factor across all trees</p>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>What These Results Mean for Business</h3>
+                    <ul class="concept-list">
+                        <li><strong>Excellent Accuracy (96%):</strong> Highly reliable loan decisions reduce risk and increase profitability</li>
+                        <li><strong>Strong Precision (94%):</strong> Minimizes bad loans that could result in defaults</li>
+                        <li><strong>High Recall (97%):</strong> Captures almost all good customers, maximizing revenue opportunities</li>
+                        <li><strong>Feature Insights:</strong> Identifies which factors matter most for decision making</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Business Impact</h4>
+                        <ul>
+                            <li><strong>Risk Reduction:</strong> 96% accuracy significantly reduces loan default risk</li>
+                            <li><strong>Revenue Growth:</strong> 97% recall ensures we don't miss creditworthy customers</li>
+                            <li><strong>Automation:</strong> High confidence allows for automated decision making</li>
+                            <li><strong>Competitive Advantage:</strong> Superior accuracy improves market position</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Random Forest vs Other Methods</h4>
+                        <ul>
+                            <li><strong>vs Single Decision Tree:</strong> +8% accuracy improvement</li>
+                            <li><strong>vs Logistic Regression:</strong> +4% accuracy, better handles complex patterns</li>
+                            <li><strong>vs SVM:</strong> Similar accuracy, much faster training time</li>
+                            <li><strong>vs KNN:</strong> +7% accuracy, less sensitive to outliers</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 6: When to Use -->
+            <div id="when-use" class="tab-content">
+                <h2 class="section-title">When to Use Random Forest</h2>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Perfect for Random Forest</h4>
+                        <ul>
+                            <li><strong>High accuracy priority</strong> - need best possible performance</li>
+                            <li><strong>Complex patterns</strong> - non-linear relationships between features</li>
+                            <li><strong>Mixed data types</strong> - numerical and categorical features</li>
+                            <li><strong>Feature importance needed</strong> - want to understand variable importance</li>
+                            <li><strong>Robust predictions</strong> - need stability against noisy data</li>
+                            <li><strong>Medium to large datasets</strong> - enough data to train multiple trees</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Consider Other Methods When</h4>
+                        <ul>
+                            <li><strong>Interpretability critical</strong> - need to explain individual decisions</li>
+                            <li><strong>Very large datasets</strong> - training time becomes prohibitive</li>
+                            <li><strong>Real-time predictions</strong> - need extremely fast inference</li>
+                            <li><strong>Simple patterns</strong> - linear relationships might suffice</li>
+                            <li><strong>Memory constraints</strong> - storing many trees requires significant memory</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="algorithm-steps">
+                    <div class="algorithm-step">
+                        <h4>Business Applications</h4>
+                        <p>Credit scoring, fraud detection, recommendation systems, medical diagnosis</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Alternative Ensemble Methods</h4>
+                        <p>Gradient Boosting for sequential learning, Extra Trees for faster training</p>
+                    </div>
+                    <div class="algorithm-step">
+                        <h4>Advanced Techniques</h4>
+                        <p>Hyperparameter tuning, feature engineering, cross-validation optimization</p>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>Decision Framework: Choose Random Forest When</h3>
+                    <ul class="concept-list">
+                        <li><strong>Performance Priority:</strong> Accuracy is more important than interpretability</li>
+                        <li><strong>Data Characteristics:</strong> Complex patterns with feature interactions</li>
+                        <li><strong>Problem Type:</strong> Classification or regression with tabular data</li>
+                        <li><strong>Resource Availability:</strong> Sufficient computational resources for training</li>
+                        <li><strong>Maintenance Requirements:</strong> Model stability is important for production</li>
+                        <li><strong>Feature Analysis:</strong> Need insights into variable importance</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="#" onclick="history.back()">← Back to Main Presentation</a>
+        </div>
+    </div>
+
+    <script>
+        // Sample loan application for demonstration
+        const sampleApplication = {
+            creditScore: 680,
+            income: 58000,
+            employmentYears: 6,
+            debtRatio: 0.32
+        };
+        
+        // Tab functionality
+        function showTab(tabName) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'interactive') {
+                setTimeout(() => {
+                    initializeForest();
+                }, 100);
+            }
+        }
+        
+        // Random Forest Demo Variables
+        let numberOfTrees = 5;
+        let trees = [];
+        let currentStep = 0;
+        
+        function initializeForest() {
+            generateTrees();
+            setupForestEventListeners();
+        }
+        
+        function generateTrees() {
+            trees = [];
+            const forestContainer = document.getElementById('forest-trees');
+            forestContainer.innerHTML = '';
+            
+            for (let i = 0; i < numberOfTrees; i++) {
+                const tree = createRandomTree(i + 1);
+                trees.push(tree);
+                
+                const treeElement = document.createElement('div');
+                treeElement.className = 'decision-tree';
+                treeElement.id = `tree-${i}`;
+                treeElement.innerHTML = `
+                    <div class="tree-title">Decision Tree ${i + 1}</div>
+                    <div class="tree-prediction" id="prediction-${i}">Ready</div>
+                    <div class="tree-confidence" id="confidence-${i}">Waiting for application...</div>
+                `;
+                
+                forestContainer.appendChild(treeElement);
+            }
+        }
+        
+        function createRandomTree(treeId) {
+            // Simulate different decision rules for each tree
+            const rules = [
+                { focus: 'creditScore', threshold: 600 + Math.random() * 100 },
+                { focus: 'income', threshold: 40000 + Math.random() * 30000 },
+                { focus: 'debtRatio', threshold: 0.3 + Math.random() * 0.3 },
+                { focus: 'employmentYears', threshold: 2 + Math.random() * 5 }
+            ];
+            
+            return {
+                id: treeId,
+                rules: rules,
+                makeDecision: function(application) {
+                    let score = 0;
+                    
+                    // Credit score check
+                    if (application.creditScore > this.rules[0].threshold) score += 0.4;
+                    
+                    // Income check
+                    if (application.income > this.rules[1].threshold) score += 0.3;
+                    
+                    // Debt ratio check
+                    if (application.debtRatio < this.rules[2].threshold) score += 0.2;
+                    
+                    // Employment years check
+                    if (application.employmentYears > this.rules[3].threshold) score += 0.1;
+                    
+                    // Add some randomness to simulate different tree structures
+                    score += (Math.random() - 0.5) * 0.2;
+                    
+                    const decision = score > 0.5 ? 'Approve' : 'Reject';
+                    const confidence = Math.min(Math.max(Math.abs(score - 0.5) * 2, 0.6), 0.95);
+                    
+                    return { decision, confidence: confidence.toFixed(2) };
+                }
+            };
+        }
+        
+        function setupForestEventListeners() {
+            document.getElementById("tree-slider").addEventListener("input", function() {
+                numberOfTrees = parseInt(this.value);
+                document.getElementById("tree-count").textContent = numberOfTrees;
+                generateTrees();
+                hideResults();
+            });
+            
+            document.getElementById("new-application-btn").addEventListener("click", function() {
+                evaluateApplication();
+            });
+            
+            document.getElementById("step-vote-btn").addEventListener("click", function() {
+                showVotingProcess();
+            });
+            
+            document.getElementById("reset-forest-btn").addEventListener("click", function() {
+                generateTrees();
+                hideResults();
+            });
+        }
+        
+        function evaluateApplication() {
+            // Add some randomness to the sample application
+            const application = {
+                creditScore: sampleApplication.creditScore + (Math.random() - 0.5) * 100,
+                income: sampleApplication.income + (Math.random() - 0.5) * 20000,
+                employmentYears: Math.max(1, sampleApplication.employmentYears + (Math.random() - 0.5) * 4),
+                debtRatio: Math.max(0.1, Math.min(0.8, sampleApplication.debtRatio + (Math.random() - 0.5) * 0.3))
+            };
+            
+            // Get decisions from each tree
+            let approveVotes = 0;
+            let rejectVotes = 0;
+            
+            trees.forEach((tree, index) => {
+                const result = tree.makeDecision(application);
+                const treeElement = document.getElementById(`tree-${index}`);
+                const predictionElement = document.getElementById(`prediction-${index}`);
+                const confidenceElement = document.getElementById(`confidence-${index}`);
+                
+                predictionElement.textContent = result.decision;
+                predictionElement.className = `tree-prediction ${result.decision.toLowerCase()}`;
+                confidenceElement.textContent = `${(result.confidence * 100).toFixed(0)}% confident`;
+                
+                if (result.decision === 'Approve') {
+                    approveVotes++;
+                } else {
+                    rejectVotes++;
+                }
+                
+                // Add voting animation
+                treeElement.classList.add('voting');
+                setTimeout(() => {
+                    treeElement.classList.remove('voting');
+                }, 1000);
+            });
+            
+            // Show voting results
+            setTimeout(() => {
+                showVotingResults(approveVotes, rejectVotes, application);
+            }, 1200);
+        }
+        
+        function showVotingResults(approveVotes, rejectVotes, application) {
+            document.getElementById("approve-votes").textContent = approveVotes;
+            document.getElementById("reject-votes").textContent = rejectVotes;
+            document.getElementById("voting-results").style.display = "block";
+            
+            const totalVotes = approveVotes + rejectVotes;
+            const approvePercentage = ((approveVotes / totalVotes) * 100).toFixed(1);
+            const rejectPercentage = ((rejectVotes / totalVotes) * 100).toFixed(1);
+            
+            document.getElementById("voting-explanation").innerHTML = `
+                <strong>Application Details:</strong><br>
+                Credit Score: ${Math.round(application.creditScore)}, 
+                Income: $${Math.round(application.income).toLocaleString()}, 
+                Employment: ${application.employmentYears.toFixed(1)} years, 
+                Debt Ratio: ${(application.debtRatio * 100).toFixed(1)}%<br><br>
+                <strong>Committee Vote:</strong> ${approveVotes} trees voted to approve (${approvePercentage}%), 
+                ${rejectVotes} trees voted to reject (${rejectPercentage}%)
+            `;
+            
+            // Show final decision
+            const finalDecision = approveVotes > rejectVotes ? 'Approved' : 'Rejected';
+            const confidence = Math.max(approveVotes, rejectVotes) / totalVotes;
+            
+            const decisionElement = document.getElementById("final-decision");
+            decisionElement.style.display = "block";
+            decisionElement.className = `ensemble-result ${finalDecision.toLowerCase()}`;
+            
+            document.getElementById("decision-text").textContent = `Loan Application ${finalDecision}`;
+            document.getElementById("decision-confidence").textContent = 
+                `Committee Confidence: ${(confidence * 100).toFixed(1)}% (${Math.max(approveVotes, rejectVotes)} out of ${totalVotes} trees agree)`;
+        }
+        
+        function showVotingProcess() {
+            alert("Random Forest Voting Process:\n\n1. Each tree makes an independent decision based on different features and rules\n2. Trees use different subsets of data and features (bootstrap sampling)\n3. All tree votes are collected\n4. Majority vote determines the final decision\n5. The percentage of agreement indicates confidence\n\nThis ensemble approach is more accurate and robust than any single tree!");
+        }
+        
+        function hideResults() {
+            document.getElementById("voting-results").style.display = "none";
+            document.getElementById("final-decision").style.display = "none";
+            
+            // Reset tree displays
+            trees.forEach((tree, index) => {
+                document.getElementById(`prediction-${index}`).textContent = "Ready";
+                document.getElementById(`prediction-${index}`).className = "tree-prediction";
+                document.getElementById(`confidence-${index}`).textContent = "Waiting for application...";
+            });
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Forest will be initialized when interactive tab is clicked
+        });
+    </script>
+</body>
+</html>
