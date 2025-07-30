@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Transformers</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script>
+        // Fallback loader for D3.js
+        window.addEventListener('load', function() {
+            if (typeof d3 === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js';
+                script.onload = function() {
+                    console.log('D3.js loaded via fallback');
+                    initArchitecture();
+                };
+                document.head.appendChild(script);
+            }
+        });
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #3498db;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.24em;
+            color: #2c3e50;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 0.96em;
+            color: #7f8c8d;
+        }
+        
+        .tab-container {
+            margin-bottom: 30px;
+        }
+        
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .tab-button {
+            background: #f8f9fa;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 12.8px;
+            font-family: 'Helvetica', Arial, sans-serif;
+            color: #495057;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 140px;
+        }
+        
+        .tab-button:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+        
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            min-height: 500px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-title {
+            font-size: 1.76em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        
+        .section-subtitle {
+            font-size: 1.28em;
+            color: #34495e;
+            margin-bottom: 15px;
+            margin-top: 25px;
+        }
+        
+        .business-question {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .business-question h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.28em;
+        }
+        
+        .visualization-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 11.2px;
+            transition: all 0.3s;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .control-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .control-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .key-concepts {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        
+        .key-concepts h3 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 1.28em;
+        }
+        
+        .concept-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .concept-list li {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+            font-size: 0.88em;
+        }
+        
+        .concept-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        /* Style for feature extraction list */
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            margin: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "•";
+            position: absolute;
+            left: 10px;
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .comparison-item h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.04em;
+        }
+        
+        .comparison-item p, .comparison-item li {
+            font-size: 0.88em;
+        }
+        
+        .comparison-item ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+        
+        p {
+            font-size: 0.88em;
+            margin-bottom: 15px;
+        }
+        
+        /* Transformer specific styles */
+        .architecture-svg {
+            width: 100%;
+            height: 600px;
+            background: white;
+        }
+        
+        .attention-matrix {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .matrix-cell {
+            fill: #3498db;
+            stroke: #2980b9;
+            stroke-width: 1;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .matrix-cell:hover {
+            fill: #2980b9;
+        }
+        
+        .token-display {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .token {
+            background: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.88em;
+            transition: all 0.3s;
+        }
+        
+        .token.highlighted {
+            background: #3498db;
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .flow-arrow {
+            stroke: #3498db;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+        
+        .component-box {
+            fill: #f8f9fa;
+            stroke: #3498db;
+            stroke-width: 2;
+            rx: 10;
+        }
+        
+        .component-text {
+            fill: #2c3e50;
+            font-size: 14px;
+            text-anchor: middle;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .data-flow {
+            stroke: #27ae60;
+            stroke-width: 3;
+            stroke-dasharray: 5,5;
+            fill: none;
+            opacity: 0;
+        }
+        
+        .data-flow.animated {
+            animation: flowAnimation 2s linear infinite;
+            opacity: 1;
+        }
+        
+        @keyframes flowAnimation {
+            from {
+                stroke-dashoffset: 10;
+            }
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+        
+        /* Data point animation */
+        .data-point {
+            fill: #e74c3c;
+            r: 5;
+            opacity: 0;
+        }
+        
+        .data-point.animated {
+            animation: dataPointFlow 2s linear infinite;
+        }
+        
+        @keyframes dataPointFlow {
+            0% {
+                opacity: 0;
+                transform: translateY(0);
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px);
+            }
+        }
+        
+        .example-container {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .example-container h4 {
+            color: #27ae60;
+            margin-bottom: 15px;
+            font-size: 1.04em;
+        }
+        
+        @media (max-width: 768px) {
+            .tab-nav {
+                flex-direction: column;
+            }
+            
+            .tab-button {
+                flex: none;
+                min-width: none;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        
+        /* Additional styles for example tables */
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        th {
+            background: #34495e;
+            color: white;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+        
+        h5 {
+            font-size: 1.04em;
+            color: #34495e;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Understanding Transformers</h1>
+            <p>The Foundation of Modern AI Language Models</p>
+            <p style="font-size: 0.85em; color: #95a5a6; margin-top: 10px;">Interactive visualization for DATA4800 & DATA5000</p>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-button active" onclick="showTab(0)">Overview</button>
+                <button class="tab-button" onclick="showTab(1)">Architecture</button>
+                <button class="tab-button" onclick="showTab(2)">Self-Attention</button>
+                <button class="tab-button" onclick="showTab(3)">Example</button>
+            </div>
+            
+            <!-- Tab 1: Overview -->
+            <div class="tab-content active">
+                <div class="section-title">What is a Transformer?</div>
+                
+                <div class="business-question">
+                    <h3>Business Problem</h3>
+                    <p>How can we process sequences of text to understand context and generate meaningful responses?</p>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <h4>Traditional Approach</h4>
+                        <ul>
+                            <li>Process words sequentially (RNN/LSTM)</li>
+                            <li>Limited context window</li>
+                            <li>Slow training and inference</li>
+                            <li>Difficulty with long-range dependencies</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>Transformer Approach</h4>
+                        <ul>
+                            <li>Process all words in parallel</li>
+                            <li>Attention mechanism for context</li>
+                            <li>Fast training and inference</li>
+                            <li>Excellent at capturing relationships</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>Key Concepts</h3>
+                    <ul class="concept-list">
+                        <li><strong>Self-Attention:</strong> Allows model to focus on relevant parts of input</li>
+                        <li><strong>Positional Encoding:</strong> Provides word order information</li>
+                        <li><strong>Multi-Head Attention:</strong> Multiple attention patterns in parallel</li>
+                        <li><strong>Feed-Forward Networks:</strong> Process attended features</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Tab 2: Architecture -->
+            <div class="tab-content">
+                <div class="section-title">Transformer Architecture</div>
+                
+                <div class="controls">
+                    <button class="control-btn" onclick="animateDataFlow()">Show Data Flow</button>
+                    <button class="control-btn" onclick="resetAnimation()">Reset</button>
+                </div>
+                
+                <div class="visualization-container">
+                    <svg id="architecture-svg" class="architecture-svg"></svg>
+                </div>
+                
+                <p style="text-align: center; margin-top: 20px;">
+                    Click "Show Data Flow" to see how data moves through the transformer
+                </p>
+            </div>
+            
+            <!-- Tab 3: Self-Attention -->
+            <div class="tab-content">
+                <div class="section-title">Self-Attention Mechanism</div>
+                
+                <div class="example-container">
+                    <h4>Example Sentence</h4>
+                    <p>"The student opened their book"</p>
+                </div>
+                
+                <div class="token-display" id="token-display">
+                    <div class="token" data-index="0">The</div>
+                    <div class="token" data-index="1">student</div>
+                    <div class="token" data-index="2">opened</div>
+                    <div class="token" data-index="3">their</div>
+                    <div class="token" data-index="4">book</div>
+                </div>
+                
+                <p style="text-align: center;">Click on any word to see attention weights</p>
+                
+                <div class="visualization-container">
+                    <svg id="attention-svg" width="100%" height="400"></svg>
+                </div>
+                
+                <div class="key-concepts">
+                    <h3>How Self-Attention Works</h3>
+                    <ul class="concept-list">
+                        <li><strong>Query (Q):</strong> What information am I looking for?</li>
+                        <li><strong>Key (K):</strong> What information do I contain?</li>
+                        <li><strong>Value (V):</strong> What information should I provide?</li>
+                        <li><strong>Attention Score:</strong> Q × K / √d_k (scaled dot-product)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Tab 4: Example -->
+            <div class="tab-content">
+                <div class="section-title">Real Example: Customer Review Analysis</div>
+                
+                <div class="business-question">
+                    <h3>Business Case: E-commerce Review Classification</h3>
+                    <p>Input Review: "The product quality is poor and delivery was late"</p>
+                    <p style="font-size: 0.85em; margin-top: 10px;">Real-world application: Automatically categorize customer feedback for support teams</p>
+                </div>
+                
+                <div class="controls">
+                    <button class="control-btn" onclick="startDetailedExample()">Step Through Processing</button>
+                    <button class="control-btn" onclick="resetExample()">Reset</button>
+                </div>
+                
+                <div id="step-container" style="display: none;">
+                    <div class="visualization-container">
+                        <h4 id="step-title">Step 1: Tokenization</h4>
+                        <div id="step-content"></div>
+                    </div>
+                    
+                    <div class="controls" style="margin-top: 20px;">
+                        <button class="control-btn" id="prev-step" onclick="previousStep()" disabled>Previous</button>
+                        <button class="control-btn" id="next-step" onclick="nextStep()">Next Step</button>
+                    </div>
+                </div>
+                
+                <div id="final-result" style="display: none; margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Check if D3 is loaded
+        if (typeof d3 === 'undefined') {
+            console.error('D3.js failed to load. Please check your internet connection.');
+            document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>Error: D3.js library failed to load</h2><p>Please refresh the page or check your internet connection.</p></div>';
+        }
+        
+        // Tab functionality
+        function showTab(index) {
+            const tabs = document.querySelectorAll('.tab-button');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            
+            contents.forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+            
+            // Initialize visualizations when tabs are shown
+            if (index === 1) initArchitecture();
+            if (index === 2) initAttention();
+            if (index === 3) {
+                initExample();
+            }
+        }
+        
+        // Architecture visualization
+        function initArchitecture() {
+            if (typeof d3 === 'undefined') {
+                console.error('D3 is not available');
+                return;
+            }
+            
+            const svg = d3.select('#architecture-svg');
+            svg.selectAll("*").remove();
+            
+            const width = svg.node().getBoundingClientRect().width;
+            const height = 600;
+            
+            // Define arrow marker
+            svg.append('defs').append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 10)
+                .attr('refY', 0)
+                .attr('markerWidth', 5)
+                .attr('markerHeight', 5)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M 0,-5 L 10,0 L 0,5')
+                .attr('fill', '#3498db');
+            
+            // Component positions
+            const components = [
+                {id: 'input', x: width/2, y: 550, w: 200, h: 40, text: 'Input Embeddings'},
+                {id: 'pos', x: width/2, y: 480, w: 200, h: 40, text: 'Positional Encoding'},
+                {id: 'mha1', x: width/2, y: 380, w: 250, h: 50, text: 'Multi-Head Attention'},
+                {id: 'norm1', x: width/2, y: 310, w: 180, h: 40, text: 'Layer Norm'},
+                {id: 'ff', x: width/2, y: 220, w: 200, h: 50, text: 'Feed Forward'},
+                {id: 'norm2', x: width/2, y: 150, w: 180, h: 40, text: 'Layer Norm'},
+                {id: 'output', x: width/2, y: 50, w: 200, h: 40, text: 'Output'}
+            ];
+            
+            // Draw components
+            const g = svg.append('g');
+            
+            components.forEach(comp => {
+                g.append('rect')
+                    .attr('class', 'component-box')
+                    .attr('x', comp.x - comp.w/2)
+                    .attr('y', comp.y - comp.h/2)
+                    .attr('width', comp.w)
+                    .attr('height', comp.h);
+                
+                g.append('text')
+                    .attr('class', 'component-text')
+                    .attr('x', comp.x)
+                    .attr('y', comp.y + 5)
+                    .text(comp.text);
+            });
+            
+            // Draw connections
+            for (let i = 0; i < components.length - 1; i++) {
+                g.append('line')
+                    .attr('class', 'flow-arrow')
+                    .attr('x1', components[i].x)
+                    .attr('y1', components[i].y - components[i].h/2)
+                    .attr('x2', components[i+1].x)
+                    .attr('y2', components[i+1].y + components[i+1].h/2);
+            }
+            
+            // Add residual connections
+            g.append('path')
+                .attr('class', 'flow-arrow')
+                .attr('d', `M ${width/2 + 150} ${430} 
+                           Q ${width/2 + 200} ${370} ${width/2 + 150} ${280}`);
+            
+            g.append('path')
+                .attr('class', 'flow-arrow')
+                .attr('d', `M ${width/2 + 120} ${340} 
+                           Q ${width/2 + 170} ${245} ${width/2 + 120} ${120}`);
+        }
+        
+        // Attention visualization
+        function initAttention() {
+            if (typeof d3 === 'undefined') {
+                console.error('D3 is not available');
+                return;
+            }
+            
+            const words = ['The', 'student', 'opened', 'their', 'book'];
+            const svg = d3.select('#attention-svg');
+            svg.selectAll("*").remove();
+            
+            const width = svg.node().getBoundingClientRect().width;
+            const height = 400;
+            const margin = {top: 50, right: 50, bottom: 50, left: 100};
+            
+            // Create attention matrix
+            const cellSize = Math.min((width - margin.left - margin.right) / words.length, 60);
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            // Add labels
+            words.forEach((word, i) => {
+                g.append('text')
+                    .attr('x', i * cellSize + cellSize/2)
+                    .attr('y', -10)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '12px')
+                    .text(word);
+                
+                g.append('text')
+                    .attr('x', -10)
+                    .attr('y', i * cellSize + cellSize/2 + 5)
+                    .attr('text-anchor', 'end')
+                    .style('font-size', '12px')
+                    .text(word);
+            });
+            
+            // Create matrix cells
+            const attentionWeights = generateAttentionWeights(words.length);
+            
+            words.forEach((word1, i) => {
+                words.forEach((word2, j) => {
+                    g.append('rect')
+                        .attr('class', 'matrix-cell')
+                        .attr('x', j * cellSize)
+                        .attr('y', i * cellSize)
+                        .attr('width', cellSize - 2)
+                        .attr('height', cellSize - 2)
+                        .style('fill-opacity', attentionWeights[i][j])
+                        .on('mouseover', function() {
+                            d3.select(this).style('fill', '#e74c3c');
+                        })
+                        .on('mouseout', function() {
+                            d3.select(this).style('fill', '#3498db');
+                        });
+                });
+            });
+            
+            // Token click handlers
+            document.querySelectorAll('.token').forEach(token => {
+                token.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    highlightAttention(index, attentionWeights);
+                });
+            });
+        }
+        
+        function generateAttentionWeights(size) {
+            // Generate realistic attention patterns
+            const weights = [];
+            const patterns = {
+                0: [0.8, 0.1, 0.05, 0.03, 0.02], // "The" focuses on itself
+                1: [0.2, 0.7, 0.05, 0.03, 0.02], // "student" 
+                2: [0.1, 0.4, 0.3, 0.1, 0.1],    // "opened" attends to subject
+                3: [0.05, 0.6, 0.1, 0.2, 0.05],  // "their" refers to student
+                4: [0.05, 0.2, 0.3, 0.15, 0.3]   // "book" relates to action
+            };
+            
+            for (let i = 0; i < size; i++) {
+                weights.push(patterns[i] || Array(size).fill(1/size));
+            }
+            return weights;
+        }
+        
+        function highlightAttention(tokenIndex, weights) {
+            // Highlight tokens based on attention
+            document.querySelectorAll('.token').forEach((token, i) => {
+                if (weights[tokenIndex][i] > 0.2) {
+                    token.classList.add('highlighted');
+                } else {
+                    token.classList.remove('highlighted');
+                }
+            });
+            
+            // Update matrix visualization
+            if (typeof d3 !== 'undefined') {
+                const svg = d3.select('#attention-svg');
+                svg.selectAll('.matrix-cell').style('stroke-width', function(d, idx) {
+                    const row = Math.floor(idx / 5);
+                    return row === tokenIndex ? 3 : 1;
+                });
+            }
+        }
+        
+        // Data flow animation
+        function animateDataFlow() {
+            if (typeof d3 === 'undefined') {
+                console.error('D3 is not available');
+                return;
+            }
+            
+            const svg = d3.select('#architecture-svg');
+            
+            // Remove existing animations
+            svg.selectAll('.data-flow').remove();
+            
+            const components = [
+                {x: svg.node().getBoundingClientRect().width/2, y: 550},
+                {x: svg.node().getBoundingClientRect().width/2, y: 480},
+                {x: svg.node().getBoundingClientRect().width/2, y: 380},
+                {x: svg.node().getBoundingClientRect().width/2, y: 310},
+                {x: svg.node().getBoundingClientRect().width/2, y: 220},
+                {x: svg.node().getBoundingClientRect().width/2, y: 150},
+                {x: svg.node().getBoundingClientRect().width/2, y: 50}
+            ];
+            
+            // Create animated flow lines with staggered timing
+            for (let i = 0; i < components.length - 1; i++) {
+                setTimeout(() => {
+                    svg.append('line')
+                        .attr('class', 'data-flow animated')
+                        .attr('x1', components[i].x)
+                        .attr('y1', components[i].y - 20)
+                        .attr('x2', components[i+1].x)
+                        .attr('y2', components[i+1].y + 20);
+                }, i * 300);
+            }
+        }
+        
+        function resetAnimation() {
+            if (typeof d3 !== 'undefined') {
+                d3.select('#architecture-svg').selectAll('.data-flow').remove();
+            }
+        }
+        
+        // Example functionality
+        let currentStep = 0;
+        const exampleSteps = [
+            {
+                title: "Step 1: Tokenization",
+                content: function() {
+                    return `
+                        <p>Input text is split into tokens (words/subwords):</p>
+                        <div class="token-display" style="margin: 20px 0;">
+                            <div class="token" style="background: #e8f5e8;">The</div>
+                            <div class="token" style="background: #e8f5e8;">product</div>
+                            <div class="token" style="background: #e8f5e8;">quality</div>
+                            <div class="token" style="background: #e8f5e8;">is</div>
+                            <div class="token" style="background: #ffe8e8;">poor</div>
+                            <div class="token" style="background: #e8f5e8;">and</div>
+                            <div class="token" style="background: #e8f5e8;">delivery</div>
+                            <div class="token" style="background: #e8f5e8;">was</div>
+                            <div class="token" style="background: #ffe8e8;">late</div>
+                        </div>
+                        <p>Each token is assigned an ID from the vocabulary:</p>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">
+[CLS] The product quality is poor and delivery was late [SEP]
+Token IDs: [101, 2010, 3737, 2003, 3532, 1998, 6959, 2001, 3397, 102]
+
+Vocabulary mapping examples:
+"The" → 2010, "product" → 3737, "quality" → 2003, "poor" → 3532
+(Special tokens: [CLS]=101 for classification, [SEP]=102 for separation)</pre>
+                        <p style="font-style: italic; color: #7f8c8d;">Note: Red highlighting shows negative sentiment words that will influence classification</p>
+                    `;
+                }
+            },
+            {
+                title: "Step 2: Embedding Vectors",
+                content: function() {
+                    return `
+                        <p>Each token ID is converted to a dense vector (simplified to 4D for visualization):</p>
+                        <table style="margin: 20px auto; border-collapse: collapse;">
+                            <tr>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Token</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Embedding Vector</th>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">The</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">[0.12, -0.34, 0.78, 0.45]</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">product</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">[0.67, 0.23, -0.11, 0.89]</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">quality</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">[0.54, 0.76, 0.32, -0.21]</td>
+                            </tr>
+                            <tr style="background: #ffe8e8;">
+                                <td style="padding: 10px; border: 1px solid #ddd;">poor</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">[-0.89, -0.76, -0.45, -0.92]</td>
+                            </tr>
+                        </table>
+                        <p><em>Note: Actual embeddings are 768-dimensional in BERT, 1024 in GPT-2, and up to 4096 in modern LLMs.</em></p>
+                        <p><em>We use 4D vectors here for visualization purposes only.</em></p>
+                    `;
+                }
+            },
+            {
+                title: "Step 3: Positional Encoding",
+                content: function() {
+                    return `
+                        <p>Position information is added to embeddings (transformers don't inherently know word order):</p>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">
+Position 0 (The):     [0.12, -0.34, 0.78, 0.45] + [1.00, 0.00, 1.00, 0.00] 
+Position 1 (product): [0.67, 0.23, -0.11, 0.89] + [0.84, 0.54, 0.84, 0.54]
+Position 2 (quality): [0.54, 0.76, 0.32, -0.21] + [0.91, 0.42, 0.91, 0.42]
+...</pre>
+                        <p>Positional encoding uses sine/cosine functions to create unique patterns for each position:</p>
+                        <div style="text-align: center; margin: 20px 0;">
+                            <svg width="400" height="150" id="pos-encoding-viz" style="border: 1px solid #e9ecef; border-radius: 5px;"></svg>
+                        </div>
+                    `;
+                }
+            },
+            {
+                title: "Step 4: Self-Attention Calculation",
+                content: function() {
+                    return `
+                        <p>Each word "attends" to all other words to understand context:</p>
+                        <div style="margin: 20px 0;">
+                            <h5>Query-Key Attention for "poor":</h5>
+                            <table style="margin: 10px auto; border-collapse: collapse; font-size: 0.9em;">
+                                <tr>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Word</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Attention Score</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Normalized Weight</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Visual</th>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">The</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">0.23</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">5%</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">
+                                        <div style="background: #3498db; height: 10px; width: 10px; border-radius: 2px;"></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">product</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">1.87</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">25%</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">
+                                        <div style="background: #3498db; height: 10px; width: 50px; border-radius: 2px;"></div>
+                                    </td>
+                                </tr>
+                                <tr style="background: #e8f5e8;">
+                                    <td style="padding: 8px; border: 1px solid #ddd;">quality</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">3.45</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">45%</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">
+                                        <div style="background: #27ae60; height: 10px; width: 90px; border-radius: 2px;"></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">poor</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">1.23</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">15%</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">
+                                        <div style="background: #3498db; height: 10px; width: 30px; border-radius: 2px;"></div>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p><em>"poor" strongly attends to "quality" (45%) and "product" (25%)</em></p>
+                            <p style="font-size: 0.85em; color: #7f8c8d;">Remaining 10% distributed across other words for context</p>
+                        </div>
+                    `;
+                }
+            },
+            {
+                title: "Step 5: Multi-Head Processing",
+                content: function() {
+                    return `
+                        <p>8 different attention heads capture different relationships:</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                                <h5>Head 1: Sentiment Focus</h5>
+                                <p>"poor" → "quality" (0.62)</p>
+                                <p>"late" → "delivery" (0.71)</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                                <h5>Head 2: Subject-Object</h5>
+                                <p>"quality" → "product" (0.83)</p>
+                                <p>"delivery" → "product" (0.45)</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                                <h5>Head 3: Temporal</h5>
+                                <p>"was" → "late" (0.91)</p>
+                                <p>"is" → "poor" (0.68)</p>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                                <h5>Head 4: Conjunctions</h5>
+                                <p>"and" → context (0.33, 0.34)</p>
+                                <p>Balanced attention distribution</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                title: "Step 6: Classification Output",
+                content: function() {
+                    return `
+                        <p>Final layer aggregates information for sentiment classification:</p>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                            <h5>Feature Extraction:</h5>
+                            <ul class="feature-list">
+                                <li>Negative sentiment words detected: "poor", "late"</li>
+                                <li>Context: "product quality" + "poor" = quality issue</li>
+                                <li>Context: "delivery" + "late" = service issue</li>
+                                <li>No positive modifiers found</li>
+                            </ul>
+                        </div>
+                        <div style="background: #ffe8e8; padding: 20px; border-radius: 10px; margin: 20px 0; text-align: center;">
+                            <h4>Classification Result</h4>
+                            <p style="font-size: 1.2em;"><strong>Sentiment: NEGATIVE (92.3% confidence)</strong></p>
+                            <p>Categories detected: Product Quality Issue, Delivery Service Issue</p>
+                        </div>
+                        <p><em>The transformer successfully identified both complaint aspects and their targets</em></p>
+                        <div style="margin-top: 20px; background: #e8f5e8; padding: 15px; border-radius: 5px;">
+                            <p><strong>Why Transformers Excel Here:</strong></p>
+                            <p>• RNN would process sequentially: poor → and → delivery → was → late</p>
+                            <p>• Transformer sees all relationships at once: "poor" ↔ "quality", "late" ↔ "delivery"</p>
+                            <p>• Parallel processing enables understanding both issues simultaneously</p>
+                        </div>
+                    `;
+                }
+            }
+        ];
+        
+        function initExample() {
+            currentStep = 0;
+            document.getElementById('step-container').style.display = 'none';
+            document.getElementById('final-result').style.display = 'none';
+            document.getElementById('final-result').innerHTML = '';
+        }
+        
+        function startDetailedExample() {
+            currentStep = 0;
+            document.getElementById('step-container').style.display = 'block';
+            showExampleStep();
+        }
+        
+        function showExampleStep() {
+            const step = exampleSteps[currentStep];
+            document.getElementById('step-title').textContent = step.title;
+            document.getElementById('step-content').innerHTML = step.content();
+            
+            // Update button states
+            document.getElementById('prev-step').disabled = currentStep === 0;
+            document.getElementById('next-step').textContent = 
+                currentStep === exampleSteps.length - 1 ? 'Finish' : 'Next Step';
+            
+            // Special handling for positional encoding visualization
+            if (currentStep === 2) {
+                drawPositionalEncoding();
+            }
+        }
+        
+        function nextStep() {
+            if (currentStep < exampleSteps.length - 1) {
+                currentStep++;
+                showExampleStep();
+            } else {
+                document.getElementById('final-result').style.display = 'block';
+                document.getElementById('final-result').innerHTML = `
+                    <div class="key-concepts">
+                        <h3>Summary: How Transformers Process Text</h3>
+                        <ul class="concept-list">
+                            <li>Tokenization breaks text into processable units</li>
+                            <li>Embeddings convert tokens to numerical representations</li>
+                            <li>Positional encoding preserves word order information</li>
+                            <li>Self-attention identifies relationships between words</li>
+                            <li>Multi-head attention captures different types of relationships</li>
+                            <li>Final layers aggregate information for the task (classification)</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        function previousStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                showExampleStep();
+            }
+        }
+        
+        function resetExample() {
+            currentStep = 0;
+            document.getElementById('step-container').style.display = 'none';
+            document.getElementById('final-result').style.display = 'none';
+        }
+        
+        function drawPositionalEncoding() {
+            if (typeof d3 === 'undefined') return;
+            
+            const svg = d3.select('#pos-encoding-viz');
+            svg.selectAll("*").remove();
+            
+            const width = 400;
+            const height = 150;
+            const positions = 9;
+            const dimensions = 4;
+            
+            // Generate positional encoding pattern
+            const data = [];
+            for (let pos = 0; pos < positions; pos++) {
+                for (let i = 0; i < dimensions; i++) {
+                    const value = i % 2 === 0 
+                        ? Math.sin(pos / Math.pow(10000, i/dimensions))
+                        : Math.cos(pos / Math.pow(10000, (i-1)/dimensions));
+                    data.push({pos, dim: i, value});
+                }
+            }
+            
+            const xScale = d3.scaleLinear()
+                .domain([0, positions - 1])
+                .range([20, width - 20]);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, dimensions - 1])
+                .range([20, height - 20]);
+            
+            const colorScale = d3.scaleSequential(d3.interpolateRdBu)
+                .domain([-1, 1]);
+            
+            svg.selectAll('rect')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('x', d => xScale(d.pos) - 15)
+                .attr('y', d => yScale(d.dim) - 15)
+                .attr('width', 30)
+                .attr('height', 30)
+                .attr('fill', d => colorScale(d.value))
+                .attr('stroke', '#ddd');
+            
+            // Add labels
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', height - 5)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '12px')
+                .text('Position in sequence');
+        }
+        
+        // Initialize first tab when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof d3 !== 'undefined') {
+                initArchitecture();
+            }
+        });
+    </script>
+</body>
+</html>
