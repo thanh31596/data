@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4: Causal Machine Learning - DATA5000</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        .slide h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            font-weight: 300;
+        }
+        
+        .slide h2 {
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            color: #34495e;
+            font-weight: 300;
+        }
+        
+        .slide h3 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #2980b9;
+            font-weight: 400;
+        }
+        
+        .slide p, .slide li {
+            font-size: 1.3em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            max-width: 900px;
+        }
+        
+        .slide ul {
+            text-align: left;
+            max-width: 800px;
+        }
+        
+        .slide li {
+            margin-bottom: 12px;
+            padding-left: 10px;
+        }
+        
+        .definition-box {
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 5px;
+            max-width: 800px;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1000px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .comparison-item h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .network-visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 30px 0;
+            max-width: 800px;
+        }
+        
+        .neural-network {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 600px;
+            margin: 20px 0;
+        }
+        
+        .layer {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .neuron {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .connection {
+            width: 80px;
+            height: 2px;
+            background: #95a5a6;
+            position: relative;
+            margin: 0 20px;
+            animation: dataFlow 3s infinite;
+        }
+        
+        @keyframes dataFlow {
+            0% { background: linear-gradient(90deg, #95a5a6 0%, #95a5a6 100%); }
+            50% { background: linear-gradient(90deg, #3498db 0%, #95a5a6 100%); }
+            100% { background: linear-gradient(90deg, #95a5a6 0%, #95a5a6 100%); }
+        }
+        
+        .analytics-pyramid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 30px 0;
+            max-width: 600px;
+        }
+        
+        .pyramid-level {
+            margin: 5px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 80px;
+            transition: transform 0.3s;
+        }
+        
+        .pyramid-level:hover {
+            transform: scale(1.05);
+        }
+        
+        .level-1 {
+            width: 500px;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+        
+        .level-2 {
+            width: 400px;
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+        }
+        
+        .level-3 {
+            width: 300px;
+            background: linear-gradient(135deg, #fdcb6e, #e17055);
+            color: white;
+        }
+        
+        .level-4 {
+            width: 200px;
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: white;
+        }
+        
+        .level-content h4 {
+            margin: 0;
+            font-size: 1.3em;
+        }
+        
+        .level-content p {
+            margin: 5px 0 0 0;
+            font-size: 1em;
+            opacity: 0.9;
+        }
+        
+        .data-sample {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 900px;
+            font-family: monospace;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .data-table th {
+            background: #3498db;
+            color: white;
+        }
+        
+        .quiz-container {
+            max-width: 800px;
+            margin: 20px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+        }
+        
+        .quiz-question {
+            font-size: 1.4em;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .quiz-options {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .quiz-option {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        
+        .quiz-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        .quiz-option.selected {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        .quiz-option.correct {
+            border-color: #27ae60;
+            background: #d5f4e6;
+        }
+        
+        .quiz-option.incorrect {
+            border-color: #e74c3c;
+            background: #fdeaea;
+        }
+        
+        .quiz-feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .quiz-feedback.correct {
+            background: #d5f4e6;
+            border: 2px solid #27ae60;
+            color: #27ae60;
+        }
+        
+        .quiz-feedback.incorrect {
+            background: #fdeaea;
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+        }
+        
+        .quiz-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        
+        .quiz-btn:hover {
+            background: #2980b9;
+        }
+        
+        .causal-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        .variable-node {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 30px;
+            animation: nodeGlow 3s infinite;
+        }
+        
+        .confounder-node {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .treatment-node {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+        
+        .outcome-node {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        @keyframes nodeGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(52, 152, 219, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(52, 152, 219, 0.6); }
+        }
+        
+        .arrow {
+            width: 60px;
+            height: 3px;
+            background: #34495e;
+            position: relative;
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: -5px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid #34495e;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+        }
+        
+        .shap-visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 30px 0;
+            max-width: 800px;
+        }
+        
+        .shap-bar {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            width: 100%;
+        }
+        
+        .feature-name {
+            width: 150px;
+            text-align: right;
+            padding-right: 10px;
+            font-weight: bold;
+        }
+        
+        .bar-container {
+            flex: 1;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bar-positive {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            border-radius: 15px;
+            animation: fillBar 2s ease-out;
+        }
+        
+        .bar-negative {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #ec7063);
+            border-radius: 15px;
+            animation: fillBar 2s ease-out;
+        }
+        
+        @keyframes fillBar {
+            from { width: 0; }
+            to { width: var(--bar-width); }
+        }
+        
+        .case-study {
+            background: linear-gradient(135deg, #e8f5e8, #d5f4e6);
+            border: 2px solid #27ae60;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            max-width: 900px;
+        }
+        
+        .case-study h4 {
+            color: #27ae60;
+            margin-bottom: 15px;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            padding: 12px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #a8e6cf 0%, #dcedc1 100%);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .transformer-visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 30px 0;
+            max-width: 700px;
+        }
+        
+        .attention-head {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .attention-block {
+            width: 60px;
+            height: 40px;
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            font-size: 12px;
+            animation: attention 2s infinite;
+        }
+        
+        @keyframes attention {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        .treatment-effect-viz {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 40px;
+        }
+        
+        .group-box {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .group-box.treatment {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+        
+        .group-box.control {
+            border-color: #e74c3c;
+            background: #fdeaea;
+        }
+        
+        .effect-arrow {
+            font-size: 2em;
+            color: #f39c12;
+            animation: bounce 1s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .correlation-causation {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            max-width: 800px;
+        }
+        
+        .concept-box {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+        }
+        
+        .concept-box.causation {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .neural-network {
+                width: 100%;
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .treatment-effect-viz {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">25</span>
+        </div>
+        
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Week 4: Causal Machine Learning</h1>
+            <h2>DATA5000 - AI Programming in Business Analytics</h2>
+            <p style="margin-top: 40px; font-size: 1.1em; color: #7f8c8d;">Understanding cause and effect in artificial intelligence</p>
+        </div>
+        
+        <!-- Slide 2: Recap - Neural Networks -->
+        <div class="slide">
+            <h2>Recap: Neural Networks (Deep Learning)</h2>
+            <div class="network-visualization">
+                <h3>How Neural Networks Learn Patterns</h3>
+                <div class="neural-network">
+                    <div class="layer">
+                        <div class="neuron">X1</div>
+                        <div class="neuron">X2</div>
+                        <div class="neuron">X3</div>
+                    </div>
+                    <div class="connection"></div>
+                    <div class="layer">
+                        <div class="neuron">H1</div>
+                        <div class="neuron">H2</div>
+                    </div>
+                    <div class="connection"></div>
+                    <div class="layer">
+                        <div class="neuron">Y</div>
+                    </div>
+                </div>
+                <p style="margin-top: 20px;"><strong>Input Layer:</strong> Raw data (house size, location, age)</p>
+                <p><strong>Hidden Layer:</strong> Learns complex patterns</p>
+                <p><strong>Output Layer:</strong> Prediction (house price)</p>
+            </div>
+            <div class="data-sample">
+                <h4>Sample Housing Data</h4>
+                <table class="data-table">
+                    <tr><th>Size (sqft)</th><th>Location Score</th><th>Age (years)</th><th>Price ($)</th></tr>
+                    <tr><td>1500</td><td>8.2</td><td>5</td><td>$450,000</td></tr>
+                    <tr><td>2200</td><td>9.1</td><td>2</td><td>$675,000</td></tr>
+                    <tr><td>1800</td><td>7.5</td><td>15</td><td>$390,000</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Slide 3: Recap - Transformers -->
+        <div class="slide">
+            <h2>Recap: Transformer Architecture</h2>
+            <div class="transformer-visualization">
+                <h3>Attention Mechanism in Action</h3>
+                <p style="margin-bottom: 20px;">Transformers use "attention" to focus on important parts of data</p>
+                <div class="attention-head">
+                    <div class="attention-block">Word1</div>
+                    <div class="attention-block">Word2</div>
+                    <div class="attention-block">Word3</div>
+                    <div class="attention-block">Word4</div>
+                </div>
+                <p style="margin: 15px 0;">↓ Attention weights decide importance ↓</p>
+                <div class="attention-head">
+                    <div class="attention-block" style="opacity: 0.3;">0.1</div>
+                    <div class="attention-block" style="opacity: 1;">0.8</div>
+                    <div class="attention-block" style="opacity: 0.5;">0.05</div>
+                    <div class="attention-block" style="opacity: 0.4;">0.05</div>
+                </div>
+            </div>
+            <div class="definition-box">
+                <p><strong>Key Insight:</strong> Transformers revolutionized AI by allowing models to understand context and relationships in sequential data like text, time series, and user behavior.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 4: Recap - Temporal Fusion Transformer -->
+        <div class="slide">
+            <h2>Recap: Temporal Fusion Transformer (TFT)</h2>
+            <h3>Forecasting with Advanced AI</h3>
+            <div class="data-sample">
+                <h4>Australia Inflation Rate Forecasting Data Sample</h4>
+                <table class="data-table">
+                    <tr><th>Quarter</th><th>GDP Growth</th><th>Unemployment</th><th>Interest Rate</th><th>Inflation (%)</th></tr>
+                    <tr><td>2023-Q1</td><td>2.3%</td><td>3.5%</td><td>3.6%</td><td>7.8%</td></tr>
+                    <tr><td>2023-Q2</td><td>1.8%</td><td>3.6%</td><td>4.1%</td><td>6.0%</td></tr>
+                    <tr><td>2023-Q3</td><td>2.1%</td><td>3.7%</td><td>4.1%</td><td>5.4%</td></tr>
+                    <tr><td>2023-Q4</td><td>1.5%</td><td>3.9%</td><td>4.35%</td><td>4.1%</td></tr>
+                </table>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>What TFT Does</h4>
+                    <ul>
+                        <li>Combines multiple time series</li>
+                        <li>Identifies important features automatically</li>
+                        <li>Provides confidence intervals</li>
+                        <li>Handles missing data</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Business Value</h4>
+                    <ul>
+                        <li>More accurate economic forecasts</li>
+                        <li>Better policy decisions</li>
+                        <li>Risk management</li>
+                        <li>Strategic planning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 5: Quiz 1 -->
+        <div class="slide">
+            <h2>Quick Check: Deep Learning Concepts</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">What is the main advantage of Transformer architecture over traditional neural networks?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" data-quiz="1" data-answer="A">A) Attention mechanism allows focusing on important parts of input data</div>
+                    <div class="quiz-option" data-quiz="1" data-answer="B">B) Uses fewer parameters than regular neural networks</div>
+                    <div class="quiz-option" data-quiz="1" data-answer="C">C) Only works with numerical data</div>
+                    <div class="quiz-option" data-quiz="1" data-answer="D">D) Cannot handle sequential data</div>
+                </div>
+                <button class="quiz-btn" onclick="checkAnswer(1, 'A')">Submit Answer</button>
+                <div class="quiz-feedback" id="feedback-1"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 6: Four Types of Analytics Recap -->
+        <div class="slide">
+            <h2>Four Types of Business Analytics</h2>
+            <div class="analytics-pyramid">
+                <div class="pyramid-level level-4">
+                    <div class="level-content">
+                        <h4>Prescriptive Analytics</h4>
+                        <p>What should we do?</p>
+                    </div>
+                </div>
+                <div class="pyramid-level level-3">
+                    <div class="level-content">
+                        <h4>Predictive Analytics</h4>
+                        <p>What will happen?</p>
+                    </div>
+                </div>
+                <div class="pyramid-level level-2">
+                    <div class="level-content">
+                        <h4>Diagnostic Analytics</h4>
+                        <p>Why did it happen?</p>
+                    </div>
+                </div>
+                <div class="pyramid-level level-1">
+                    <div class="level-content">
+                        <h4>Descriptive Analytics</h4>
+                        <p>What happened?</p>
+                    </div>
+                </div>
+            </div>
+            <div class="definition-box">
+                <p><strong>Today's Focus:</strong> Moving from correlation (predictive) to causation (prescriptive) using machine learning</p>
+            </div>
+        </div>
+        
+        <!-- Slide 7: Today's Agenda -->
+        <div class="slide">
+            <h2>Today's Learning Journey</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Core Concepts</h4>
+                    <ul>
+                        <li>Why causation matters in business</li>
+                        <li>Confounders and bias</li>
+                        <li>Treatment effects</li>
+                        <li>SHAP values for explanation</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Practical Skills</h4>
+                    <ul>
+                        <li>Identify causal relationships</li>
+                        <li>Use EconML library</li>
+                        <li>Interpret SHAP outputs</li>
+                        <li>Make actionable recommendations</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="definition-box">
+                <p><strong>Learning Outcome:</strong> By the end of today, you'll understand how to move beyond "what will happen" to "what actions should we take" using causal AI.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 8: The Problem with Correlation -->
+        <div class="slide">
+            <h2>The Problem: Correlation vs Causation</h2>
+            <div class="correlation-causation">
+                <div class="concept-box">
+                    <h4>Correlation</h4>
+                    <p>"Ice cream sales and drowning incidents both increase in summer"</p>
+                    <p style="margin-top: 15px; color: #e74c3c;"><strong>Problem:</strong> Should we ban ice cream to prevent drowning?</p>
+                </div>
+                <div class="concept-box causation">
+                    <h4>Causation</h4>
+                    <p>"Hot weather causes both increased ice cream sales AND more swimming"</p>
+                    <p style="margin-top: 15px; color: #27ae60;"><strong>Solution:</strong> Improve water safety, not ban ice cream</p>
+                </div>
+            </div>
+            <div class="case-study">
+                <h4>Business Example: E-commerce Website</h4>
+                <p><strong>Observation:</strong> Customers who view product reviews spend 40% more</p>
+                <p><strong>Correlation thinking:</strong> "Force all users to view reviews"</p>
+                <p><strong>Causal thinking:</strong> "What type of customers naturally view reviews? How can we identify and target similar customers?"</p>
+            </div>
+        </div>
+        
+        <!-- Slide 9: Why Prescriptive Analytics Matters -->
+        <div class="slide">
+            <h2>Why Prescriptive Analytics Matters</h2>
+            <div class="case-study">
+                <h4>Real Business Scenario: Online Retailer</h4>
+                <p><strong>Descriptive:</strong> "Sales dropped 15% last quarter"</p>
+                <p><strong>Diagnostic:</strong> "Sales dropped because of increased competitor prices"</p>
+                <p><strong>Predictive:</strong> "If competitors keep lowering prices, our sales will drop another 10%"</p>
+                <p><strong>Prescriptive:</strong> "Improve customer service quality by 20% to increase customer loyalty and offset price competition"</p>
+            </div>
+            <div class="data-sample">
+                <h4>Data-Driven Evidence</h4>
+                <table class="data-table">
+                    <tr><th>Strategy</th><th>Cost</th><th>Expected Revenue Impact</th><th>ROI</th></tr>
+                    <tr><td>Price matching</td><td>$50K</td><td>+$45K</td><td>-10%</td></tr>
+                    <tr><td>Service improvement</td><td>$30K</td><td>+$85K</td><td>+183%</td></tr>
+                    <tr><td>New product launch</td><td>$100K</td><td>+$120K</td><td>+20%</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Slide 10: Actionable Recommendations -->
+        <div class="slide">
+            <h2>From Insights to Action</h2>
+            <h3>The Power of Prescriptive Analytics</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Traditional Analytics</h4>
+                    <ul>
+                        <li>Shows what happened</li>
+                        <li>Explains patterns in data</li>
+                        <li>Predicts future trends</li>
+                        <li>Leaves decision-making to humans</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Prescriptive Analytics</h4>
+                    <ul>
+                        <li>Identifies controllable factors</li>
+                        <li>Quantifies cause-effect relationships</li>
+                        <li>Recommends optimal actions</li>
+                        <li>Optimizes business outcomes</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="definition-box">
+                <p><strong>Business Impact:</strong> Companies using prescriptive analytics see 5-15% improvement in decision outcomes compared to predictive analytics alone.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 11: Healthcare Case Study -->
+        <div class="slide">
+            <h2>Case Study: Hospital Patient Flow</h2>
+            <div class="case-study">
+                <h4>Challenge: Reduce Patient Wait Times</h4>
+                <p><strong>Descriptive Analysis:</strong> Average wait time is 45 minutes</p>
+                <p><strong>Predictive Analysis:</strong> Wait times will increase to 55 minutes during flu season</p>
+                <p><strong>Prescriptive Analysis:</strong> Optimal staffing schedule and resource allocation to minimize wait times</p>
+            </div>
+            <div class="data-sample">
+                <h4>Causal Factors Analysis</h4>
+                <table class="data-table">
+                    <tr><th>Factor</th><th>Correlation with Wait Time</th><th>Causal Effect</th><th>Actionable?</th></tr>
+                    <tr><td>Staff count</td><td>-0.78</td><td>-12 min per staff</td><td>Yes</td></tr>
+                    <tr><td>Day of week</td><td>0.45</td><td>+8 min (Mon vs Wed)</td><td>No</td></tr>
+                    <tr><td>Appointment scheduling</td><td>-0.62</td><td>-15 min with optimization</td><td>Yes</td></tr>
+                    <tr><td>Patient age</td><td>0.33</td><td>+2 min per decade</td><td>No</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Slide 12: Quiz 2 -->
+        <div class="slide">
+            <h2>Quick Check: Analytics Types</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">A retail company wants to know "Should we increase advertising budget or improve product quality to boost sales?" Which type of analytics can best answer this?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" data-quiz="2" data-answer="A">A) Descriptive Analytics</div>
+                    <div class="quiz-option" data-quiz="2" data-answer="B">B) Diagnostic Analytics</div>
+                    <div class="quiz-option" data-quiz="2" data-answer="C">C) Predictive Analytics</div>
+                    <div class="quiz-option" data-quiz="2" data-answer="D">D) Prescriptive Analytics</div>
+                </div>
+                <button class="quiz-btn" onclick="checkAnswer(2, 'D')">Submit Answer</button>
+                <div class="quiz-feedback" id="feedback-2"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 13: Confounders Introduction -->
+        <div class="slide">
+            <h2>Understanding Confounders</h2>
+            <div class="definition-box">
+                <p><strong>Confounder:</strong> A factor that influences both the treatment (what we're studying) and the outcome, potentially creating false conclusions about cause and effect.</p>
+            </div>
+            <div class="causal-diagram">
+                <div style="position: relative; width: 600px; height: 300px;">
+                    <!-- Confounder at top center -->
+                    <div class="variable-node confounder-node" style="position: absolute; top: 0; left: 260px; margin: 0;">Confounder<br>(Age)</div>
+                    
+                    <!-- Treatment at bottom left -->
+                    <div class="variable-node treatment-node" style="position: absolute; bottom: 0; left: 100px; margin: 0;">Treatment<br>(Exercise)</div>
+                    
+                    <!-- Outcome at bottom right -->
+                    <div class="variable-node outcome-node" style="position: absolute; bottom: 0; right: 100px; margin: 0;">Outcome<br>(Health)</div>
+                    
+                    <!-- Arrow from Confounder to Treatment -->
+                    <div class="arrow" style="position: absolute; top: 80px; left: 200px; transform: rotate(-45deg); width: 80px;"></div>
+                    
+                    <!-- Arrow from Confounder to Outcome -->
+                    <div class="arrow" style="position: absolute; top: 80px; right: 200px; transform: rotate(45deg); width: 80px;"></div>
+                    
+                    <!-- Arrow from Treatment to Outcome -->
+                    <div class="arrow" style="position: absolute; bottom: 40px; left: 220px; width: 120px;"></div>
+                </div>
+            </div>
+            <p style="margin-top: 20px;"><strong>Problem:</strong> Without controlling for age, we might wrongly conclude that exercise alone causes better health, when age affects both exercise habits and health outcomes.</p>
+        </div>
+        
+        <!-- Slide 14: Confounder Example with Data -->
+        <div class="slide">
+            <h2>Confounder Example: Exercise and Health</h2>
+            <div class="data-sample">
+                <h4>Raw Data (Without Controlling for Age)</h4>
+                <table class="data-table">
+                    <tr><th>Person</th><th>Age</th><th>Exercise (hrs/week)</th><th>Health Score</th></tr>
+                    <tr><td>John</td><td>25</td><td>5</td><td>85</td></tr>
+                    <tr><td>Mary</td><td>30</td><td>3</td><td>80</td></tr>
+                    <tr><td>Bob</td><td>55</td><td>1</td><td>65</td></tr>
+                    <tr><td>Lisa</td><td>60</td><td>0.5</td><td>60</td></tr>
+                </table>
+                <p style="color: #e74c3c; margin-top: 10px;"><strong>Misleading Conclusion:</strong> Exercise directly causes better health (correlation = 0.92)</p>
+            </div>
+            <div class="data-sample">
+                <h4>After Controlling for Age (True Causal Effect)</h4>
+                <table class="data-table">
+                    <tr><th>Age Group</th><th>Exercise Effect on Health</th><th>Sample Size</th></tr>
+                    <tr><td>20-35</td><td>+2 points per hour</td><td>50 people</td></tr>
+                    <tr><td>35-50</td><td>+2.5 points per hour</td><td>45 people</td></tr>
+                    <tr><td>50+</td><td>+3 points per hour</td><td>40 people</td></tr>
+                </table>
+                <p style="color: #27ae60; margin-top: 10px;"><strong>True Insight:</strong> Exercise has consistent positive effect across all ages, with stronger benefits for older adults</p>
+            </div>
+        </div>
+        
+        <!-- Slide 15: Treatment Effects Introduction -->
+        <div class="slide">
+            <h2>Treatment Effects in Business</h2>
+            <div class="definition-box">
+                <p><strong>Treatment Effect:</strong> The measurable impact of a specific action, policy, or intervention on a business outcome.</p>
+            </div>
+            <h3>Why Businesses Need Treatment Effects</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Resource Optimization</h4>
+                    <ul>
+                        <li>Identify most effective interventions</li>
+                        <li>Allocate budget to high-impact actions</li>
+                        <li>Avoid wasteful spending</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Competitive Advantage</h4>
+                    <ul>
+                        <li>Make data-driven decisions</li>
+                        <li>Respond quickly to market changes</li>
+                        <li>Personalize customer experiences</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 16: Treatment Effects with Data -->
+        <div class="slide">
+            <h2>Treatment Effects: Marketing Campaign Example</h2>
+            <div class="treatment-effect-viz">
+                <div class="group-box control">
+                    <h4>Control Group</h4>
+                    <p>No Email Campaign</p>
+                    <p style="font-size: 2em; margin: 10px 0;">$150</p>
+                    <p>Average Purchase</p>
+                </div>
+                <div class="effect-arrow">→</div>
+                <div class="group-box treatment">
+                    <h4>Treatment Group</h4>
+                    <p>Received Email Campaign</p>
+                    <p style="font-size: 2em; margin: 10px 0;">$180</p>
+                    <p>Average Purchase</p>
+                </div>
+            </div>
+            <div class="data-sample">
+                <h4>Treatment Effect Calculation</h4>
+                <table class="data-table">
+                    <tr><th>Metric</th><th>Control Group</th><th>Treatment Group</th><th>Effect</th></tr>
+                    <tr><td>Sample size</td><td>1,000 customers</td><td>1,000 customers</td><td>-</td></tr>
+                    <tr><td>Average purchase</td><td>$150</td><td>$180</td><td>+$30</td></tr>
+                    <tr><td>Purchase rate</td><td>25%</td><td>35%</td><td>+10%</td></tr>
+                    <tr><td>Campaign cost</td><td>$0</td><td>$2,000</td><td>$2,000</td></tr>
+                    <tr><td>Net profit increase</td><td>-</td><td>-</td><td>$28,000</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Slide 17: Average Treatment Effect (ATE) -->
+        <div class="slide">
+            <h2>Average Treatment Effect (ATE)</h2>
+            <div class="definition-box">
+                <p><strong>ATE:</strong> The average impact of a treatment across the entire population.</p>
+            </div>
+            <h3>Example: Company-wide Training Program</h3>
+            <div class="data-sample">
+                <h4>Employee Productivity Data</h4>
+                <table class="data-table">
+                    <tr><th>Department</th><th>Before Training</th><th>After Training</th><th>Improvement</th></tr>
+                    <tr><td>Sales</td><td>75 points</td><td>85 points</td><td>+10 points</td></tr>
+                    <tr><td>Marketing</td><td>70 points</td><td>78 points</td><td>+8 points</td></tr>
+                    <tr><td>IT</td><td>80 points</td><td>88 points</td><td>+8 points</td></tr>
+                    <tr><td>HR</td><td>65 points</td><td>75 points</td><td>+10 points</td></tr>
+                </table>
+                <p style="margin-top: 15px; font-weight: bold; color: #27ae60;">Average Treatment Effect (ATE) = +9 points</p>
+            </div>
+            <p><strong>Business Decision:</strong> Training program shows consistent positive impact across all departments. Recommend company-wide implementation.</p>
+        </div>
+        
+        <!-- Slide 18: Heterogeneous Treatment Effect (HTE) -->
+        <div class="slide">
+            <h2>Heterogeneous Treatment Effect (HTE)</h2>
+            <div class="definition-box">
+                <p><strong>HTE:</strong> Treatment effects that vary across different groups within the population.</p>
+            </div>
+            <h3>Example: Mobile App Feature Release</h3>
+            <div class="data-sample">
+                <h4>User Engagement by Demographics</h4>
+                <table class="data-table">
+                    <tr><th>User Group</th><th>Sample Size</th><th>Engagement Before</th><th>Engagement After</th><th>Treatment Effect</th></tr>
+                    <tr><td>Age 18-25</td><td>500</td><td>45 min/day</td><td>65 min/day</td><td>+20 min</td></tr>
+                    <tr><td>Age 26-40</td><td>800</td><td>30 min/day</td><td>35 min/day</td><td>+5 min</td></tr>
+                    <tr><td>Age 41-60</td><td>400</td><td>20 min/day</td><td>18 min/day</td><td>-2 min</td></tr>
+                    <tr><td>Age 60+</td><td>200</td><td>15 min/day</td><td>12 min/day</td><td>-3 min</td></tr>
+                </table>
+            </div>
+            <p><strong>Business Insight:</strong> New feature appeals to younger users but confuses older users. Consider age-specific interface design.</p>
+        </div>
+        
+        <!-- Slide 19: Local Treatment Effect (LATE) -->
+        <div class="slide">
+            <h2>Local Treatment Effect (LATE)</h2>
+            <div class="definition-box">
+                <p><strong>LATE:</strong> Treatment effect for a specific subset of population affected by certain conditions or constraints.</p>
+            </div>
+            <h3>Example: Educational Program in Rural Schools</h3>
+            <div class="data-sample">
+                <h4>Reading Improvement Program Results</h4>
+                <table class="data-table">
+                    <tr><th>School Type</th><th>Program Access</th><th>Test Score Improvement</th><th>Sample Size</th></tr>
+                    <tr><td>Urban schools</td><td>100% access</td><td>+15 points</td><td>50 schools</td></tr>
+                    <tr><td>Rural schools</td><td>60% access*</td><td>+25 points</td><td>30 schools</td></tr>
+                    <tr><td>Remote schools</td><td>20% access*</td><td>+35 points</td><td>15 schools</td></tr>
+                </table>
+                <p style="margin-top: 10px; font-size: 0.9em;">*Access limited by internet connectivity</p>
+            </div>
+            <p><strong>LATE Insight:</strong> Schools that actually receive the program (despite connectivity challenges) show higher improvements. Investment in rural infrastructure has high returns.</p>
+        </div>
+        
+        <!-- Slide 20: Conditional Treatment Effect (CATE) -->
+        <div class="slide">
+            <h2>Conditional Treatment Effect (CATE)</h2>
+            <div class="definition-box">
+                <p><strong>CATE:</strong> Treatment effect for individuals with specific characteristics - enables personalization.</p>
+            </div>
+            <h3>Example: Personalized Medicine</h3>
+            <div class="data-sample">
+                <h4>Drug Treatment Effectiveness by Patient Profile</h4>
+                <table class="data-table">
+                    <tr><th>Patient Profile</th><th>Treatment A Effect</th><th>Treatment B Effect</th><th>Recommended</th></tr>
+                    <tr><td>Male, Age 30-45, BMI 25-30</td><td>-15% symptoms</td><td>-8% symptoms</td><td>Treatment A</td></tr>
+                    <tr><td>Female, Age 30-45, BMI 25-30</td><td>-8% symptoms</td><td>-18% symptoms</td><td>Treatment B</td></tr>
+                    <tr><td>Male, Age 45-60, BMI 30+</td><td>-5% symptoms</td><td>-12% symptoms</td><td>Treatment B</td></tr>
+                    <tr><td>Female, Age 45-60, BMI 30+</td><td>-20% symptoms</td><td>-10% symptoms</td><td>Treatment A</td></tr>
+                </table>
+            </div>
+            <p><strong>CATE Value:</strong> Personalized treatment recommendations based on individual characteristics lead to 40% better outcomes than one-size-fits-all approach.</p>
+        </div>
+        
+        <!-- Slide 21: Quiz 3 -->
+        <div class="slide">
+            <h2>Quick Check: Treatment Effects</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">An e-commerce company finds that free shipping increases orders by 20% for customers under 30, but decreases orders by 5% for customers over 60. This is an example of:</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" data-quiz="3" data-answer="A">A) Average Treatment Effect (ATE)</div>
+                    <div class="quiz-option" data-quiz="3" data-answer="B">B) Heterogeneous Treatment Effect (HTE)</div>
+                    <div class="quiz-option" data-quiz="3" data-answer="C">C) Local Treatment Effect (LATE)</div>
+                    <div class="quiz-option" data-quiz="3" data-answer="D">D) Conditional Treatment Effect (CATE)</div>
+                </div>
+                <button class="quiz-btn" onclick="checkAnswer(3, 'B')">Submit Answer</button>
+                <div class="quiz-feedback" id="feedback-3"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 22: SHAP Values Introduction -->
+        <div class="slide">
+            <h2>SHAP Values: Explaining AI Decisions</h2>
+            <div class="definition-box">
+                <p><strong>SHAP (SHapley Additive exPlanations):</strong> A method to explain individual predictions by quantifying the contribution of each feature.</p>
+            </div>
+            <h3>Why SHAP Matters in Business</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Business Benefits</h4>
+                    <ul>
+                        <li>Understand model decisions</li>
+                        <li>Build trust with stakeholders</li>
+                        <li>Identify bias and errors</li>
+                        <li>Meet regulatory requirements</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Technical Benefits</h4>
+                    <ul>
+                        <li>Model-agnostic explanations</li>
+                        <li>Feature importance ranking</li>
+                        <li>Local and global explanations</li>
+                        <li>Mathematical foundations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 23: SHAP Values with Data -->
+        <div class="slide">
+            <h2>SHAP Values: House Price Prediction Example</h2>
+            <div class="data-sample">
+                <h4>Individual House Prediction Breakdown</h4>
+                <p><strong>House A:</strong> Predicted Price = $520,000 | Actual Price = $515,000</p>
+                <table class="data-table">
+                    <tr><th>Feature</th><th>Value</th><th>SHAP Contribution</th><th>Explanation</th></tr>
+                    <tr><td>Size</td><td>2,100 sqft</td><td>+$45,000</td><td>Above average size increases price</td></tr>
+                    <tr><td>Location score</td><td>9.2/10</td><td>+$35,000</td><td>Premium location adds value</td></tr>
+                    <tr><td>Age</td><td>3 years</td><td>+$15,000</td><td>New construction premium</td></tr>
+                    <tr><td>Crime rate</td><td>2.1/10</td><td>+$10,000</td><td>Low crime area bonus</td></tr>
+                    <tr><td>School rating</td><td>6.5/10</td><td>-$5,000</td><td>Average schools reduce value</td></tr>
+                </table>
+            </div>
+            <div class="shap-visualization">
+                <h4>SHAP Feature Importance</h4>
+                <div class="shap-bar">
+                    <div class="feature-name">Size</div>
+                    <div class="bar-container">
+                        <div class="bar-positive" style="--bar-width: 80%; width: 80%;"></div>
+                    </div>
+                </div>
+                <div class="shap-bar">
+                    <div class="feature-name">Location</div>
+                    <div class="bar-container">
+                        <div class="bar-positive" style="--bar-width: 65%; width: 65%;"></div>
+                    </div>
+                </div>
+                <div class="shap-bar">
+                    <div class="feature-name">Age</div>
+                    <div class="bar-container">
+                        <div class="bar-positive" style="--bar-width: 30%; width: 30%;"></div>
+                    </div>
+                </div>
+                <div class="shap-bar">
+                    <div class="feature-name">Schools</div>
+                    <div class="bar-container">
+                        <div class="bar-negative" style="--bar-width: 15%; width: 15%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 24: Quiz 4 -->
+        <div class="slide">
+            <h2>Quick Check: SHAP Values</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">If a SHAP analysis shows that customer age contributes +$50 to predicted lifetime value, what does this mean?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" data-quiz="4" data-answer="A">A) Older customers are always worth $50 more</div>
+                    <div class="quiz-option" data-quiz="4" data-answer="B">B) Age increases the prediction by $50 for this specific customer</div>
+                    <div class="quiz-option" data-quiz="4" data-answer="C">C) We should charge older customers $50 more</div>
+                    <div class="quiz-option" data-quiz="4" data-answer="D">D) The model is biased against younger customers</div>
+                </div>
+                <button class="quiz-btn" onclick="checkAnswer(4, 'B')">Submit Answer</button>
+                <div class="quiz-feedback" id="feedback-4"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 25: Next Week Preview -->
+        <div class="slide">
+            <h2>Next Week: Assessment 1</h2>
+            <h3>Skills-Building Project (25% of final grade)</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Project Focus</h4>
+                    <ul>
+                        <li>Predictive & Prescriptive Analytics</li>
+                        <li>Business Decision Making</li>
+                        <li>Real-world data analysis</li>
+                        <li>Causal inference application</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Technical Requirements</h4>
+                    <ul>
+                        <li>Python implementation</li>
+                        <li>EconML for causal analysis</li>
+                        <li>SHAP for model explanation</li>
+                        <li>Business recommendations</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="case-study">
+                <h4>Preparation Tips</h4>
+                <p>1. Review today's concepts: confounders, treatment effects, SHAP values</p>
+                <p>2. Practice with the Boston Housing dataset notebook</p>
+                <p>3. Think about real business problems you want to solve</p>
+                <p>4. Prepare to explain both correlation and causation insights</p>
+            </div>
+            <div class="definition-box">
+                <p><strong>Due:</strong> Week 5, Tuesday 23:55 AEST via Turnitin</p>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn" onclick="previousSlide()">← Previous</button>
+            <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('total-slides').textContent = totalSlides;
+        
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            
+            // Update navigation buttons
+            document.getElementById('prev-btn').disabled = currentSlide === 0;
+            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
+            
+            // Restart animations when slide changes
+            restartAnimations();
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function restartAnimations() {
+            const activeSlide = document.querySelector('.slide.active');
+            const animatedElements = activeSlide.querySelectorAll('.neuron, .attention-block, .bar-positive, .bar-negative');
+            
+            animatedElements.forEach(element => {
+                element.style.animation = 'none';
+                element.offsetHeight; // Trigger reflow
+                element.style.animation = null;
+            });
+        }
+        
+        // Quiz functionality
+        function checkAnswer(quizNumber, correctAnswer) {
+            const options = document.querySelectorAll(`[data-quiz="${quizNumber}"]`);
+            const feedback = document.getElementById(`feedback-${quizNumber}`);
+            let selectedAnswer = null;
+            
+            // Find selected answer
+            options.forEach(option => {
+                if (option.classList.contains('selected')) {
+                    selectedAnswer = option.getAttribute('data-answer');
+                }
+            });
+            
+            if (!selectedAnswer) {
+                alert('Please select an answer first!');
+                return;
+            }
+            
+            // Show correct/incorrect styling
+            options.forEach(option => {
+                const answer = option.getAttribute('data-answer');
+                if (answer === correctAnswer) {
+                    option.classList.add('correct');
+                } else if (answer === selectedAnswer && answer !== correctAnswer) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            // Show feedback
+            feedback.style.display = 'block';
+            if (selectedAnswer === correctAnswer) {
+                feedback.className = 'quiz-feedback correct';
+                feedback.innerHTML = getCorrectFeedback(quizNumber);
+            } else {
+                feedback.className = 'quiz-feedback incorrect';
+                feedback.innerHTML = getIncorrectFeedback(quizNumber, correctAnswer);
+            }
+        }
+        
+        function getCorrectFeedback(quizNumber) {
+            const feedbacks = {
+                1: "<strong>Correct!</strong> The attention mechanism allows Transformers to focus on relevant parts of the input, making them much more effective for understanding context and relationships.",
+                2: "<strong>Excellent!</strong> Prescriptive analytics specifically answers 'what should we do' by providing actionable recommendations based on causal relationships.",
+                3: "<strong>Right!</strong> This shows Heterogeneous Treatment Effect (HTE) because the same treatment (free shipping) has different effects on different age groups.",
+                4: "<strong>Perfect!</strong> SHAP values explain individual predictions by showing how each feature contributes to that specific prediction."
+            };
+            return feedbacks[quizNumber];
+        }
+        
+        function getIncorrectFeedback(quizNumber, correctAnswer) {
+            const feedbacks = {
+                1: `<strong>Not quite.</strong> The correct answer is ${correctAnswer}. The attention mechanism is the key innovation that allows Transformers to understand which parts of the input are most important for making decisions.`,
+                2: `<strong>Not quite.</strong> The correct answer is ${correctAnswer}. Prescriptive analytics goes beyond prediction to recommend specific actions based on causal understanding.`,
+                3: `<strong>Not quite.</strong> The correct answer is ${correctAnswer}. When the same treatment has different effects on different groups, we call this Heterogeneous Treatment Effect (HTE).`,
+                4: `<strong>Not quite.</strong> The correct answer is ${correctAnswer}. SHAP values explain how each feature contributes to individual predictions, not general rules about all customers.`
+            };
+            return feedbacks[quizNumber];
+        }
+        
+        // Add click handlers for quiz options
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('quiz-option')) {
+                // Remove previous selections
+                const quizNumber = e.target.getAttribute('data-quiz');
+                const options = document.querySelectorAll(`[data-quiz="${quizNumber}"]`);
+                options.forEach(option => option.classList.remove('selected'));
+                
+                // Add selection to clicked option
+                e.target.classList.add('selected');
+            }
+        });
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+        
+        // Initialize
+        showSlide(0);
+        
+        // Add slide transitions
+        slides.forEach((slide, index) => {
+            slide.style.opacity = '0';
+            slide.style.transform = 'translateY(20px)';
+            slide.style.transition = 'opacity 0.5s, transform 0.5s';
+        });
+        
+        function animateSlide() {
+            const activeSlide = document.querySelector('.slide.active');
+            setTimeout(() => {
+                activeSlide.style.opacity = '1';
+                activeSlide.style.transform = 'translateY(0)';
+            }, 100);
+        }
+        
+        // Update showSlide function to include animation
+        const originalShowSlide = showSlide;
+        showSlide = function(n) {
+            const currentActiveSlide = document.querySelector('.slide.active');
+            if (currentActiveSlide) {
+                currentActiveSlide.style.opacity = '0';
+                currentActiveSlide.style.transform = 'translateY(-20px)';
+            }
+            
+            setTimeout(() => {
+                originalShowSlide(n);
+                animateSlide();
+            }, 250);
+        };
+        
+        // Initial animation
+        animateSlide();
+    </script>
+</body>
+</html>
