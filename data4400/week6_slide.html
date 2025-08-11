@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA4400 Week 5: Exponential Smoothing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+        
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            padding: 60px;
+            position: relative;
+        }
+        
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h1 {
+            font-size: 42px;
+            margin-bottom: 40px;
+            color: #333;
+            text-align: center;
+        }
+        
+        h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        h3 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #444;
+        }
+        
+        h4 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #555;
+        }
+        
+        p, li {
+            font-size: 22px;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .slide-number {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .split-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+            height: 70%;
+        }
+        
+        .triple-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+            height: 70%;
+        }
+        
+        .component-box {
+            border: 2px solid #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .equation {
+            font-size: 26px;
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .quiz-option {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: left;
+            background-color: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 20px;
+            color: #000;
+        }
+        
+        .quiz-option:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .quiz-option.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .quiz-option.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+        }
+        
+        .highlight-box {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        
+        .formula-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .data-table input {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .agenda-item {
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            font-size: 24px;
+        }
+        
+        .parameter-box {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .method-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .method-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .method-card h4 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+        
+        .small-chart {
+            width: 100%;
+            height: 150px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+        <h1>DATA4400: Time Series Analysis</h1>
+        <h2 style="text-align: center; margin-top: 50px;">Week 5: Exponential Smoothing Techniques</h2>
+        <p style="text-align: center; font-size: 28px; margin-top: 40px;">From Simple to Holt-Winters Methods</p>
+        <div class="slide-number">1 / 32</div>
+    </div>
+
+    <!-- Slide 2: Recap Part 1 -->
+    <div class="slide">
+        <h2>Recap: Time Series Components (Part 1)</h2>
+        <div class="split-content">
+            <div class="component-box">
+                <h3>1. Stationary Component</h3>
+                <p>Constant mean and variance over time</p>
+                <canvas id="stationaryRecap" class="chart-container"></canvas>
+            </div>
+            <div class="component-box">
+                <h3>2. Long-term Trend</h3>
+                <p>Systematic change over extended periods</p>
+                <canvas id="trendRecap" class="chart-container"></canvas>
+            </div>
+        </div>
+        <div class="slide-number">2 / 31</div>
+    </div>
+
+    <!-- Slide 3: Recap Part 2 -->
+    <div class="slide">
+        <h2>Recap: Time Series Components (Part 2)</h2>
+        <div class="triple-content">
+            <div class="component-box">
+                <h3>3. Seasonality</h3>
+                <p>Fixed periodic patterns</p>
+                <canvas id="seasonalRecap" class="small-chart"></canvas>
+            </div>
+            <div class="component-box">
+                <h3>4. Cyclical Patterns</h3>
+                <p>Long-term fluctuations</p>
+                <canvas id="cyclicalRecap" class="small-chart"></canvas>
+            </div>
+            <div class="component-box">
+                <h3>5. Irregularity</h3>
+                <p>Random variations</p>
+                <canvas id="irregularRecap" class="small-chart"></canvas>
+            </div>
+        </div>
+        <div class="slide-number">3 / 31</div>
+    </div>
+
+    <!-- Slide 4: Quiz Components -->
+    <div class="slide">
+        <h2>Quiz: Identify the Component</h2>
+        <canvas id="componentQuizChart" style="width: 100%; height: 350px; margin: 20px 0;"></canvas>
+        <p style="font-size: 24px; margin-bottom: 20px;">What is the dominant component in this time series?</p>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">A. Stationary pattern with no clear direction</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">B. Long-term cyclical pattern</button>
+        <button class="quiz-option" onclick="checkAnswer(this, true)">C. Strong seasonality with upward trend</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">D. Pure random walk (irregularity only)</button>
+        <div class="slide-number">4 / 31</div>
+    </div>
+
+    <!-- Slide 5: Prophet Recap -->
+    <div class="slide">
+        <h2>Recap: Facebook Prophet</h2>
+        <div class="highlight-box">
+            <h3>Prophet = Trend + Seasonality + Holidays + Error</h3>
+        </div>
+        <div class="split-content">
+            <div>
+                <h4>Key Features:</h4>
+                <ul>
+                    <li>Automatic seasonality detection</li>
+                    <li>Handles missing data gracefully</li>
+                    <li>Built-in holiday effects</li>
+                    <li>Changepoint detection</li>
+                    <li>Uncertainty intervals</li>
+                </ul>
+            </div>
+            <div>
+                <h4>When to Use Prophet:</h4>
+                <ul>
+                    <li>Multiple seasonality patterns</li>
+                    <li>Strong holiday effects</li>
+                    <li>Historical data with gaps</li>
+                    <li>Need for interpretable parameters</li>
+                    <li>Business forecasting at scale</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">5 / 31</div>
+    </div>
+
+    <!-- Slide 6: Decomposition Recap -->
+    <div class="slide">
+        <h2>Recap: Time Series Decomposition</h2>
+        <div class="method-comparison">
+            <div class="method-card">
+                <h4>Additive Model</h4>
+                <div class="formula-box">Y(t) = Trend + Seasonal + Error</div>
+                <p>Use when seasonal fluctuations are constant</p>
+                <canvas id="additiveRecap" class="small-chart"></canvas>
+            </div>
+            <div class="method-card">
+                <h4>Multiplicative Model</h4>
+                <div class="formula-box">Y(t) = Trend × Seasonal × Error</div>
+                <p>Use when seasonal fluctuations change with level</p>
+                <canvas id="multiplicativeRecap" class="small-chart"></canvas>
+            </div>
+            <div class="method-card">
+                <h4>Key Difference</h4>
+                <p>Additive: Constant seasonal amplitude</p>
+                <p>Multiplicative: Proportional seasonal amplitude</p>
+                <p style="margin-top: 20px; font-style: italic;">Choose based on your data pattern!</p>
+            </div>
+        </div>
+        <div class="slide-number">6 / 31</div>
+    </div>
+
+    <!-- Slide 7: Moving Average Recap -->
+    <div class="slide">
+        <h2>Recap: Moving Average Smoothing</h2>
+        <div class="equation">MA(k)ₜ = (yₜ + yₜ₋₁ + ... + yₜ₋ₖ₊₁) / k</div>
+        <canvas id="maRecapChart" style="width: 100%; height: 350px; margin: 20px 0;"></canvas>
+        <div class="split-content">
+            <div class="highlight-box">
+                <h4>Advantages:</h4>
+                <ul>
+                    <li>Simple to implement and understand</li>
+                    <li>Effective noise reduction</li>
+                    <li>No parameters to optimize</li>
+                </ul>
+            </div>
+            <div class="highlight-box">
+                <h4>Limitations:</h4>
+                <ul>
+                    <li>Equal weights to all observations</li>
+                    <li>Lag in detecting trend changes</li>
+                    <li>Cannot forecast beyond data</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">7 / 31</div>
+    </div>
+
+    <!-- Slide 8: Techniques Quiz -->
+    <div class="slide">
+        <h2>Quiz: Forecasting Technique Selection</h2>
+        <p style="font-size: 24px; margin-bottom: 30px;">You have daily sales data with strong weekly patterns and an upward trend. Which technique would be LEAST appropriate?</p>
+        <button class="quiz-option" onclick="checkAnswer(this, true)">A. Simple Moving Average (cannot capture trend properly)</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">B. Prophet (designed for such patterns)</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">C. Multiplicative decomposition</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">D. Additive decomposition</button>
+        <p style="margin-top: 30px; font-size: 18px; color: #666;">Hint: Consider which method treats all historical data equally</p>
+        <div class="slide-number">8 / 31</div>
+    </div>
+
+    <!-- Slide 9: Today's Agenda -->
+    <div class="slide">
+        <h2>Today's Learning Journey</h2>
+        <p style="font-size: 24px; margin-bottom: 30px;">Building on last week's foundation, we advance to more sophisticated techniques...</p>
+        
+        <h3 style="color: #007bff; margin-bottom: 20px;">Learning Outcomes:</h3>
+        <div class="agenda-item">1. <strong>Apply exponential smoothing</strong> techniques to time series data</div>
+        <div class="agenda-item">2. <strong>Investigate Holt-Winters forecasting</strong> for seasonal data</div>
+        <div class="agenda-item">3. <strong>Evaluate time series models</strong> using appropriate metrics</div>
+        
+        <div class="highlight-box" style="margin-top: 30px;">
+            <p style="text-align: center; font-size: 24px;">From equal weights (MA) to exponential weights → Better short-term forecasts!</p>
+        </div>
+        <div class="slide-number">9 / 31</div>
+    </div>
+
+    <!-- Slide 10: Exponential Smoothing Fundamentals -->
+    <div class="slide">
+        <h2>Exponential Smoothing Fundamentals</h2>
+        <canvas id="weightingChart" style="width: 100%; height: 300px; margin: 20px 0;"></canvas>
+        
+        <div class="triple-content" style="height: auto; margin-top: 30px;">
+            <div class="component-box">
+                <h4>Weighting Principle</h4>
+                <p>Exponentially decreasing weights: newest data gets highest weight</p>
+            </div>
+            <div class="component-box">
+                <h4>Short-term Focus</h4>
+                <p>Optimized for short-term predictions (1-3 periods ahead)</p>
+            </div>
+            <div class="component-box">
+                <h4>Univariate Approach</h4>
+                <p>Works with single time series variable (no external factors)</p>
+            </div>
+        </div>
+        <div class="slide-number">10 / 31</div>
+    </div>
+
+    <!-- Slide 11: Simple Exponential Smoothing -->
+    <div class="slide">
+        <h2>Simple Exponential Smoothing (SES)</h2>
+        <div class="equation">Ŷₜ₊₁ = αYₜ + (1-α)Ŷₜ</div>
+        
+        <div class="split-content">
+            <div>
+                <h4>When to Use:</h4>
+                <ul>
+                    <li>No clear trend in data</li>
+                    <li>No seasonal patterns</li>
+                    <li>Level changes slowly over time</li>
+                    <li>Short-term forecasting needed</li>
+                </ul>
+                
+                <div class="parameter-box">
+                    <h4>Alpha (α) Parameter:</h4>
+                    <p><strong>α → 1:</strong> More reactive (recent data dominates)</p>
+                    <p><strong>α → 0:</strong> More stable (historical average)</p>
+                </div>
+            </div>
+            <div>
+                <canvas id="sesChart" class="chart-container"></canvas>
+            </div>
+        </div>
+        <div class="slide-number">11 / 31</div>
+    </div>
+
+    <!-- Slide 12: Practice Exercise -->
+    <div class="slide">
+        <h2>Practice Exercise: Method Comparison</h2>
+        <p style="font-size: 20px;">Calculate forecasts using three methods and compare their accuracy:</p>
+        
+        <table class="data-table" style="font-size: 18px;">
+            <thead>
+                <tr>
+                    <th rowspan="2">Period</th>
+                    <th rowspan="2">Actual<br>Sales</th>
+                    <th colspan="3">Forecasts</th>
+                    <th colspan="3">Absolute Errors</th>
+                </tr>
+                <tr>
+                    <th>Naive</th>
+                    <th>MA(3)</th>
+                    <th>SES (α=0.3)</th>
+                    <th>|Error|<br>Naive</th>
+                    <th>|Error|<br>MA(3)</th>
+                    <th>|Error|<br>SES</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>100</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>100</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>105</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td>-</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td>-</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>108</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td>-</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td>-</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>103</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>107</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>110</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                </tr>
+                <tr>
+                    <td colspan="5" style="text-align: right; font-weight: bold;">Mean Absolute Error (MAE):</td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                    <td><input type="text" placeholder="?" style="width: 60px;"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="highlight-box" style="margin-top: 20px;">
+            <p style="font-size: 18px;"><strong>Hints:</strong></p>
+            <ul style="font-size: 16px;">
+                <li>Naive: Forecast = Previous actual value</li>
+                <li>MA(3): Average of last 3 values</li>
+                <li>SES: Ŷₜ₊₁ = 0.3×Yₜ + 0.7×Ŷₜ</li>
+            </ul>
+        </div>
+        <div class="slide-number">12 / 32</div>
+    </div>
+
+    <!-- Slide 13: Double Exponential Smoothing -->
+    <div class="slide">
+        <h2>Double Exponential Smoothing (Holt's Method)</h2>
+        <div class="formula-box">
+            Level: Lₜ = αYₜ + (1-α)(Lₜ₋₁ + Tₜ₋₁)<br>
+            Trend: Tₜ = β(Lₜ - Lₜ₋₁) + (1-β)Tₜ₋₁<br>
+            Forecast: Ŷₜ₊ₕ = Lₜ + hTₜ
+        </div>
+        
+        <div class="split-content">
+            <div>
+                <h4>Purpose:</h4>
+                <p>Handles data with trends but no seasonality</p>
+                
+                <h4>Two Parameters:</h4>
+                <ul>
+                    <li><strong>α:</strong> Level smoothing (0 < α < 1)</li>
+                    <li><strong>β:</strong> Trend smoothing (0 < β < 1)</li>
+                </ul>
+                
+                <h4>Applications:</h4>
+                <ul>
+                    <li>Sales with growth trends</li>
+                    <li>Economic indicators</li>
+                    <li>Technology adoption curves</li>
+                </ul>
+            </div>
+            <div>
+                <canvas id="holtChart" class="chart-container"></canvas>
+            </div>
+        </div>
+        <div class="slide-number">13 / 32</div>
+    </div>
+
+    <!-- Slide 14: Triple Exponential Smoothing -->
+    <div class="slide">
+        <h2>Triple Exponential Smoothing (Holt-Winters)</h2>
+        <div class="formula-box" style="font-size: 18px;">
+            Level: Cₜ = α(Yₜ - Sₜ₋ₚ) + (1-α)(Cₜ₋₁ + Tₜ₋₁)<br>
+            Trend: Tₜ = β(Cₜ - Cₜ₋₁) + (1-β)Tₜ₋₁<br>
+            Seasonal: Sₜ = γ(Yₜ - Cₜ) + (1-γ)Sₜ₋ₚ<br>
+            Forecast: Ŷₜ₊ₖ = Cₜ + kTₜ + Sₜ₊ₖ₋ₚ
+        </div>
+        
+        <h4>Purpose: Complete seasonal forecasting solution</h4>
+        <div class="parameter-box">
+            <p><strong>α:</strong> Level parameter | <strong>β:</strong> Trend parameter | <strong>γ:</strong> Seasonal parameter</p>
+        </div>
+        
+        <canvas id="holtWintersChart" style="width: 100%; height: 300px; margin: 20px 0;"></canvas>
+        <div class="slide-number">14 / 32</div>
+    </div>
+
+    <!-- Slide 15: Comparing Methods -->
+    <div class="slide">
+        <h2>Exponential Smoothing Methods Comparison</h2>
+        <canvas id="comparisonChart" style="width: 100%; height: 350px; margin: 20px 0;"></canvas>
+        
+        <div class="method-comparison">
+            <div class="method-card">
+                <h4>Simple (SES)</h4>
+                <p>✓ No trend, no seasonality</p>
+                <p>✓ 1 parameter (α)</p>
+                <p>✓ Stable data</p>
+            </div>
+            <div class="method-card">
+                <h4>Double (Holt)</h4>
+                <p>✓ Trend, no seasonality</p>
+                <p>✓ 2 parameters (α, β)</p>
+                <p>✓ Growing/declining data</p>
+            </div>
+            <div class="method-card">
+                <h4>Triple (Holt-Winters)</h4>
+                <p>✓ Trend + seasonality</p>
+                <p>✓ 3 parameters (α, β, γ)</p>
+                <p>✓ Complex patterns</p>
+            </div>
+        </div>
+        <div class="slide-number">15 / 32</div>
+    </div>
+
+    <!-- Slide 16: Quiz 1 -->
+    <div class="slide">
+        <h2>Quiz 1: Method Selection</h2>
+        <p style="font-size: 24px; margin-bottom: 30px;">You're forecasting monthly electricity consumption with clear summer/winter patterns but no long-term growth. Which method is most appropriate?</p>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">A. Simple Exponential Smoothing</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">B. Holt's Method (Double)</button>
+        <button class="quiz-option" onclick="checkAnswer(this, true)">C. Holt-Winters with γ > 0, β = 0</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">D. Moving Average</button>
+        <div class="slide-number">16 / 32</div>
+    </div>
+
+    <!-- Slide 17: Quiz 2 -->
+    <div class="slide">
+        <h2>Quiz 2: Parameter Interpretation</h2>
+        <p style="font-size: 24px; margin-bottom: 30px;">In Simple Exponential Smoothing with α = 0.9, what does this imply?</p>
+        <button class="quiz-option" onclick="checkAnswer(this, true)">A. The forecast heavily weights the most recent observation</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">B. The forecast uses mostly historical average</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">C. The model ignores recent changes</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">D. Equal weights are given to all observations</button>
+        <div class="slide-number">17 / 32</div>
+    </div>
+
+    <!-- Slide 18: Quiz 3 -->
+    <div class="slide">
+        <h2>Quiz 3: Holt-Winters Application</h2>
+        <canvas id="hwQuizChart" style="width: 100%; height: 300px; margin: 20px 0;"></canvas>
+        <p style="font-size: 24px; margin-bottom: 20px;">Based on this pattern, which Holt-Winters variant should be used?</p>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">A. Additive (constant seasonal amplitude)</button>
+        <button class="quiz-option" onclick="checkAnswer(this, true)">B. Multiplicative (increasing seasonal amplitude)</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">C. No seasonality - use Holt's method instead</button>
+        <button class="quiz-option" onclick="checkAnswer(this, false)">D. Simple exponential smoothing is sufficient</button>
+        <div class="slide-number">18 / 32</div>
+    </div>
+
+    <!-- Slide 19: Model Evaluation -->
+    <div class="slide">
+        <h2>Model Evaluation Methods</h2>
+        
+        <div class="highlight-box">
+            <h3>Train/Test Split: 80% / 20% Rule</h3>
+            <p>Essential for detecting overfitting and validating forecast accuracy</p>
+        </div>
+        
+        <div class="triple-content" style="height: auto;">
+            <div class="component-box">
+                <h4>RMSE</h4>
+                <div class="formula-box">√(Σ(yᵢ - ŷᵢ)² / n)</div>
+                <p>Penalizes large errors more heavily</p>
+            </div>
+            <div class="component-box">
+                <h4>MAE</h4>
+                <div class="formula-box">Σ|yᵢ - ŷᵢ| / n</div>
+                <p>Average absolute error</p>
+            </div>
+            <div class="component-box">
+                <h4>MAPE</h4>
+                <div class="formula-box">100 × Σ|yᵢ - ŷᵢ|/yᵢ / n</div>
+                <p>Percentage error (scale-free)</p>
+            </div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 30px; font-size: 24px; color: #007bff;">
+            <strong>Remember: Lower values = Better forecasts!</strong>
+        </p>
+        <div class="slide-number">19 / 32</div>
+    </div>
+
+    <!-- Slide 20: RMSE Exercise -->
+    <div class="slide">
+        <h2>Exercise: Calculate RMSE</h2>
+        <p>Complete the table to calculate RMSE for this forecast:</p>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Actual (yᵢ)</th>
+                    <th>Forecast (ŷᵢ)</th>
+                    <th>Error (yᵢ - ŷᵢ)</th>
+                    <th>Squared Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>120</td>
+                    <td>115</td>
+                    <td><input type="text" placeholder="?"></td>
+                    <td><input type="text" placeholder="?"></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>135</td>
+                    <td>128</td>
+                    <td><input type="text" placeholder="?"></td>
+                    <td><input type="text" placeholder="?"></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>142</td>
+                    <td>145</td>
+                    <td><input type="text" placeholder="?"></td>
+                    <td><input type="text" placeholder="?"></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>138</td>
+                    <td>140</td>
+                    <td><input type="text" placeholder="?"></td>
+                    <td><input type="text" placeholder="?"></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>150</td>
+                    <td>144</td>
+                    <td><input type="text" placeholder="?"></td>
+                    <td><input type="text" placeholder="?"></td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="text-align: right; font-weight: bold;">Sum of Squared Errors:</td>
+                    <td><input type="text" placeholder="?"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <p style="font-size: 22px;">RMSE = √(Sum of Squared Errors / 5) = <input type="text" placeholder="?" style="width: 100px;"></p>
+        </div>
+        <div class="slide-number">20 / 32</div>
+    </div>
+
+    <!-- Slide 21: Tableau Implementation -->
+    <div class="slide">
+        <h2>Implementing Holt-Winters in Tableau</h2>
+        
+        <div class="highlight-box">
+            <h3>Step-by-Step Process:</h3>
+        </div>
+        
+        <ol style="font-size: 22px; margin-left: 40px; line-height: 2;">
+            <li><strong>Data Preparation:</strong> Ensure time series has regular intervals</li>
+            <li><strong>Create Forecast:</strong> Right-click on date → Forecast → Show Forecast</li>
+            <li><strong>Configure Model:</strong> 
+                <ul style="margin-left: 30px; margin-top: 10px;">
+                    <li>Forecast Options → Custom</li>
+                    <li>Choose Multiplicative or Additive</li>
+                    <li>Set forecast length</li>
+                </ul>
+            </li>
+            <li><strong>Evaluate Results:</strong> Tableau provides quality metrics automatically</li>
+            <li><strong>Fine-tune:</strong> Adjust seasonality length if needed</li>
+        </ol>
+        
+        <div class="parameter-box" style="margin-top: 30px;">
+            <p style="text-align: center;"><strong>Pro Tip:</strong> Tableau automatically optimizes α, β, and γ parameters!</p>
+        </div>
+        <div class="slide-number">21 / 32</div>
+    </div>
+
+    <!-- Additional slides to reach 31 total -->
+    <!-- Slide 21: Practical Example -->
+    <div class="slide">
+        <h2>Practical Example: Retail Sales Forecasting</h2>
+        <canvas id="practicalExample" style="width: 100%; height: 400px; margin: 20px 0;"></canvas>
+        <div class="split-content" style="height: auto;">
+            <div class="highlight-box">
+                <h4>Data Characteristics:</h4>
+                <ul style="font-size: 20px;">
+                    <li>Monthly retail sales data</li>
+                    <li>Clear upward trend</li>
+                    <li>Holiday seasonality</li>
+                    <li>3 years of history</li>
+                </ul>
+            </div>
+            <div class="highlight-box">
+                <h4>Holt-Winters Results:</h4>
+                <ul style="font-size: 20px;">
+                    <li>α = 0.3 (moderate level smoothing)</li>
+                    <li>β = 0.1 (slow trend adaptation)</li>
+                    <li>γ = 0.7 (strong seasonal component)</li>
+                    <li>RMSE = $12,450</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">22 / 32</div>
+    </div>
+
+    <!-- Slide 23: Common Pitfalls -->
+    <div class="slide">
+        <h2>Common Pitfalls in Exponential Smoothing</h2>
+        
+        <div class="method-comparison">
+            <div class="method-card" style="background-color: #fff3cd;">
+                <h4>Overfitting</h4>
+                <p>Using complex models on simple data</p>
+                <p><strong>Solution:</strong> Start simple, add complexity only if needed</p>
+            </div>
+            <div class="method-card" style="background-color: #f8d7da;">
+                <h4>Wrong Model Choice</h4>
+                <p>Using SES for trending data</p>
+                <p><strong>Solution:</strong> Analyze data patterns first</p>
+            </div>
+            <div class="method-card" style="background-color: #d1ecf1;">
+                <h4>Parameter Misuse</h4>
+                <p>Setting α = 1 for noisy data</p>
+                <p><strong>Solution:</strong> Use optimization or cross-validation</p>
+            </div>
+        </div>
+        
+        <div class="highlight-box" style="margin-top: 30px;">
+            <p style="text-align: center; font-size: 22px;">Remember: Simpler models often outperform complex ones for short-term forecasts!</p>
+        </div>
+        <div class="slide-number">23 / 32</div>
+    </div>
+
+    <!-- Slide 24: Choosing Parameters -->
+    <div class="slide">
+        <h2>Choosing Smoothing Parameters</h2>
+        
+        <canvas id="parameterEffects" style="width: 100%; height: 350px; margin: 20px 0;"></canvas>
+        
+        <div class="split-content" style="height: auto;">
+            <div class="component-box">
+                <h4>Manual Selection Guidelines:</h4>
+                <ul>
+                    <li><strong>Stable data:</strong> α = 0.1-0.3</li>
+                    <li><strong>Trending data:</strong> β = 0.1-0.2</li>
+                    <li><strong>Strong seasonality:</strong> γ = 0.5-0.8</li>
+                    <li><strong>Noisy data:</strong> Lower all parameters</li>
+                </ul>
+            </div>
+            <div class="component-box">
+                <h4>Automated Optimization:</h4>
+                <ul>
+                    <li>Grid search over parameter space</li>
+                    <li>Minimize forecast error (RMSE)</li>
+                    <li>Use cross-validation</li>
+                    <li>Most software does this automatically</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">24 / 32</div>
+    </div>
+
+    <!-- Slide 25: Real-world Applications -->
+    <div class="slide">
+        <h2>Real-world Applications</h2>
+        
+        <div class="triple-content" style="height: auto;">
+            <div class="component-box">
+                <h4>Inventory Management</h4>
+                <p>Short-term demand forecasting</p>
+                <ul style="font-size: 18px;">
+                    <li>Daily/weekly forecasts</li>
+                    <li>Reorder point calculation</li>
+                    <li>Safety stock optimization</li>
+                </ul>
+            </div>
+            <div class="component-box">
+                <h4>Financial Planning</h4>
+                <p>Revenue and cost projections</p>
+                <ul style="font-size: 18px;">
+                    <li>Quarterly earnings</li>
+                    <li>Cash flow management</li>
+                    <li>Budget allocation</li>
+                </ul>
+            </div>
+            <div class="component-box">
+                <h4>Operations</h4>
+                <p>Resource planning</p>
+                <ul style="font-size: 18px;">
+                    <li>Staffing requirements</li>
+                    <li>Production scheduling</li>
+                    <li>Capacity planning</li>
+                </ul>
+            </div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 30px; font-size: 22px; color: #007bff;">
+            Exponential smoothing powers millions of business decisions daily!
+        </p>
+        <div class="slide-number">25 / 32</div>
+    </div>
+
+    <!-- Slide 26: Model Comparison Exercise -->
+    <div class="slide">
+        <h2>Model Comparison Exercise</h2>
+        <p style="font-size: 22px; margin-bottom: 20px;">Compare the performance of different smoothing methods:</p>
+        
+        <canvas id="modelComparisonChart" style="width: 100%; height: 300px; margin: 20px 0;"></canvas>
+        
+        <table class="data-table" style="font-size: 18px;">
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Parameters</th>
+                    <th>RMSE</th>
+                    <th>MAE</th>
+                    <th>Best for...</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Moving Average (5)</td>
+                    <td>k = 5</td>
+                    <td>15.2</td>
+                    <td>12.1</td>
+                    <td>Stable data</td>
+                </tr>
+                <tr>
+                    <td>Simple Exponential</td>
+                    <td>α = 0.3</td>
+                    <td>12.8</td>
+                    <td>10.2</td>
+                    <td>Level changes</td>
+                </tr>
+                <tr>
+                    <td>Holt's Method</td>
+                    <td>α = 0.3, β = 0.1</td>
+                    <td>9.5</td>
+                    <td>7.8</td>
+                    <td>Trending data</td>
+                </tr>
+                <tr>
+                    <td>Holt-Winters</td>
+                    <td>α = 0.3, β = 0.1, γ = 0.6</td>
+                    <td>6.2</td>
+                    <td>5.1</td>
+                    <td>Seasonal + trend</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="slide-number">26 / 32</div>
+    </div>
+
+    <!-- Slide 27: Summary of Methods -->
+    <div class="slide">
+        <h2>Summary: Exponential Smoothing Family</h2>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <canvas id="methodHierarchy" style="width: 80%; height: 300px; margin: 0 auto;"></canvas>
+        </div>
+        
+        <div class="highlight-box">
+            <h3 style="text-align: center;">Key Decision Process:</h3>
+            <ol style="font-size: 22px; margin-left: 40px;">
+                <li>Identify data patterns (trend? seasonality?)</li>
+                <li>Select appropriate method</li>
+                <li>Optimize parameters (or let software do it)</li>
+                <li>Validate using train/test split</li>
+                <li>Monitor and update as needed</li>
+            </ol>
+        </div>
+        <div class="slide-number">27 / 32</div>
+    </div>
+
+    <!-- Slide 28: Best Practices -->
+    <div class="slide">
+        <h2>Best Practices for Implementation</h2>
+        
+        <div class="split-content" style="height: auto;">
+            <div class="component-box">
+                <h4>Do's:</h4>
+                <ul>
+                    <li>Start with simple models</li>
+                    <li>Use sufficient historical data (2+ seasons)</li>
+                    <li>Validate on hold-out sample</li>
+                    <li>Update parameters periodically</li>
+                    <li>Consider multiple models</li>
+                    <li>Document assumptions</li>
+                </ul>
+            </div>
+            <div class="component-box">
+                <h4>Don'ts:</h4>
+                <ul>
+                    <li>Overfit to historical data</li>
+                    <li>Ignore data quality issues</li>
+                    <li>Use for long-term forecasts</li>
+                    <li>Set parameters arbitrarily</li>
+                    <li>Ignore structural breaks</li>
+                    <li>Forget to monitor performance</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">28 / 32</div>
+    </div>
+
+    <!-- Slide 29: Integration with Other Methods -->
+    <div class="slide">
+        <h2>Integration with Other Techniques</h2>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h3>Exponential Smoothing in the Forecasting Toolkit</h3>
+        </div>
+        
+        <div class="method-comparison">
+            <div class="method-card">
+                <h4>vs. Prophet</h4>
+                <p>Prophet: Better for multiple seasonalities and holidays</p>
+                <p>ES: Simpler, fewer parameters, faster</p>
+            </div>
+            <div class="method-card">
+                <h4>vs. ARIMA</h4>
+                <p>ARIMA: More flexible, handles complex patterns</p>
+                <p>ES: More intuitive, easier to explain</p>
+            </div>
+            <div class="method-card">
+                <h4>Ensemble Approach</h4>
+                <p>Combine multiple methods</p>
+                <p>Weight by recent performance</p>
+            </div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 30px; font-size: 22px;">
+            Often, combining methods yields better results than any single approach!
+        </p>
+        <div class="slide-number">29 / 32</div>
+    </div>
+
+    <!-- Slide 30: Next Steps -->
+    <div class="slide">
+        <h2>Your Learning Journey Continues...</h2>
+        
+        <div class="highlight-box">
+            <h3>What You've Mastered Today:</h3>
+            <ul style="font-size: 22px;">
+                <li>Exponential weighting principles</li>
+                <li>Three levels of smoothing complexity</li>
+                <li>Parameter selection strategies</li>
+                <li>Model evaluation metrics</li>
+                <li>Practical implementation guidelines</li>
+            </ul>
+        </div>
+        
+        <div class="agenda-item" style="margin-top: 30px;">
+            <h3>Next Week: Advanced Time Series Models</h3>
+            <p>ARIMA models, Box-Jenkins methodology, and automated forecasting</p>
+        </div>
+        <div class="slide-number">30 / 32</div>
+    </div>
+
+    <!-- Slide 31: Practice Problems -->
+    <div class="slide">
+        <h2>Practice Problems</h2>
+        
+        <ol style="font-size: 22px; margin-left: 40px; line-height: 2;">
+            <li>Apply SES to daily temperature data with α = {0.1, 0.5, 0.9}. Which works best?</li>
+            <li>Use Holt's method on stock prices. Does it capture the trend?</li>
+            <li>Implement Holt-Winters on your retail sales data from Week 3</li>
+            <li>Compare RMSE across all methods learned so far</li>
+            <li>Create a Tableau dashboard with automated forecasts</li>
+        </ol>
+        
+        <div class="highlight-box" style="margin-top: 30px;">
+            <p style="text-align: center; font-size: 22px;">
+                <strong>Remember:</strong> Practice with real data solidifies understanding!
+            </p>
+        </div>
+        <div class="slide-number">31 / 32</div>
+    </div>
+
+    <!-- Slide 32: Thank You -->
+    <div class="slide">
+        <h1>Thank You</h1>
+        <p style="text-align: center; font-size: 28px; margin-top: 50px;">Questions & Discussion</p>
+        <p style="text-align: center; font-size: 24px; margin-top: 40px;">Ready to smooth your way to better forecasts!</p>
+        <div class="slide-number">32 / 32</div>
+    </div>
+
+    <div class="navigation">
+        <button id="prevBtn" onclick="changeSlide(-1)">Previous</button>
+        <button id="nextBtn" onclick="changeSlide(1)">Next</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+            
+            // Draw charts when slides become visible
+            drawChartsForSlide(currentSlide);
+        }
+
+        function changeSlide(direction) {
+            showSlide(currentSlide + direction);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // Chart drawing functions
+        function drawChartsForSlide(slideIndex) {
+            switch(slideIndex) {
+                case 1:
+                    drawRecapCharts1();
+                    break;
+                case 2:
+                    drawRecapCharts2();
+                    break;
+                case 3:
+                    drawComponentQuiz();
+                    break;
+                case 5:
+                    drawDecompositionRecap();
+                    break;
+                case 6:
+                    drawMARecap();
+                    break;
+                case 9:
+                    drawWeightingChart();
+                    break;
+                case 10:
+                    drawSESChart();
+                    break;
+                case 11:
+                    drawHoltChart();
+                    break;
+                case 12:
+                    drawHoltWintersChart();
+                    break;
+                case 13:
+                    drawComparisonChart();
+                    break;
+                case 16:
+                    drawHWQuizChart();
+                    break;
+                case 20:
+                    drawPracticalExample();
+                    break;
+                case 22:
+                    drawParameterEffects();
+                    break;
+                case 24:
+                    drawModelComparison();
+                    break;
+                case 25:
+                    drawMethodHierarchy();
+                    break;
+            }
+        }
+
+        // Generic line chart function
+        function drawLineChart(canvasId, data, label, color = '#007bff') {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const padding = 40;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            // Draw data
+            const xStep = graphWidth / (data.length - 1);
+            const yMin = Math.min(...data);
+            const yMax = Math.max(...data);
+            const yScale = graphHeight / (yMax - yMin);
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw points
+            ctx.fillStyle = color;
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        // Recap charts
+        function drawRecapCharts1() {
+            // Stationary
+            const stationaryData = Array(50).fill(0).map(() => 50 + Math.random() * 10 - 5);
+            drawLineChart('stationaryRecap', stationaryData, 'Stationary', '#28a745');
+            
+            // Trend
+            const trendData = Array(50).fill(0).map((_, i) => 30 + i * 0.8 + Math.random() * 5);
+            drawLineChart('trendRecap', trendData, 'Trend', '#dc3545');
+        }
+
+        function drawRecapCharts2() {
+            // Seasonal
+            const seasonalData = Array(48).fill(0).map((_, i) => 50 + 20 * Math.sin(i * 2 * Math.PI / 12) + Math.random() * 3);
+            drawLineChart('seasonalRecap', seasonalData, 'Seasonal', '#ffc107');
+            
+            // Cyclical
+            const cyclicalData = Array(48).fill(0).map((_, i) => 50 + 15 * Math.sin(i * 2 * Math.PI / 30) + Math.random() * 3);
+            drawLineChart('cyclicalRecap', cyclicalData, 'Cyclical', '#17a2b8');
+            
+            // Irregular
+            const irregularData = Array(48).fill(0).map(() => 50 + Math.random() * 20 - 10);
+            drawLineChart('irregularRecap', irregularData, 'Irregular', '#6c757d');
+        }
+
+        function drawComponentQuiz() {
+            // Generate data with strong seasonality and upward trend
+            const data = Array(60).fill(0).map((_, i) => {
+                const trend = 100 + i * 0.5;
+                const seasonal = 30 * Math.sin(i * 2 * Math.PI / 12);
+                const noise = Math.random() * 5;
+                return trend + seasonal + noise;
+            });
+            drawLineChart('componentQuizChart', data, 'Time Series', '#007bff');
+        }
+
+        function drawDecompositionRecap() {
+            // Additive
+            const additiveData = Array(48).fill(0).map((_, i) => 100 + i * 0.2 + 15 * Math.sin(i * 2 * Math.PI / 12));
+            drawLineChart('additiveRecap', additiveData, 'Additive', '#007bff');
+            
+            // Multiplicative
+            const multiplicativeData = Array(48).fill(0).map((_, i) => {
+                const trend = 50 + i * 0.5;
+                const seasonal = 1 + 0.3 * Math.sin(i * 2 * Math.PI / 12);
+                return trend * seasonal;
+            });
+            drawLineChart('multiplicativeRecap', multiplicativeData, 'Multiplicative', '#dc3545');
+        }
+
+        function drawMARecap() {
+            const canvas = document.getElementById('maRecapChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate noisy data
+            const originalData = Array(50).fill(0).map((_, i) => 100 + i * 0.5 + Math.random() * 20 - 10);
+            
+            // Calculate MA(5)
+            const ma5Data = originalData.map((_, i, arr) => {
+                if (i < 4) return null;
+                return arr.slice(i - 4, i + 1).reduce((a, b) => a + b) / 5;
+            });
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const xStep = graphWidth / (originalData.length - 1);
+            const allData = [...originalData, ...ma5Data.filter(d => d !== null)];
+            const yMin = Math.min(...allData);
+            const yMax = Math.max(...allData);
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw original data
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            originalData.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw MA
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            let firstPoint = true;
+            ma5Data.forEach((value, i) => {
+                if (value !== null) {
+                    const x = padding + i * xStep;
+                    const y = height - padding - (value - yMin) * yScale;
+                    if (firstPoint) {
+                        ctx.moveTo(x, y);
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            });
+            ctx.stroke();
+            
+            // Legend
+            ctx.font = '14px Helvetica';
+            ctx.fillStyle = '#999';
+            ctx.fillText('Original', width - 100, 30);
+            ctx.fillStyle = '#007bff';
+            ctx.fillText('MA(5)', width - 100, 50);
+        }
+
+        function drawWeightingChart() {
+            const canvas = document.getElementById('weightingChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.stroke();
+            
+            // Draw exponential weights
+            const alpha = 0.3;
+            const periods = 20;
+            const barWidth = graphWidth / periods / 2;
+            
+            for (let i = 0; i < periods; i++) {
+                const weight = alpha * Math.pow(1 - alpha, i);
+                const barHeight = weight * graphHeight * 5; // Scale for visibility
+                const x = width - padding - (i + 1) * (graphWidth / periods);
+                
+                ctx.fillStyle = `rgba(0, 123, 255, ${1 - i / periods})`;
+                ctx.fillRect(x - barWidth / 2, height - padding - barHeight, barWidth, barHeight);
+            }
+            
+            // Labels
+            ctx.font = '14px Helvetica';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'center';
+            ctx.fillText('Most Recent', width - padding, height - padding + 20);
+            ctx.fillText('Older Data', padding, height - padding + 20);
+            
+            ctx.save();
+            ctx.translate(padding - 40, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Weight', 0, 0);
+            ctx.restore();
+            
+            // Title
+            ctx.font = '16px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.fillText('Exponential Decay of Weights (α = 0.3)', width / 2, padding - 20);
+        }
+
+        function drawSESChart() {
+            const canvas = document.getElementById('sesChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate data
+            const data = [100, 102, 98, 103, 105, 101, 104, 106, 103, 107, 105, 108];
+            
+            // Calculate SES with different alphas
+            const calculateSES = (data, alpha) => {
+                const forecast = [data[0]];
+                for (let i = 1; i < data.length; i++) {
+                    forecast.push(alpha * data[i - 1] + (1 - alpha) * forecast[i - 1]);
+                }
+                return forecast;
+            };
+            
+            const ses1 = calculateSES(data, 0.1);
+            const ses2 = calculateSES(data, 0.5);
+            const ses3 = calculateSES(data, 0.9);
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const xStep = graphWidth / (data.length - 1);
+            const yMin = 95;
+            const yMax = 110;
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw original data
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw SES forecasts
+            const drawSES = (sesData, color, alpha) => {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                sesData.forEach((value, i) => {
+                    const x = padding + i * xStep;
+                    const y = height - padding - (value - yMin) * yScale;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+            };
+            
+            drawSES(ses1, '#28a745', 0.1);
+            drawSES(ses2, '#ffc107', 0.5);
+            drawSES(ses3, '#dc3545', 0.9);
+            
+            // Legend
+            ctx.font = '12px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.fillText('Actual', width - 120, 30);
+            ctx.fillStyle = '#28a745';
+            ctx.fillText('α = 0.1', width - 120, 50);
+            ctx.fillStyle = '#ffc107';
+            ctx.fillText('α = 0.5', width - 120, 70);
+            ctx.fillStyle = '#dc3545';
+            ctx.fillText('α = 0.9', width - 120, 90);
+        }
+
+        function drawHoltChart() {
+            const canvas = document.getElementById('holtChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate trending data
+            const data = Array(24).fill(0).map((_, i) => 100 + i * 2 + Math.random() * 5);
+            
+            // Simple Holt's method simulation
+            const alpha = 0.3;
+            const beta = 0.1;
+            let level = data[0];
+            let trend = 2;
+            const forecast = [level];
+            
+            for (let i = 1; i < data.length; i++) {
+                const prevLevel = level;
+                level = alpha * data[i] + (1 - alpha) * (level + trend);
+                trend = beta * (level - prevLevel) + (1 - beta) * trend;
+                forecast.push(level);
+            }
+            
+            // Extend forecast
+            for (let i = 0; i < 6; i++) {
+                forecast.push(level + (i + 1) * trend);
+            }
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const totalPoints = forecast.length;
+            const xStep = graphWidth / (totalPoints - 1);
+            const allData = [...data, ...forecast];
+            const yMin = Math.min(...allData) - 10;
+            const yMax = Math.max(...allData) + 10;
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw actual data
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw forecast
+            ctx.strokeStyle = '#28a745';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            forecast.forEach((value, i) => {
+                if (i >= data.length - 1) {
+                    const x = padding + i * xStep;
+                    const y = height - padding - (value - yMin) * yScale;
+                    if (i === data.length - 1) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Dividing line
+            const divX = padding + (data.length - 1) * xStep;
+            ctx.strokeStyle = '#666';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(divX, padding);
+            ctx.lineTo(divX, height - padding);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Legend
+            ctx.font = '14px Helvetica';
+            ctx.fillStyle = '#007bff';
+            ctx.fillText('Historical', width - 120, 30);
+            ctx.fillStyle = '#28a745';
+            ctx.fillText('Forecast', width - 120, 50);
+        }
+
+        function drawHoltWintersChart() {
+            const canvas = document.getElementById('holtWintersChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate seasonal data with trend
+            const periods = 36;
+            const data = Array(periods).fill(0).map((_, i) => {
+                const trend = 100 + i * 1.5;
+                const seasonal = 20 * Math.sin(i * 2 * Math.PI / 12);
+                const noise = Math.random() * 5;
+                return trend + seasonal + noise;
+            });
+            
+            // Simulated HW forecast (simplified)
+            const forecast = Array(12).fill(0).map((_, i) => {
+                const futureIndex = periods + i;
+                const trend = 100 + futureIndex * 1.5;
+                const seasonal = 20 * Math.sin(futureIndex * 2 * Math.PI / 12);
+                return trend + seasonal;
+            });
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const totalPoints = data.length + forecast.length;
+            const xStep = graphWidth / (totalPoints - 1);
+            const allData = [...data, ...forecast];
+            const yMin = Math.min(...allData) - 20;
+            const yMax = Math.max(...allData) + 20;
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw actual data
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw forecast with confidence band
+            ctx.fillStyle = 'rgba(40, 167, 69, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(padding + (data.length - 1) * xStep, height - padding - (data[data.length - 1] - yMin) * yScale);
+            
+            // Upper band
+            forecast.forEach((value, i) => {
+                const x = padding + (data.length + i) * xStep;
+                const y = height - padding - (value + 15 - yMin) * yScale;
+                ctx.lineTo(x, y);
+            });
+            
+            // Lower band
+            for (let i = forecast.length - 1; i >= 0; i--) {
+                const x = padding + (data.length + i) * xStep;
+                const y = height - padding - (forecast[i] - 15 - yMin) * yScale;
+                ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw forecast line
+            ctx.strokeStyle = '#28a745';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(padding + (data.length - 1) * xStep, height - padding - (data[data.length - 1] - yMin) * yScale);
+            forecast.forEach((value, i) => {
+                const x = padding + (data.length + i) * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Labels
+            ctx.font = '14px Helvetica';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'center';
+            ctx.fillText('3 Years Historical', padding + data.length * xStep / 2, height - 20);
+            ctx.fillText('12 Month Forecast', padding + data.length * xStep + forecast.length * xStep / 2, height - 20);
+        }
+
+        function drawComparisonChart() {
+            const canvas = document.getElementById('comparisonChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Generate different patterns
+            const periods = 24;
+            
+            // SES data - no trend, no seasonality
+            const sesData = Array(periods).fill(0).map(() => 100 + Math.random() * 10 - 5);
+            
+            // Holt data - trend, no seasonality
+            const holtData = Array(periods).fill(0).map((_, i) => 80 + i * 2 + Math.random() * 5);
+            
+            // HW data - trend and seasonality
+            const hwData = Array(periods).fill(0).map((_, i) => {
+                return 60 + i * 1 + 15 * Math.sin(i * 2 * Math.PI / 6) + Math.random() * 3;
+            });
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const xStep = graphWidth / (periods - 1);
+            const allData = [...sesData, ...holtData, ...hwData];
+            const yMin = Math.min(...allData) - 10;
+            const yMax = Math.max(...allData) + 10;
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw each dataset
+            const drawData = (data, color, label, yOffset) => {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                data.forEach((value, i) => {
+                    const x = padding + i * xStep;
+                    const y = height - padding - (value + yOffset - yMin) * yScale;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                
+                // Label
+                ctx.fillStyle = color;
+                ctx.font = '14px Helvetica';
+                ctx.fillText(label, width - 150, 30 + yOffset);
+            };
+            
+            drawData(sesData, '#007bff', 'Simple ES', 0);
+            drawData(holtData, '#dc3545', "Holt's", 20);
+            drawData(hwData, '#28a745', 'Holt-Winters', 40);
+        }
+
+        function drawHWQuizChart() {
+            const canvas = document.getElementById('hwQuizChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate data with increasing seasonal amplitude (multiplicative)
+            const data = Array(48).fill(0).map((_, i) => {
+                const trend = 50 + i * 2;
+                const seasonalMultiplier = 1 + 0.3 * Math.sin(i * 2 * Math.PI / 12);
+                return trend * seasonalMultiplier + Math.random() * 5;
+            });
+            
+            drawLineChart('hwQuizChart', data, 'Sales Data', '#17a2b8');
+        }
+
+        function drawPracticalExample() {
+            const canvas = document.getElementById('practicalExample');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate realistic retail data
+            const months = 36;
+            const data = Array(months).fill(0).map((_, i) => {
+                const base = 50000;
+                const trend = i * 500;
+                const monthOfYear = i % 12;
+                const seasonalFactors = [0.8, 0.7, 0.9, 1.0, 1.1, 1.2, 1.1, 1.0, 0.9, 1.1, 1.3, 1.5];
+                const seasonal = base * (seasonalFactors[monthOfYear] - 1);
+                const noise = Math.random() * 5000 - 2500;
+                return base + trend + seasonal + noise;
+            });
+            
+            // HW forecast
+            const forecastMonths = 12;
+            const forecast = Array(forecastMonths).fill(0).map((_, i) => {
+                const base = 50000;
+                const trend = (months + i) * 500;
+                const monthOfYear = (months + i) % 12;
+                const seasonalFactors = [0.8, 0.7, 0.9, 1.0, 1.1, 1.2, 1.1, 1.0, 0.9, 1.1, 1.3, 1.5];
+                const seasonal = base * (seasonalFactors[monthOfYear] - 1);
+                return base + trend + seasonal;
+            });
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const totalMonths = months + forecastMonths;
+            const xStep = graphWidth / (totalMonths - 1);
+            const allData = [...data, ...forecast];
+            const yMin = Math.min(...allData) - 5000;
+            const yMax = Math.max(...allData) + 5000;
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw historical data
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw forecast
+            ctx.strokeStyle = '#28a745';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(padding + (months - 1) * xStep, height - padding - (data[data.length - 1] - yMin) * yScale);
+            forecast.forEach((value, i) => {
+                const x = padding + (months + i) * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Y-axis labels
+            ctx.font = '12px Helvetica';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const value = yMin + (yMax - yMin) * i / 5;
+                const y = height - padding - (value - yMin) * yScale;
+                ctx.fillText(`$${Math.round(value / 1000)}k`, padding - 10, y);
+            }
+            
+            // Title
+            ctx.font = '16px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText('Monthly Retail Sales with Holt-Winters Forecast', width / 2, padding - 20);
+        }
+
+        function drawParameterEffects() {
+            const canvas = document.getElementById('parameterEffects');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate base data with sudden change
+            const data = Array(30).fill(0).map((_, i) => {
+                if (i < 15) return 100 + Math.random() * 5;
+                return 120 + Math.random() * 5; // Step change
+            });
+            
+            // Calculate SES with different alphas
+            const calculateSES = (data, alpha) => {
+                const forecast = [data[0]];
+                for (let i = 1; i < data.length; i++) {
+                    forecast.push(alpha * data[i - 1] + (1 - alpha) * forecast[i - 1]);
+                }
+                return forecast;
+            };
+            
+            const ses_low = calculateSES(data, 0.1);
+            const ses_high = calculateSES(data, 0.9);
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const xStep = graphWidth / (data.length - 1);
+            const yMin = 90;
+            const yMax = 130;
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw actual data
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw forecasts
+            ctx.strokeStyle = '#dc3545';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ses_low.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#28a745';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ses_high.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Mark step change
+            ctx.strokeStyle = '#666';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(padding + 15 * xStep, padding);
+            ctx.lineTo(padding + 15 * xStep, height - padding);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.font = '12px Helvetica';
+            ctx.fillStyle = '#666';
+            ctx.fillText('Step Change', padding + 15 * xStep + 5, padding + 20);
+            
+            // Legend
+            ctx.font = '14px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.fillText('Actual', width - 150, 30);
+            ctx.fillStyle = '#dc3545';
+            ctx.fillText('α = 0.1 (Slow)', width - 150, 50);
+            ctx.fillStyle = '#28a745';
+            ctx.fillText('α = 0.9 (Fast)', width - 150, 70);
+        }
+
+        function drawModelComparison() {
+            const canvas = document.getElementById('modelComparisonChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate test data with trend and seasonality
+            const periods = 36;
+            const data = Array(periods).fill(0).map((_, i) => {
+                const trend = 100 + i * 1;
+                const seasonal = 20 * Math.sin(i * 2 * Math.PI / 12);
+                const noise = Math.random() * 10 - 5;
+                return trend + seasonal + noise;
+            });
+            
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            const xStep = graphWidth / (periods - 1);
+            const yMin = Math.min(...data) - 20;
+            const yMax = Math.max(...data) + 20;
+            const yScale = graphHeight / (yMax - yMin);
+            
+            // Draw actual data
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Draw points
+            ctx.fillStyle = '#333';
+            data.forEach((value, i) => {
+                const x = padding + i * xStep;
+                const y = height - padding - (value - yMin) * yScale;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+            
+            // Title
+            ctx.font = '16px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText('Test Data: Trend + Seasonality + Noise', width / 2, padding - 20);
+        }
+
+        function drawMethodHierarchy() {
+            const canvas = document.getElementById('methodHierarchy');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw hierarchy diagram
+            const centerX = width / 2;
+            const boxWidth = 180;
+            const boxHeight = 50;
+            const verticalGap = 60;
+            
+            // Simple ES
+            ctx.fillStyle = '#e8f4f8';
+            ctx.fillRect(centerX - boxWidth / 2, 30, boxWidth, boxHeight);
+            ctx.strokeStyle = '#007bff';
+            ctx.strokeRect(centerX - boxWidth / 2, 30, boxWidth, boxHeight);
+            ctx.fillStyle = '#333';
+            ctx.font = '16px Helvetica';
+            ctx.textAlign = 'center';
+            ctx.fillText('Simple ES', centerX, 60);
+            ctx.font = '12px Helvetica';
+            ctx.fillText('(Level only)', centerX, 75);
+            
+            // Arrow down
+            ctx.strokeStyle = '#666';
+            ctx.beginPath();
+            ctx.moveTo(centerX, 80);
+            ctx.lineTo(centerX, 110);
+            ctx.moveTo(centerX - 5, 105);
+            ctx.lineTo(centerX, 110);
+            ctx.lineTo(centerX + 5, 105);
+            ctx.stroke();
+            
+            // Holt's
+            ctx.fillStyle = '#fff3cd';
+            ctx.fillRect(centerX - boxWidth / 2, 110, boxWidth, boxHeight);
+            ctx.strokeStyle = '#ffc107';
+            ctx.strokeRect(centerX - boxWidth / 2, 110, boxWidth, boxHeight);
+            ctx.fillStyle = '#333';
+            ctx.font = '16px Helvetica';
+            ctx.fillText("Holt's Method", centerX, 140);
+            ctx.font = '12px Helvetica';
+            ctx.fillText('(+ Trend)', centerX, 155);
+            
+            // Arrow down
+            ctx.strokeStyle = '#666';
+            ctx.beginPath();
+            ctx.moveTo(centerX, 160);
+            ctx.lineTo(centerX, 190);
+            ctx.moveTo(centerX - 5, 185);
+            ctx.lineTo(centerX, 190);
+            ctx.lineTo(centerX + 5, 185);
+            ctx.stroke();
+            
+            // Holt-Winters
+            ctx.fillStyle = '#d4edda';
+            ctx.fillRect(centerX - boxWidth / 2, 190, boxWidth, boxHeight);
+            ctx.strokeStyle = '#28a745';
+            ctx.strokeRect(centerX - boxWidth / 2, 190, boxWidth, boxHeight);
+            ctx.fillStyle = '#333';
+            ctx.font = '16px Helvetica';
+            ctx.fillText('Holt-Winters', centerX, 220);
+            ctx.font = '12px Helvetica';
+            ctx.fillText('(+ Seasonality)', centerX, 235);
+            
+            // Side annotations
+            ctx.font = '14px Helvetica';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#666';
+            ctx.fillText('1 parameter (α)', centerX + boxWidth / 2 + 20, 55);
+            ctx.fillText('2 parameters (α, β)', centerX + boxWidth / 2 + 20, 135);
+            ctx.fillText('3 parameters (α, β, γ)', centerX + boxWidth / 2 + 20, 215);
+        }
+
+        function checkAnswer(button, isCorrect) {
+            const options = button.parentElement.querySelectorAll('.quiz-option');
+            options.forEach(opt => {
+                opt.classList.remove('correct', 'incorrect');
+                opt.disabled = true;
+            });
+            
+            if (isCorrect) {
+                button.classList.add('correct');
+            } else {
+                button.classList.add('incorrect');
+            }
+        }
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
