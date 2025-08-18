@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA4400 Week 6: Advanced Time Series Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        .slide h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            font-weight: 300;
+        }
+        
+        .slide h2 {
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            color: #34495e;
+            font-weight: 300;
+        }
+        
+        .slide h3 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #2980b9;
+            font-weight: 400;
+        }
+        
+        .slide p, .slide li {
+            font-size: 1.3em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            max-width: 900px;
+        }
+        
+        .slide ul {
+            text-align: left;
+            max-width: 800px;
+        }
+        
+        .slide li {
+            margin-bottom: 12px;
+            padding-left: 10px;
+        }
+        
+        .recap-box {
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 5px;
+            max-width: 800px;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1000px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .comparison-item h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .exercise-box {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            max-width: 900px;
+        }
+        
+        .formula-box {
+            background: #e8f4fd;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+        
+        .data-table {
+            border-collapse: collapse;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .input-field {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            width: 80px;
+            text-align: center;
+            font-size: 1em;
+        }
+        
+        .input-field.correct {
+            border-color: #27ae60;
+            background: #d5f4e6;
+        }
+        
+        .input-field.incorrect {
+            border-color: #e74c3c;
+            background: #fdeaea;
+        }
+        
+        .check-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px;
+        }
+        
+        .check-btn:hover {
+            background: #2980b9;
+        }
+        
+        .chart-container {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 800px;
+            height: 400px;
+            position: relative;
+        }
+        
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .quiz-container {
+            max-width: 800px;
+            margin: 20px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+        }
+        
+        .quiz-question {
+            font-size: 1.4em;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .quiz-options {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .quiz-option {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        
+        .quiz-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        .quiz-option.selected {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        .quiz-option.correct {
+            border-color: #27ae60;
+            background: #d5f4e6;
+        }
+        
+        .quiz-option.incorrect {
+            border-color: #e74c3c;
+            background: #fdeaea;
+        }
+        
+        .quiz-feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .quiz-feedback.correct {
+            background: #d5f4e6;
+            border: 2px solid #27ae60;
+            color: #27ae60;
+        }
+        
+        .quiz-feedback.incorrect {
+            background: #fdeaea;
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+        }
+        
+        .quiz-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        
+        .quiz-btn:hover {
+            background: #2980b9;
+        }
+        
+        .quiz-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            padding: 12px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #a8e6cf 0%, #dcedc1 100%);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+            max-width: 1200px;
+        }
+        
+        .visualization-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="slideNumber">1</span> / <span id="totalSlides">32</span>
+        </div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>DATA4400: Data-Driven Forecasting</h1>
+            <h2>Week 6: Advanced Time Series Analysis</h2>
+            <div class="recap-box">
+                <h3>Stationarity, Random Walks, and ARMA Models</h3>
+                <p>Understanding the foundations of modern time series modeling</p>
+            </div>
+            <p style="margin-top: 40px; color: #7f8c8d; font-size: 1.1em;">
+                Kaplan Business School Australia<br>
+                Advanced Forecasting Techniques
+            </p>
+        </div>
+
+        <!-- Slide 2: Learning Outcomes -->
+        <div class="slide">
+            <h2>Workshop Learning Outcomes</h2>
+            <ul style="font-size: 1.4em; line-height: 1.8;">
+                <li><strong>Review</strong> time series models and stationarity concepts</li>
+                <li><strong>Explore</strong> the application of random walks in forecasting</li>
+                <li><strong>Apply</strong> Autoregressive (AR) models and ARMA models</li>
+                <li><strong>Investigate</strong> ARMA model identification techniques</li>
+                <li><strong>Analyze</strong> autocorrelation patterns via practical case studies</li>
+            </ul>
+            <div class="recap-box">
+                <p><strong>Foundation:</strong> Building on smoothing techniques to advanced statistical models</p>
+            </div>
+        </div>
+
+        <!-- Slide 3: Smoothing Techniques Recap -->
+        <div class="slide">
+            <h2>Recap: Smoothing Techniques</h2>
+            <div class="recap-box">
+                <h3>What is Smoothing?</h3>
+                <p>Smoothing techniques reduce <span class="highlight">noise</span> and <span class="highlight">irregular fluctuations</span> in time series data to reveal underlying patterns and trends.</p>
+            </div>
+            <div class="two-column">
+                <div>
+                    <h3>Key Benefits:</h3>
+                    <ul>
+                        <li>Reduces random variation</li>
+                        <li>Highlights trends and patterns</li>
+                        <li>Improves forecast accuracy</li>
+                        <li>Simplifies data interpretation</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Common Applications:</h3>
+                    <ul>
+                        <li>Sales forecasting</li>
+                        <li>Economic indicators</li>
+                        <li>Stock price analysis</li>
+                        <li>Seasonal adjustments</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Moving Average Recap -->
+        <div class="slide">
+            <h2>Moving Average (MA) Technique</h2>
+            <div class="formula-box">
+                MA(k) = (Y<sub>t</sub> + Y<sub>t-1</sub> + ... + Y<sub>t-k+1</sub>) / k
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Advantages</h4>
+                    <ul>
+                        <li>Simple to calculate</li>
+                        <li>Effective noise reduction</li>
+                        <li>Good for trend identification</li>
+                        <li>No parameter estimation needed</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Limitations</h4>
+                    <ul>
+                        <li>Lags behind actual data</li>
+                        <li>All observations weighted equally</li>
+                        <li>Poor at capturing recent changes</li>
+                        <li>Requires sufficient historical data</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Exponential Smoothing Recap -->
+        <div class="slide">
+            <h2>Exponential Smoothing (ES) Technique</h2>
+            <div class="formula-box">
+                F<sub>t+1</sub> = αY<sub>t</sub> + (1-α)F<sub>t</sub>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Key Features</h4>
+                    <ul>
+                        <li><strong>α (alpha):</strong> Smoothing parameter (0 < α < 1)</li>
+                        <li><strong>Higher α:</strong> More responsive to recent data</li>
+                        <li><strong>Lower α:</strong> More smoothing effect</li>
+                        <li><strong>Weighted average:</strong> Recent data gets more weight</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>When to Use</h4>
+                    <ul>
+                        <li>Data with no clear trend</li>
+                        <li>Short-term forecasting</li>
+                        <li>Rapidly changing conditions</li>
+                        <li>Limited historical data</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Exercise Calculation -->
+        <div class="slide">
+            <h2>Exercise: Fill in the Calculations</h2>
+            <div class="exercise-box">
+                <h3>Compare 3-Period MA vs Exponential Smoothing (α=0.3)</h3>
+                <table class="data-table">
+                    <tr>
+                        <th>Month</th>
+                        <th>Actual Sales</th>
+                        <th>MA(3) Forecast</th>
+                        <th>MA Error</th>
+                        <th>SES (α=0.3)</th>
+                        <th>SES Error</th>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>120</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>120</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>135</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td><input type="number" class="input-field" id="ses2" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="sesErr2" placeholder="?"></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>118</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td><input type="number" class="input-field" id="ses3" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="sesErr3" placeholder="?"></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>142</td>
+                        <td><input type="number" class="input-field" id="ma4" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="err4" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="ses4" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="sesErr4" placeholder="?"></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>128</td>
+                        <td><input type="number" class="input-field" id="ma5" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="err5" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="ses5" placeholder="?"></td>
+                        <td><input type="number" class="input-field" id="sesErr5" placeholder="?"></td>
+                    </tr>
+                </table>
+                <button class="check-btn" onclick="checkMAAnswers()">Check Answers</button>
+                <div id="maFeedback" style="margin-top: 15px; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Stationarity Introduction -->
+        <div class="slide">
+            <h2>Understanding Stationarity</h2>
+            <div class="recap-box">
+                <h3>What is Stationarity?</h3>
+                <p>A time series is <span class="highlight">stationary</span> when its statistical properties (mean, variance, autocorrelation) remain constant over time.</p>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Stationary Series</h4>
+                    <ul>
+                        <li>Constant mean over time</li>
+                        <li>Constant variance over time</li>
+                        <li>Autocorrelation depends only on lag</li>
+                        <li>No systematic change in structure</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Non-Stationary Series</h4>
+                    <ul>
+                        <li>Trending mean</li>
+                        <li>Changing variance</li>
+                        <li>Seasonal patterns</li>
+                        <li>Structural breaks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Visual Comparison of Stationary vs Non-Stationary -->
+        <div class="slide">
+            <h2>Stationary vs Non-Stationary: Visual Examples</h2>
+            <div class="two-column">
+                <div>
+                    <h3>Stationary Series</h3>
+                    <div class="chart-container">
+                        <canvas id="stationaryChart" class="chart-canvas"></canvas>
+                    </div>
+                    <p>✓ Constant mean and variance<br>✓ Predictable behavior</p>
+                </div>
+                <div>
+                    <h3>Non-Stationary Series</h3>
+                    <div class="chart-container">
+                        <canvas id="nonStationaryChart" class="chart-canvas"></canvas>
+                    </div>
+                    <p>✗ Trending behavior<br>✗ Changing variance</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Why Stationarity Matters -->
+        <div class="slide">
+            <h2>Why Stationarity Matters in Forecasting</h2>
+            <div class="recap-box">
+                <h3>Critical Importance</h3>
+                <p>Many statistical models (like ARMA) assume stationarity because it ensures <span class="highlight">reliable parameter estimation</span> and <span class="highlight">stable predictions</span>.</p>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>With Stationarity</h4>
+                    <ul>
+                        <li><strong>Stable Models:</strong> Parameters remain meaningful</li>
+                        <li><strong>Reliable Forecasts:</strong> Confidence intervals valid</li>
+                        <li><strong>Simplified Analysis:</strong> No time dependencies</li>
+                        <li><strong>Better Performance:</strong> Consistent accuracy</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Without Stationarity</h4>
+                    <ul>
+                        <li><strong>Unstable Models:</strong> Parameters change over time</li>
+                        <li><strong>Poor Forecasts:</strong> Unreliable predictions</li>
+                        <li><strong>Spurious Relationships:</strong> False correlations</li>
+                        <li><strong>Model Failure:</strong> Breakdown in assumptions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Random Walk Introduction -->
+        <div class="slide">
+            <h2>Random Walk Models</h2>
+            <div class="formula-box">
+                Simple Random Walk: Y<sub>t</sub> = Y<sub>t-1</sub> + ε<sub>t</sub>
+            </div>
+            <div class="recap-box">
+                <h3>Key Concept</h3>
+                <p>A random walk is a process where the next value equals the current value plus a random shock. Today's best forecast for tomorrow is simply today's value.</p>
+            </div>
+            <div class="visualization-box">
+                <h4>Real-World Examples:</h4>
+                <ul>
+                    <li><strong>Stock Prices:</strong> Efficient market hypothesis</li>
+                    <li><strong>Exchange Rates:</strong> Currency fluctuations</li>
+                    <li><strong>Economic Indicators:</strong> GDP, unemployment rates</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 12: Random Walk with Drift -->
+        <div class="slide">
+            <h2>Random Walk with Drift</h2>
+            <div class="formula-box">
+                Random Walk with Drift: Y<sub>t</sub> = δ + Y<sub>t-1</sub> + ε<sub>t</sub>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Simple Random Walk</h4>
+                    <ul>
+                        <li>No systematic direction</li>
+                        <li>Mean is stationary</li>
+                        <li>Variance increases over time</li>
+                        <li>δ = 0</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Random Walk with Drift</h4>
+                    <ul>
+                        <li>Systematic upward/downward trend</li>
+                        <li>Mean is non-stationary</li>
+                        <li>Both trend and variance increase</li>
+                        <li>δ ≠ 0 (drift parameter)</li>
+                    </ul>
+                </div>
+            </div>
+            <p><strong>Key Insight:</strong> Drift (δ) represents the average change per period</p>
+        </div>
+
+        <!-- Slide 13: Random Walk Properties and Visualization -->
+        <div class="slide">
+            <h2>Random Walk Properties: Visual Demonstration</h2>
+            <div class="chart-container">
+                <canvas id="randomWalkChart" class="chart-canvas"></canvas>
+            </div>
+            <div class="recap-box">
+                <h3>Understanding Lag Values</h3>
+                <p><span class="highlight">Lag</span> simply means "how many time periods back" we're looking. Think of it like this:</p>
+                <ul>
+                    <li><strong>Lag 1:</strong> Yesterday's value (1 period back)</li>
+                    <li><strong>Lag 2:</strong> Two days ago (2 periods back)</li>
+                    <li><strong>Lag 3:</strong> Three days ago (3 periods back)</li>
+                </ul>
+                <p>When we say "correlation at lag 2", we're asking: "How similar is today's value to the value from 2 periods ago?"</p>
+            </div>
+            <div class="visualization-box">
+                <h4>Stationarity Properties:</h4>
+                <ul>
+                    <li><strong>Simple Random Walk:</strong> Stationary in differences, not in levels</li>
+                    <li><strong>Random Walk with Drift:</strong> Non-stationary in both levels and differences</li>
+                    <li><strong>Variance:</strong> Increases linearly with time for both types</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 14: AR Models Introduction -->
+        <div class="slide">
+            <h2>Autoregressive (AR) Models</h2>
+            <div class="formula-box">
+                AR(1): Y<sub>t</sub> = μ + α(Y<sub>t-1</sub> - μ) + ε<sub>t</sub>
+            </div>
+            <div class="recap-box">
+                <h3>Simple Explanation</h3>
+                <p>Autoregressive models predict <span class="highlight">today's value</span> based on <span class="highlight">yesterday's values</span>. Think of it as learning from the recent past to predict the immediate future.</p>
+            </div>
+            <div class="visualization-box">
+                <h4>Intuitive Understanding:</h4>
+                <ul>
+                    <li><strong>Weather:</strong> Tomorrow's temperature depends on today's</li>
+                    <li><strong>Stock Returns:</strong> Today's performance influences tomorrow's</li>
+                    <li><strong>Sales:</strong> This month's sales predict next month's</li>
+                </ul>
+                <p><strong>Parameter α:</strong> Strength of relationship with past values (-1 < α < 1 for stationarity)</p>
+            </div>
+        </div>
+
+        <!-- Slide 15: MA Models Revisited -->
+        <div class="slide">
+            <h2>Moving Average (MA) Models in Time Series</h2>
+            <div class="formula-box">
+                MA(1): Y<sub>t</sub> = μ + ε<sub>t</sub> + β<sub>1</sub>ε<sub>t-1</sub>
+            </div>
+            <div class="recap-box">
+                <h3>Key Difference from MA Smoothing</h3>
+                <p>Unlike moving average smoothing, MA models in time series focus on <span class="highlight">past forecast errors</span> rather than past values themselves.</p>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>MA Smoothing</h4>
+                    <ul>
+                        <li>Uses past actual values</li>
+                        <li>Simple averaging technique</li>
+                        <li>Data preprocessing method</li>
+                        <li>No error term modeling</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>MA Models</h4>
+                    <ul>
+                        <li>Uses past forecast errors</li>
+                        <li>Statistical modeling approach</li>
+                        <li>Accounts for shock persistence</li>
+                        <li>Models error autocorrelation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 16: ARMA Models -->
+        <div class="slide">
+            <h2>ARMA Models: Combining AR and MA</h2>
+            <div class="formula-box">
+                ARMA(p,q): Y<sub>t</sub> = μ + Σα<sub>i</sub>(Y<sub>t-i</sub> - μ) + ε<sub>t</sub> + Σβ<sub>j</sub>ε<sub>t-j</sub>
+            </div>
+            <div class="recap-box">
+                <h3>Best of Both Worlds</h3>
+                <p>ARMA models combine the <span class="highlight">memory of past values</span> (AR component) with the <span class="highlight">impact of past shocks</span> (MA component).</p>
+            </div>
+            <div class="visualization-box">
+                <h4>Model Components:</h4>
+                <ul>
+                    <li><strong>AR(p):</strong> p past values influence current value</li>
+                    <li><strong>MA(q):</strong> q past errors influence current value</li>
+                    <li><strong>Common:</strong> ARMA(1,1), ARMA(2,1), ARMA(1,2)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 17: Model Comparison Table -->
+        <div class="slide">
+            <h2>When to Use Each Model: Comparison Guide</h2>
+            <table class="data-table" style="font-size: 1.1em;">
+                <tr>
+                    <th>Model Type</th>
+                    <th>Best Used When</th>
+                    <th>Key Characteristics</th>
+                    <th>Limitations</th>
+                </tr>
+                <tr>
+                    <td><strong>Random Walk</strong></td>
+                    <td>Efficient markets, no predictable patterns</td>
+                    <td>Current value = best forecast</td>
+                    <td>No learning from patterns</td>
+                </tr>
+                <tr>
+                    <td><strong>AR Models</strong></td>
+                    <td>Clear dependency on recent values</td>
+                    <td>Uses past values directly</td>
+                    <td>Ignores error patterns</td>
+                </tr>
+                <tr>
+                    <td><strong>MA Models</strong></td>
+                    <td>Short-term shock effects dominate</td>
+                    <td>Uses past forecast errors</td>
+                    <td>No direct value dependency</td>
+                </tr>
+                <tr>
+                    <td><strong>ARMA Models</strong></td>
+                    <td>Complex patterns with both dependencies</td>
+                    <td>Combines both approaches</td>
+                    <td>More complex to estimate</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Slide 18: Quiz 1 -->
+        <div class="slide">
+            <h2>Knowledge Check: Quiz 1</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    Which of the following best describes why stationarity is important for ARMA models?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">
+                        A) It makes the data easier to visualize and understand
+                    </div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">
+                        B) It reduces the computational complexity of model estimation
+                    </div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">
+                        C) It ensures constant statistical properties needed for reliable parameter estimation and stable predictions
+                    </div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">
+                        D) It eliminates the need for diagnostic testing of model residuals
+                    </div>
+                </div>
+                <button class="quiz-btn" onclick="showFeedback()" disabled id="quizBtn1">Submit Answer</button>
+                <div class="quiz-feedback" id="feedback1">
+                    <strong>Correct!</strong> Stationarity ensures that the mean, variance, and autocorrelation structure remain constant over time, which is crucial for ARMA models to provide reliable parameter estimates and stable forecasts.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 19: ACF and PACF Introduction -->
+        <div class="slide">
+            <h2>Model Identification: ACF and PACF</h2>
+            <div class="recap-box">
+                <h3>Diagnostic Tools</h3>
+                <p><span class="highlight">ACF (Autocorrelation Function)</span> and <span class="highlight">PACF (Partial Autocorrelation Function)</span> help us identify the appropriate ARMA model structure.</p>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>ACF (Autocorrelation Function)</h4>
+                    <ul>
+                        <li>Measures correlation at different lags</li>
+                        <li>Includes both direct and indirect effects</li>
+                        <li>Helps identify MA order (q)</li>
+                        <li>Shows overall correlation structure</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>PACF (Partial Autocorrelation Function)</h4>
+                    <ul>
+                        <li>Measures direct correlation only</li>
+                        <li>Controls for intermediate lags</li>
+                        <li>Helps identify AR order (p)</li>
+                        <li>Shows unique lag contributions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 20: ACF and PACF Pattern Recognition -->
+        <div class="slide">
+            <h2>Pattern Recognition Rules</h2>
+            <div class="visualization-box">
+                <h3>Model Identification Guidelines:</h3>
+                <table class="data-table">
+                    <tr>
+                        <th>Model Type</th>
+                        <th>ACF Pattern</th>
+                        <th>PACF Pattern</th>
+                    </tr>
+                    <tr>
+                        <td><strong>AR(p)</strong></td>
+                        <td>Gradual decay</td>
+                        <td><strong>Cuts off after lag p</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>MA(q)</strong></td>
+                        <td><strong>Cuts off after lag q</strong></td>
+                        <td>Gradual decay</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ARMA(p,q)</strong></td>
+                        <td>Gradual decay after lag (q-p)</td>
+                        <td>Gradual decay after lag (p-q)</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="recap-box">
+                <p><strong>Advanced Tip:</strong> If AR and MA terms seem to cancel each other's effects, try models with one fewer AR term and one fewer MA term.</p>
+            </div>
+        </div>
+
+        <!-- Slide 21: ACF/PACF Visual Examples -->
+        <div class="slide">
+            <h2>ACF and PACF: Visual Examples</h2>
+            <div class="two-column">
+                <div>
+                    <h3>AR(1) Process</h3>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="ar1Chart" class="chart-canvas"></canvas>
+                    </div>
+                    <p>✓ PACF cuts off after lag 1<br>✓ ACF shows gradual decay</p>
+                </div>
+                <div>
+                    <h3>MA(1) Process</h3>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="ma1Chart" class="chart-canvas"></canvas>
+                    </div>
+                    <p>✓ ACF cuts off after lag 1<br>✓ PACF shows gradual decay</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 22: MA Process Understanding -->
+        <div class="slide">
+            <h2>MA Process Deep Dive</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>MA(1) Process</h4>
+                    <div class="formula-box" style="font-size: 1.2em;">
+                        Y<sub>t</sub> = μ + ε<sub>t</sub> + β<sub>1</sub>ε<sub>t-1</sub>
+                    </div>
+                    <ul>
+                        <li><strong>Memory:</strong> Only 1 period</li>
+                        <li><strong>ACF:</strong> Non-zero at lag 1 only</li>
+                        <li><strong>PACF:</strong> Decays exponentially</li>
+                        <li><strong>Use case:</strong> Short-term shocks</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>MA(2) Process</h4>
+                    <div class="formula-box" style="font-size: 1.2em;">
+                        Y<sub>t</sub> = μ + ε<sub>t</sub> + β<sub>1</sub>ε<sub>t-1</sub> + β<sub>2</sub>ε<sub>t-2</sub>
+                    </div>
+                    <ul>
+                        <li><strong>Memory:</strong> 2 periods</li>
+                        <li><strong>ACF:</strong> Non-zero at lags 1 and 2</li>
+                        <li><strong>PACF:</strong> Complex decay pattern</li>
+                        <li><strong>Use case:</strong> Medium-term effects</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 23: MA Process Visualization -->
+        <div class="slide">
+            <h2>MA Process: Correlation Patterns</h2>
+            <div class="chart-container">
+                <canvas id="maComparisonChart" class="chart-canvas"></canvas>
+            </div>
+            <div class="recap-box">
+                <h3>Key Observations:</h3>
+                <ul>
+                    <li><strong>MA(1):</strong> Strong correlation at lag 1, then cuts off sharply</li>
+                    <li><strong>MA(2):</strong> Strong correlations at lags 1 and 2, then cuts off</li>
+                    <li><strong>Cut-off behavior:</strong> Distinguishing feature of MA processes</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 24: Quiz 2 -->
+        <div class="slide">
+            <h2>Knowledge Check: Quiz 2</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    If you observe that the PACF cuts off sharply after lag 2, while the ACF shows a gradual decay pattern, which model would you most likely choose?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption2(this, false)">
+                        A) MA(2) - because there are 2 significant lags
+                    </div>
+                    <div class="quiz-option" onclick="selectOption2(this, true)">
+                        B) AR(2) - because PACF cuts off after lag 2
+                    </div>
+                    <div class="quiz-option" onclick="selectOption2(this, false)">
+                        C) ARMA(2,2) - because both ACF and PACF show patterns
+                    </div>
+                    <div class="quiz-option" onclick="selectOption2(this, false)">
+                        D) Random Walk - because the patterns are unclear
+                    </div>
+                </div>
+                <button class="quiz-btn" onclick="showFeedback2()" disabled id="quizBtn2">Submit Answer</button>
+                <div class="quiz-feedback" id="feedback2">
+                    <strong>Correct!</strong> When PACF cuts off after lag p, it suggests an AR(p) model. The gradual decay in ACF is consistent with this interpretation.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 25: Autocorrelation Case Study Introduction -->
+        <div class="slide">
+            <h2>Autocorrelation Case Study</h2>
+            <div class="recap-box">
+                <h3>Practical Application</h3>
+                <p>Let's analyze real sales data to understand how <span class="highlight">autocorrelation patterns</span> guide our model selection process.</p>
+            </div>
+            <div class="exercise-box">
+                <h4>Case: Monthly Retail Sales</h4>
+                <p>A retail chain has 60 months of sales data. We need to:</p>
+                <ul>
+                    <li>Calculate and interpret the autocorrelation function</li>
+                    <li>Identify appropriate lag structure</li>
+                    <li>Select the best ARMA model</li>
+                    <li>Validate our choice using residual analysis</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 26: ACF Definition and Calculation -->
+        <div class="slide">
+            <h2>Autocorrelation Function: Technical Details</h2>
+            <div class="formula-box">
+                ACF(k) = Corr(Y<sub>t</sub>, Y<sub>t-k</sub>) = Cov(Y<sub>t</sub>, Y<sub>t-k</sub>) / √Var(Y<sub>t</sub>)Var(Y<sub>t-k</sub>)
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Key Properties</h4>
+                    <ul>
+                        <li><strong>Range:</strong> -1 ≤ ACF(k) ≤ 1</li>
+                        <li><strong>Symmetry:</strong> ACF(k) = ACF(-k)</li>
+                        <li><strong>Lag 0:</strong> ACF(0) = 1 always</li>
+                        <li><strong>Significance:</strong> Usually plot lags 1-20</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Interpretation Guidelines</h4>
+                    <ul>
+                        <li><strong>|ACF| > 0.3:</strong> Strong correlation</li>
+                        <li><strong>0.1 < |ACF| < 0.3:</strong> Moderate correlation</li>
+                        <li><strong>|ACF| < 0.1:</strong> Weak correlation</li>
+                        <li><strong>Confidence bands:</strong> ±1.96/√n</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 27: Case Study ACF Analysis -->
+        <div class="slide">
+            <h2>Case Study: ACF Pattern Analysis</h2>
+            <div class="chart-container">
+                <canvas id="caseStudyACF" class="chart-canvas"></canvas>
+            </div>
+            <div class="visualization-box">
+                <h4>Observations from the Plot:</h4>
+                <ul>
+                    <li><strong>Lag 1:</strong> Strong positive correlation (0.68)</li>
+                    <li><strong>Lag 2:</strong> Moderate correlation (0.31)</li>
+                    <li><strong>Lag 3+:</strong> Gradual decay within confidence bands</li>
+                    <li><strong>Pattern:</strong> Suggests AR(2) or ARMA(2,1) model</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 28: Uses of ACF in Practice -->
+        <div class="slide">
+            <h2>Practical Uses of ACF Analysis</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Model Identification</h4>
+                    <ul>
+                        <li>Determine ARMA order (p,q)</li>
+                        <li>Guide initial model selection</li>
+                        <li>Compare competing models</li>
+                        <li>Identify seasonal patterns</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Residual Diagnostics</h4>
+                    <ul>
+                        <li>Check for remaining patterns</li>
+                        <li>Validate model adequacy</li>
+                        <li>Detect specification errors</li>
+                        <li>Ensure white noise residuals</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="recap-box">
+                <h3>White Noise Check</h3>
+                <p>After fitting an ARMA model, residuals should show <span class="highlight">ACF ≈ 0 for all lags</span>, indicating the model has captured all systematic patterns.</p>
+            </div>
+        </div>
+
+        <!-- Slide 29: Quiz 3 -->
+        <div class="slide">
+            <h2>Knowledge Check: Quiz 3</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    After fitting an ARMA model to your data, you examine the ACF of the residuals and find significant correlations at lags 1 and 3. What does this suggest?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption3(this, false)">
+                        A) The model is perfect and ready for forecasting
+                    </div>
+                    <div class="quiz-option" onclick="selectOption3(this, true)">
+                        B) The model is inadequate and hasn't captured all patterns in the data
+                    </div>
+                    <div class="quiz-option" onclick="selectOption3(this, false)">
+                        C) This is normal behavior and can be ignored
+                    </div>
+                    <div class="quiz-option" onclick="selectOption3(this, false)">
+                        D) The data needs to be transformed before modeling
+                    </div>
+                </div>
+                <button class="quiz-btn" onclick="showFeedback3()" disabled id="quizBtn3">Submit Answer</button>
+                <div class="quiz-feedback" id="feedback3">
+                    <strong>Correct!</strong> Significant autocorrelations in residuals indicate that the model hasn't captured all systematic patterns. You should consider adding more AR or MA terms or trying a different model specification.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 30: Model Selection Workflow -->
+        <div class="slide">
+            <h2>Comprehensive Model Selection Workflow</h2>
+            <div class="workflow-container" style="grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                <div class="workflow-step">
+                    <h4>1. Data Preparation</h4>
+                    <p>Check stationarity, transform if needed</p>
+                </div>
+                <div class="workflow-step">
+                    <h4>2. ACF/PACF Analysis</h4>
+                    <p>Identify potential model orders</p>
+                </div>
+                <div class="workflow-step">
+                    <h4>3. Model Estimation</h4>
+                    <p>Fit candidate ARMA models</p>
+                </div>
+                <div class="workflow-step">
+                    <h4>4. Model Validation</h4>
+                    <p>Check residuals and goodness-of-fit</p>
+                </div>
+            </div>
+            <div class="recap-box">
+                <h3>Iterative Process</h3>
+                <p>Model selection is often iterative. If residual diagnostics fail, return to step 2 and consider alternative specifications.</p>
+            </div>
+        </div>
+
+        <!-- Slide 30: Real-World Applications -->
+        <div class="slide">
+            <h2>Real-World Applications of ARMA Models</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Financial Markets</h4>
+                    <ul>
+                        <li><strong>Return Modeling:</strong> Stock return volatility</li>
+                        <li><strong>Interest Rates:</strong> Term structure modeling</li>
+                        <li><strong>Risk Management:</strong> VaR calculations</li>
+                        <li><strong>Algorithmic Trading:</strong> Price prediction</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Business Operations</h4>
+                    <ul>
+                        <li><strong>Demand Forecasting:</strong> Inventory planning</li>
+                        <li><strong>Sales Prediction:</strong> Revenue planning</li>
+                        <li><strong>Resource Planning:</strong> Capacity management</li>
+                        <li><strong>Quality Control:</strong> Process monitoring</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="visualization-box">
+                <h4>Economic Indicators:</h4>
+                <ul>
+                    <li><strong>Inflation Modeling:</strong> Central bank policy</li>
+                    <li><strong>GDP Forecasting:</strong> Economic planning</li>
+                    <li><strong>Unemployment:</strong> Labor market analysis</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 31: Key Formulas Summary -->
+        <div class="slide">
+            <h2>Key Formulas: Quick Reference</h2>
+            <div class="formula-box">
+                <strong>Random Walk:</strong> Y<sub>t</sub> = Y<sub>t-1</sub> + ε<sub>t</sub>
+            </div>
+            <div class="formula-box">
+                <strong>Random Walk with Drift:</strong> Y<sub>t</sub> = δ + Y<sub>t-1</sub> + ε<sub>t</sub>
+            </div>
+            <div class="formula-box">
+                <strong>AR(1):</strong> Y<sub>t</sub> = μ + α(Y<sub>t-1</sub> - μ) + ε<sub>t</sub>
+            </div>
+            <div class="formula-box">
+                <strong>MA(1):</strong> Y<sub>t</sub> = μ + ε<sub>t</sub> + β<sub>1</sub>ε<sub>t-1</sub>
+            </div>
+            <div class="formula-box">
+                <strong>ARMA(1,1):</strong> Y<sub>t</sub> = μ + α(Y<sub>t-1</sub> - μ) + ε<sub>t</sub> + β<sub>1</sub>ε<sub>t-1</sub>
+            </div>
+        </div>
+
+        <!-- Slide 32: Summary -->
+        <div class="slide">
+            <h2>Real-World Applications of ARMA Models</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Financial Markets</h4>
+                    <ul>
+                        <li><strong>Return Modeling:</strong> Stock return volatility</li>
+                        <li><strong>Interest Rates:</strong> Term structure modeling</li>
+                        <li><strong>Risk Management:</strong> VaR calculations</li>
+                        <li><strong>Algorithmic Trading:</strong> Price prediction</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Business Operations</h4>
+                    <ul>
+                        <li><strong>Demand Forecasting:</strong> Inventory planning</li>
+                        <li><strong>Sales Prediction:</strong> Revenue planning</li>
+                        <li><strong>Resource Planning:</strong> Capacity management</li>
+                        <li><strong>Quality Control:</strong> Process monitoring</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="visualization-box">
+                <h4>Economic Indicators:</h4>
+                <ul>
+                    <li><strong>Inflation Modeling:</strong> Central bank policy</li>
+                    <li><strong>GDP Forecasting:</strong> Economic planning</li>
+                    <li><strong>Unemployment:</strong> Labor market analysis</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 32: Summary -->
+        <div class="slide">
+            <h2>Session Summary</h2>
+            <div class="recap-box">
+                <h3>What We've Covered Today</h3>
+                <ul style="font-size: 1.3em;">
+                    <li>✓ Reviewed smoothing techniques and their applications</li>
+                    <li>✓ Mastered stationarity concepts and their importance</li>
+                    <li>✓ Explored random walk models and their properties</li>
+                    <li>✓ Understood AR, MA, and ARMA model structures</li>
+                    <li>✓ Learned ACF/PACF pattern recognition for model identification</li>
+                    <li>✓ Applied autocorrelation analysis to real case studies</li>
+                </ul>
+            </div>
+            <div class="visualization-box">
+                <h4>Ready for Next Week:</h4>
+                <p>You now have the foundation to tackle ARIMA models, seasonal adjustments, and advanced forecasting techniques!</p>
+            </div>
+            <p style="margin-top: 40px; color: #7f8c8d; font-size: 1.2em;">
+                Thank you for your participation!
+            </p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="nav-btn" onclick="prevSlide()" id="prevBtn">Previous</button>
+            <button class="nav-btn" onclick="nextSlide()" id="nextBtn">Next</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('totalSlides').textContent = totalSlides;
+        
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('slideNumber').textContent = currentSlide + 1;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+        
+        // Exercise Functions
+        function checkMAAnswers() {
+            const answers = {
+                ma4: 124.33,
+                err4: 17.67,
+                ma5: 131.67,
+                err5: -3.67,
+                ses2: 124.5,
+                sesErr2: 10.5,
+                ses3: 121.35,
+                sesErr3: -3.35,
+                ses4: 122.35,
+                sesErr4: 19.65,
+                ses5: 128.25,
+                sesErr5: -0.25
+            };
+            
+            let allCorrect = true;
+            let feedback = '';
+            
+            for (let key in answers) {
+                const input = document.getElementById(key);
+                if (input) {
+                    const value = parseFloat(input.value);
+                    const expected = answers[key];
+                    
+                    if (Math.abs(value - expected) < 0.5) {
+                        input.classList.add('correct');
+                        input.classList.remove('incorrect');
+                    } else {
+                        input.classList.add('incorrect');
+                        input.classList.remove('correct');
+                        allCorrect = false;
+                    }
+                }
+            }
+            
+            const feedbackEl = document.getElementById('maFeedback');
+            if (allCorrect) {
+                feedbackEl.innerHTML = '✓ Excellent! MA(3) for month 4: (120+135+118)/3 = 124.33<br>SES formula: F<sub>t+1</sub> = αY<sub>t</sub> + (1-α)F<sub>t</sub>';
+                feedbackEl.style.color = '#27ae60';
+            } else {
+                feedbackEl.innerHTML = '✗ Some answers need correction. Remember: MA(3) = average of last 3 values, SES uses α=0.3';
+                feedbackEl.style.color = '#e74c3c';
+            }
+        }
+        
+        // Quiz Functions
+        let selectedOption = null;
+        
+        function selectOption(option, isCorrect) {
+            document.querySelectorAll('.quiz-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            option.classList.add('selected');
+            selectedOption = isCorrect;
+            document.getElementById('quizBtn1').disabled = false;
+        }
+        
+        function showFeedback() {
+            const feedback = document.getElementById('feedback1');
+            const options = document.querySelectorAll('.quiz-option');
+            
+            options.forEach(option => {
+                const isCorrect = option.onclick.toString().includes('true');
+                if (isCorrect) {
+                    option.classList.add('correct');
+                } else if (option.classList.contains('selected')) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            if (selectedOption) {
+                feedback.classList.add('correct');
+            } else {
+                feedback.classList.add('incorrect');
+                feedback.innerHTML = '<strong>Incorrect.</strong> Stationarity ensures constant statistical properties (mean, variance, autocorrelation) which are essential for ARMA model reliability.';
+            }
+            feedback.style.display = 'block';
+            document.getElementById('quizBtn1').disabled = true;
+        }
+        
+        // Quiz 2 Functions
+        let selectedOption2 = null;
+        
+        function selectOption2(option, isCorrect) {
+            document.querySelectorAll('#feedback2').forEach(() => {
+                document.querySelectorAll('.quiz-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+            });
+            option.classList.add('selected');
+            selectedOption2 = isCorrect;
+            document.getElementById('quizBtn2').disabled = false;
+        }
+        
+        function showFeedback2() {
+            const feedback = document.getElementById('feedback2');
+            const options = document.querySelectorAll('.quiz-option');
+            
+            options.forEach(option => {
+                const text = option.textContent;
+                if (text.includes('AR(2)')) {
+                    option.classList.add('correct');
+                } else if (option.classList.contains('selected')) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            if (selectedOption2) {
+                feedback.classList.add('correct');
+            } else {
+                feedback.classList.add('incorrect');
+                feedback.innerHTML = '<strong>Incorrect.</strong> PACF cutting off after lag p indicates AR(p). MA models show ACF cut-off patterns.';
+            }
+            feedback.style.display = 'block';
+            document.getElementById('quizBtn2').disabled = true;
+        }
+        
+        // Quiz 3 Functions
+        let selectedOption3 = null;
+        
+        function selectOption3(option, isCorrect) {
+            document.querySelectorAll('.quiz-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            option.classList.add('selected');
+            selectedOption3 = isCorrect;
+            document.getElementById('quizBtn3').disabled = false;
+        }
+        
+        function showFeedback3() {
+            const feedback = document.getElementById('feedback3');
+            const options = document.querySelectorAll('.quiz-option');
+            
+            options.forEach(option => {
+                const text = option.textContent;
+                if (text.includes('inadequate')) {
+                    option.classList.add('correct');
+                } else if (option.classList.contains('selected')) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            if (selectedOption3) {
+                feedback.classList.add('correct');
+            } else {
+                feedback.classList.add('incorrect');
+                feedback.innerHTML = '<strong>Incorrect.</strong> Residuals should be white noise (ACF ≈ 0). Significant correlations indicate model inadequacy.';
+            }
+            feedback.style.display = 'block';
+            document.getElementById('quizBtn3').disabled = true;
+        }
+        
+        // Chart creation functions
+        function createChart(canvasId, type, data) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth || 760;
+            canvas.height = canvas.offsetHeight || 360;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Set up basic chart parameters
+            const margin = 50;
+            const chartWidth = width - 2 * margin;
+            const chartHeight = height - 2 * margin;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin, margin);
+            ctx.lineTo(margin, height - margin);
+            ctx.lineTo(width - margin, height - margin);
+            ctx.stroke();
+            
+            // Add axis labels
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Helvetica';
+            ctx.textAlign = 'center';
+            ctx.fillText('Time', width/2, height - 10);
+            ctx.save();
+            ctx.translate(15, height/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('Value', 0, 0);
+            ctx.restore();
+            
+            if (type === 'stationary') {
+                // Generate stationary data
+                const data = [];
+                for (let i = 0; i < 100; i++) {
+                    data.push(50 + 15 * Math.sin(i * 0.15) + 8 * (Math.random() - 0.5));
+                }
+                drawTimeSeries(ctx, data, margin, chartWidth, chartHeight, '#3498db', width, height);
+            } else if (type === 'nonstationary') {
+                // Generate non-stationary data with trend
+                const data = [];
+                let value = 20;
+                for (let i = 0; i < 100; i++) {
+                    value += 0.8 + 5 * (Math.random() - 0.5);
+                    data.push(value);
+                }
+                drawTimeSeries(ctx, data, margin, chartWidth, chartHeight, '#e74c3c', width, height);
+            } else if (type === 'randomwalk') {
+                // Generate multiple random walks
+                const colors = ['#3498db', '#e74c3c', '#27ae60', '#f39c12'];
+                for (let walk = 0; walk < 4; walk++) {
+                    const data = [0];
+                    for (let i = 1; i < 100; i++) {
+                        data.push(data[i-1] + 3 * (Math.random() - 0.5));
+                    }
+                    drawTimeSeries(ctx, data, margin, chartWidth, chartHeight, colors[walk], width, height);
+                }
+            } else if (type === 'acf') {
+                // Generate ACF plot
+                const lags = Array.from({length: 15}, (_, i) => i + 1);
+                const acf = lags.map(lag => 0.8 * Math.exp(-lag * 0.25) * (1 + 0.2 * Math.sin(lag * 0.5)) + 0.05 * (Math.random() - 0.5));
+                drawBarChart(ctx, lags, acf, margin, chartWidth, chartHeight, '#3498db', width, height);
+            }
+        }
+        
+        function drawTimeSeries(ctx, data, margin, chartWidth, chartHeight, color, width, height) {
+            const minVal = Math.min(...data);
+            const maxVal = Math.max(...data);
+            const range = maxVal - minVal || 1;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            for (let i = 0; i < data.length; i++) {
+                const x = margin + (i / (data.length - 1)) * chartWidth;
+                const y = margin + (1 - (data[i] - minVal) / range) * chartHeight;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Add grid lines
+            ctx.strokeStyle = '#ecf0f1';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = margin + (i / 5) * chartHeight;
+                ctx.beginPath();
+                ctx.moveTo(margin, y);
+                ctx.lineTo(margin + chartWidth, y);
+                ctx.stroke();
+            }
+        }
+        
+        function drawBarChart(ctx, labels, values, margin, chartWidth, chartHeight, color, width, height) {
+            const maxVal = Math.max(...values.map(Math.abs));
+            const barWidth = (chartWidth / labels.length) * 0.6;
+            const zeroLine = margin + chartHeight / 2;
+            
+            // Draw confidence bands
+            ctx.fillStyle = '#ecf0f1';
+            const confLevel = 0.3;
+            const confHeight = (confLevel * chartHeight) / (2 * maxVal);
+            ctx.fillRect(margin, zeroLine - confHeight, chartWidth, 2 * confHeight);
+            
+            // Draw zero line
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(margin, zeroLine);
+            ctx.lineTo(margin + chartWidth, zeroLine);
+            ctx.stroke();
+            
+            // Draw bars
+            ctx.fillStyle = color;
+            for (let i = 0; i < labels.length; i++) {
+                const x = margin + (i + 0.2) * (chartWidth / labels.length);
+                const barHeight = Math.abs(values[i]) * chartHeight / (2 * maxVal);
+                const y = values[i] >= 0 ? zeroLine - barHeight : zeroLine;
+                
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                // Add lag labels
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Helvetica';
+                ctx.textAlign = 'center';
+                ctx.fillText(labels[i].toString(), x + barWidth/2, height - margin + 20);
+                ctx.fillStyle = color;
+            }
+        }
+        
+        // Initialize charts when page loads
+        window.addEventListener('load', function() {
+            // Update total slides count
+            document.getElementById('totalSlides').textContent = slides.length;
+            
+            // Initial chart creation
+            setTimeout(() => {
+                createChart('stationaryChart', 'stationary');
+                createChart('nonStationaryChart', 'nonstationary');
+                createChart('randomWalkChart', 'randomwalk');
+                createChart('ar1Chart', 'acf');
+                createChart('ma1Chart', 'acf');
+                createChart('maComparisonChart', 'acf');
+                createChart('caseStudyACF', 'acf');
+            }, 500);
+        });
+        
+        // Re-create charts when navigating to slides with charts
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('slideNumber').textContent = currentSlide + 1;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+            
+            // Recreate charts when needed
+            setTimeout(() => {
+                if (currentSlide === 8) { // Stationary vs Non-stationary slide
+                    createChart('stationaryChart', 'stationary');
+                    createChart('nonStationaryChart', 'nonstationary');
+                } else if (currentSlide === 12) { // Random walk slide
+                    createChart('randomWalkChart', 'randomwalk');
+                } else if (currentSlide === 20) { // ACF/PACF examples
+                    createChart('ar1Chart', 'acf');
+                    createChart('ma1Chart', 'acf');
+                } else if (currentSlide === 22) { // MA comparison
+                    createChart('maComparisonChart', 'acf');
+                } else if (currentSlide === 26) { // Case study ACF
+                    createChart('caseStudyACF', 'acf');
+                }
+            }, 100);
+        }
+        
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
