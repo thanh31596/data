@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthetic Control Method - DATA5000</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        .slide h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            font-weight: 300;
+        }
+        
+        .slide h2 {
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            color: #34495e;
+            font-weight: 300;
+        }
+        
+        .slide h3 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #2980b9;
+            font-weight: 400;
+        }
+        
+        .slide p, .slide li {
+            font-size: 1.3em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            max-width: 900px;
+        }
+        
+        .slide ul {
+            text-align: left;
+            max-width: 800px;
+        }
+        
+        .slide li {
+            margin-bottom: 12px;
+            padding-left: 10px;
+        }
+        
+        .definition-box {
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 5px;
+            max-width: 800px;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1000px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .comparison-item h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .process-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            margin: 30px 0;
+        }
+        
+        .process-step {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .process-step h4 {
+            margin: 10px 0 5px 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+        
+        .synthetic-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 40px;
+            max-width: 1200px;
+        }
+        
+        .unit-box {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .treated-unit {
+            border-color: #e74c3c;
+            background: #fdeaea;
+        }
+        
+        .control-units {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .control-unit {
+            border-color: #27ae60;
+            background: #e8f5e8;
+            min-width: 120px;
+            padding: 15px;
+        }
+        
+        .synthetic-unit {
+            border-color: #9b59b6;
+            background: #f4ecf7;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .data-visualization {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 900px;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 0 20px;
+        }
+        
+        .timeline-point {
+            background: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .intervention-line {
+            position: absolute;
+            left: 60%;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #e74c3c;
+        }
+        
+        .intervention-label {
+            position: absolute;
+            left: 62%;
+            top: 10px;
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .example-box {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 900px;
+        }
+        
+        .example-box h4 {
+            color: #27ae60;
+            margin-bottom: 15px;
+        }
+        
+        .advantages-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1000px;
+            margin: 20px 0;
+        }
+        
+        .advantage-item {
+            background: #e8f5e8;
+            border-left: 4px solid #27ae60;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .limitation-item {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            padding: 12px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #a8e6cf 0%, #dcedc1 100%);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .equation-box {
+            background: #f8f9fa;
+            border: 2px solid #6c757d;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .process-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .synthetic-diagram {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .advantages-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">12</span>
+        </div>
+        
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Synthetic Control Method</h1>
+            <h2>Advanced Causal Inference for Policy Evaluation</h2>
+            <div class="definition-box">
+                <h4>Learning Objectives</h4>
+                <ul style="text-align: left;">
+                    <li>Understand the conceptual foundation of Synthetic Control Method</li>
+                    <li>Learn when and how to apply synthetic control in business contexts</li>
+                    <li>Interpret synthetic control results for policy evaluation</li>
+                    <li>Recognize advantages and limitations of the methodology</li>
+                </ul>
+            </div>
+            <p style="margin-top: 30px; font-size: 1.1em; color: #7f8c8d;">DATA5000 - Building on Causal Machine Learning Foundations</p>
+        </div>
+        
+        <!-- Slide 2: What is Synthetic Control Method -->
+        <div class="slide">
+            <h2>What is the Synthetic Control Method?</h2>
+            <div class="definition-box">
+                <p><strong>Synthetic Control Method</strong> is a statistical technique used to evaluate the causal effect of an intervention or policy when you have <span class="highlight">one treated unit</span> and multiple potential control units.</p>
+            </div>
+            <h3>Core Concept</h3>
+            <p>Instead of using a single control unit, we create a <strong>"synthetic control"</strong> - a weighted combination of multiple control units that best resembles the treated unit before the intervention.</p>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Traditional Approach</h4>
+                    <ul>
+                        <li>Find one similar control unit</li>
+                        <li>May not match perfectly</li>
+                        <li>Limited comparability</li>
+                        <li>Potential bias from mismatch</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Synthetic Control</h4>
+                    <ul>
+                        <li>Combine multiple control units</li>
+                        <li>Optimal weighted average</li>
+                        <li>Better pre-treatment fit</li>
+                        <li>More credible counterfactual</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 3: Why Do We Need Synthetic Control -->
+        <div class="slide">
+            <h2>Why Do We Need Synthetic Control?</h2>
+            <h3>The Challenge of Single-Unit Interventions</h3>
+            <div class="example-box">
+                <h4>Business Scenario</h4>
+                <p><strong>Problem:</strong> A retail company implements a new pricing strategy in their Melbourne store. How do we measure its impact on sales?</p>
+                <p><strong>Challenge:</strong> We cannot find a single store that perfectly matches Melbourne's characteristics.</p>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Common Business Cases</h4>
+                    <ul>
+                        <li>Store-specific policy changes</li>
+                        <li>Regional marketing campaigns</li>
+                        <li>City-level regulations</li>
+                        <li>Product launches in specific markets</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Research Applications</h4>
+                    <ul>
+                        <li>Economic policy evaluation</li>
+                        <li>Healthcare interventions</li>
+                        <li>Educational program assessment</li>
+                        <li>Environmental policy impact</li>
+                    </ul>
+                </div>
+            </div>
+            <p><strong>Solution:</strong> Create a synthetic Melbourne using weighted combinations of Sydney, Brisbane, Perth, and Adelaide stores.</p>
+        </div>
+        
+        <!-- Slide 4: How Synthetic Control Works -->
+        <div class="slide">
+            <h2>How Synthetic Control Works: Visual Concept</h2>
+            <div class="synthetic-diagram">
+                <div class="unit-box treated-unit">
+                    <h4>Treated Unit</h4>
+                    <p>Melbourne Store</p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">Received intervention</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="control-units">
+                    <div class="unit-box control-unit">
+                        <h4>Sydney (w₁ = 0.4)</h4>
+                    </div>
+                    <div class="unit-box control-unit">
+                        <h4>Brisbane (w₂ = 0.3)</h4>
+                    </div>
+                    <div class="unit-box control-unit">
+                        <h4>Perth (w₃ = 0.2)</h4>
+                    </div>
+                    <div class="unit-box control-unit">
+                        <h4>Adelaide (w₄ = 0.1)</h4>
+                    </div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="unit-box synthetic-unit">
+                    <h4>Synthetic Control</h4>
+                    <p>Weighted Combination</p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">Best counterfactual</p>
+                </div>
+            </div>
+            <div class="equation-box">
+                <strong>Synthetic Control Formula:</strong><br>
+                Synthetic Melbourne = 0.4×Sydney + 0.3×Brisbane + 0.2×Perth + 0.1×Adelaide<br><br>
+                Where weights (w₁, w₂, w₃, w₄) are chosen to minimize pre-intervention differences
+            </div>
+        </div>
+        
+        <!-- Slide 5: Mathematical Foundation -->
+        <div class="slide">
+            <h2>Mathematical Foundation</h2>
+            <h3>Objective: Find Optimal Weights</h3>
+            <div class="equation-box">
+                <strong>Optimization Problem:</strong><br><br>
+                Minimize: Σᵗ⁼¹ᵀ⁰ (Y₁ₜ - Σⱼ₌₂ᴶ⁺¹ wⱼ × Yⱼₜ)²<br><br>
+                Subject to: Σⱼ₌₂ᴶ⁺¹ wⱼ = 1 and wⱼ ≥ 0<br><br>
+                Where:<br>
+                • Y₁ₜ = outcome for treated unit at time t<br>
+                • Yⱼₜ = outcome for control unit j at time t<br>
+                • T⁰ = time of intervention<br>
+                • wⱼ = weight for control unit j
+            </div>
+            <div class="definition-box">
+                <p><strong>Intuition:</strong> We find weights that make the synthetic control track the treated unit as closely as possible <em>before</em> the intervention occurs.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 6: Step-by-Step Process -->
+        <div class="slide">
+            <h2>Synthetic Control: Step-by-Step Process</h2>
+            <div class="process-container">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <h4>Data Preparation</h4>
+                    <p>Collect pre- and post-intervention data for treated unit and potential controls</p>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <h4>Weight Optimization</h4>
+                    <p>Find optimal weights that minimize pre-intervention differences</p>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <h4>Synthetic Construction</h4>
+                    <p>Create synthetic control using optimized weights</p>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <h4>Pre-treatment Validation</h4>
+                    <p>Verify synthetic control fits treated unit well before intervention</p>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">5</div>
+                    <h4>Treatment Effect</h4>
+                    <p>Calculate difference between treated and synthetic units post-intervention</p>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">6</div>
+                    <h4>Inference & Testing</h4>
+                    <p>Conduct placebo tests and assess statistical significance</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 7: Business Example Setup -->
+        <div class="slide">
+            <h2>Business Example: E-commerce Pricing Strategy</h2>
+            <div class="example-box">
+                <h4>Scenario: Dynamic Pricing Implementation</h4>
+                <p><strong>Company:</strong> RetailTech Australia</p>
+                <p><strong>Intervention:</strong> Implemented AI-driven dynamic pricing in Melbourne market (January 2024)</p>
+                <p><strong>Question:</strong> Did dynamic pricing increase monthly revenue?</p>
+                <p><strong>Data:</strong> Monthly revenue data from January 2022 to June 2024</p>
+            </div>
+            <div class="data-visualization">
+                <h4>Available Control Markets</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px;">
+                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                        <strong>Sydney</strong><br>
+                        Size: Large<br>
+                        Demographics: Similar
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                        <strong>Brisbane</strong><br>
+                        Size: Medium<br>
+                        Demographics: Similar
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                        <strong>Perth</strong><br>
+                        Size: Medium<br>
+                        Demographics: Different
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                        <strong>Adelaide</strong><br>
+                        Size: Small<br>
+                        Demographics: Similar
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 8: Data Visualization Example -->
+        <div class="slide">
+            <h2>Synthetic Control Results: Revenue Impact</h2>
+            <div class="data-visualization">
+                <h4>Monthly Revenue: Melbourne vs Synthetic Control</h4>
+                <div class="chart-container">
+                    <div class="intervention-line"></div>
+                    <div class="intervention-label">Dynamic Pricing<br>Implementation</div>
+                    <!-- Simulated chart visualization -->
+                    <svg width="100%" height="100%" viewBox="0 0 800 280" style="background: white;">
+                        <!-- Grid lines -->
+                        <g stroke="#e0e0e0" stroke-width="1">
+                            <line x1="60" y1="40" x2="60" y2="240"/>
+                            <line x1="60" y1="240" x2="740" y2="240"/>
+                            <line x1="60" y1="190" x2="740" y2="190" stroke-dasharray="3,3"/>
+                            <line x1="60" y1="140" x2="740" y2="140" stroke-dasharray="3,3"/>
+                            <line x1="60" y1="90" x2="740" y2="90" stroke-dasharray="3,3"/>
+                        </g>
+                        
+                        <!-- Intervention line -->
+                        <line x1="480" y1="40" x2="480" y2="240" stroke="#e74c3c" stroke-width="3"/>
+                        
+                        <!-- Pre-intervention data (both lines similar) -->
+                        <polyline fill="none" stroke="#3498db" stroke-width="3" 
+                                 points="80,200 120,190 160,185 200,180 240,175 280,170 320,165 360,160 400,155 440,150"/>
+                        <polyline fill="none" stroke="#9b59b6" stroke-width="3" stroke-dasharray="5,5"
+                                 points="80,205 120,195 160,188 200,182 240,178 280,173 320,168 360,163 400,158 440,153"/>
+                        
+                        <!-- Post-intervention data (treated higher) -->
+                        <polyline fill="none" stroke="#3498db" stroke-width="3" 
+                                 points="480,150 520,130 560,125 600,120 640,115 680,110 720,105"/>
+                        <polyline fill="none" stroke="#9b59b6" stroke-width="3" stroke-dasharray="5,5"
+                                 points="480,153 520,155 560,158 600,160 640,162 680,165 720,167"/>
+                        
+                        <!-- Labels -->
+                        <text x="70" y="30" font-size="12" fill="#333">Revenue ($M)</text>
+                        <text x="400" y="260" font-size="12" fill="#333">Time (Months)</text>
+                        
+                        <!-- Legend -->
+                        <line x1="100" y1="20" x2="130" y2="20" stroke="#3498db" stroke-width="3"/>
+                        <text x="135" y="25" font-size="12" fill="#333">Melbourne (Treated)</text>
+                        <line x1="250" y1="20" x2="280" y2="20" stroke="#9b59b6" stroke-width="3" stroke-dasharray="5,5"/>
+                        <text x="285" y="25" font-size="12" fill="#333">Synthetic Control</text>
+                    </svg>
+                </div>
+                <p><strong>Key Finding:</strong> Dynamic pricing increased monthly revenue by approximately $15M (25% increase)</p>
+            </div>
+        </div>
+        
+        <!-- Slide 9: Interpreting Results -->
+        <div class="slide">
+            <h2>Interpreting Synthetic Control Results</h2>
+            <h3>Treatment Effect Calculation</h3>
+            <div class="equation-box">
+                <strong>Treatment Effect at time t:</strong><br>
+                Treatment Effect₍ₜ₎ = Y₁ₜ - Synthetic Control₍ₜ₎<br><br>
+                <strong>Average Treatment Effect (Post-intervention):</strong><br>
+                ATE = (1/T) × Σᵗ⁼ᵀ⁰⁺¹ᵀ (Y₁ₜ - Synthetic Control₍ₜ₎)
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>What to Look For</h4>
+                    <ul>
+                        <li><strong>Pre-treatment fit:</strong> Synthetic closely tracks treated unit</li>
+                        <li><strong>Post-treatment divergence:</strong> Clear separation after intervention</li>
+                        <li><strong>Persistent effect:</strong> Difference maintains over time</li>
+                        <li><strong>Magnitude:</strong> Economically meaningful impact</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Red Flags</h4>
+                    <ul>
+                        <li><strong>Poor pre-fit:</strong> Synthetic doesn't match before intervention</li>
+                        <li><strong>Sudden jumps:</strong> Effects appear before intervention date</li>
+                        <li><strong>Unstable weights:</strong> Few units receive most weight</li>
+                        <li><strong>Limited controls:</strong> Insufficient donor pool</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 10: Validation and Placebo Tests -->
+        <div class="slide">
+            <h2>Validation: Placebo Tests</h2>
+            <h3>Ensuring Results Are Not Due to Chance</h3>
+            <div class="definition-box">
+                <p><strong>Placebo Test Logic:</strong> Apply synthetic control to units that did NOT receive treatment. If we find similar "effects," our results may be spurious.</p>
+            </div>
+            <div class="process-container">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <h4>In-Time Placebo</h4>
+                    <p>Test intervention at different time points before actual treatment</p>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <h4>In-Space Placebo</h4>
+                    <p>Apply same analysis to control units that never received treatment</p>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <h4>Statistical Inference</h4>
+                    <p>Compare actual effect size to distribution of placebo effects</p>
+                </div>
+            </div>
+            <div class="example-box">
+                <h4>Business Example: Placebo Test Results</h4>
+                <p><strong>Finding:</strong> When we apply the same analysis to Sydney, Brisbane, Perth, and Adelaide (control cities), none show revenue increases of similar magnitude.</p>
+                <p><strong>Conclusion:</strong> Melbourne's revenue increase is likely due to dynamic pricing, not random market fluctuations.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 11: Advantages and Limitations -->
+        <div class="slide">
+            <h2>Advantages and Limitations</h2>
+            <div class="advantages-grid">
+                <div class="advantage-item">
+                    <h4>✓ Advantages</h4>
+                    <ul>
+                        <li><strong>Transparent:</strong> Clear methodology and assumptions</li>
+                        <li><strong>No parametric model:</strong> Avoids functional form assumptions</li>
+                        <li><strong>Optimal matching:</strong> Data-driven control selection</li>
+                        <li><strong>Visual interpretation:</strong> Easy to understand results</li>
+                        <li><strong>Robust inference:</strong> Built-in placebo tests</li>
+                    </ul>
+                </div>
+                <div class="limitation-item">
+                    <h4>⚠ Limitations</h4>
+                    <ul>
+                        <li><strong>Single treated unit:</strong> Cannot study multiple treatments</li>
+                        <li><strong>Long pre-period needed:</strong> Requires substantial historical data</li>
+                        <li><strong>Convex hull restriction:</strong> Synthetic unit limited by control range</li>
+                        <li><strong>Time-varying confounders:</strong> Assumes no unobserved changes</li>
+                        <li><strong>Spillover effects:</strong> Controls must be unaffected by treatment</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 12: When to Use Synthetic Control -->
+        <div class="slide">
+            <h2>When to Use Synthetic Control Method</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>Ideal Scenarios</h4>
+                    <ul>
+                        <li>Single unit receives treatment</li>
+                        <li>Multiple potential control units available</li>
+                        <li>Long pre-intervention time series</li>
+                        <li>Clear intervention timing</li>
+                        <li>No spillover between units</li>
+                        <li>Stable relationships pre-treatment</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>Business Applications</h4>
+                    <ul>
+                        <li>Store-specific interventions</li>
+                        <li>Regional policy changes</li>
+                        <li>Market entry strategies</li>
+                        <li>Product launch evaluations</li>
+                        <li>Regulatory impact assessment</li>
+                        <li>Marketing campaign effectiveness</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="example-box">
+                <h4>Implementation in Python</h4>
+                <p><strong>Libraries:</strong> Use <code>SparseSC</code> or <code>SyntheticControlMethods</code> packages</p>
+                <p><strong>Key Steps:</strong> Data preparation → Weight optimization → Effect estimation → Placebo testing</p>
+                <p><strong>Next Week:</strong> Hands-on implementation with real business data</p>
+            </div>
+            <div class="definition-box">
+                <p><strong>Remember:</strong> Synthetic Control is most powerful when combined with domain expertise and theoretical understanding of the intervention mechanism.</p>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn" onclick="previousSlide()">← Previous</button>
+            <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('total-slides').textContent = totalSlides;
+        
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            
+            // Update navigation buttons
+            document.getElementById('prev-btn').disabled = currentSlide === 0;
+            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+        
+        // Initialize
+        showSlide(0);
+        
+        // Add slide transitions
+        slides.forEach((slide, index) => {
+            slide.style.opacity = '0';
+            slide.style.transform = 'translateY(20px)';
+            slide.style.transition = 'opacity 0.5s, transform 0.5s';
+        });
+        
+        function animateSlide() {
+            const activeSlide = document.querySelector('.slide.active');
+            setTimeout(() => {
+                activeSlide.style.opacity = '1';
+                activeSlide.style.transform = 'translateY(0)';
+            }, 100);
+        }
+        
+        // Update showSlide function to include animation
+        const originalShowSlide = showSlide;
+        showSlide = function(n) {
+            const currentActiveSlide = document.querySelector('.slide.active');
+            if (currentActiveSlide) {
+                currentActiveSlide.style.opacity = '0';
+                currentActiveSlide.style.transform = 'translateY(-20px)';
+            }
+            
+            setTimeout(() => {
+                originalShowSlide(n);
+                animateSlide();
+            }, 250);
+        };
+        
+        // Initial animation
+        animateSlide();
+    </script>
+</body>
+</html>
