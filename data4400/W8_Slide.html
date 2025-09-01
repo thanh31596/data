@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA4400 Week 8: Time Series Analysis and VAR Models</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background-color: white;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .slide-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-height: 600px;
+            padding: 40px;
+            border-radius: 8px;
+        }
+        
+        .slide {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .slide.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #34495e;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        
+        h3 {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+        }
+        
+        .navigation {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            font-family: Helvetica, Arial, sans-serif;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .slide-number {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ecf0f1;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+        
+        .chart-container {
+            width: 80%;
+            height: 400px;
+            margin: 20px auto;
+        }
+        
+        .formula {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            border-left: 4px solid #3498db;
+        }
+        
+        .quiz {
+            background: #fff5b7;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #f39c12;
+        }
+        
+        .quiz-option {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .quiz-option:hover {
+            background: #f0f0f0;
+        }
+        
+        .quiz-option.selected {
+            background: #3498db;
+            color: white;
+        }
+        
+        .definition-box {
+            background: #e8f6f3;
+            border: 2px solid #16a085;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .example-box {
+            background: #fdf2e9;
+            border: 2px solid #e67e22;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .warning-box {
+            background: #fadbd8;
+            border: 2px solid #e74c3c;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .scatter-plot {
+            width: 100%;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        ul {
+            line-height: 1.6;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .video-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .video-link {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+        
+        .video-link:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="slide-number" id="slideNumber">Slide 1 of 25</div>
+
+        <!-- Slide 1: Differencing -->
+        <div class="slide active" id="slide1">
+            <h1>Week 7 Recap: Differencing</h1>
+            <div class="definition-box">
+                <h3>Definition</h3>
+                <p>Differencing is a technique used to transform a non-stationary time series into a stationary one by computing the differences between consecutive observations.</p>
+            </div>
+            <div class="formula">
+                First Difference: Δy<sub>t</sub> = y<sub>t</sub> - y<sub>t-1</sub><br>
+                Second Difference: Δ²y<sub>t</sub> = Δy<sub>t</sub> - Δy<sub>t-1</sub>
+            </div>
+            <div class="chart-container">
+                <canvas id="differencingChart"></canvas>
+            </div>
+            <ul>
+                <li>Removes trend and seasonality from time series data</li>
+                <li>Essential preprocessing step for ARIMA models</li>
+                <li>Helps achieve stationarity required for forecasting</li>
+            </ul>
+        </div>
+
+        <!-- Slide 2: ARIMA -->
+        <div class="slide" id="slide2">
+            <h1>Week 7 Recap: ARIMA Models</h1>
+            <div class="definition-box">
+                <h3>ARIMA (AutoRegressive Integrated Moving Average)</h3>
+                <p>ARIMA combines autoregression (AR), differencing (I), and moving average (MA) components to model and forecast time series data.</p>
+            </div>
+            <div class="formula">
+                ARIMA(p,d,q) where:<br>
+                • p = order of autoregression<br>
+                • d = degree of differencing<br>
+                • q = order of moving average
+            </div>
+            <div class="chart-container">
+                <canvas id="arimaChart"></canvas>
+            </div>
+            <ul>
+                <li>AR(p): Current value depends on previous p values</li>
+                <li>I(d): Differencing applied d times for stationarity</li>
+                <li>MA(q): Current error depends on previous q forecast errors</li>
+            </ul>
+        </div>
+
+        <!-- Slide 3: SARIMA -->
+        <div class="slide" id="slide3">
+            <h1>Week 7 Recap: SARIMA Models</h1>
+            <div class="definition-box">
+                <h3>SARIMA (Seasonal ARIMA)</h3>
+                <p>SARIMA extends ARIMA by adding seasonal components to handle periodic patterns in time series data.</p>
+            </div>
+            <div class="formula">
+                SARIMA(p,d,q)(P,D,Q)<sub>s</sub> where:<br>
+                • (P,D,Q) = seasonal AR, differencing, MA orders<br>
+                • s = seasonal period (e.g., 12 for monthly data)
+            </div>
+            <div class="chart-container">
+                <canvas id="sarimaChart"></canvas>
+            </div>
+            <ul>
+                <li>Captures both non-seasonal and seasonal patterns</li>
+                <li>Ideal for data with recurring seasonal behavior</li>
+                <li>Commonly used for monthly, quarterly sales forecasting</li>
+            </ul>
+        </div>
+
+        <!-- Slide 4: Unit Root Testing (ADF) -->
+        <div class="slide" id="slide4">
+            <h1>Week 7 Recap: Unit Root Testing (ADF)</h1>
+            <div class="definition-box">
+                <h3>Augmented Dickey-Fuller (ADF) Test</h3>
+                <p>Statistical test to determine if a time series has a unit root (is non-stationary) or is stationary.</p>
+            </div>
+            <div class="formula">
+                H₀: Time series has unit root (non-stationary)<br>
+                H₁: Time series is stationary<br><br>
+                If p-value < 0.05: Reject H₀ (series is stationary)
+            </div>
+            <div class="example-box">
+                <h3>Interpretation Example</h3>
+                <ul>
+                    <li><strong>ADF Statistic = -4.2, p-value = 0.001</strong><br>→ Reject H₀: Series is stationary</li>
+                    <li><strong>ADF Statistic = -1.5, p-value = 0.523</strong><br>→ Fail to reject H₀: Series is non-stationary</li>
+                </ul>
+            </div>
+            <div class="warning-box">
+                <h3>Key Point</h3>
+                <p>Always perform stationarity testing before applying ARIMA models. Non-stationary data can lead to spurious regression results.</p>
+            </div>
+        </div>
+
+        <!-- Slide 5: Quiz 1 -->
+        <div class="slide" id="slide5">
+            <h1>Quiz 1: Differencing and Stationarity</h1>
+            <div class="quiz">
+                <h3>Question: What is the primary purpose of differencing in time series analysis?</h3>
+                <div class="quiz-option" onclick="selectOption(this, false)">A) To increase the data size</div>
+                <div class="quiz-option" onclick="selectOption(this, true)">B) To make the time series stationary</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">C) To remove outliers from the data</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">D) To improve data visualization</div>
+                <div id="quiz1-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Quiz 2 -->
+        <div class="slide" id="slide6">
+            <h1>Quiz 2: ARIMA Components</h1>
+            <div class="quiz">
+                <h3>Question: In ARIMA(2,1,3), what does the middle parameter '1' represent?</h3>
+                <div class="quiz-option" onclick="selectOption(this, false)">A) Moving average order</div>
+                <div class="quiz-option" onclick="selectOption(this, true)">B) Degree of differencing</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">C) Autoregressive order</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">D) Seasonal period</div>
+                <div id="quiz2-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Quiz 3 -->
+        <div class="slide" id="slide7">
+            <h1>Quiz 3: ADF Test Interpretation</h1>
+            <div class="quiz">
+                <h3>Question: If ADF test p-value = 0.001, what can we conclude?</h3>
+                <div class="quiz-option" onclick="selectOption(this, false)">A) The series is non-stationary</div>
+                <div class="quiz-option" onclick="selectOption(this, true)">B) The series is stationary</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">C) We need more data</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">D) The test is inconclusive</div>
+                <div id="quiz3-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Today's Agenda -->
+        <div class="slide" id="slide8">
+            <h1>Week 8 Agenda: From Time Series to Relationships</h1>
+            <div class="definition-box">
+                <h2>Today's Learning Objectives</h2>
+                <ul>
+                    <li>Understand the difference between correlation and causation</li>
+                    <li>Learn about Granger causality testing</li>
+                    <li>Introduction to Vector Autoregressive (VAR) models</li>
+                    <li>Apply VAR models for multivariate forecasting</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Connection to Previous Week</h3>
+                <p>Last week we learned how to model and forecast <strong>single time series</strong> using ARIMA/SARIMA. This week, we extend our analysis to <strong>multiple interconnected time series</strong> and examine how they influence each other over time.</p>
+            </div>
+            <h3>Class Structure</h3>
+            <ul>
+                <li>Part 1: Correlation vs. Causation concepts</li>
+                <li>Part 2: Granger causality testing</li>
+                <li>Part 3: VAR models and applications</li>
+            </ul>
+        </div>
+
+        <!-- Slide 9: Correlation -->
+        <div class="slide" id="slide9">
+            <h1>Understanding Correlation</h1>
+            <div class="definition-box">
+                <h3>Correlation</h3>
+                <p>Correlation measures the strength and direction of a linear relationship between two variables. It ranges from -1 to +1.</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="correlationChart"></canvas>
+            </div>
+            <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+                <div style="text-align: center;">
+                    <h4>Positive Correlation (+0.8)</h4>
+                    <p>As X increases, Y increases</p>
+                </div>
+                <div style="text-align: center;">
+                    <h4>No Correlation (0.0)</h4>
+                    <p>No linear relationship</p>
+                </div>
+                <div style="text-align: center;">
+                    <h4>Negative Correlation (-0.7)</h4>
+                    <p>As X increases, Y decreases</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Correlation Case Study -->
+        <div class="slide" id="slide10">
+            <h1>Correlation Case Study</h1>
+            <div class="example-box">
+                <h3>Case Study: Student Study Time vs. Exam Scores</h3>
+                <div class="chart-container">
+                    <canvas id="studyChart"></canvas>
+                </div>
+                <ul>
+                    <li><strong>Correlation coefficient: r = +0.85</strong></li>
+                    <li>Strong positive correlation observed</li>
+                    <li>Students who study more hours tend to achieve higher exam scores</li>
+                    <li>However, this doesn't prove that studying <em>causes</em> higher scores</li>
+                </ul>
+            </div>
+            <div class="warning-box">
+                <h3>Important Note</h3>
+                <p>High correlation does not imply causation. There might be other factors influencing both variables.</p>
+            </div>
+        </div>
+
+        <!-- Slide 11: Spurious Correlation -->
+        <div class="slide" id="slide11">
+            <h1>Spurious Correlation: When Correlation Misleads</h1>
+            <div class="example-box">
+                <h3>Example: Real Estate Sales and Baldness</h3>
+                <p><strong>Observation:</strong> Areas with higher percentage of bald people tend to have higher real estate sales.</p>
+                <div class="chart-container">
+                    <canvas id="spuriousChart"></canvas>
+                </div>
+            </div>
+            <div class="warning-box">
+                <h3>The Reality</h3>
+                <ul>
+                    <li>Both variables are correlated with a <strong>hidden third variable: age</strong></li>
+                    <li>Older populations → more baldness</li>
+                    <li>Older populations → higher income → more real estate transactions</li>
+                    <li>Baldness itself doesn't cause real estate sales!</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 12: Correlation Cautions -->
+        <div class="slide" id="slide12">
+            <h1>Cautions in Correlation Analysis</h1>
+            <div class="warning-box">
+                <h3>Common Misunderstandings</h3>
+                <ul>
+                    <li><strong>Confounding variables:</strong> Third factors affecting both variables</li>
+                    <li><strong>Sample size effects:</strong> Small samples can show misleading correlations</li>
+                    <li><strong>Non-linear relationships:</strong> Correlation only measures linear relationships</li>
+                    <li><strong>Temporal effects:</strong> Correlation can change over time</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Famous Spurious Correlations</h3>
+                <ul>
+                    <li>Ice cream sales and drowning deaths (both peak in summer)</li>
+                    <li>Shoe size and reading ability in children (both increase with age)</li>
+                    <li>Number of firefighters and fire damage (larger fires need more firefighters)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 13: Consequences of Wrong Correlation -->
+        <div class="slide" id="slide13">
+            <h1>Consequences of Misinterpreting Correlation</h1>
+            <div class="warning-box">
+                <h3>Business and Policy Implications</h3>
+                <ul>
+                    <li><strong>Wasted Resources:</strong> Investing in factors that don't actually drive outcomes</li>
+                    <li><strong>Wrong Strategic Decisions:</strong> Basing strategies on spurious relationships</li>
+                    <li><strong>Missed Opportunities:</strong> Ignoring true causal factors</li>
+                    <li><strong>Regulatory Issues:</strong> Creating policies based on false assumptions</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Real-World Example</h3>
+                <p><strong>Scenario:</strong> A company notices high correlation between employee coffee consumption and productivity.</p>
+                <p><strong>Wrong Action:</strong> Providing free coffee to all employees expecting productivity boost.</p>
+                <p><strong>Reality:</strong> Productive employees work longer hours → drink more coffee. Coffee itself may not cause productivity.</p>
+            </div>
+        </div>
+
+        <!-- Slide 14: Introduction to Causation -->
+        <div class="slide" id="slide14">
+            <h1>Introduction to Causation</h1>
+            <div class="definition-box">
+                <h3>Causation</h3>
+                <p>Causation implies that one event (cause) directly produces or brings about another event (effect). It establishes a directional relationship where changes in the cause lead to changes in the effect.</p>
+            </div>
+            <div style="display: flex; justify-content: space-around; margin: 30px 0;">
+                <div style="text-align: center; padding: 20px; border: 2px solid #3498db; border-radius: 8px;">
+                    <h4>Correlation</h4>
+                    <p>X ↔ Y</p>
+                    <p>Bidirectional association</p>
+                </div>
+                <div style="text-align: center; padding: 20px; border: 2px solid #e74c3c; border-radius: 8px;">
+                    <h4>Causation</h4>
+                    <p>X → Y</p>
+                    <p>Unidirectional influence</p>
+                </div>
+            </div>
+            <ul>
+                <li><strong>Temporal precedence:</strong> Cause must precede effect in time</li>
+                <li><strong>Covariation:</strong> Changes in cause must relate to changes in effect</li>
+                <li><strong>Non-spuriousness:</strong> Relationship not due to third variables</li>
+            </ul>
+        </div>
+
+        <!-- Slide 15: Causation Example -->
+        <div class="slide" id="slide15">
+            <h1>Causation Example: Weather and Ice Cream Sales</h1>
+            <div class="example-box">
+                <h3>Causal Relationship Example</h3>
+                <div class="chart-container">
+                    <canvas id="causationChart"></canvas>
+                </div>
+                <p><strong>Temperature → Ice Cream Sales</strong></p>
+                <ul>
+                    <li><strong>Temporal precedence:</strong> Temperature changes precede sales changes</li>
+                    <li><strong>Mechanism:</strong> Hot weather increases desire for cooling products</li>
+                    <li><strong>Intervention test:</strong> Artificially cooling an area would reduce ice cream sales</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 16: Correlation vs Causation Confusion -->
+        <div class="slide" id="slide16">
+            <h1>Correlation vs. Causation: The Key Difference</h1>
+            <div class="definition-box">
+                <h3>Understanding the Directionality</h3>
+                <ul>
+                    <li><strong>Correlation:</strong> Symmetric, bidirectional relationship (X ↔ Y)</li>
+                    <li><strong>Causation:</strong> Asymmetric, unidirectional influence (X → Y)</li>
+                </ul>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0;">
+                <div class="example-box">
+                    <h4>Correlation Example</h4>
+                    <p><strong>Height and Weight</strong></p>
+                    <p>Taller people tend to weigh more, and heavier people tend to be taller. The relationship works in both directions due to shared genetic and developmental factors.</p>
+                </div>
+                <div class="example-box">
+                    <h4>Causation Example</h4>
+                    <p><strong>Exercise and Fitness</strong></p>
+                    <p>Regular exercise causes improved fitness. While fitness might motivate more exercise, the primary causal direction is exercise → fitness improvement.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 17: Causation Example 2 -->
+        <div class="slide" id="slide17">
+            <h1>Another Causation Example</h1>
+            <div class="example-box">
+                <h3>Education Investment and Economic Growth</h3>
+                <div class="chart-container">
+                    <canvas id="educationChart"></canvas>
+                </div>
+                <ul>
+                    <li><strong>Causal mechanism:</strong> Education → Skilled workforce → Higher productivity → Economic growth</li>
+                    <li><strong>Time lag:</strong> Education investments show economic returns after several years</li>
+                    <li><strong>Direction matters:</strong> While economic growth can fund more education, the primary causal flow is education → growth</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 18: Causation Quiz -->
+        <div class="slide" id="slide18">
+            <h1>Quiz 4: Correlation vs. Causation</h1>
+            <div class="quiz">
+                <h3>Question: Which statement best describes the difference between correlation and causation?</h3>
+                <div class="quiz-option" onclick="selectOption(this, false)">A) Correlation is stronger than causation</div>
+                <div class="quiz-option" onclick="selectOption(this, true)">B) Causation implies direction, correlation does not</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">C) Correlation requires more data than causation</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">D) They are essentially the same concept</div>
+                <div id="quiz4-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- Slide 19: Determining Causation - Counterfactual -->
+        <div class="slide" id="slide19">
+            <h1>Determining Causation: Counterfactual Reasoning</h1>
+            <div class="definition-box">
+                <h3>Counterfactual Analysis</h3>
+                <p>Counterfactual reasoning expresses what has not happened. Causal claims can be explained in terms of counterfactual conditionals of the form: "If A had not occurred, C would not have occurred"</p>
+            </div>
+            <div class="example-box">
+                <h3>Example</h3>
+                <p><strong>"If kangaroos had no tails, they would not be upright."</strong></p>
+                <p>This statement implies that kangaroo tails <em>cause</em> their upright posture. We test causation by imagining the absence of the proposed cause.</p>
+            </div>
+            <div class="formula">
+                <h4>Two Types of Reasoning for Determining Causation:</h4>
+                <ul>
+                    <li><strong>"But for" reasoning (counterfactual):</strong> But for the cause, the effect would not have occurred</li>
+                    <li><strong>"Substantial factor" reasoning:</strong> Was one event a substantial factor in causing another event?</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 20: Video and Evidence -->
+        <div class="slide" id="slide20">
+            <h1>Determining Causation with Evidence</h1>
+            <div class="video-container">
+                <h3>Understanding Causation Through Evidence</h3>
+                <a href="https://www.youtube.com/watch?v=P9TShT3xn4Q" target="_blank" class="video-link">
+                    Watch: Causation vs Correlation Explained
+                </a>
+                <p style="margin-top: 15px; font-style: italic;">Click the link above to view the explanatory video</p>
+            </div>
+            <div class="definition-box">
+                <h3>Evidence-Based Approaches</h3>
+                <ul>
+                    <li><strong>Temporal sequence:</strong> Cause must precede effect</li>
+                    <li><strong>Controlled experiments:</strong> Manipulate cause, observe effect</li>
+                    <li><strong>Natural experiments:</strong> Observe quasi-experimental conditions</li>
+                    <li><strong>Statistical controls:</strong> Account for confounding variables</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 21: Data-Driven Control Experiments -->
+        <div class="slide" id="slide21">
+            <h1>Data-Driven Control Experiments</h1>
+            <div class="example-box">
+                <h3>Randomized Controlled Trial Example</h3>
+                <p><strong>Research Question:</strong> Does a new teaching method improve student performance?</p>
+                <div class="chart-container">
+                    <canvas id="experimentChart"></canvas>
+                </div>
+                <ul>
+                    <li><strong>Control Group:</strong> Traditional teaching method (Average: 72%)</li>
+                    <li><strong>Treatment Group:</strong> New teaching method (Average: 84%)</li>
+                    <li><strong>Random assignment</strong> eliminates selection bias</li>
+                    <li><strong>Conclusion:</strong> New method causes 12-point improvement</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 22: Modern Causation Methods -->
+        <div class="slide" id="slide22">
+            <h1>Current Data-Driven Causation Methods</h1>
+            <div class="definition-box">
+                <h3>Modern Approaches to Overcome Traditional Limitations</h3>
+                <ul>
+                    <li><strong>A/B Testing:</strong> Randomized experiments for digital products</li>
+                    <li><strong>Granger Causality:</strong> Time-series based causation testing</li>
+                    <li><strong>Synthetic Control Methods:</strong> Google's CausalImpact algorithm</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Synthetic Control Example</h3>
+                <p><strong>Scenario:</strong> Measuring impact of a marketing campaign</p>
+                <div class="chart-container">
+                    <canvas id="syntheticControlChart"></canvas>
+                </div>
+                <ul>
+                    <li>Blue line: Actual sales with campaign</li>
+                    <li>Red dashed: Predicted sales without campaign (synthetic control)</li>
+                    <li>Difference shows causal impact of campaign</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 23: Quiz 5 -->
+        <div class="slide" id="slide23">
+            <h1>Quiz 5: Causation Methods</h1>
+            <div class="quiz">
+                <h3>Question: Which method is best for establishing causation in observational data?</h3>
+                <div class="quiz-option" onclick="selectOption(this, false)">A) Simple correlation analysis</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">B) Descriptive statistics</div>
+                <div class="quiz-option" onclick="selectOption(this, true)">C) Randomized controlled experiments</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">D) Data visualization</div>
+                <div id="quiz5-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- Slide 24: Clive Granger Bio -->
+        <div class="slide" id="slide24">
+            <h1>Clive Granger (1934-2009)</h1>
+            <div class="definition-box">
+                <h3>Nobel Prize Winner in Economics (2003)</h3>
+                <ul>
+                    <li><strong>British econometrician</strong> who revolutionized time series analysis</li>
+                    <li><strong>Key contribution:</strong> Developed methods for analyzing causal relationships in time series data</li>
+                    <li><strong>Granger Causality:</strong> Statistical concept of causality based on prediction improvement</li>
+                    <li><strong>Co-integration theory:</strong> Methods for analyzing long-run relationships between variables</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Impact on Time Series Analysis</h3>
+                <p>Granger's work bridged the gap between pure statistical correlation and meaningful economic causality, providing practical tools for economists and data scientists to identify directional relationships in time series data.</p>
+            </div>
+        </div>
+
+        <!-- Slide 25: Granger Causality -->
+        <div class="slide" id="slide25">
+            <h1>Granger Causality</h1>
+            <div class="definition-box">
+                <h3>Granger Causality Definition</h3>
+                <p>Variable X is said to "Granger-cause" variable Y if past values of X provide statistically significant information about future values of Y, beyond what is already contained in past values of Y alone.</p>
+            </div>
+            <div class="formula">
+                <h4>Key Principle:</h4>
+                <p>If including lagged values of X improves the prediction of Y compared to using only lagged values of Y, then X Granger-causes Y.</p>
+            </div>
+            <div class="example-box">
+                <h3>Mathematical Framework</h3>
+                <ul>
+                    <li><strong>Model 1:</strong> Y<sub>t</sub> = α + β₁Y<sub>t-1</sub> + β₂Y<sub>t-2</sub> + ... + ε<sub>t</sub></li>
+                    <li><strong>Model 2:</strong> Y<sub>t</sub> = α + β₁Y<sub>t-1</sub> + β₂Y<sub>t-2</sub> + ... + γ₁X<sub>t-1</sub> + γ₂X<sub>t-2</sub> + ... + ε<sub>t</sub></li>
+                    <li><strong>Test:</strong> If Model 2 significantly outperforms Model 1, then X Granger-causes Y</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 24: Clive Granger Bio -->
+        <div class="slide" id="slide24">
+            <h1>Clive Granger (1934-2009)</h1>
+            <div class="definition-box">
+                <h3>Nobel Prize Winner in Economics (2003)</h3>
+                <ul>
+                    <li><strong>British econometrician</strong> who revolutionized time series analysis</li>
+                    <li><strong>Key contribution:</strong> Developed methods for analyzing causal relationships in time series data</li>
+                    <li><strong>Granger Causality:</strong> Statistical concept of causality based on prediction improvement</li>
+                    <li><strong>Co-integration theory:</strong> Methods for analyzing long-run relationships between variables</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Impact on Time Series Analysis</h3>
+                <p>Granger's work bridged the gap between pure statistical correlation and meaningful economic causality, providing practical tools for economists and data scientists to identify directional relationships in time series data.</p>
+            </div>
+        </div>
+
+        <!-- Slide 25: Granger Causality -->
+        <div class="slide" id="slide25">
+            <h1>Granger Causality</h1>
+            <div class="definition-box">
+                <h3>Granger Causality Definition</h3>
+                <p>Variable X is said to "Granger-cause" variable Y if past values of X provide statistically significant information about future values of Y, beyond what is already contained in past values of Y alone.</p>
+            </div>
+            <div class="formula">
+                <h4>Key Principle:</h4>
+                <p>If including lagged values of X improves the prediction of Y compared to using only lagged values of Y, then X Granger-causes Y.</p>
+            </div>
+            <div class="example-box">
+                <h3>Mathematical Framework</h3>
+                <ul>
+                    <li><strong>Model 1:</strong> Y<sub>t</sub> = α + β₁Y<sub>t-1</sub> + β₂Y<sub>t-2</sub> + ... + ε<sub>t</sub></li>
+                    <li><strong>Model 2:</strong> Y<sub>t</sub> = α + β₁Y<sub>t-1</sub> + β₂Y<sub>t-2</sub> + ... + γ₁X<sub>t-1</sub> + γ₂X<sub>t-2</sub> + ... + ε<sub>t</sub></li>
+                    <li><strong>Test:</strong> If Model 2 significantly outperforms Model 1, then X Granger-causes Y</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 26: Granger Causality Example -->
+        <div class="slide" id="slide26">
+            <h1>Granger Causality Example</h1>
+            <div class="example-box">
+                <h3>Example: Money Supply and Inflation</h3>
+                <div class="chart-container">
+                    <canvas id="grangerChart"></canvas>
+                </div>
+                <div class="formula">
+                    <h4>Testing Process:</h4>
+                    <ul>
+                        <li><strong>Model 1:</strong> Inflation<sub>t</sub> = α + β₁Inflation<sub>t-1</sub> + β₂Inflation<sub>t-2</sub> + ε<sub>t</sub></li>
+                        <li><strong>Model 2:</strong> Inflation<sub>t</sub> = α + β₁Inflation<sub>t-1</sub> + β₂Inflation<sub>t-2</sub> + γ₁MoneySupply<sub>t-1</sub> + γ₂MoneySupply<sub>t-2</sub> + ε<sub>t</sub></li>
+                        <li><strong>F-test result:</strong> p-value = 0.023 < 0.05</li>
+                        <li><strong>Conclusion:</strong> Money supply Granger-causes inflation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 27: Using Granger Causality -->
+        <div class="slide" id="slide27">
+            <h1>Using Granger Causality</h1>
+            <div class="definition-box">
+                <h3>Applications in Forecasting</h3>
+                <ul>
+                    <li><strong>Forecasting performance improvement:</strong> Identify which variables help predict others</li>
+                    <li><strong>Variable selection:</strong> Choose relevant predictors for multivariate models</li>
+                    <li><strong>Policy analysis:</strong> Understand lead-lag relationships between economic indicators</li>
+                </ul>
+            </div>
+            <div class="warning-box">
+                <h3>Prerequisites</h3>
+                <ul>
+                    <li><strong>Data must be stationary:</strong> Apply differencing if necessary</li>
+                    <li><strong>Appropriate lag selection:</strong> Use information criteria (AIC, BIC)</li>
+                    <li><strong>Sample size considerations:</strong> Need sufficient observations for reliable tests</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Practical Steps</h3>
+                <ol>
+                    <li>Test for stationarity (ADF test)</li>
+                    <li>Select optimal lag length</li>
+                    <li>Perform Granger causality test</li>
+                    <li>Interpret results in context</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Slide 28: Granger vs Correlation in Forecasting -->
+        <div class="slide" id="slide28">
+            <h1>Granger Causality vs. Correlation in Forecasting</h1>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 30px 0;">
+                <div class="definition-box">
+                    <h4>Correlation-Based Forecasting</h4>
+                    <ul>
+                        <li>Uses contemporary relationships</li>
+                        <li>X<sub>t</sub> and Y<sub>t</sub> at same time period</li>
+                        <li>Good for nowcasting</li>
+                        <li>Limited predictive power</li>
+                    </ul>
+                </div>
+                <div class="example-box">
+                    <h4>Granger Causality Forecasting</h4>
+                    <ul>
+                        <li>Uses temporal relationships</li>
+                        <li>X<sub>t-1</sub>, X<sub>t-2</sub> predict Y<sub>t</sub></li>
+                        <li>True forecasting capability</li>
+                        <li>Can predict future values</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="forecastComparisonChart"></canvas>
+            </div>
+            <div class="warning-box">
+                <h3>Key Insight</h3>
+                <p>Granger causality provides actionable forecasting relationships, while simple correlation may not have predictive power for future periods.</p>
+            </div>
+        </div>
+
+        <!-- Slide 29: VAR Model Definition -->
+        <div class="slide" id="slide29">
+            <h1>Vector Autoregressive (VAR) Models</h1>
+            <div class="definition-box">
+                <h3>VAR Model Definition</h3>
+                <p>A Vector Autoregressive (VAR) model is a multivariate time series model where each variable is modeled as a linear function of past values of itself and past values of all other variables in the system.</p>
+            </div>
+            <div class="formula">
+                <h4>VAR(p) Model Structure:</h4>
+                <p>Y<sub>t</sub> = c + Φ₁Y<sub>t-1</sub> + Φ₂Y<sub>t-2</sub> + ... + Φ<sub>p</sub>Y<sub>t-p</sub> + ε<sub>t</sub></p>
+                <p>Where:</p>
+                <ul>
+                    <li>Y<sub>t</sub> = vector of endogenous variables at time t</li>
+                    <li>c = vector of constants</li>
+                    <li>Φᵢ = coefficient matrices for lag i</li>
+                    <li>ε<sub>t</sub> = vector of error terms</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Simple Example: 2-variable VAR(1)</h3>
+                <p>GDP<sub>t</sub> = α₁ + β₁GDP<sub>t-1</sub> + γ₁Inflation<sub>t-1</sub> + ε₁<sub>t</sub></p>
+                <p>Inflation<sub>t</sub> = α₂ + β₂GDP<sub>t-1</sub> + γ₂Inflation<sub>t-1</sub> + ε₂<sub>t</sub></p>
+            </div>
+        </div>
+
+        <!-- Slide 30: VAR Model Characteristics -->
+        <div class="slide" id="slide30">
+            <h1>Characteristics of VAR Models</h1>
+            <div class="definition-box">
+                <h3>Key Properties</h3>
+                <ul>
+                    <li><strong>Endogenous variables:</strong> All variables are treated as interdependent</li>
+                    <li><strong>Symmetric treatment:</strong> Each equation has the same lag structure</li>
+                    <li><strong>Reduced form:</strong> No contemporaneous relationships among variables</li>
+                    <li><strong>Dynamic system:</strong> Captures evolving relationships over time</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Advantages of VAR Models</h3>
+                <ul>
+                    <li>Capture complex interdependencies between multiple time series</li>
+                    <li>Useful for forecasting multiple variables simultaneously</li>
+                    <li>Can analyze impulse responses and variance decomposition</li>
+                    <li>Less restrictive than structural equation models</li>
+                </ul>
+            </div>
+            <div class="warning-box">
+                <h3>Limitations</h3>
+                <ul>
+                    <li>Require large sample sizes due to many parameters</li>
+                    <li>All variables must be stationary (or co-integrated)</li>
+                    <li>Interpretation can be challenging with many variables</li>
+                    <li>Curse of dimensionality with increasing variables</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 31: VAR Case Study -->
+        <div class="slide" id="slide31">
+            <h1>VAR Model Case Study</h1>
+            <div class="example-box">
+                <h3>Economic Indicators VAR Model</h3>
+                <p><strong>Variables:</strong> GDP Growth, Inflation Rate, Interest Rate</p>
+                <div class="chart-container">
+                    <canvas id="varCaseStudyChart"></canvas>
+                </div>
+                <div class="formula">
+                    <h4>VAR(2) Model Results:</h4>
+                    <ul>
+                        <li><strong>GDP Growth:</strong> Negatively affected by lagged inflation and interest rates</li>
+                        <li><strong>Inflation:</strong> Shows persistence and responds to GDP growth</li>
+                        <li><strong>Interest Rate:</strong> Central bank responds to both inflation and economic growth</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="definition-box">
+                <h3>Forecasting Performance</h3>
+                <p>VAR model outperforms individual ARIMA models by capturing cross-variable relationships and feedback effects in the economic system.</p>
+            </div>
+        </div>
+
+        <!-- Slide 32: BIC and Schwarz Criterion -->
+        <div class="slide" id="slide32">
+            <h1>Model Selection: BIC and Schwarz Criterion</h1>
+            <div class="definition-box">
+                <h3>Bayesian Information Criterion (BIC)</h3>
+                <p>BIC, also known as Schwarz Criterion (SC), is a model selection criterion that balances model fit with model complexity. It helps determine the optimal number of lags in VAR models.</p>
+            </div>
+            <div class="formula">
+                <h4>BIC Formula:</h4>
+                <p>BIC = -2ln(L) + k×ln(n)</p>
+                <p>Where:</p>
+                <ul>
+                    <li>L = likelihood of the model</li>
+                    <li>k = number of parameters</li>
+                    <li>n = number of observations</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Simple Explanation</h3>
+                <p>Think of BIC as a "smart judge" that evaluates models on two criteria:</p>
+                <ul>
+                    <li><strong>How well does it fit?</strong> (Lower error = better)</li>
+                    <li><strong>How complex is it?</strong> (Simpler models preferred)</li>
+                </ul>
+                <p><strong>Rule:</strong> Choose the model with the <strong>lowest BIC value</strong></p>
+            </div>
+            <div class="warning-box">
+                <h3>Why BIC for VAR Models?</h3>
+                <p>BIC penalizes complexity more heavily than AIC, making it ideal for VAR models where the number of parameters grows quickly with additional lags.</p>
+            </div>
+        </div>
+
+        <!-- Slide 33: Final Quiz -->
+        <div class="slide" id="slide33">
+            <h1>Final Quiz: VAR and Granger Causality</h1>
+            <div class="quiz">
+                <h3>Question: What is the main advantage of VAR models over univariate ARIMA models?</h3>
+                <div class="quiz-option" onclick="selectOption(this, false)">A) VAR models are simpler to interpret</div>
+                <div class="quiz-option" onclick="selectOption(this, true)">B) VAR models capture interdependencies between multiple variables</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">C) VAR models require less data</div>
+                <div class="quiz-option" onclick="selectOption(this, false)">D) VAR models are always more accurate</div>
+                <div id="quiz6-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+            <div style="margin-top: 40px; padding: 20px; background: #e8f6f3; border-radius: 8px;">
+                <h3>Course Summary</h3>
+                <ul>
+                    <li>Week 7: Individual time series analysis (ARIMA, SARIMA)</li>
+                    <li>Week 8: Relationships between time series (Correlation, Causation, VAR)</li>
+                    <li>Next week: Advanced forecasting techniques and model validation</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="navigation">
+        <button onclick="previousSlide()" id="prevBtn">Previous</button>
+        <span id="slideInfo">Slide 1 of 25</span>
+        <button onclick="nextSlide()" id="nextBtn">Next</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 33;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+            document.getElementById(`slide${n}`).classList.add('active');
+            
+            document.getElementById('slideNumber').textContent = `Slide ${n} of ${totalSlides}`;
+            document.getElementById('slideInfo').textContent = `Slide ${n} of ${totalSlides}`;
+            
+            document.getElementById('prevBtn').disabled = (n === 1);
+            document.getElementById('nextBtn').disabled = (n === totalSlides);
+            
+            // Initialize charts for current slide
+            setTimeout(() => initializeCharts(n), 100);
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        function selectOption(element, isCorrect) {
+            const options = element.parentElement.querySelectorAll('.quiz-option');
+            options.forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            const resultDiv = element.parentElement.querySelector('[id$="-result"]');
+            if (isCorrect) {
+                resultDiv.textContent = 'Correct! ✓';
+                resultDiv.style.color = 'green';
+            } else {
+                resultDiv.textContent = 'Incorrect. Try again.';
+                resultDiv.style.color = 'red';
+            }
+        }
+
+        function initializeCharts(slideNumber) {
+            switch(slideNumber) {
+                case 1:
+                    createDifferencingChart();
+                    break;
+                case 2:
+                    createARIMAChart();
+                    break;
+                case 3:
+                    createSARIMAChart();
+                    break;
+                case 9:
+                    createCorrelationChart();
+                    break;
+                case 10:
+                    createStudyChart();
+                    break;
+                case 11:
+                    createSpuriousChart();
+                    break;
+                case 15:
+                    createCausationChart();
+                    break;
+                case 17:
+                    createEducationChart();
+                    break;
+                case 21:
+                    createExperimentChart();
+                    break;
+                case 22:
+                    createSyntheticControlChart();
+                    break;
+                case 26:
+                    createGrangerChart();
+                    break;
+                case 28:
+                    createForecastComparisonChart();
+                    break;
+                case 31:
+                    createVARCaseStudyChart();
+                    break;
+            }
+        }
+
+        function createDifferencingChart() {
+            const ctx = document.getElementById('differencingChart');
+            if (!ctx) return;
+            
+            // Generate sample non-stationary data with trend
+            const originalData = [];
+            const diffData = [];
+            for (let i = 0; i < 50; i++) {
+                const trend = i * 0.5;
+                const noise = (Math.random() - 0.5) * 2;
+                const value = trend + noise + 10;
+                originalData.push(value);
+                if (i > 0) {
+                    diffData.push(value - originalData[i-1]);
+                }
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 50}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Original Series (Non-stationary)',
+                        data: originalData,
+                        borderColor: 'rgb(231, 76, 60)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Differenced Series (Stationary)',
+                        data: [null, ...diffData],
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createGrangerChart() {
+            const ctx = document.getElementById('grangerChart');
+            if (!ctx) return;
+            
+            // Generate money supply and inflation data with lagged relationship
+            const moneySupply = [];
+            const inflation = [];
+            
+            for (let i = 0; i < 24; i++) {
+                const month = i + 1;
+                const moneySup = 100 + Math.sin(month * 0.2) * 10 + (Math.random() - 0.5) * 5;
+                moneySupply.push(moneySup);
+                
+                // Inflation lags behind money supply by 2-3 periods
+                if (i > 2) {
+                    const laggedEffect = moneySupply[i-2] * 0.03;
+                    const inflationRate = 2 + laggedEffect + (Math.random() - 0.5) * 0.8;
+                    inflation.push(Math.max(0, inflationRate));
+                } else {
+                    inflation.push(2 + (Math.random() - 0.5) * 0.8);
+                }
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `Month ${i + 1}`),
+                    datasets: [{
+                        label: 'Money Supply Growth (%)',
+                        data: moneySupply,
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    }, {
+                        label: 'Inflation Rate (%)',
+                        data: inflation,
+                        borderColor: 'rgb(231, 76, 60)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Money Supply Growth (%)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Inflation Rate (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        function createForecastComparisonChart() {
+            const ctx = document.getElementById('forecastComparisonChart');
+            if (!ctx) return;
+            
+            // Generate observed data and different forecast types
+            const observed = [];
+            const correlationForecast = [];
+            const grangerForecast = [];
+            
+            for (let i = 0; i < 20; i++) {
+                const trend = i * 0.5;
+                const seasonal = Math.sin(i * 0.5) * 3;
+                const noise = (Math.random() - 0.5) * 2;
+                observed.push(trend + seasonal + noise + 50);
+            }
+            
+            // Correlation-based forecast (less accurate, doesn't capture temporal structure)
+            for (let i = 20; i < 30; i++) {
+                const trend = i * 0.5;
+                const seasonal = Math.sin(i * 0.5) * 3;
+                const noise = (Math.random() - 0.5) * 4; // More noise, less accurate
+                correlationForecast.push(trend + seasonal + noise + 50);
+            }
+            
+            // Granger-based forecast (more accurate, captures temporal patterns)
+            for (let i = 20; i < 30; i++) {
+                const trend = i * 0.5;
+                const seasonal = Math.sin(i * 0.5) * 3;
+                const noise = (Math.random() - 0.5) * 1.5; // Less noise, more accurate
+                grangerForecast.push(trend + seasonal + noise + 50);
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 30}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Observed Data',
+                        data: [...observed, ...Array(10).fill(null)],
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Correlation-Based Forecast',
+                        data: [...Array(20).fill(null), ...correlationForecast],
+                        borderColor: 'rgb(231, 76, 60)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderDash: [10, 5],
+                        tension: 0.1
+                    }, {
+                        label: 'Granger Causality Forecast',
+                        data: [...Array(20).fill(null), ...grangerForecast],
+                        borderColor: 'rgb(46, 204, 113)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        borderDash: [5, 5],
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createVARCaseStudyChart() {
+            const ctx = document.getElementById('varCaseStudyChart');
+            if (!ctx) return;
+            
+            // Generate VAR system data for GDP, Inflation, and Interest Rate
+            const gdpGrowth = [];
+            const inflation = [];
+            const interestRate = [];
+            
+            for (let i = 0; i < 24; i++) {
+                const quarter = i + 1;
+                
+                // GDP Growth (affected by lagged inflation and interest rates)
+                let gdp = 3 + Math.sin(quarter * 0.3) * 1.5;
+                if (i > 1) {
+                    gdp -= inflation[i-1] * 0.2; // Negative effect of inflation
+                    gdp -= interestRate[i-1] * 0.3; // Negative effect of high interest rates
+                }
+                gdp += (Math.random() - 0.5) * 1;
+                gdpGrowth.push(Math.max(0, gdp));
+                
+                // Inflation (shows persistence and responds to GDP growth)
+                let infl = 2.5;
+                if (i > 0) {
+                    infl += inflation[i-1] * 0.4; // Persistence
+                    infl += gdpGrowth[i] * 0.15; // GDP effect on inflation
+                }
+                infl += (Math.random() - 0.5) * 0.8;
+                inflation.push(Math.max(0, infl));
+                
+                // Interest Rate (central bank reaction function)
+                let rate = 5;
+                if (i > 0) {
+                    rate += (inflation[i] - 2.5) * 0.5; // Taylor rule: respond to inflation
+                    rate += gdpGrowth[i] * 0.2; // Respond to growth
+                }
+                rate += (Math.random() - 0.5) * 0.5;
+                interestRate.push(Math.max(0, rate));
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `Q${i + 1}`),
+                    datasets: [{
+                        label: 'GDP Growth (%)',
+                        data: gdpGrowth,
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Inflation Rate (%)',
+                        data: inflation,
+                        borderColor: 'rgb(231, 76, 60)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Interest Rate (%)',
+                        data: interestRate,
+                        borderColor: 'rgb(46, 204, 113)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Rate (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Quarter'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createARIMAChart() {
+            const ctx = document.getElementById('arimaChart');
+            if (!ctx) return;
+            
+            // Generate ARIMA forecast example
+            const observed = [];
+            const forecast = [];
+            
+            // Generate observed data (with some pattern)
+            for (let i = 0; i < 30; i++) {
+                const seasonal = Math.sin(i * 0.3) * 2;
+                const trend = i * 0.1;
+                const noise = (Math.random() - 0.5) * 1.5;
+                observed.push(seasonal + trend + noise + 20);
+            }
+            
+            // Generate forecast (continuing the pattern)
+            for (let i = 30; i < 40; i++) {
+                const seasonal = Math.sin(i * 0.3) * 2;
+                const trend = i * 0.1;
+                forecast.push(seasonal + trend + 20);
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 40}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Observed Data',
+                        data: [...observed, ...Array(10).fill(null)],
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'ARIMA Forecast',
+                        data: [...Array(30).fill(null), ...forecast],
+                        borderColor: 'rgb(231, 76, 60)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.1,
+                        borderDash: [5, 5]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSARIMAChart() {
+            const ctx = document.getElementById('sarimaChart');
+            if (!ctx) return;
+            
+            // Generate seasonal data
+            const data = [];
+            for (let i = 0; i < 48; i++) {
+                const seasonal = Math.sin(i * Math.PI / 6) * 5; // 12-month seasonality
+                const trend = i * 0.2;
+                const noise = (Math.random() - 0.5) * 2;
+                data.push(seasonal + trend + noise + 50);
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 48}, (_, i) => `Month ${i + 1}`),
+                    datasets: [{
+                        label: 'Seasonal Time Series',
+                        data: data,
+                        borderColor: 'rgb(46, 204, 113)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Sales ($000)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCorrelationChart() {
+            const ctx = document.getElementById('correlationChart');
+            if (!ctx) return;
+            
+            // Generate three correlation scenarios
+            const positive = [];
+            const negative = [];
+            const none = [];
+            
+            for (let i = 0; i < 30; i++) {
+                const x = i;
+                // Positive correlation
+                positive.push({x: x, y: x * 0.8 + (Math.random() - 0.5) * 5 + 10});
+                // Negative correlation  
+                negative.push({x: x + 35, y: -x * 0.7 + (Math.random() - 0.5) * 4 + 40});
+                // No correlation
+                none.push({x: x + 70, y: (Math.random() - 0.5) * 20 + 25});
+            }
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Positive Correlation (r = +0.8)',
+                        data: positive,
+                        backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                        borderColor: 'rgb(52, 152, 219)'
+                    }, {
+                        label: 'Negative Correlation (r = -0.7)',
+                        data: negative,
+                        backgroundColor: 'rgba(231, 76, 60, 0.6)',
+                        borderColor: 'rgb(231, 76, 60)'
+                    }, {
+                        label: 'No Correlation (r = 0.0)',
+                        data: none,
+                        backgroundColor: 'rgba(149, 165, 166, 0.6)',
+                        borderColor: 'rgb(149, 165, 166)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Variable X'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Variable Y'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createStudyChart() {
+            const ctx = document.getElementById('studyChart');
+            if (!ctx) return;
+            
+            const studyData = [];
+            for (let i = 0; i < 40; i++) {
+                const studyHours = Math.random() * 8 + 1;
+                const examScore = studyHours * 8 + (Math.random() - 0.5) * 15 + 30;
+                studyData.push({x: studyHours, y: Math.max(0, Math.min(100, examScore))});
+            }
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Study Hours vs Exam Score',
+                        data: studyData,
+                        backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                        borderColor: 'rgb(52, 152, 219)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Study Hours per Week'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Exam Score (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSpuriousChart() {
+            const ctx = document.getElementById('spuriousChart');
+            if (!ctx) return;
+            
+            const spuriousData = [];
+            for (let i = 0; i < 30; i++) {
+                const age = Math.random() * 40 + 30; // Age 30-70
+                const baldness = (age - 30) * 2 + (Math.random() - 0.5) * 10;
+                const realEstateSales = (age - 30) * 1.5 + (Math.random() - 0.5) * 8 + 20;
+                spuriousData.push({x: Math.max(0, baldness), y: Math.max(0, realEstateSales)});
+            }
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Baldness % vs Real Estate Sales',
+                        data: spuriousData,
+                        backgroundColor: 'rgba(231, 76, 60, 0.6)',
+                        borderColor: 'rgb(231, 76, 60)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Baldness Percentage'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Real Estate Sales (units)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCausationChart() {
+            const ctx = document.getElementById('causationChart');
+            if (!ctx) return;
+            
+            const tempData = [];
+            const salesData = [];
+            
+            for (let i = 0; i < 12; i++) {
+                const month = i + 1;
+                const temp = 15 + Math.sin((month - 1) * Math.PI / 6) * 15; // Seasonal temperature
+                const sales = (temp - 5) * 2 + (Math.random() - 0.5) * 10;
+                tempData.push(temp);
+                salesData.push(Math.max(0, sales));
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: tempData,
+                        borderColor: 'rgb(231, 76, 60)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    }, {
+                        label: 'Ice Cream Sales (000 units)',
+                        data: salesData,
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Ice Cream Sales'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        function createEducationChart() {
+            const ctx = document.getElementById('educationChart');
+            if (!ctx) return;
+            
+            const educationData = [];
+            const growthData = [];
+            
+            for (let i = 0; i < 10; i++) {
+                const year = 2015 + i;
+                const education = 2 + i * 0.3 + (Math.random() - 0.5) * 0.5;
+                const growth = education * 1.2 + (Math.random() - 0.5) * 1 + 1;
+                educationData.push(education);
+                growthData.push(Math.max(0, growth));
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => 2015 + i),
+                    datasets: [{
+                        label: 'Education Investment (% GDP)',
+                        data: educationData,
+                        borderColor: 'rgb(46, 204, 113)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    }, {
+                        label: 'Economic Growth (%)',
+                        data: growthData,
+                        borderColor: 'rgb(155, 89, 182)',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Education Investment (% GDP)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Economic Growth (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        function createExperimentChart() {
+            const ctx = document.getElementById('experimentChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Control Group\n(Traditional Method)', 'Treatment Group\n(New Method)'],
+                    datasets: [{
+                        label: 'Average Exam Score (%)',
+                        data: [72, 84],
+                        backgroundColor: [
+                            'rgba(149, 165, 166, 0.6)',
+                            'rgba(52, 152, 219, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgb(149, 165, 166)',
+                            'rgb(52, 152, 219)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Average Score (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSyntheticControlChart() {
+            const ctx = document.getElementById('syntheticControlChart');
+            if (!ctx) return;
+            
+            const actualSales = [];
+            const syntheticControl = [];
+            
+            for (let i = 0; i < 30; i++) {
+                const baseTrend = i * 0.5 + 20;
+                const noise = (Math.random() - 0.5) * 2;
+                
+                if (i < 15) {
+                    // Before intervention
+                    const value = baseTrend + noise;
+                    actualSales.push(value);
+                    syntheticControl.push(value);
+                } else {
+                    // After intervention
+                    actualSales.push(baseTrend + noise + 8); // Campaign effect
+                    syntheticControl.push(baseTrend + noise);
+                }
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 30}, (_, i) => `Week ${i + 1}`),
+                    datasets: [{
+                        label: 'Actual Sales (with campaign)',
+                        data: actualSales,
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Synthetic Control (predicted without campaign)',
+                        data: syntheticControl,
+                        borderColor: 'rgb(231, 76, 60)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderDash: [5, 5],
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Sales ($000)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: 15,
+                                    xMax: 15,
+                                    borderColor: 'rgb(255, 99, 132)',
+                                    borderWidth: 2,
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize first slide
+        document.addEventListener('DOMContentLoaded', function() {
+            showSlide(1);
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+    </script>
+</body>
+</html>
