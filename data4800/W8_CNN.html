@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNN Data Flow Animation Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #2d3748;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 2px solid #e2e8f0;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        
+        .demo-controls {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+        }
+        
+        .demo-btn {
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .demo-btn:hover {
+            background: #1e40af;
+        }
+        
+        .demo-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .demo-btn.next-btn {
+            background: #10b981;
+            font-weight: bold;
+            padding: 15px 30px;
+        }
+        
+        .demo-btn.next-btn:hover {
+            background: #059669;
+        }
+        
+        .pipeline {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .stage {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e5e7eb;
+            opacity: 0.4;
+            transform: scale(0.98);
+            transition: all 0.5s ease;
+        }
+        
+        .stage.active {
+            opacity: 1;
+            transform: scale(1);
+            border-color: #10b981;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);
+        }
+        
+        .stage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 15px;
+        }
+        
+        .stage-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+        
+        .stage-dims {
+            background: #1e3a8a;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .stage-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .data-visual {
+            flex: 1;
+            min-width: 350px;
+        }
+        
+        .data-explanation {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .data-explanation h4 {
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .data-explanation p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        /* Input Image Grid */
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 45px);
+            gap: 2px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        
+        .pixel {
+            width: 45px;
+            height: 45px;
+            border: 1px solid #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .pixel.highlight {
+            border: 3px solid #dc2626;
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+        }
+        
+        /* Convolution Visual */
+        .conv-demo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .matrix {
+            display: grid;
+            gap: 2px;
+            padding: 15px;
+            border: 2px solid #1e3a8a;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        
+        .matrix-3x3 {
+            grid-template-columns: repeat(3, 40px);
+        }
+        
+        .matrix-6x6 {
+            grid-template-columns: repeat(6, 35px);
+        }
+        
+        .matrix-4x4 {
+            grid-template-columns: repeat(4, 40px);
+        }
+        
+        .matrix-2x2 {
+            grid-template-columns: repeat(2, 45px);
+        }
+        
+        .matrix-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            background: white;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .matrix-cell.small {
+            width: 35px;
+            height: 35px;
+            font-size: 10px;
+        }
+        
+        .kernel-cell {
+            background: #fee2e2;
+            border-color: #dc2626;
+        }
+        
+        .feature-cell {
+            background: #dcfce7;
+            border-color: #10b981;
+        }
+        
+        .matrix-cell.active {
+            background: #fbbf24;
+            transform: scale(1.05);
+            border-color: #d97706;
+            border-width: 2px;
+        }
+        
+        .operation {
+            font-size: 1.5rem;
+            color: #1e3a8a;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        
+        /* Multiple Feature Maps */
+        .feature-maps-container {
+            margin: 20px 0;
+        }
+        
+        .kernel-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kernel-demo {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            text-align: center;
+        }
+        
+        .kernel-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+        
+        .kernel-matrix {
+            display: grid;
+            grid-template-columns: repeat(3, 30px);
+            gap: 2px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .kernel-matrix .matrix-cell {
+            width: 30px;
+            height: 30px;
+            font-size: 10px;
+        }
+        
+        .result-preview {
+            font-size: 12px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        /* Feature Maps Grid */
+        .feature-maps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 10px 0;
+        }
+        
+        .feature-map {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+        
+        .feature-map-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+        
+        /* Pooling Demo */
+        .pooling-demo {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .pool-highlight {
+            background: #fef3c7 !important;
+            border-color: #f59e0b !important;
+            border-width: 2px !important;
+        }
+        
+        /* Flattened Vector */
+        .vector {
+            display: flex;
+            gap: 5px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .vector-element {
+            width: 40px;
+            height: 25px;
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 3px;
+        }
+        
+        /* Dense Layer */
+        .dense-layer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .neuron-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .neuron-group-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #374151;
+        }
+        
+        .neuron {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #1e3a8a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+        
+        .neuron.active {
+            background: #10b981;
+            transform: scale(1.1);
+        }
+        
+        .connections {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .connection-line {
+            width: 50px;
+            height: 3px;
+            background: #9ca3af;
+            transition: all 0.3s ease;
+        }
+        
+        .connection-line.active {
+            background: #10b981;
+            height: 5px;
+        }
+        
+        /* Output Predictions */
+        .predictions {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+        
+        .prediction-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            text-align: center;
+            min-width: 120px;
+            transition: all 0.3s ease;
+        }
+        
+        .prediction-box.winner {
+            border-color: #10b981;
+            background: #f0fdf4;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+        }
+        
+        .prediction-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .prediction-label {
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+        
+        .prediction-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .prediction-box.winner .prediction-value {
+            color: #10b981;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #f3f4f6;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #1e3a8a;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .step-indicator {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #374151;
+        }
+        
+        .calculation-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        
+        .animated {
+            animation: pulse 0.8s ease-in-out;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CNN Data Flow: From Pixels to Prediction</h1>
+        
+        <div class="demo-controls">
+            <button class="demo-btn" onclick="resetDemo()" id="resetBtn">Reset</button>
+            <button class="demo-btn next-btn" onclick="nextStep()" id="nextBtn">Next Step</button>
+            <button class="demo-btn" onclick="previousStep()" id="prevBtn" disabled>Previous</button>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="step-indicator" id="stepIndicator">Ready to start CNN processing... Click 'Next Step' to begin.</div>
+        </div>
+        
+        <div class="pipeline">
+            <!-- Stage 1: Input Image -->
+            <div class="stage" id="stage1">
+                <div class="stage-header">
+                    <div class="stage-title">1. Input Image</div>
+                    <div class="stage-dims">6×6×1</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-visual">
+                        <div class="input-grid" id="inputGrid">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="data-explanation">
+                        <h4>Raw Pixel Data</h4>
+                        <p>Each pixel has an intensity value from 0-255.</p>
+                        <p>This 6×6 grayscale image contains 36 numbers representing a simple pattern.</p>
+                        <p><strong>Values:</strong> Light pixels = high numbers, Dark pixels = low numbers</p>
+                        <p><strong>Pattern:</strong> Notice the vertical bright stripe in the middle columns</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 2: Convolution -->
+            <div class="stage" id="stage2">
+                <div class="stage-header">
+                    <div class="stage-title">2. Convolution Operation</div>
+                    <div class="stage-dims">4×4×1</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-visual">
+                        <div class="conv-demo">
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 10px;">Input</h4>
+                                <div class="matrix matrix-6x6" id="convInput">
+                                    <!-- Will be populated -->
+                                </div>
+                            </div>
+                            <div class="operation">⊗</div>
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 10px;">Kernel</h4>
+                                <div class="matrix matrix-3x3" id="kernel">
+                                    <!-- Will be populated -->
+                                </div>
+                            </div>
+                            <div class="operation">=</div>
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 10px;">Feature Map</h4>
+                                <div class="matrix matrix-4x4" id="featureMap">
+                                    <!-- Will be populated -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-explanation">
+                        <h4>Feature Detection</h4>
+                        <p>The 3×3 kernel slides across the input, performing element-wise multiplication and summation.</p>
+                        <p><strong>This kernel detects:</strong> Vertical edges</p>
+                        <p><strong>Process:</strong> Multiply corresponding values, sum the results</p>
+                        <p><strong>Output:</strong> High values = strong edge detected, Low values = no edge</p>
+                        <div class="calculation-box" id="convCalculation">
+                            Click 'Next Step' to see the convolution calculation...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 3: Multiple Feature Maps -->
+            <div class="stage" id="stage3">
+                <div class="stage-header">
+                    <div class="stage-title">3. Multiple Feature Maps</div>
+                    <div class="stage-dims">4×4×8</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-visual">
+                        <div class="feature-maps-container">
+                            <h4 style="text-align: center; margin-bottom: 20px;">Different Kernels Detect Different Features</h4>
+                            <div class="kernel-showcase" id="kernelShowcase">
+                                <!-- Will be populated -->
+                            </div>
+                            <div class="feature-maps" id="featureMaps">
+                                <!-- Will be populated -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-explanation">
+                        <h4>How Multiple Feature Maps Work</h4>
+                        <p>Each kernel has different weights to detect specific patterns:</p>
+                        <p>• <strong>Vertical Edge Detector:</strong> [-1,0,1] pattern</p>
+                        <p>• <strong>Horizontal Edge Detector:</strong> [-1,-1,-1; 0,0,0; 1,1,1]</p>
+                        <p>• <strong>Diagonal Detectors:</strong> For corner detection</p>
+                        <p>• <strong>Blur Detectors:</strong> For smooth regions</p>
+                        <p><strong>Key Insight:</strong> Same input, different kernels = different feature maps</p>
+                        <div class="calculation-box">
+                            Each kernel performs the same convolution operation but detects different visual patterns based on its weight configuration.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 4: Max Pooling -->
+            <div class="stage" id="stage4">
+                <div class="stage-header">
+                    <div class="stage-title">4. Max Pooling</div>
+                    <div class="stage-dims">2×2×8</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-visual">
+                        <div class="pooling-demo">
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 10px;">Before Pooling</h4>
+                                <div class="matrix matrix-4x4" id="beforePooling">
+                                    <!-- Will be populated -->
+                                </div>
+                            </div>
+                            <div class="operation">→</div>
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 10px;">After Max Pooling</h4>
+                                <div class="matrix matrix-2x2" id="afterPooling">
+                                    <!-- Will be populated -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-explanation">
+                        <h4>Dimensionality Reduction</h4>
+                        <p>Max pooling takes the maximum value from each 2×2 region.</p>
+                        <p><strong>Benefits:</strong></p>
+                        <p>• Reduces data size (4×4 → 2×2)</p>
+                        <p>• Keeps strongest features</p>
+                        <p>• Makes network more robust</p>
+                        <p>• Provides translation invariance</p>
+                        <div class="calculation-box" id="poolingCalculation">
+                            Click 'Next Step' to see max pooling in action...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 5: Flatten -->
+            <div class="stage" id="stage5">
+                <div class="stage-header">
+                    <div class="stage-title">5. Flatten to Vector</div>
+                    <div class="stage-dims">32×1</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-visual">
+                        <div class="vector" id="flattenedVector">
+                            <!-- Will be populated -->
+                        </div>
+                    </div>
+                    <div class="data-explanation">
+                        <h4>2D → 1D Conversion</h4>
+                        <p>All 2×2×8 feature maps are flattened into a single vector.</p>
+                        <p><strong>Process:</strong> Read each feature map row by row</p>
+                        <p><strong>Result:</strong> 32 numbers in a row (2×2×8 = 32)</p>
+                        <p>This vector contains all the learned features and is ready for the dense layer.</p>
+                        <p><strong>Each number represents:</strong> Strength of a specific feature at a specific location</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 6: Dense Layer -->
+            <div class="stage" id="stage6">
+                <div class="stage-header">
+                    <div class="stage-title">6. Dense Layer Processing</div>
+                    <div class="stage-dims">32 → 3</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-visual">
+                        <div class="dense-layer">
+                            <div class="neuron-group">
+                                <div class="neuron-group-title">Input Features (32)</div>
+                                <div class="neuron" id="inputNeuron1">2.1</div>
+                                <div class="neuron" id="inputNeuron2">1.3</div>
+                                <div class="neuron" id="inputNeuron3">0.9</div>
+                                <div style="font-size: 12px; color: #6b7280;">... 29 more</div>
+                            </div>
+                            <div class="connections">
+                                <div class="connection-line" id="conn1"></div>
+                                <div class="connection-line" id="conn2"></div>
+                                <div class="connection-line" id="conn3"></div>
+                            </div>
+                            <div class="neuron-group">
+                                <div class="neuron-group-title">Output Classes (3)</div>
+                                <div class="neuron" id="catNeuron">🐱</div>
+                                <div class="neuron" id="dogNeuron">🐶</div>
+                                <div class="neuron" id="birdNeuron">🐦</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-explanation">
+                        <h4>Final Classification</h4>
+                        <p>Dense layer combines all 32 features using learned weights.</p>
+                        <p><strong>Process:</strong></p>
+                        <p>1. Multiply each feature by its weight</p>
+                        <p>2. Sum all weighted features for each class</p>
+                        <p>3. Apply activation function (ReLU)</p>
+                        <p>4. Generate raw scores for each class</p>
+                        <div class="calculation-box" id="denseCalculation">
+                            Example calculation will appear here...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stage 7: Final Prediction -->
+            <div class="stage" id="stage7">
+                <div class="stage-header">
+                    <div class="stage-title">7. Final Prediction</div>
+                    <div class="stage-dims">Probabilities</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-visual">
+                        <div class="predictions" id="predictions">
+                            <div class="prediction-box" id="catPred">
+                                <div class="prediction-icon">🐱</div>
+                                <div class="prediction-label">Cat</div>
+                                <div class="prediction-value" id="catValue">0.00</div>
+                            </div>
+                            <div class="prediction-box" id="dogPred">
+                                <div class="prediction-icon">🐶</div>
+                                <div class="prediction-label">Dog</div>
+                                <div class="prediction-value" id="dogValue">0.00</div>
+                            </div>
+                            <div class="prediction-box" id="birdPred">
+                                <div class="prediction-icon">🐦</div>
+                                <div class="prediction-label">Bird</div>
+                                <div class="prediction-value" id="birdValue">0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-explanation">
+                        <h4>Softmax Probabilities</h4>
+                        <p>Raw outputs are converted to probabilities using softmax function:</p>
+                        <p><strong>Formula:</strong> P(class) = e^(score) / Σ(e^(all scores))</p>
+                        <p><strong>Properties:</strong> All probabilities sum to 1.0</p>
+                        <p><strong>Winner:</strong> Class with highest probability</p>
+                        <p><strong>Confidence:</strong> How certain the network is</p>
+                        <div class="calculation-box" id="finalResult">
+                            Final prediction will appear here...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentStep = 0;
+        const totalSteps = 7;
+        
+        // Sample data
+        const inputData = [
+            [50,  80,  150, 200, 180, 120],
+            [60,  90,  180, 220, 200, 140],
+            [70,  100, 200, 240, 220, 160],
+            [80,  110, 160, 200, 180, 130],
+            [90,  120, 120, 160, 140, 100],
+            [100, 130, 100, 140, 120, 80]
+        ];
+        
+        const kernels = {
+            vertical: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]],
+            horizontal: [[-1, -1, -1], [0, 0, 0], [1, 1, 1]],
+            diagonal1: [[-1, 0, 1], [0, 0, 0], [1, 0, -1]],
+            diagonal2: [[1, 0, -1], [0, 0, 0], [-1, 0, 1]],
+            edge: [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]],
+            blur: [[1, 1, 1], [1, 1, 1], [1, 1, 1]],
+            sharpen: [[0, -1, 0], [-1, 5, -1], [0, -1, 0]],
+            emboss: [[-2, -1, 0], [-1, 1, 1], [0, 1, 2]]
+        };
+        
+        const kernelNames = ['vertical', 'horizontal', 'diagonal1', 'diagonal2', 'edge', 'blur', 'sharpen', 'emboss'];
+        const kernelTitles = [
+            'Vertical Edge Detector',
+            'Horizontal Edge Detector', 
+            'Diagonal / Detector',
+            'Diagonal \\ Detector',
+            'Edge Enhancement',
+            'Blur Filter',
+            'Sharpen Filter',
+            'Emboss Filter'
+        ];
+        
+        // Initialize the demo
+        function initializeDemo() {
+            createInputGrid();
+            createConvolutionMatrices();
+            createKernelShowcase();
+            createFeatureMaps();
+            createPoolingDemo();
+            createFlattenedVector();
+            resetDemo();
+        }
+        
+        function createInputGrid() {
+            const grid = document.getElementById('inputGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    const pixel = document.createElement('div');
+                    pixel.className = 'pixel';
+                    pixel.textContent = inputData[i][j];
+                    pixel.style.backgroundColor = `rgb(${inputData[i][j]}, ${inputData[i][j]}, ${inputData[i][j]})`;
+                    pixel.style.color = inputData[i][j] < 128 ? 'white' : 'black';
+                    pixel.id = `pixel-${i}-${j}`;
+                    grid.appendChild(pixel);
+                }
+            }
+        }
+        
+        function createConvolutionMatrices() {
+            // Input matrix
+            const convInput = document.getElementById('convInput');
+            convInput.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell small';
+                    cell.textContent = inputData[i][j];
+                    cell.id = `conv-input-${i}-${j}`;
+                    convInput.appendChild(cell);
+                }
+            }
+            
+            // Kernel (vertical edge detector)
+            const kernelDiv = document.getElementById('kernel');
+            kernelDiv.innerHTML = '';
+            const verticalKernel = kernels.vertical;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell kernel-cell';
+                    cell.textContent = verticalKernel[i][j];
+                    kernelDiv.appendChild(cell);
+                }
+            }
+            
+            // Feature map
+            const featureMap = document.getElementById('featureMap');
+            featureMap.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell feature-cell';
+                    cell.textContent = '?';
+                    cell.id = `feature-${i}-${j}`;
+                    featureMap.appendChild(cell);
+                }
+            }
+        }
+        
+        function createKernelShowcase() {
+            const showcase = document.getElementById('kernelShowcase');
+            showcase.innerHTML = '';
+            
+            for (let k = 0; k < 8; k++) {
+                const kernelName = kernelNames[k];
+                const kernel = kernels[kernelName];
+                
+                const demoDiv = document.createElement('div');
+                demoDiv.className = 'kernel-demo';
+                
+                let matrixHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        matrixHTML += `<div class="matrix-cell kernel-cell">${kernel[i][j]}</div>`;
+                    }
+                }
+                
+                // Calculate a sample result
+                const sampleResult = calculateConvolution(inputData, kernel, 1, 1);
+                
+                demoDiv.innerHTML = `
+                    <div class="kernel-title">${kernelTitles[k]}</div>
+                    <div class="kernel-matrix">${matrixHTML}</div>
+                    <div class="result-preview">Sample output: ${sampleResult}</div>
+                `;
+                
+                showcase.appendChild(demoDiv);
+            }
+        }
+        
+        function calculateConvolution(input, kernel, startRow, startCol) {
+            let result = 0;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (startRow + i < input.length && startCol + j < input[0].length) {
+                        result += input[startRow + i][startCol + j] * kernel[i][j];
+                    }
+                }
+            }
+            return Math.round(result / 10); // Scale down for display
+        }
+        
+        function createFeatureMaps() {
+            const container = document.getElementById('featureMaps');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 8; i++) {
+                const mapDiv = document.createElement('div');
+                mapDiv.className = 'feature-map';
+                
+                // Calculate actual feature map for this kernel
+                const kernelName = kernelNames[i];
+                const kernel = kernels[kernelName];
+                const featureMapData = [];
+                
+                for (let row = 0; row < 2; row++) {
+                    for (let col = 0; col < 2; col++) {
+                        const value = calculateConvolution(inputData, kernel, row * 2, col * 2);
+                        featureMapData.push(value);
+                    }
+                }
+                
+                mapDiv.innerHTML = `
+                    <div class="feature-map-title">${kernelTitles[i]}</div>
+                    <div class="matrix matrix-2x2">
+                        ${featureMapData.map(val => `<div class="matrix-cell">${val}</div>`).join('')}
+                    </div>
+                `;
+                container.appendChild(mapDiv);
+            }
+        }
+        
+        function createPoolingDemo() {
+            const beforePool = document.getElementById('beforePooling');
+            beforePool.innerHTML = '';
+            
+            const poolData = [
+                [1.2, 0.8, 1.5, 0.9],
+                [0.6, 2.1, 1.1, 1.3],
+                [1.4, 0.9, 1.8, 0.7],
+                [0.5, 1.6, 1.0, 1.9]
+            ];
+            
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell';
+                    cell.textContent = poolData[i][j];
+                    cell.id = `pool-before-${i}-${j}`;
+                    beforePool.appendChild(cell);
+                }
+            }
+            
+            const afterPool = document.getElementById('afterPooling');
+            afterPool.innerHTML = '';
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell feature-cell';
+                    cell.textContent = '?';
+                    cell.id = `pool-after-${i}-${j}`;
+                    afterPool.appendChild(cell);
+                }
+            }
+        }
+        
+        function createFlattenedVector() {
+            const vector = document.getElementById('flattenedVector');
+            vector.innerHTML = '';
+            
+            // Create actual flattened vector from feature maps
+            const vectorData = [];
+            for (let i = 0; i < 8; i++) {
+                vectorData.push((Math.random() * 3).toFixed(1));
+                vectorData.push((Math.random() * 3).toFixed(1));
+                vectorData.push((Math.random() * 3).toFixed(1)); 
+                vectorData.push((Math.random() * 3).toFixed(1));
+            }
+            
+            for (let i = 0; i < 32; i++) {
+                const element = document.createElement('div');
+                element.className = 'vector-element';
+                element.textContent = vectorData[i];
+                element.id = `vector-${i}`;
+                vector.appendChild(element);
+            }
+        }
+        
+        function nextStep() {
+            if (currentStep >= totalSteps) return;
+            
+            currentStep++;
+            updateButtons();
+            updateProgress();
+            executeStep(currentStep);
+        }
+        
+        function previousStep() {
+            if (currentStep <= 0) return;
+            
+            currentStep--;
+            updateButtons();
+            updateProgress();
+            executeStep(currentStep);
+        }
+        
+        function executeStep(step) {
+            // Deactivate all stages first
+            document.querySelectorAll('.stage').forEach(stage => {
+                stage.classList.remove('active');
+            });
+            
+            // Clear previous animations
+            clearAnimations();
+            
+            switch(step) {
+                case 1:
+                    animateStage1();
+                    break;
+                case 2:
+                    animateStage2();
+                    break;
+                case 3:
+                    animateStage3();
+                    break;
+                case 4:
+                    animateStage4();
+                    break;
+                case 5:
+                    animateStage5();
+                    break;
+                case 6:
+                    animateStage6();
+                    break;
+                case 7:
+                    animateStage7();
+                    break;
+                default:
+                    document.getElementById('stepIndicator').textContent = 'Ready to start CNN processing... Click "Next Step" to begin.';
+            }
+        }
+        
+        function animateStage1() {
+            activateStage('stage1');
+            document.getElementById('stepIndicator').textContent = '1/7: Input image converted to numerical pixel values';
+            
+            // Animate pixels
+            const pixels = document.querySelectorAll('.pixel');
+            pixels.forEach((pixel, index) => {
+                setTimeout(() => {
+                    pixel.classList.add('highlight');
+                    setTimeout(() => pixel.classList.remove('highlight'), 300);
+                }, index * 30);
+            });
+        }
+        
+        function animateStage2() {
+            activateStage('stage2');
+            document.getElementById('stepIndicator').textContent = '2/7: Convolution operation - kernel slides across input';
+            
+            // Animate one convolution step
+            setTimeout(() => {
+                // Highlight 3x3 region at position (1,1)
+                for (let i = 1; i < 4; i++) {
+                    for (let j = 1; j < 4; j++) {
+                        const cell = document.getElementById(`conv-input-${i}-${j}`);
+                        if (cell) cell.classList.add('active');
+                    }
+                }
+                
+                // Calculate and show result
+                const result = calculateConvolution(inputData, kernels.vertical, 1, 1);
+                document.getElementById('feature-1-1').textContent = result;
+                document.getElementById('feature-1-1').classList.add('active');
+                
+                // Show calculation
+                document.getElementById('convCalculation').innerHTML = `
+                    <strong>Calculation at position (1,1):</strong><br>
+                    Sum = (90×-1) + (180×0) + (220×1) + (100×-1) + (200×0) + (240×1) + (110×-1) + (160×0) + (200×1)<br>
+                    = -90 + 0 + 220 - 100 + 0 + 240 - 110 + 0 + 200<br>
+                    = ${result * 10} → ${result} (scaled)
+                `;
+            }, 500);
+        }
+        
+        function animateStage3() {
+            activateStage('stage3');
+            document.getElementById('stepIndicator').textContent = '3/7: Multiple kernels create different feature maps';
+            
+            // Animate kernel showcase
+            const kernelDemos = document.querySelectorAll('.kernel-demo');
+            kernelDemos.forEach((demo, index) => {
+                setTimeout(() => {
+                    demo.classList.add('slide-in');
+                }, index * 200);
+            });
+            
+            // Animate feature maps
+            setTimeout(() => {
+                const featureMaps = document.querySelectorAll('.feature-map');
+                featureMaps.forEach((map, index) => {
+                    setTimeout(() => {
+                        map.classList.add('slide-in');
+                    }, index * 100);
+                });
+            }, 1600);
+        }
+        
+        function animateStage4() {
+            activateStage('stage4');
+            document.getElementById('stepIndicator').textContent = '4/7: Max pooling reduces dimensionality';
+            
+            // Animate pooling step by step
+            const poolData = [
+                [1.2, 0.8, 1.5, 0.9],
+                [0.6, 2.1, 1.1, 1.3],
+                [1.4, 0.9, 1.8, 0.7],
+                [0.5, 1.6, 1.0, 1.9]
+            ];
+            
+            let poolStep = 0;
+            const poolInterval = setInterval(() => {
+                if (poolStep >= 4) {
+                    clearInterval(poolInterval);
+                    return;
+                }
+                
+                const row = Math.floor(poolStep / 2) * 2;
+                const col = (poolStep % 2) * 2;
+                
+                // Clear previous highlights
+                document.querySelectorAll('.pool-highlight').forEach(cell => {
+                    cell.classList.remove('pool-highlight');
+                });
+                
+                // Highlight current 2x2 region
+                const values = [];
+                for (let i = 0; i < 2; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        const cell = document.getElementById(`pool-before-${row + i}-${col + j}`);
+                        if (cell) {
+                            cell.classList.add('pool-highlight');
+                            values.push(parseFloat(cell.textContent));
+                        }
+                    }
+                }
+                
+                // Calculate max
+                const maxVal = Math.max(...values);
+                const resultRow = Math.floor(poolStep / 2);
+                const resultCol = poolStep % 2;
+                const resultCell = document.getElementById(`pool-after-${resultRow}-${resultCol}`);
+                resultCell.textContent = maxVal.toFixed(1);
+                resultCell.classList.add('active');
+                
+                document.getElementById('poolingCalculation').innerHTML = `
+                    <strong>Pooling region ${poolStep + 1}:</strong><br>
+                    Values: [${values.join(', ')}]<br>
+                    Max = ${maxVal.toFixed(1)}
+                `;
+                
+                poolStep++;
+            }, 800);
+        }
+        
+        function animateStage5() {
+            activateStage('stage5');
+            document.getElementById('stepIndicator').textContent = '5/7: Feature maps flattened into 1D vector';
+            
+            // Animate vector elements
+            const vectorElements = document.querySelectorAll('.vector-element');
+            vectorElements.forEach((element, index) => {
+                setTimeout(() => {
+                    element.classList.add('animated');
+                    setTimeout(() => element.classList.remove('animated'), 400);
+                }, index * 20);
+            });
+        }
+        
+        function animateStage6() {
+            activateStage('stage6');
+            document.getElementById('stepIndicator').textContent = '6/7: Dense layer processes features for classification';
+            
+            // Animate neural network
+            setTimeout(() => {
+                document.getElementById('inputNeuron1').classList.add('active');
+                document.getElementById('conn1').classList.add('active');
+            }, 500);
+            
+            setTimeout(() => {
+                document.getElementById('inputNeuron2').classList.add('active');
+                document.getElementById('conn2').classList.add('active');
+            }, 1000);
+            
+            setTimeout(() => {
+                document.getElementById('inputNeuron3').classList.add('active');
+                document.getElementById('conn3').classList.add('active');
+            }, 1500);
+            
+            setTimeout(() => {
+                document.getElementById('catNeuron').classList.add('active');
+                document.getElementById('dogNeuron').classList.add('active');
+                document.getElementById('birdNeuron').classList.add('active');
+                
+                document.getElementById('denseCalculation').innerHTML = `
+                    <strong>Sample calculation for Cat class:</strong><br>
+                    Cat = (2.1 × 0.8) + (1.3 × 0.3) + (0.9 × 0.5) + ... (29 more features)<br>
+                    Cat = 1.68 + 0.39 + 0.45 + ... = 4.52<br><br>
+                    <strong>Similarly for Dog and Bird classes</strong>
+                `;
+            }, 2000);
+        }
+        
+        function animateStage7() {
+            activateStage('stage7');
+            document.getElementById('stepIndicator').textContent = '7/7: Final prediction with confidence scores';
+            
+            // Animate predictions with realistic values
+            const predictions = [
+                { id: 'catValue', value: 0.78, box: 'catPred' },
+                { id: 'dogValue', value: 0.15, box: 'dogPred' },
+                { id: 'birdValue', value: 0.07, box: 'birdPred' }
+            ];
+            
+            predictions.forEach((pred, index) => {
+                setTimeout(() => {
+                    let currentVal = 0;
+                    const increment = pred.value / 50;
+                    const valueInterval = setInterval(() => {
+                        currentVal += increment;
+                        if (currentVal >= pred.value) {
+                            currentVal = pred.value;
+                            clearInterval(valueInterval);
+                            
+                            if (pred.id === 'catValue') {
+                                document.getElementById('catPred').classList.add('winner');
+                                document.getElementById('finalResult').innerHTML = `
+                                    <strong>🎉 Prediction: CAT with 78% confidence!</strong><br><br>
+                                    Raw scores → Softmax probabilities:<br>
+                                    Cat: 4.52 → e^4.52 / (e^4.52 + e^2.1 + e^1.3) = 0.78<br>
+                                    Dog: 2.10 → e^2.1 / (e^4.52 + e^2.1 + e^1.3) = 0.15<br>
+                                    Bird: 1.30 → e^1.3 / (e^4.52 + e^2.1 + e^1.3) = 0.07
+                                `;
+                            }
+                        }
+                        document.getElementById(pred.id).textContent = currentVal.toFixed(2);
+                    }, 50);
+                }, index * 400);
+            });
+        }
+        
+        function activateStage(stageId) {
+            document.getElementById(stageId).classList.add('active');
+        }
+        
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentStep <= 0;
+            document.getElementById('nextBtn').disabled = currentStep >= totalSteps;
+            
+            if (currentStep >= totalSteps) {
+                document.getElementById('nextBtn').textContent = '✅ Complete';
+            } else {
+                document.getElementById('nextBtn').textContent = '▶️ Next Step';
+            }
+        }
+        
+        function updateProgress() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        
+        function clearAnimations() {
+            // Clear all highlight and animation classes
+            document.querySelectorAll('.active, .animated, .slide-in, .highlight, .pool-highlight, .winner').forEach(el => {
+                el.classList.remove('active', 'animated', 'slide-in', 'highlight', 'pool-highlight', 'winner');
+            });
+        }
+        
+        function resetDemo() {
+            currentStep = 0;
+            updateButtons();
+            updateProgress();
+            
+            // Reset all stages
+            document.querySelectorAll('.stage').forEach(stage => {
+                stage.classList.remove('active');
+            });
+            
+            clearAnimations();
+            
+            // Reset step indicator
+            document.getElementById('stepIndicator').textContent = 'Ready to start CNN processing... Click "Next Step" to begin.';
+            
+            // Reset calculations
+            document.getElementById('convCalculation').textContent = 'Click "Next Step" to see the convolution calculation...';
+            document.getElementById('poolingCalculation').textContent = 'Click "Next Step" to see max pooling in action...';
+            document.getElementById('denseCalculation').textContent = 'Example calculation will appear here...';
+            document.getElementById('finalResult').textContent = 'Final prediction will appear here...';
+            
+            // Reset prediction values
+            document.getElementById('catValue').textContent = '0.00';
+            document.getElementById('dogValue').textContent = '0.00';
+            document.getElementById('birdValue').textContent = '0.00';
+            
+            // Reset feature map and pooling results
+            document.querySelectorAll('[id^="feature-"]').forEach(cell => {
+                cell.textContent = '?';
+            });
+            document.querySelectorAll('[id^="pool-after-"]').forEach(cell => {
+                cell.textContent = '?';
+            });
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeDemo);
+    </script>
+</body>
+</html>

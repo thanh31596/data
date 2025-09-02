@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 8: CNNs and Image Classification - DATA4800</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        .presentation {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .slide {
+            width: 100%;
+            height: 100%;
+            padding: 60px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 40px;
+            color: #1e3a8a;
+            font-weight: 300;
+        }
+        
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: #1e3a8a;
+            font-weight: 300;
+        }
+        
+        h3 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #3b82f6;
+            font-weight: 300;
+        }
+        
+        p {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-width: 900px;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            padding: 12px 24px;
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .nav-btn:hover {
+            background: #3b82f6;
+        }
+        
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .slide-number {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            font-size: 1rem;
+            color: #666;
+            z-index: 1000;
+        }
+        
+        .comparison-container {
+            display: flex;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+            align-items: center;
+        }
+        
+        .comparison-side {
+            flex: 1;
+            padding: 30px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f9fafb;
+        }
+        
+        .neuron {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .input-neuron {
+            background: #10b981;
+        }
+        
+        .output-neuron {
+            background: #f59e0b;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { stroke: #6b7280; }
+            50% { stroke: #3b82f6; }
+        }
+        
+        .animated-connection {
+            animation: pulse 2s infinite;
+        }
+        
+        .layer-title {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .quiz-container {
+            max-width: 600px;
+            text-align: left;
+        }
+        
+        .quiz-question {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .quiz-input {
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 5px;
+            font-size: 1rem;
+            width: 100px;
+            margin: 0 10px;
+            text-align: center;
+        }
+        
+        .check-btn {
+            padding: 10px 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            gap: 2px;
+            margin: 20px;
+        }
+        
+        .pixel {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            background: #f0f0f0;
+        }
+        
+        .convolution-demo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin: 40px 0;
+        }
+        
+        .matrix {
+            display: grid;
+            gap: 2px;
+            border: 2px solid #3b82f6;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f8fafc;
+        }
+        
+        .matrix-5x5 {
+            grid-template-columns: repeat(5, 50px);
+        }
+        
+        .matrix-3x3 {
+            grid-template-columns: repeat(3, 50px);
+        }
+        
+        .matrix-cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: white;
+        }
+        
+        .kernel-cell {
+            background: #fef3c7;
+        }
+        
+        .highlight {
+            background: #dbeafe !important;
+            border-color: #3b82f6 !important;
+        }
+        
+        .result-cell {
+            background: #dcfce7;
+        }
+        
+        .cnn-pipeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1000px;
+            margin: 40px 0;
+        }
+        
+        .pipeline-step {
+            text-align: center;
+            flex: 1;
+            padding: 20px;
+        }
+        
+        .pipeline-arrow {
+            font-size: 2rem;
+            color: #3b82f6;
+            margin: 0 20px;
+        }
+        
+        .feature-map {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #3b82f6, #1e40af);
+            border-radius: 5px;
+            margin: 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .pooling-demo {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .pool-input {
+            display: grid;
+            grid-template-columns: repeat(4, 40px);
+            gap: 1px;
+        }
+        
+        .pool-output {
+            display: grid;
+            grid-template-columns: repeat(2, 40px);
+            gap: 1px;
+        }
+        
+        .pool-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: #f1f5f9;
+        }
+        
+        .pool-highlight {
+            background: #fef3c7 !important;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animated-slide {
+            animation: slideIn 0.8s ease-out;
+        }
+        
+        .agenda-list {
+            text-align: left;
+            font-size: 1.3rem;
+            line-height: 2;
+            list-style: none;
+        }
+        
+        .agenda-list li {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .agenda-list li:before {
+            content: "→";
+            color: #3b82f6;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation">
+        <div class="slide-number">
+            <span id="current-slide">1</span> / <span id="total-slides">18</span>
+        </div>
+        
+        <!-- Slide 1: Deep Learning vs Machine Learning Recap -->
+        <div class="slide active">
+            <h1>Week 8: Image Classification with Deep CNNs</h1>
+            <h2>Recap: Deep Learning vs Machine Learning</h2>
+            <div class="comparison-container">
+                <div class="comparison-side">
+                    <h3>Machine Learning</h3>
+                    <p><strong>Data Types:</strong> Structured data (tables, numbers, categories)</p>
+                    <p><strong>Features:</strong> Hand-crafted features</p>
+                    <p><strong>Examples:</strong> Decision trees, SVM, clustering</p>
+                </div>
+                <div class="comparison-side">
+                    <h3>Deep Learning</h3>
+                    <p><strong>Data Types:</strong> Unstructured data (images, audio, text)</p>
+                    <p><strong>Features:</strong> Automatically learned features</p>
+                    <p><strong>Examples:</strong> Neural networks, CNNs, RNNs</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 2: Perceptron Recap - FIXED -->
+        <div class="slide">
+            <h2>Recap: The Perceptron</h2>
+            <div style="display: flex; justify-content: center; align-items: center; margin: 40px 0;">
+                <div style="position: relative; width: 400px; height: 300px;">
+                    <!-- Input nodes -->
+                    <div style="position: absolute; left: 0; top: 80px;">
+                        <div class="neuron input-neuron">x₁</div>
+                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Input 1</p>
+                    </div>
+                    <div style="position: absolute; left: 0; top: 180px;">
+                        <div class="neuron input-neuron">x₂</div>
+                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Input 2</p>
+                    </div>
+                    
+                    <!-- Connections -->
+                    <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                        <line x1="60" y1="110" x2="180" y2="160" stroke="#6b7280" stroke-width="3" class="animated-connection"/>
+                        <line x1="60" y1="210" x2="180" y2="160" stroke="#6b7280" stroke-width="3" class="animated-connection"/>
+                        <line x1="240" y1="160" x2="340" y2="160" stroke="#6b7280" stroke-width="3" class="animated-connection"/>
+                        <!-- Weight labels -->
+                        <text x="100" y="130" fill="#333" font-size="12">w₁</text>
+                        <text x="100" y="190" fill="#333" font-size="12">w₂</text>
+                    </svg>
+                    
+                    <!-- Processing node -->
+                    <div style="position: absolute; left: 180px; top: 130px;">
+                        <div class="neuron">Σ</div>
+                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Weighted Sum</p>
+                    </div>
+                    
+                    <!-- Output node -->
+                    <div style="position: absolute; right: 0; top: 130px;">
+                        <div class="neuron output-neuron">y</div>
+                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Output</p>
+                    </div>
+                </div>
+            </div>
+            <p><strong>Formula:</strong> y = f(w₁x₁ + w₂x₂ + b)</p>
+            <div style="margin-top: 30px;">
+                <h3>Common Activation Functions:</h3>
+                <div style="display: flex; justify-content: space-around; margin: 20px 0;">
+                    <div style="text-align: center;">
+                        <strong>Step Function</strong><br>
+                        f(x) = { 1 if x ≥ 0, 0 if x < 0 }
+                    </div>
+                    <div style="text-align: center;">
+                        <strong>Sigmoid</strong><br>
+                        f(x) = 1/(1 + e⁻ˣ)
+                    </div>
+                    <div style="text-align: center;">
+                        <strong>ReLU</strong><br>
+                        f(x) = max(0, x)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 3: MLP Recap - FIXED WITH EDGES -->
+        <div class="slide">
+            <h2>Recap: Multi-Layer Perceptron (MLP)</h2>
+            <div style="position: relative; width: 600px; height: 300px; margin: 40px auto;">
+                <!-- Input Layer -->
+                <div style="position: absolute; left: 0; top: 50px;">
+                    <div class="layer-title">Input Layer</div>
+                    <div style="position: absolute; top: 30px;">
+                        <div class="neuron input-neuron" style="margin-bottom: 20px;">x₁</div>
+                        <div class="neuron input-neuron" style="margin-bottom: 20px;">x₂</div>
+                        <div class="neuron input-neuron">x₃</div>
+                    </div>
+                </div>
+                
+                <!-- Hidden Layer -->
+                <div style="position: absolute; left: 200px; top: 30px;">
+                    <div class="layer-title">Hidden Layer</div>
+                    <div style="position: absolute; top: 30px;">
+                        <div class="neuron" style="margin-bottom: 15px;">h₁</div>
+                        <div class="neuron" style="margin-bottom: 15px;">h₂</div>
+                        <div class="neuron" style="margin-bottom: 15px;">h₃</div>
+                        <div class="neuron">h₄</div>
+                    </div>
+                </div>
+                
+                <!-- Output Layer -->
+                <div style="position: absolute; right: 0; top: 70px;">
+                    <div class="layer-title">Output Layer</div>
+                    <div style="position: absolute; top: 30px;">
+                        <div class="neuron output-neuron" style="margin-bottom: 20px;">y₁</div>
+                        <div class="neuron output-neuron">y₂</div>
+                    </div>
+                </div>
+                
+                <!-- Connections SVG -->
+                <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                    <!-- Input to Hidden connections -->
+                    <line x1="60" y1="110" x2="200" y2="105" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="110" x2="200" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="110" x2="200" y2="155" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="110" x2="200" y2="180" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    
+                    <line x1="60" y1="150" x2="200" y2="105" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="150" x2="200" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="150" x2="200" y2="155" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="150" x2="200" y2="180" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    
+                    <line x1="60" y1="190" x2="200" y2="105" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="190" x2="200" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="190" x2="200" y2="155" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="60" y1="190" x2="200" y2="180" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    
+                    <!-- Hidden to Output connections -->
+                    <line x1="260" y1="105" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="260" y1="105" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    
+                    <line x1="260" y1="130" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="260" y1="130" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    
+                    <line x1="260" y1="155" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="260" y1="155" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    
+                    <line x1="260" y1="180" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                    <line x1="260" y1="180" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
+                </svg>
+            </div>
+            <p style="margin-top: 20px;">Multiple layers enable learning of complex, non-linear patterns</p>
+        </div>
+        
+        <!-- Slide 4: Manual Calculation Exercise - COMPLETELY NEW -->
+        <div class="slide">
+            <h2>Manual Calculation Exercise</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1000px;">
+                <div style="flex: 1;">
+                    <h3>Neural Network</h3>
+                    <div style="position: relative; width: 300px; height: 250px;">
+                        <!-- Input nodes -->
+                        <div style="position: absolute; left: 0; top: 60px;">
+                            <div class="neuron input-neuron">x₁=2</div>
+                        </div>
+                        <div style="position: absolute; left: 0; top: 140px;">
+                            <div class="neuron input-neuron">x₂=3</div>
+                        </div>
+                        
+                        <!-- Hidden layer -->
+                        <div style="position: absolute; left: 120px; top: 30px;">
+                            <div class="neuron">h₁</div>
+                        </div>
+                        <div style="position: absolute; left: 120px; top: 90px;">
+                            <div class="neuron">h₂</div>
+                        </div>
+                        <div style="position: absolute; left: 120px; top: 150px;">
+                            <div class="neuron">h₃</div>
+                        </div>
+                        
+                        <!-- Output node -->
+                        <div style="position: absolute; right: 0; top: 90px;">
+                            <div class="neuron output-neuron">ŷ</div>
+                        </div>
+                        
+                        <!-- Connections with weights -->
+                        <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                            <!-- Input to Hidden -->
+                            <line x1="60" y1="90" x2="120" y2="60" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="60" y1="90" x2="120" y2="120" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="60" y1="90" x2="120" y2="180" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="60" y1="170" x2="120" y2="60" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="60" y1="170" x2="120" y2="120" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="60" y1="170" x2="120" y2="180" stroke="#3b82f6" stroke-width="2"/>
+                            
+                            <!-- Hidden to Output -->
+                            <line x1="180" y1="60" x2="240" y2="120" stroke="#10b981" stroke-width="2"/>
+                            <line x1="180" y1="120" x2="240" y2="120" stroke="#10b981" stroke-width="2"/>
+                            <line x1="180" y1="180" x2="240" y2="120" stroke="#10b981" stroke-width="2"/>
+                            
+                            <!-- Weight labels -->
+                            <text x="75" y="70" fill="#333" font-size="10" font-weight="bold">0.5</text>
+                            <text x="75" y="100" fill="#333" font-size="10" font-weight="bold">-0.3</text>
+                            <text x="75" y="130" fill="#333" font-size="10" font-weight="bold">0.8</text>
+                            <text x="75" y="155" fill="#333" font-size="10" font-weight="bold">0.2</text>
+                            <text x="75" y="175" fill="#333" font-size="10" font-weight="bold">-0.4</text>
+                            <text x="75" y="195" fill="#333" font-size="10" font-weight="bold">0.6</text>
+                            
+                            <text x="195" y="85" fill="#333" font-size="10" font-weight="bold">0.7</text>
+                            <text x="195" y="115" fill="#333" font-size="10" font-weight="bold">-0.5</text>
+                            <text x="195" y="145" fill="#333" font-size="10" font-weight="bold">0.9</text>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div style="flex: 1; text-align: left; padding-left: 40px;">
+                    <h3>Your Task:</h3>
+                    <p><strong>Given:</strong></p>
+                    <p>• Inputs: x₁ = 2, x₂ = 3</p>
+                    <p>• All biases = 0</p>
+                    <p>• Activation: ReLU (max(0,x))</p>
+                    <p>• Target: y = 1.5</p>
+                    
+                    <div style="margin-top: 20px; background: #f8f9fa; padding: 20px; border-radius: 5px;">
+                        <p><strong>Step 1:</strong> Calculate hidden layer outputs</p>
+                        <p>h₁ = ReLU(0.5×2 + 0.2×3) = ?</p>
+                        <p>h₂ = ReLU(-0.3×2 + -0.4×3) = ?</p>
+                        <p>h₃ = ReLU(0.8×2 + 0.6×3) = ?</p>
+                        
+                        <p style="margin-top: 15px;"><strong>Step 2:</strong> Calculate final output</p>
+                        <p>ŷ = 0.7×h₁ + (-0.5)×h₂ + 0.9×h₃ = ?</p>
+                        
+                        <p style="margin-top: 15px;"><strong>Step 3:</strong> Calculate error</p>
+                        <p>Error = |y - ŷ| = |1.5 - ŷ| = ?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 5: Today's Agenda -->
+        <div class="slide">
+            <h1>Today's Agenda</h1>
+            <ul class="agenda-list">
+                <li>Investigate Deep Learning Architecture</li>
+                <li>Understand Convolutional Neural Networks (CNNs)</li>
+                <li>Explore Image Recognition with CNNs</li>
+                <li>Learn CNN Components: Convolution, Pooling, Activation</li>
+                <li>Visualize How CNNs Process Images</li>
+                <li>Practice with Interactive Demonstrations</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 6: Deep Learning Architecture -->
+        <div class="slide">
+            <h2>Deep Learning Architecture</h2>
+            <div class="comparison-container">
+                <div class="comparison-side">
+                    <h3>Traditional ML Limitations</h3>
+                    <p>• Manual feature extraction</p>
+                    <p>• Limited pattern complexity</p>
+                    <p>• Poor performance on unstructured data</p>
+                    <p>• Requires domain expertise</p>
+                </div>
+                <div class="comparison-side">
+                    <h3>Deep Learning Solutions</h3>
+                    <p>• Automatic feature learning</p>
+                    <p>• Hierarchical representations</p>
+                    <p>• Excellent with images, audio, text</p>
+                    <p>• End-to-end learning</p>
+                </div>
+            </div>
+            <p style="margin-top: 40px; font-size: 1.2rem; color: #1e3a8a; font-weight: 500;">
+                Deep Learning uses multiple layers to progressively learn more abstract features
+            </p>
+        </div>
+        
+        <!-- Slide 7: DL vs ML Learning Example - WITH DATA EXAMPLES -->
+        <div class="slide">
+            <h2>How DL and ML Learn Differently: Image Recognition</h2>
+            <div style="margin-bottom: 30px;">
+                <h3>Example Dataset: Animal Classification</h3>
+                <div style="display: flex; justify-content: center; gap: 40px; margin: 20px 0;">
+                    <div style="text-align: center; padding: 15px; border: 2px solid #e5e7eb; border-radius: 10px;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #ffa500, #ff4500); margin: 0 auto 10px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🐱</div>
+                        <strong>Cat Image</strong><br>
+                        <small>Pixels: [255,128,64,...]</small>
+                    </div>
+                    <div style="text-align: center; padding: 15px; border: 2px solid #e5e7eb; border-radius: 10px;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #8B4513, #A0522D); margin: 0 auto 10px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🐶</div>
+                        <strong>Dog Image</strong><br>
+                        <small>Pixels: [180,95,42,...]</small>
+                    </div>
+                    <div style="text-align: center; padding: 15px; border: 2px solid #e5e7eb; border-radius: 10px;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #228B22, #32CD32); margin: 0 auto 10px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🐸</div>
+                        <strong>Frog Image</strong><br>
+                        <small>Pixels: [45,200,78,...]</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="comparison-container">
+                <div class="comparison-side">
+                    <h3>Machine Learning Approach</h3>
+                    <p><strong>Step 1:</strong> Extract handcrafted features</p>
+                    <p>• Edge detection algorithms</p>
+                    <p>• Color histograms</p>
+                    <p>• Texture descriptors</p>
+                    <p>• Shape measurements</p>
+                    <p><strong>Step 2:</strong> Feed features to classifier</p>
+                    <p><strong>Problem:</strong> Features may miss important patterns or relationships</p>
+                </div>
+                <div class="comparison-side">
+                    <h3>Deep Learning Approach</h3>
+                    <p><strong>Layer 1:</strong> Learn edges and lines</p>
+                    <p><strong>Layer 2:</strong> Learn shapes and curves</p>
+                    <p><strong>Layer 3:</strong> Learn object parts (ears, eyes)</p>
+                    <p><strong>Layer 4:</strong> Learn whole objects (cat, dog)</p>
+                    <p><strong>Advantage:</strong> Discovers optimal features automatically from raw pixels</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 8: Backpropagation Recap -->
+        <div class="slide">
+            <h2>Recap: Backpropagation</h2>
+            <p style="font-size: 1.6rem; margin-bottom: 40px;">How Neural Networks Learn</p>
+            <div style="max-width: 800px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin: 40px 0;">
+                    <div style="background: #e0f2fe; padding: 20px; border-radius: 10px; flex: 1; margin: 0 10px;">
+                        <h3>1. Forward Pass</h3>
+                        <p>Input → Hidden → Output</p>
+                        <p>Calculate predictions</p>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div style="background: #fce4ec; padding: 20px; border-radius: 10px; flex: 1; margin: 0 10px;">
+                        <h3>2. Calculate Loss</h3>
+                        <p>Compare prediction to actual</p>
+                        <p>Measure error</p>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div style="background: #e8f5e8; padding: 20px; border-radius: 10px; flex: 1; margin: 0 10px;">
+                        <h3>3. Backward Pass</h3>
+                        <p>Output ← Hidden ← Input</p>
+                        <p>Update weights</p>
+                    </div>
+                </div>
+            </div>
+            <p><strong>Key Insight:</strong> Gradient descent optimizes weights to minimize error</p>
+        </div>
+        
+        <!-- Slide 9: CNN Introduction - WITH CONVOLUTION EXPLANATION -->
+        <div class="slide">
+            <h2>Introducing Convolutional Neural Networks (CNNs)</h2>
+            <div style="margin-bottom: 30px;">
+                <h3>Why Called "Convolutional"?</h3>
+                <p style="font-size: 1.3rem; color: #1e3a8a; margin: 20px 0;">
+                    <strong>"Convolution"</strong> = sliding a small filter over an image to detect patterns
+                </p>
+                <p style="font-size: 1.2rem;">Think of it like using a magnifying glass that slides across a page, examining each small section to find specific features!</p>
+            </div>
+            
+            <div class="comparison-container">
+                <div class="comparison-side">
+                    <h3>Traditional Neural Networks</h3>
+                    <p>• Fully connected layers</p>
+                    <p>• All neurons connect to all others</p>
+                    <p>• Massive number of parameters</p>
+                    <p>• Lose spatial information</p>
+                    <p>• Poor for images</p>
+                </div>
+                <div class="comparison-side">
+                    <h3>Convolutional Neural Networks</h3>
+                    <p>• Local connections</p>
+                    <p>• Shared parameters (filters)</p>
+                    <p>• Preserve spatial structure</p>
+                    <p>• Translation invariant</p>
+                    <p>• Designed for images</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 10: CNN Architecture Overview -->
+        <div class="slide">
+            <h2>CNN Architecture Overview</h2>
+            <div class="cnn-pipeline">
+                <div class="pipeline-step">
+                    <div style="width: 80px; height: 80px; background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 12px;">Image</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 1rem;">Input Layer</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="feature-map">Conv</div>
+                    <p style="margin-top: 10px; font-size: 1rem;">Convolutional Layer</p>
+                    <p style="font-size: 0.9rem; color: #666;">Extract features</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div style="width: 60px; height: 60px; background: #f59e0b; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white;">
+                        <span style="font-size: 12px;">ReLU</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 1rem;">Activation Layer</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div style="width: 50px; height: 50px; background: #10b981; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white;">
+                        <span style="font-size: 12px;">Pool</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 1rem;">Pooling Layer</p>
+                    <p style="font-size: 0.9rem; color: #666;">Reduce dimensions</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div style="width: 60px; height: 60px; background: #8b5cf6; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white;">
+                        <span style="font-size: 12px;">FC</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 1rem;">Fully Connected</p>
+                    <p style="font-size: 0.9rem; color: #666;">Classification</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 11: Converting Data to Numbers -->
+        <div class="slide">
+            <h2>AI Needs Numbers: Converting Data Types</h2>
+            <p style="font-size: 1.5rem; margin-bottom: 40px;">Machines can only process numerical data</p>
+            <div class="comparison-container">
+                <div class="comparison-side">
+                    <h3>Images → Pixel Values</h3>
+                    <p>Each pixel = intensity value (0-255)</p>
+                    <p>Grayscale: 1 value per pixel</p>
+                    <p>RGB: 3 values per pixel (R, G, B)</p>
+                    <p>Example: 28×28 image = 784 numbers</p>
+                </div>
+                <div class="comparison-side">
+                    <h3>Audio → Signal Amplitudes</h3>
+                    <p>Sound waves → digital samples</p>
+                    <p>Sample rate: 44.1kHz = 44,100 numbers/second</p>
+                    <p>Amplitude values represent wave intensity</p>
+                    <p>Frequency analysis via transforms</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 12: Image Pixel Visualization -->
+        <div class="slide">
+            <h2>From Image to Numbers: Pixel Representation</h2>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 60px;">
+                <div>
+                    <h3>8×8 Grayscale Image</h3>
+                    <div class="image-grid" id="pixel-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div style="text-align: left;">
+                    <h3>Numerical Matrix</h3>
+                    <div style="font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 20px; border-radius: 5px;">
+                        [[ 0, 45, 78,123,156,189,210,255],<br>
+                        &nbsp;[15, 60, 93,138,171,204,225,240],<br>
+                        &nbsp;[30, 75,108,153,186,219,240,225],<br>
+                        &nbsp;[45, 90,123,168,201,234,255,210],<br>
+                        &nbsp;[60,105,138,183,216,249,240,195],<br>
+                        &nbsp;[75,120,153,198,231,234,225,180],<br>
+                        &nbsp;[90,135,168,213,246,219,210,165],<br>
+                        &nbsp;[105,150,183,228,261,204,195,150]]
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 30px;">Each number represents pixel intensity: 0 = black, 255 = white</p>
+        </div>
+        
+        <!-- Slide 13: Deep Learning's Power -->
+        <div class="slide">
+            <h2>Why Deep Learning Excels with Complex Data</h2>
+            <div style="max-width: 900px;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; margin: 40px 0;">
+                    <div style="background: #f0f9ff; padding: 30px; border-radius: 10px; border-left: 5px solid #3b82f6;">
+                        <h3>Hierarchical Learning</h3>
+                        <p>Each layer learns increasingly complex patterns from simple building blocks</p>
+                    </div>
+                    <div style="background: #f0fdf4; padding: 30px; border-radius: 10px; border-left: 5px solid #10b981;">
+                        <h3>Automatic Feature Discovery</h3>
+                        <p>No need to manually design features - the network finds them automatically</p>
+                    </div>
+                    <div style="background: #fef7cd; padding: 30px; border-radius: 10px; border-left: 5px solid #f59e0b;">
+                        <h3>Spatial Understanding</h3>
+                        <p>CNNs preserve spatial relationships in images, understanding local patterns</p>
+                    </div>
+                    <div style="background: #faf5ff; padding: 30px; border-radius: 10px; border-left: 5px solid #8b5cf6;">
+                        <h3>Scale Invariance</h3>
+                        <p>Can recognize objects regardless of their position or slight variations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 14: Quiz 2 -->
+        <div class="slide">
+            <h2>Quick Understanding Check</h2>
+            <div class="quiz-container" style="max-width: 700px;">
+                <div class="quiz-question">
+                    1. What is the main advantage of CNNs over traditional neural networks for images?
+                </div>
+                <select id="q2-1" style="width: 100%; padding: 10px; font-size: 1rem; margin-bottom: 20px;">
+                    <option value="">Select an answer...</option>
+                    <option value="correct">They preserve spatial information and use local connections</option>
+                    <option value="wrong1">They have more layers</option>
+                    <option value="wrong2">They are faster to train</option>
+                    <option value="wrong3">They use less memory</option>
+                </select>
+                
+                <div class="quiz-question">
+                    2. A 32×32 RGB image would be represented as how many numbers?
+                </div>
+                <select id="q2-2" style="width: 100%; padding: 10px; font-size: 1rem;">
+                    <option value="">Select an answer...</option>
+                    <option value="wrong1">1024 numbers</option>
+                    <option value="wrong2">2048 numbers</option>
+                    <option value="correct">3072 numbers (32×32×3)</option>
+                    <option value="wrong3">4096 numbers</option>
+                </select>
+                
+                <button class="check-btn" onclick="checkQuiz2()">Check Answers</button>
+                <div id="quiz2-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+        </div>
+        
+        <!-- Slide 15: CNN Deep Dive -->
+        <div class="slide">
+            <h1>Deep Dive: Image Recognition with CNNs</h1>
+            <p style="font-size: 1.6rem; color: #1e3a8a;">Understanding How CNNs Process Images</p>
+            <div style="margin: 60px 0;">
+                <div style="display: flex; justify-content: center; gap: 40px; align-items: center;">
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(45deg, #ff6b6b, #4ecdc4); border-radius: 10px; margin-bottom: 15px;"></div>
+                        <p style="font-size: 1.2rem;">Input Image</p>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 80px; background: repeating-linear-gradient(45deg, #3b82f6, #3b82f6 10px, #1e40af 10px, #1e40af 20px); border-radius: 10px; margin-bottom: 15px;"></div>
+                        <p style="font-size: 1.2rem;">Feature Maps</p>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 60px; background: #10b981; border-radius: 10px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">Cat</div>
+                        <p style="font-size: 1.2rem;">Classification</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 16: Convolution Animation - WITH DETAILED EXPLANATIONS -->
+        <div class="slide">
+            <h2>Convolution Operation: How It Works</h2>
+            <div style="margin-bottom: 30px; text-align: left; max-width: 1000px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h3>What is a Kernel/Filter?</h3>
+                        <p>• Small matrix (usually 3×3, 5×5)</p>
+                        <p>• Contains learnable weights</p>
+                        <p>• Acts as a "feature detector"</p>
+                        <p>• Examples: edge detector, blur, sharpen</p>
+                    </div>
+                    <div>
+                        <h3>What are Feature Maps?</h3>
+                        <p>• Output after applying kernel to input</p>
+                        <p>• Each map detects different features</p>
+                        <p>• Preserve spatial relationships</p>
+                        <p>• Become input for next layer</p>
+                    </div>
+                </div>
+                <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <strong>Why kernels matter:</strong> They automatically learn to detect important visual patterns like edges, textures, and shapes - no manual programming required!
+                </div>
+            </div>
+            
+            <div class="convolution-demo">
+                <div>
+                    <h3>Input Image (5×5)</h3>
+                    <div class="matrix matrix-5x5" id="input-matrix">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <div>
+                        <h3>Kernel/Filter (3×3)</h3>
+                        <div class="matrix matrix-3x3" id="kernel-matrix">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <button class="check-btn" onclick="animateConvolution()" style="margin-top: 20px;">Animate Convolution</button>
+                </div>
+                <div>
+                    <h3>Feature Map (3×3)</h3>
+                    <div class="matrix matrix-3x3" id="output-matrix">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <p id="convolution-explanation" style="margin-top: 30px; font-size: 1.2rem; color: #1e3a8a;"></p>
+        </div>
+        
+        <!-- Slide 17: CNN Components Detail -->
+        <div class="slide">
+            <h2>CNN Components in Detail</h2>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; max-width: 1000px;">
+                <div style="background: #f0f9ff; padding: 25px; border-radius: 10px; border: 2px solid #3b82f6;">
+                    <h3>Convolutional Layer</h3>
+                    <p>• Applies filters/kernels to extract features</p>
+                    <p>• Preserves spatial relationships</p>
+                    <p>• Learns edge, texture, and pattern detectors</p>
+                </div>
+                <div style="background: #fef3c7; padding: 25px; border-radius: 10px; border: 2px solid #f59e0b;">
+                    <h3>Activation Layer (ReLU)</h3>
+                    <p>• Introduces non-linearity</p>
+                    <p>• ReLU: f(x) = max(0, x)</p>
+                    <p>• Helps network learn complex patterns</p>
+                </div>
+                <div style="background: #dcfce7; padding: 25px; border-radius: 10px; border: 2px solid #10b981;">
+                    <h3>Pooling Layer</h3>
+                    <p>• Reduces spatial dimensions</p>
+                    <p>• Max pooling: takes maximum value</p>
+                    <p>• Provides translation invariance</p>
+                </div>
+                <div style="background: #f3e8ff; padding: 25px; border-radius: 10px; border: 2px solid #8b5cf6;">
+                    <h3>Fully Connected Layer</h3>
+                    <p>• Traditional neural network layer</p>
+                    <p>• Used for final classification</p>
+                    <p>• Combines all learned features</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 18: Pooling Demonstration -->
+        <div class="slide">
+            <h2>Pooling Layer: Dimensionality Reduction</h2>
+            <div class="pooling-demo">
+                <div>
+                    <h3>Input Feature Map (4×4)</h3>
+                    <div class="pool-input" id="pool-input">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <h3>Max Pooling (2×2)</h3>
+                    <div class="pipeline-arrow" style="transform: rotate(90deg);">↓</div>
+                    <button class="check-btn" onclick="animatePooling()">Animate Pooling</button>
+                </div>
+                <div>
+                    <h3>Output Feature Map (2×2)</h3>
+                    <div class="pool-output" id="pool-output">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 40px; font-size: 1.2rem;">
+                <strong>Max Pooling:</strong> Takes the maximum value from each 2×2 window<br>
+                <strong>Result:</strong> Reduces data size while preserving important features
+            </p>
+        </div>
+        
+        <!-- Slide 19: Full CNN Pipeline - COMPLETELY REDESIGNED -->
+        <div class="slide">
+            <h2>Complete CNN Architecture</h2>
+        <div style="margin-top: 40px;">
+            <a href="W8_CNN.html" target="_blank" style="
+                display: inline-block;
+                background: #1e3a8a;
+                color: #fff;
+                padding: 16px 32px;
+                border-radius: 8px;
+                font-size: 1.2rem;
+                font-weight: 500;
+                text-decoration: none;
+                box-shadow: 0 2px 8px rgba(30,58,138,0.08);
+                transition: background 0.2s;
+            " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#1e3a8a'">
+                Try Interactive CNN Demo &rarr;
+            </a>
+        </div>
+        </div>
+        
+        <!-- Slide 20: Final Quiz -->
+        <div class="slide">
+            <h2>Final Understanding Check</h2>
+            <div class="quiz-container" style="max-width: 800px;">
+                <div class="quiz-question">
+                    1. In a CNN, what is the primary purpose of the convolutional layer?
+                </div>
+                <select id="q3-1" style="width: 100%; padding: 10px; font-size: 1rem; margin-bottom: 20px;">
+                    <option value="">Select an answer...</option>
+                    <option value="correct">Extract local features using learnable filters</option>
+                    <option value="wrong1">Reduce the image size</option>
+                    <option value="wrong2">Apply activation functions</option>
+                    <option value="wrong3">Perform final classification</option>
+                </select>
+                
+                <div class="quiz-question">
+                    2. What happens during max pooling with a 2×2 filter?
+                </div>
+                <select id="q3-2" style="width: 100%; padding: 10px; font-size: 1rem; margin-bottom: 20px;">
+                    <option value="">Select an answer...</option>
+                    <option value="wrong1">Average of 4 values is taken</option>
+                    <option value="correct">Maximum of 4 values is selected</option>
+                    <option value="wrong2">All 4 values are summed</option>
+                    <option value="wrong3">Minimum of 4 values is chosen</option>
+                </select>
+                
+                <div class="quiz-question">
+                    3. Why are CNNs particularly well-suited for image recognition?
+                </div>
+                <select id="q3-3" style="width: 100%; padding: 10px; font-size: 1rem;">
+                    <option value="">Select an answer...</option>
+                    <option value="wrong1">They are faster than other neural networks</option>
+                    <option value="correct">They preserve spatial relationships and learn hierarchical features</option>
+                    <option value="wrong2">They require less training data</option>
+                    <option value="wrong3">They can only process images</option>
+                </select>
+                
+                <button class="check-btn" onclick="checkFinalQuiz()">Check Answers</button>
+                <div id="final-quiz-result" style="margin-top: 20px; font-weight: bold;"></div>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn" onclick="previousSlide()">Previous</button>
+            <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('total-slides').textContent = totalSlides;
+        
+        function updateSlideVisibility() {
+            slides.forEach((slide, index) => {
+                slide.classList.toggle('active', index === currentSlide);
+                if (index === currentSlide) {
+                    slide.classList.add('animated-slide');
+                }
+            });
+            
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            document.getElementById('prev-btn').disabled = currentSlide === 0;
+            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlideVisibility();
+            }
+        }
+        
+        function previousSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlideVisibility();
+            }
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+        
+        // Initialize pixel grid
+        function initializePixelGrid() {
+            const grid = document.getElementById('pixel-grid');
+            const values = [
+                0, 45, 78, 123, 156, 189, 210, 255,
+                15, 60, 93, 138, 171, 204, 225, 240,
+                30, 75, 108, 153, 186, 219, 240, 225,
+                45, 90, 123, 168, 201, 234, 255, 210,
+                60, 105, 138, 183, 216, 249, 240, 195,
+                75, 120, 153, 198, 231, 234, 225, 180,
+                90, 135, 168, 213, 246, 219, 210, 165,
+                105, 150, 183, 228, 261, 204, 195, 150
+            ];
+            
+            values.forEach((value, index) => {
+                const pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                pixel.textContent = value;
+                pixel.style.backgroundColor = `rgb(${value},${value},${value})`;
+                pixel.style.color = value < 128 ? 'white' : 'black';
+                grid.appendChild(pixel);
+            });
+        }
+        
+        // Initialize convolution matrices
+        function initializeConvolutionDemo() {
+            const inputValues = [
+                [1, 2, 3, 0, 1],
+                [0, 1, 2, 1, 0],
+                [2, 0, 1, 2, 1],
+                [1, 1, 0, 1, 2],
+                [2, 1, 2, 0, 1]
+            ];
+            
+            const kernelValues = [
+                [1, 0, -1],
+                [2, 0, -2],
+                [1, 0, -1]
+            ];
+            
+            const inputMatrix = document.getElementById('input-matrix');
+            const kernelMatrix = document.getElementById('kernel-matrix');
+            const outputMatrix = document.getElementById('output-matrix');
+            
+            // Populate input matrix
+            inputValues.flat().forEach(value => {
+                const cell = document.createElement('div');
+                cell.className = 'matrix-cell';
+                cell.textContent = value;
+                inputMatrix.appendChild(cell);
+            });
+            
+            // Populate kernel matrix
+            kernelValues.flat().forEach(value => {
+                const cell = document.createElement('div');
+                cell.className = 'matrix-cell kernel-cell';
+                cell.textContent = value;
+                kernelMatrix.appendChild(cell);
+            });
+            
+            // Initialize empty output matrix
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'matrix-cell result-cell';
+                cell.textContent = '?';
+                outputMatrix.appendChild(cell);
+            }
+        }
+        
+        // Animate convolution operation
+        function animateConvolution() {
+            const inputCells = document.querySelectorAll('#input-matrix .matrix-cell');
+            const outputCells = document.querySelectorAll('#output-matrix .matrix-cell');
+            const explanation = document.getElementById('convolution-explanation');
+            
+            const convolutionResults = [
+                { result: -3, explanation: "Top-left 3×3 region convolved with kernel" },
+                { result: -2, explanation: "Kernel moved one position right" },
+                { result: -4, explanation: "Kernel moved to top-right position" },
+                { result: 1, explanation: "Second row, left position" },
+                { result: -1, explanation: "Center position of output" },
+                { result: 2, explanation: "Second row, right position" },
+                { result: 3, explanation: "Bottom row, left position" },
+                { result: 0, explanation: "Kernel moved one position right" },
+                { result: -1, explanation: "Bottom-right position completed" }
+            ];
+            
+            let step = 0;
+            const interval = setInterval(() => {
+                // Clear previous highlights
+                inputCells.forEach(cell => cell.classList.remove('highlight'));
+                
+                // Highlight current 3×3 region
+                const row = Math.floor(step / 3);
+                const col = step % 3;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        const index = (row + i) * 5 + (col + j);
+                        inputCells[index].classList.add('highlight');
+                    }
+                }
+                
+                // Show result
+                outputCells[step].textContent = convolutionResults[step].result;
+                explanation.textContent = convolutionResults[step].explanation;
+                
+                step++;
+                if (step >= convolutionResults.length) {
+                    clearInterval(interval);
+                    inputCells.forEach(cell => cell.classList.remove('highlight'));
+                    explanation.textContent = "Convolution complete! Each output value represents detected features.";
+                }
+            }, 1000);
+        }
+        
+        // Initialize pooling demo
+        function initializePoolingDemo() {
+            const poolInput = document.getElementById('pool-input');
+            const poolOutput = document.getElementById('pool-output');
+            
+            const inputValues = [8, 3, 4, 7, 2, 9, 1, 5, 6, 2, 8, 3, 1, 4, 6, 9];
+            const outputValues = ['?', '?', '?', '?'];
+            
+            inputValues.forEach((value, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'pool-cell';
+                cell.textContent = value;
+                poolInput.appendChild(cell);
+            });
+            
+            outputValues.forEach(value => {
+                const cell = document.createElement('div');
+                cell.className = 'pool-cell result-cell';
+                cell.textContent = value;
+                poolOutput.appendChild(cell);
+            });
+        }
+        
+        // Animate pooling operation
+        function animatePooling() {
+            const inputCells = document.querySelectorAll('#pool-input .pool-cell');
+            const outputCells = document.querySelectorAll('#pool-output .pool-cell');
+            
+            const poolingSteps = [
+                { indices: [0, 1, 4, 5], result: 9 },
+                { indices: [2, 3, 6, 7], result: 7 },
+                { indices: [8, 9, 12, 13], result: 8 },
+                { indices: [10, 11, 14, 15], result: 9 }
+            ];
+            
+            let step = 0;
+            const interval = setInterval(() => {
+                // Clear previous highlights
+                inputCells.forEach(cell => cell.classList.remove('pool-highlight'));
+                
+                // Highlight current 2×2 region
+                poolingSteps[step].indices.forEach(index => {
+                    inputCells[index].classList.add('pool-highlight');
+                });
+                
+                // Show result
+                outputCells[step].textContent = poolingSteps[step].result;
+                
+                step++;
+                if (step >= poolingSteps.length) {
+                    clearInterval(interval);
+                    inputCells.forEach(cell => cell.classList.remove('pool-highlight'));
+                }
+            }, 1000);
+        }
+        
+        // Animate full pipeline - UPDATED FOR NEW ARCHITECTURE
+        function animateFullPipeline() {
+            const connections = document.querySelectorAll('svg line');
+            const status = document.getElementById('pipeline-status');
+            
+            const messages = [
+                "Input: 32×32×3 RGB image loaded...",
+                "Conv1: Applying 32 filters to detect edges and basic features...",
+                "Pool1: Reducing spatial dimensions while preserving important features...",
+                "Conv2: Learning more complex patterns with 64 filters...",
+                "Pool2: Further dimensionality reduction...",
+                "Flatten: Converting 2D feature maps to 1D vector...",
+                "FC1: Dense layer learning high-level combinations...",
+                "Output: Final classification probabilities",
+                "Prediction complete! Most likely class: Cat (89.7% confidence)"
+            ];
+            
+            let step = 0;
+            const interval = setInterval(() => {
+                // Reset all connections
+                connections.forEach(line => {
+                    line.style.stroke = '#6b7280';
+                    line.style.strokeWidth = '2';
+                    line.style.opacity = '0.7';
+                });
+                
+                // Highlight current connection
+                if (step < connections.length) {
+                    connections[step].style.stroke = '#ef4444';
+                    connections[step].style.strokeWidth = '4';
+                    connections[step].style.opacity = '1';
+                }
+                
+                status.textContent = messages[step] || messages[messages.length - 1];
+                
+                step++;
+                if (step >= messages.length + 1) {
+                    clearInterval(interval);
+                    // Reset all connections
+                    connections.forEach(line => {
+                        line.style.stroke = '#6b7280';
+                        line.style.strokeWidth = '2';
+                        line.style.opacity = '0.7';
+                    });
+                }
+            }, 1200);
+        }
+        
+        // Quiz functions
+        function checkQuiz2() {
+            const q1 = document.getElementById('q2-1').value;
+            const q2 = document.getElementById('q2-2').value;
+            const result = document.getElementById('quiz2-result');
+            
+            const score = (q1 === 'correct' ? 1 : 0) + (q2 === 'correct' ? 1 : 0);
+            
+            result.textContent = `Score: ${score}/2. `;
+            if (score === 2) {
+                result.textContent += "Excellent understanding!";
+                result.style.color = '#10b981';
+            } else {
+                result.textContent += "Review the concepts and try again.";
+                result.style.color = '#f59e0b';
+            }
+        }
+        
+        function checkFinalQuiz() {
+            const q1 = document.getElementById('q3-1').value;
+            const q2 = document.getElementById('q3-2').value;
+            const q3 = document.getElementById('q3-3').value;
+            const result = document.getElementById('final-quiz-result');
+            
+            const score = (q1 === 'correct' ? 1 : 0) + (q2 === 'correct' ? 1 : 0) + (q3 === 'correct' ? 1 : 0);
+            
+            result.textContent = `Final Score: ${score}/3. `;
+            if (score === 3) {
+                result.textContent += "Outstanding! You've mastered CNN concepts!";
+                result.style.color = '#10b981';
+            } else if (score >= 2) {
+                result.textContent += "Good understanding! Review the missed concepts.";
+                result.style.color = '#3b82f6';
+            } else {
+                result.textContent += "Keep studying CNNs. Practice makes perfect!";
+                result.style.color = '#f59e0b';
+            }
+        }
+        
+        // Initialize demonstrations when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePixelGrid();
+            initializeConvolutionDemo();
+            initializePoolingDemo();
+            updateSlideVisibility();
+        });
+    </script>
+</body>
+</html>
