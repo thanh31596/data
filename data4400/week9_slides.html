@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA4400 Week 9: Analytics Case Studies</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background-color: white;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            position: relative;
+        }
+        
+        .slide {
+            width: 100%;
+            height: 100%;
+            padding: 60px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        .slide h1 {
+            font-size: 3em;
+            color: #1e3a8a;
+            margin-bottom: 40px;
+            font-weight: bold;
+        }
+        
+        .slide h2 {
+            font-size: 2.5em;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        
+        .slide h3 {
+            font-size: 2em;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .slide p, .slide li {
+            font-size: 1.3em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            max-width: 1000px;
+        }
+        
+        .slide ul {
+            text-align: left;
+            margin: 20px 0;
+        }
+        
+        .slide li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+        }
+        
+        .kaplan-logo {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: #1e3a8a;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            background-color: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .nav-btn:hover {
+            background-color: #1e40af;
+        }
+        
+        .nav-btn:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #f3f4f6;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        
+        .chart-container {
+            width: 80%;
+            height: 400px;
+            margin: 20px 0;
+        }
+        
+        .quiz-container {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+            max-width: 800px;
+        }
+        
+        .quiz-question {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+        
+        .quiz-options {
+            text-align: left;
+        }
+        
+        .quiz-option {
+            background-color: white;
+            border: 2px solid #d1d5db;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .quiz-option:hover {
+            border-color: #1e3a8a;
+            background-color: #eff6ff;
+        }
+        
+        .quiz-option.selected {
+            border-color: #1e3a8a;
+            background-color: #dbeafe;
+        }
+        
+        .quiz-option.correct {
+            border-color: #059669;
+            background-color: #d1fae5;
+        }
+        
+        .quiz-option.incorrect {
+            border-color: #dc2626;
+            background-color: #fee2e2;
+        }
+        
+        .quiz-feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .quiz-feedback.correct {
+            background-color: #d1fae5;
+            color: #059669;
+            border: 2px solid #059669;
+        }
+        
+        .quiz-feedback.incorrect {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border: 2px solid #dc2626;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .highlight-box {
+            background-color: #eff6ff;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .data-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+        
+        .data-table th, .data-table td {
+            border: 1px solid #d1d5db;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .data-table th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+        }
+        
+        .assessment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+            max-width: 1000px;
+        }
+        
+        .assessment-card {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: left;
+        }
+        
+        .assessment-card h4 {
+            color: #1e3a8a;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+        
+        .case-study-card {
+            background-color: #fefefe;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+        
+        .case-study-title {
+            color: #1e3a8a;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .case-study-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .interactive-demo {
+            background-color: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            max-width: 600px;
+        }
+        
+        .demo-controls {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .demo-btn {
+            background-color: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        
+        .demo-btn:hover {
+            background-color: #0284c7;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">35</span>
+    </div>
+    
+    <div class="slide-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>DATA4400</h1>
+            <h2 style="color: #0ea5e9;">Data-Driven Forecasting</h2>
+            <h3 style="color: #0ea5e9; margin-top: 40px;">Workshop 9</h3>
+            <p style="font-size: 1.5em; color: #0ea5e9; margin-top: 20px;">Analytics and Decision-Making Case Studies</p>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 2: Assessment 3 Overview -->
+        <div class="slide">
+            <h2>Assessment 3</h2>
+            <p style="font-size: 1.5em; margin-top: 40px;">The next few slides will give you some tips on how to address your A3 reports</p>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 3: Assessment 3 Details -->
+        <div class="slide">
+            <h2>Assessment 3: Overview</h2>
+            <div class="assessment-grid">
+                <div class="assessment-card">
+                    <h4>Assessment Type</h4>
+                    <p>Individual Presentation (10%)</p>
+                    <p>Individual Report (30%)</p>
+                    <p><strong>Total Weighting: 40%</strong></p>
+                </div>
+                <div class="assessment-card">
+                    <h4>Requirements</h4>
+                    <p>1000 words report (+/-10%)</p>
+                    <p>Plus figures and references</p>
+                    <p>Real-world forecasting project</p>
+                </div>
+                <div class="assessment-card">
+                    <h4>Due Dates</h4>
+                    <p>Presentation: Week 12 (in class)</p>
+                    <p>Report: Friday Week 12, 11:55 PM AEST</p>
+                    <p>Data files via Dropbox</p>
+                </div>
+                <div class="assessment-card">
+                    <h4>Focus Areas</h4>
+                    <p>Business problem identification</p>
+                    <p>Forecasting application</p>
+                    <p>Real-world impact analysis</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 4: Assessment 3 Task Description -->
+        <div class="slide">
+            <h2>Your Task</h2>
+            <div style="text-align: left; max-width: 900px;">
+                <h3 style="color: #1e3a8a; margin-bottom: 20px;">Develop a Real-World Forecasting Project</h3>
+                <div class="highlight-box">
+                    <h4>Part A - Presentation (Week 12)</h4>
+                    <p>Present an overview of your business project in class</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>Part B - Written Report</h4>
+                    <p>1000-word report on Forecasting for a Business Problem</p>
+                    <p>Submit via Turnitin + data files via File Submission portal</p>
+                </div>
+                <p style="margin-top: 20px;"><strong>Key Requirement:</strong> Choose an organisation in an industry of your choice and articulate the steps needed for forecasting-driven decision making.</p>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 5: Project Topic Guidelines -->
+        <div class="slide">
+            <h2>Project Topic Guidelines</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <ul style="font-size: 1.4em; line-height: 1.8;">
+                    <li>You need an <strong>application of forecasting</strong> and a <strong>relevant dataset</strong></li>
+                    <li>Should be based on employment you have had, have now, or can imagine having in the future</li>
+                    <li>Application does not need to be of major financial significance</li>
+                    <li>Examples from previous students:
+                        <ul style="margin-top: 10px; font-size: 0.9em;">
+                            <li>YouTube channel viewership forecasting</li>
+                            <li>Fresh produce waste reduction at grocery stores</li>
+                            <li>Small retail inventory management</li>
+                        </ul>
+                    </li>
+                    <li>Analysis can be performed in Excel if appropriate</li>
+                    <li>Aim for an <strong>interesting and original</strong> application</li>
+                </ul>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 6: Case Studies Introduction -->
+        <div class="slide">
+            <h2>Forecasting: Case Studies</h2>
+            <div style="position: relative; width: 80%; height: 60%;">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'%3E%3Crect width='800' height='400' fill='%23f8fafc'/%3E%3Crect x='50' y='50' width='700' height='300' fill='white' stroke='%23e2e8f0' stroke-width='2'/%3E%3Ctext x='400' y='100' text-anchor='middle' font-family='Helvetica' font-size='24' font-weight='bold' fill='%231e3a8a'%3EReal-World Analytics Dashboard%3C/text%3E%3Crect x='100' y='130' width='250' height='80' fill='%23dbeafe' stroke='%233b82f6'/%3E%3Ctext x='225' y='155' text-anchor='middle' font-family='Helvetica' font-size='14' fill='%231e3a8a'%3ETime Series Data%3C/text%3E%3Ctext x='225' y='180' text-anchor='middle' font-family='Helvetica' font-size='12' fill='%23374151'%3EMonthly Patterns%3C/text%3E%3Crect x='450' y='130' width='250' height='80' fill='%23d1fae5' stroke='%23059669'/%3E%3Ctext x='575' y='155' text-anchor='middle' font-family='Helvetica' font-size='14' fill='%231e3a8a'%3EForecasting Models%3C/text%3E%3Ctext x='575' y='180' text-anchor='middle' font-family='Helvetica' font-size='12' fill='%23374151'%3EPredictive Analytics%3C/text%3E%3Crect x='275' y='250' width='250' height='80' fill='%23fef3c7' stroke='%23f59e0b'/%3E%3Ctext x='400' y='275' text-anchor='middle' font-family='Helvetica' font-size='14' fill='%231e3a8a'%3EBusiness Impact%3C/text%3E%3Ctext x='400' y='300' text-anchor='middle' font-family='Helvetica' font-size='12' fill='%23374151'%3EDecision Making%3C/text%3E%3C/svg%3E" alt="Analytics Dashboard" style="width: 100%; height: 100%; object-fit: contain;" />
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 7: Case Study Overview -->
+        <div class="slide">
+            <h2>Today's Case Studies</h2>
+            <div class="case-study-grid">
+                <div class="case-study-card">
+                    <div class="case-study-title">📈 Air Travel Industry</div>
+                    <p><strong>Dataset:</strong> Monthly passenger numbers (2010-2021)</p>
+                    <p><strong>Challenge:</strong> Seasonal demand forecasting</p>
+                    <p><strong>Application:</strong> Capacity planning and resource allocation</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">🎫 Ticket Sales</div>
+                    <p><strong>Dataset:</strong> Monthly ticket sales data</p>
+                    <p><strong>Challenge:</strong> Revenue prediction</p>
+                    <p><strong>Application:</strong> Marketing budget optimization</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">🛒 Retail Analytics</div>
+                    <p><strong>Dataset:</strong> Daily sales with marketing metrics</p>
+                    <p><strong>Challenge:</strong> Multi-factor demand prediction</p>
+                    <p><strong>Application:</strong> Inventory and marketing strategy</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">🏬 Department Store</div>
+                    <p><strong>Dataset:</strong> Entertainment and sales data</p>
+                    <p><strong>Challenge:</strong> Cross-category forecasting</p>
+                    <p><strong>Application:</strong> Store layout and promotion planning</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 8: Quiz 1 -->
+        <div class="slide">
+            <h2>Knowledge Check 1</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">What are the three main components of time series data?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Mean, Median, Mode</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">B) Trend, Seasonality, Noise</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">C) Linear, Exponential, Logarithmic</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Past, Present, Future</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 9: Case Study 1 - Air Travel Data -->
+        <div class="slide">
+            <h2>Case Study 1: Air Travel Demand</h2>
+            <div class="two-column">
+                <div>
+                    <h3>Business Context</h3>
+                    <ul>
+                        <li>Airlines need to predict passenger demand</li>
+                        <li>Capacity planning requires accurate forecasts</li>
+                        <li>Seasonal patterns affect pricing strategies</li>
+                        <li>Economic events impact travel trends</li>
+                    </ul>
+                    <div class="highlight-box">
+                        <h4>Key Question</h4>
+                        <p>How can we forecast monthly passenger numbers to optimize aircraft deployment and staffing?</p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="airPassengersChart"></canvas>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 10: Air Travel Analysis -->
+        <div class="slide">
+            <h2>Air Travel: Pattern Analysis</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>Observable Patterns</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #1e3a8a;">1. Seasonal Trends</h4>
+                        <ul>
+                            <li>Peak travel: June-August</li>
+                            <li>Holiday spikes: December</li>
+                            <li>Low season: January-February</li>
+                        </ul>
+                        <h4 style="color: #1e3a8a; margin-top: 20px;">2. Long-term Growth</h4>
+                        <ul>
+                            <li>Overall upward trend</li>
+                            <li>Growth interrupted by events</li>
+                            <li>Recovery patterns visible</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #1e3a8a;">3. Business Implications</h4>
+                        <ul>
+                            <li>Fleet scheduling optimization</li>
+                            <li>Staff allocation planning</li>
+                            <li>Revenue management</li>
+                            <li>Route planning decisions</li>
+                        </ul>
+                        <div class="highlight-box" style="margin-top: 20px;">
+                            <strong>Forecasting Value:</strong> Accurate predictions can improve capacity utilization by 15-25%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 11: Quiz 2 -->
+        <div class="slide">
+            <h2>Knowledge Check 2</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">In the air travel case study, what would be the most appropriate forecasting method for capturing seasonal patterns?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Simple moving average</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">B) Seasonal ARIMA or Holt-Winters</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">C) Linear regression</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Random walk model</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 12: Case Study 2 - Retail Industry -->
+        <div class="slide">
+            <h2>Case Study 2: Retail Industry Analytics</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>Multi-Factor Forecasting Challenge</h3>
+                <div class="two-column">
+                    <div>
+                        <h4>Available Data Variables:</h4>
+                        <ul>
+                            <li><strong>Marketing Spend ($)</strong></li>
+                            <li><strong>Number of Promotions</strong></li>
+                            <li><strong>Website Traffic (thousands)</strong></li>
+                            <li><strong>Customer Footfall (thousands)</strong></li>
+                            <li><strong>Daily Sales ($)</strong> - Target variable</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>Business Questions:</h4>
+                        <ul>
+                            <li>How does marketing spend affect sales?</li>
+                            <li>What's the optimal promotion frequency?</li>
+                            <li>How do online and offline metrics correlate?</li>
+                            <li>Can we predict sales from leading indicators?</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="highlight-box">
+                    <h4>Forecasting Complexity</h4>
+                    <p>Unlike simple time series, this requires <strong>multivariate forecasting</strong> considering external predictors and their interactions.</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 13: Retail Data Visualization -->
+        <div class="slide">
+            <h2>Retail Data: Correlation Analysis</h2>
+            <div class="chart-container" style="height: 450px;">
+                <canvas id="retailCorrelationChart"></canvas>
+            </div>
+            <p style="margin-top: 20px; font-size: 1.2em;">This scatter plot shows the relationship between marketing spend and daily sales, revealing the effectiveness of marketing investments.</p>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 14: Interactive Demo -->
+        <div class="slide">
+            <h2>Interactive Forecasting Demo</h2>
+            <div class="interactive-demo">
+                <h3>Explore Different Forecasting Scenarios</h3>
+                <p>Adjust parameters to see how they affect forecasting accuracy:</p>
+                <div class="demo-controls">
+                    <button class="demo-btn" onclick="updateForecast('conservative')">Conservative Growth</button>
+                    <button class="demo-btn" onclick="updateForecast('moderate')">Moderate Growth</button>
+                    <button class="demo-btn" onclick="updateForecast('aggressive')">Aggressive Growth</button>
+                </div>
+                <div id="forecastResult" style="margin-top: 20px; padding: 15px; background-color: white; border-radius: 5px; display: none;">
+                    <h4>Forecast Result:</h4>
+                    <p id="forecastText"></p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 15: Quiz 3 -->
+        <div class="slide">
+            <h2>Knowledge Check 3</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">When forecasting with multiple external variables, which approach is most appropriate?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Simple exponential smoothing</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">B) Vector Autoregression (VAR) or regression with ARIMA errors</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">C) Moving averages only</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Prophet without external regressors</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 16: Case Study 3 - Department Store -->
+        <div class="slide">
+            <h2>Case Study 3: Department Store Analytics</h2>
+            <div class="two-column">
+                <div>
+                    <h3>Cross-Category Analysis</h3>
+                    <ul>
+                        <li><strong>Entertainment Sales:</strong> Events, experiences, promotions</li>
+                        <li><strong>Total Sales:</strong> Overall store performance</li>
+                        <li><strong>Relationship:</strong> How entertainment drives overall sales</li>
+                    </ul>
+                    <div class="highlight-box">
+                        <h4>Strategic Question</h4>
+                        <p>Should we invest more in entertainment to boost total sales?</p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="departmentStoreChart"></canvas>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 17: Business Impact Analysis -->
+        <div class="slide">
+            <h2>Quantifying Business Impact</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>Forecasting ROI Framework</h3>
+                <div class="assessment-grid">
+                    <div class="assessment-card">
+                        <h4>Cost Reduction</h4>
+                        <ul>
+                            <li>Inventory optimization: 10-30% reduction</li>
+                            <li>Staff scheduling efficiency: 15-20%</li>
+                            <li>Waste reduction: 20-40%</li>
+                        </ul>
+                    </div>
+                    <div class="assessment-card">
+                        <h4>Revenue Enhancement</h4>
+                        <ul>
+                            <li>Better pricing strategies: 5-15% uplift</li>
+                            <li>Demand capture: 10-25% improvement</li>
+                            <li>Customer satisfaction: 20-30% increase</li>
+                        </ul>
+                    </div>
+                    <div class="assessment-card">
+                        <h4>Risk Mitigation</h4>
+                        <ul>
+                            <li>Reduced stockouts: 50-80% decrease</li>
+                            <li>Better capacity planning</li>
+                            <li>Improved cash flow management</li>
+                        </ul>
+                    </div>
+                    <div class="assessment-card">
+                        <h4>Strategic Value</h4>
+                        <ul>
+                            <li>Data-driven decision making</li>
+                            <li>Competitive advantage</li>
+                            <li>Scalable business processes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 18: Quiz 4 -->
+        <div class="slide">
+            <h2>Knowledge Check 4</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">What is typically the largest source of forecasting value in retail operations?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Increased sales prices</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">B) Inventory optimization and waste reduction</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">C) Marketing cost reduction</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Staff cost savings only</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 19: Forecasting Methods Comparison -->
+        <div class="slide">
+            <h2>Choosing the Right Forecasting Method</h2>
+            <table class="data-table" style="font-size: 1em;">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Best For</th>
+                        <th>Data Requirements</th>
+                        <th>Complexity</th>
+                        <th>Interpretability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Moving Average</strong></td>
+                        <td>Stable patterns</td>
+                        <td>Low</td>
+                        <td>Low</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Exponential Smoothing</strong></td>
+                        <td>Trending data</td>
+                        <td>Medium</td>
+                        <td>Medium</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ARIMA</strong></td>
+                        <td>Complex patterns</td>
+                        <td>High</td>
+                        <td>High</td>
+                        <td>Medium</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prophet</strong></td>
+                        <td>Seasonal + holidays</td>
+                        <td>Medium</td>
+                        <td>Medium</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td><strong>VAR</strong></td>
+                        <td>Multiple variables</td>
+                        <td>High</td>
+                        <td>High</td>
+                        <td>Medium</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 20: Real-World Implementation -->
+        <div class="slide">
+            <h2>Implementation Considerations</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>From Model to Business Value</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #1e3a8a;">Technical Implementation</h4>
+                        <ul>
+                            <li>Data quality and preprocessing</li>
+                            <li>Model validation and testing</li>
+                            <li>Automated forecasting pipelines</li>
+                            <li>Performance monitoring</li>
+                            <li>Error detection and correction</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #1e3a8a;">Business Integration</h4>
+                        <ul>
+                            <li>Stakeholder training and buy-in</li>
+                            <li>Process integration</li>
+                            <li>Decision-making workflows</li>
+                            <li>Performance measurement</li>
+                            <li>Continuous improvement</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="highlight-box" style="margin-top: 30px;">
+                    <h4>Success Factors</h4>
+                    <p>The best forecasting model is useless without proper implementation, user adoption, and integration into business processes.</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 21: Quiz 5 -->
+        <div class="slide">
+            <h2>Knowledge Check 5</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">What is the most critical factor for successful forecasting implementation?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Using the most complex model available</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">B) Having the largest possible dataset</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">C) Integration with business processes and user adoption</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Perfect forecast accuracy</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 22: Activity -->
+        <div class="slide">
+            <h2>Activity 6</h2>
+            <div class="highlight-box" style="max-width: 900px; text-align: left;">
+                <h3>Strategic Business Outcomes</h3>
+                <ol style="font-size: 1.3em; line-height: 1.8;">
+                    <li><strong>Describe three general strategic business outcomes that can be achieved through accurate forecasting.</strong></li>
+                    <li><strong>Could you use a time-series model together with your knowledge of local environment variables?</strong></li>
+                    <li><strong>Give examples of industries (or companies) in which demand forecasting is dependent on the demand for other products.</strong></li>
+                </ol>
+            </div>
+            <p style="margin-top: 30px; font-size: 1.2em;">Discuss these questions with your peers and prepare to share insights with the class.</p>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 23: Common Forecasting Mistakes -->
+        <div class="slide">
+            <h2>Common Forecasting Pitfalls</h2>
+            <div class="case-study-grid">
+                <div class="case-study-card">
+                    <div class="case-study-title">❌ Over-Fitting</div>
+                    <p><strong>Problem:</strong> Model too complex for data</p>
+                    <p><strong>Solution:</strong> Use cross-validation and simpler models</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">❌ Ignoring Seasonality</div>
+                    <p><strong>Problem:</strong> Missing obvious patterns</p>
+                    <p><strong>Solution:</strong> Proper exploratory data analysis</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">❌ Poor Data Quality</div>
+                    <p><strong>Problem:</strong> Garbage in, garbage out</p>
+                    <p><strong>Solution:</strong> Robust data cleaning processes</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">❌ No Business Context</div>
+                    <p><strong>Problem:</strong> Technical solution without business understanding</p>
+                    <p><strong>Solution:</strong> Close collaboration with domain experts</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 24: Data Quality Framework -->
+        <div class="slide">
+            <h2>Data Quality for Forecasting</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>Essential Data Quality Dimensions</h3>
+                <div class="assessment-grid">
+                    <div class="assessment-card">
+                        <h4>Completeness</h4>
+                        <ul>
+                            <li>No missing critical time periods</li>
+                            <li>Consistent data collection frequency</li>
+                            <li>Appropriate historical depth</li>
+                        </ul>
+                    </div>
+                    <div class="assessment-card">
+                        <h4>Accuracy</h4>
+                        <ul>
+                            <li>Correct measurement units</li>
+                            <li>Validated data sources</li>
+                            <li>Error detection procedures</li>
+                        </ul>
+                    </div>
+                    <div class="assessment-card">
+                        <h4>Consistency</h4>
+                        <ul>
+                            <li>Uniform data definitions</li>
+                            <li>Standardized collection methods</li>
+                            <li>Compatible time zones/periods</li>
+                        </ul>
+                    </div>
+                    <div class="assessment-card">
+                        <h4>Timeliness</h4>
+                        <ul>
+                            <li>Regular update schedules</li>
+                            <li>Minimal reporting delays</li>
+                            <li>Real-time availability when needed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 25: Quiz 6 -->
+        <div class="slide">
+            <h2>Knowledge Check 6</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">Which data quality issue is most critical for time series forecasting?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Minor measurement errors</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">B) Missing time periods creating gaps in the series</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">C) Slight variations in decimal precision</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Different data collection times within the same day</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 26: Model Validation Techniques -->
+        <div class="slide">
+            <h2>Forecasting Model Validation</h2>
+            <div class="two-column">
+                <div>
+                    <h3>Validation Approaches</h3>
+                    <div class="highlight-box">
+                        <h4>Train-Test Split</h4>
+                        <p>Use 70-80% for training, 20-30% for testing</p>
+                    </div>
+                    <div class="highlight-box">
+                        <h4>Time Series Cross-Validation</h4>
+                        <p>Expanding window validation respecting temporal order</p>
+                    </div>
+                    <div class="highlight-box">
+                        <h4>Out-of-Sample Testing</h4>
+                        <p>Reserve recent data for final model evaluation</p>
+                    </div>
+                </div>
+                <div>
+                    <h3>Evaluation Metrics</h3>
+                    <ul>
+                        <li><strong>MAE:</strong> Mean Absolute Error</li>
+                        <li><strong>RMSE:</strong> Root Mean Square Error</li>
+                        <li><strong>MAPE:</strong> Mean Absolute Percentage Error</li>
+                        <li><strong>AIC/BIC:</strong> Information criteria</li>
+                    </ul>
+                    <div class="highlight-box" style="margin-top: 20px;">
+                        <h4>Business Metrics</h4>
+                        <p>Consider cost of forecast errors in business terms, not just statistical accuracy</p>
+                    </div>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 27: Uncertainty and Risk -->
+        <div class="slide">
+            <h2>Managing Forecast Uncertainty</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>Sources of Forecasting Uncertainty</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #1e3a8a;">Aleatory Uncertainty</h4>
+                        <ul>
+                            <li>Inherent randomness in data</li>
+                            <li>Natural variation in demand</li>
+                            <li>Cannot be reduced with more data</li>
+                        </ul>
+                        <h4 style="color: #1e3a8a; margin-top: 20px;">Epistemic Uncertainty</h4>
+                        <ul>
+                            <li>Model structure uncertainty</li>
+                            <li>Parameter estimation errors</li>
+                            <li>Can be reduced with better models/data</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #1e3a8a;">Risk Management Strategies</h4>
+                        <ul>
+                            <li>Confidence intervals and prediction bands</li>
+                            <li>Scenario planning (optimistic/pessimistic)</li>
+                            <li>Ensemble forecasting methods</li>
+                            <li>Regular model updates and monitoring</li>
+                            <li>Robust decision-making frameworks</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="highlight-box" style="margin-top: 20px;">
+                    <strong>Key Insight:</strong> Perfect forecasts are impossible. Focus on understanding and communicating uncertainty to enable better decision-making.
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 28: Quiz 7 -->
+        <div class="slide">
+            <h2>Knowledge Check 7</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">What is the best approach when dealing with high forecast uncertainty?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Use a more complex model to eliminate uncertainty</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">B) Ignore uncertainty and present point forecasts only</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">C) Communicate uncertainty ranges and use robust decision frameworks</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Avoid making forecasts altogether</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 29: Technology and Tools -->
+        <div class="slide">
+            <h2>Forecasting Technology Stack</h2>
+            <div class="case-study-grid">
+                <div class="case-study-card">
+                    <div class="case-study-title">📊 Excel/Google Sheets</div>
+                    <p><strong>Best for:</strong> Simple analyses, prototyping</p>
+                    <p><strong>Pros:</strong> Accessible, intuitive, quick</p>
+                    <p><strong>Cons:</strong> Limited scalability, basic methods</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">🐍 Python/R</div>
+                    <p><strong>Best for:</strong> Advanced analytics, custom models</p>
+                    <p><strong>Pros:</strong> Flexible, powerful libraries, reproducible</p>
+                    <p><strong>Cons:</strong> Requires programming skills</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">☁️ Cloud Platforms</div>
+                    <p><strong>Best for:</strong> Enterprise solutions, scalability</p>
+                    <p><strong>Pros:</strong> Automated pipelines, collaboration</p>
+                    <p><strong>Cons:</strong> Cost, complexity, vendor lock-in</p>
+                </div>
+                <div class="case-study-card">
+                    <div class="case-study-title">🤖 AutoML Tools</div>
+                    <p><strong>Best for:</strong> Non-experts, rapid deployment</p>
+                    <p><strong>Pros:</strong> No coding required, automated optimization</p>
+                    <p><strong>Cons:</strong> Limited customization, black box</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 30: Future of Forecasting -->
+        <div class="slide">
+            <h2>The Future of Business Forecasting</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>Emerging Trends and Technologies</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #1e3a8a;">Technology Trends</h4>
+                        <ul>
+                            <li>Machine Learning automation</li>
+                            <li>Real-time streaming analytics</li>
+                            <li>Ensemble and hybrid methods</li>
+                            <li>Explainable AI for forecasting</li>
+                            <li>Integration with IoT sensors</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #1e3a8a;">Business Evolution</h4>
+                        <ul>
+                            <li>Democratization of forecasting</li>
+                            <li>Continuous forecasting cycles</li>
+                            <li>Cross-functional collaboration</li>
+                            <li>Sustainability and ESG metrics</li>
+                            <li>Resilience and scenario planning</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="highlight-box" style="margin-top: 30px;">
+                    <h4>Key Message for Students</h4>
+                    <p>Focus on developing strong fundamentals in statistics, data analysis, and business understanding. Technology will evolve, but these core skills remain essential.</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 31: Assessment 3 Preparation Tips -->
+        <div class="slide">
+            <h2>Assessment 3 Success Tips</h2>
+            <div class="assessment-grid">
+                <div class="assessment-card">
+                    <h4>Choose Your Topic Wisely</h4>
+                    <ul>
+                        <li>Pick something you understand</li>
+                        <li>Ensure data availability</li>
+                        <li>Consider business relevance</li>
+                        <li>Start simple, add complexity</li>
+                    </ul>
+                </div>
+                <div class="assessment-card">
+                    <h4>Data Preparation</h4>
+                    <ul>
+                        <li>Clean and validate your data</li>
+                        <li>Check for missing values</li>
+                        <li>Understand data limitations</li>
+                        <li>Document data sources</li>
+                    </ul>
+                </div>
+                <div class="assessment-card">
+                    <h4>Analysis and Modeling</h4>
+                    <ul>
+                        <li>Start with exploratory analysis</li>
+                        <li>Choose appropriate methods</li>
+                        <li>Validate your models</li>
+                        <li>Interpret results clearly</li>
+                    </ul>
+                </div>
+                <div class="assessment-card">
+                    <h4>Business Impact</h4>
+                    <ul>
+                        <li>Connect to real business problems</li>
+                        <li>Quantify potential benefits</li>
+                        <li>Consider implementation challenges</li>
+                        <li>Provide actionable recommendations</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 32: Quiz 8 -->
+        <div class="slide">
+            <h2>Final Knowledge Check</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">For Assessment 3, what is the most important factor for a successful project?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectOption(this, false)">A) Using the most advanced forecasting method available</div>
+                    <div class="quiz-option" onclick="selectOption(this, true)">B) Clearly connecting forecasting results to business value and decision-making</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">C) Having a very large dataset</div>
+                    <div class="quiz-option" onclick="selectOption(this, false)">D) Achieving perfect forecast accuracy</div>
+                </div>
+                <div class="quiz-feedback">
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 33: Next Steps -->
+        <div class="slide">
+            <h2>Next Steps</h2>
+            <div style="text-align: left; max-width: 900px;">
+                <h3>Your Action Plan</h3>
+                <div class="highlight-box">
+                    <h4>This Week</h4>
+                    <ul>
+                        <li>Finalize your Assessment 3 topic</li>
+                        <li>Source and validate your dataset</li>
+                        <li>Begin exploratory data analysis</li>
+                        <li>Submit Assessment 2 (due this week)</li>
+                    </ul>
+                </div>
+                <div class="highlight-box">
+                    <h4>Coming Weeks</h4>
+                    <ul>
+                        <li><strong>Week 10:</strong> Forecasting vs Prediction, Recommender Systems</li>
+                        <li><strong>Week 11:</strong> Bayesian Methods and Inference</li>
+                        <li><strong>Week 12:</strong> Assessment 3 presentations and final submissions</li>
+                    </ul>
+                </div>
+                <p style="margin-top: 20px; font-size: 1.2em;"><strong>Remember:</strong> Focus on practical business applications and clear communication of your findings.</p>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 34: Resources -->
+        <div class="slide">
+            <h2>Additional Resources</h2>
+            <div style="text-align: left; max-width: 1000px;">
+                <h3>Recommended Reading and Tools</h3>
+                <div class="two-column">
+                    <div>
+                        <h4 style="color: #1e3a8a;">Academic Resources</h4>
+                        <ul>
+                            <li>Hyndman & Athanasopoulos: "Forecasting: Principles and Practice"</li>
+                            <li>Box, Jenkins & Reinsel: "Time Series Analysis"</li>
+                            <li>Harvard Business Review: Forecasting articles</li>
+                            <li>Journal of Business Forecasting</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #1e3a8a;">Practical Tools</h4>
+                        <ul>
+                            <li>Python: statsmodels, scikit-learn, prophet</li>
+                            <li>R: forecast, prophet, tidymodels packages</li>
+                            <li>Excel: Data Analysis ToolPak</li>
+                            <li>Google Colab for collaborative coding</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="highlight-box" style="margin-top: 30px;">
+                    <h4>Getting Help</h4>
+                    <p>Don't hesitate to ask questions during office hours, use the course discussion forum, or form study groups with your classmates.</p>
+                </div>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+        
+        <!-- Slide 35: Conclusion -->
+        <div class="slide">
+            <h2>Key Takeaways</h2>
+            <div style="text-align: left; max-width: 900px;">
+                <h3>Essential Points from Today's Session</h3>
+                <div class="highlight-box">
+                    <h4>1. Forecasting is a Business Tool</h4>
+                    <p>Technical accuracy matters less than business value and actionable insights.</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>2. Context is Critical</h4>
+                    <p>Understand your industry, data, and business environment before choosing methods.</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>3. Implementation Matters</h4>
+                    <p>The best model is worthless without proper deployment and user adoption.</p>
+                </div>
+                <div class="highlight-box">
+                    <h4>4. Start Simple</h4>
+                    <p>Begin with basic methods and add complexity only when it adds business value.</p>
+                </div>
+                <p style="margin-top: 30px; font-size: 1.3em; text-align: center;"><strong>Good luck with Assessment 3!</strong></p>
+            </div>
+            <div class="kaplan-logo">KAPLAN BUSINESS SCHOOL AUSTRALIA</div>
+        </div>
+    </div>
+    
+    <div class="navigation">
+        <button class="nav-btn" onclick="previousSlide()" id="prevBtn">Previous</button>
+        <button class="nav-btn" onclick="nextSlide()" id="nextBtn">Next</button>
+    </div>
+    
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('totalSlides').textContent = totalSlides;
+        
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+            
+            // Initialize charts when reaching specific slides
+            if (currentSlide === 8) { // Air Passengers Chart
+                initAirPassengersChart();
+            } else if (currentSlide === 12) { // Retail Correlation Chart
+                initRetailCorrelationChart();
+            } else if (currentSlide === 15) { // Department Store Chart
+                initDepartmentStoreChart();
+            }
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+        
+        // Quiz functionality
+        function selectOption(element, isCorrect) {
+            const options = element.parentNode.querySelectorAll('.quiz-option');
+            const feedback = element.parentNode.parentNode.querySelector('.quiz-feedback');
+            const feedbackText = feedback.querySelector('.feedback-text');
+            
+            // Clear previous selections
+            options.forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+            
+            // Mark selection
+            element.classList.add('selected');
+            
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback correct';
+                feedbackText.textContent = 'Correct! Well done.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback incorrect';
+                feedbackText.textContent = 'Not quite right. Think about the key concepts we discussed.';
+            }
+            
+            feedback.style.display = 'block';
+        }
+        
+        // Interactive forecast demo
+        function updateForecast(scenario) {
+            const result = document.getElementById('forecastResult');
+            const text = document.getElementById('forecastText');
+            
+            let forecast = '';
+            switch(scenario) {
+                case 'conservative':
+                    forecast = 'Conservative scenario: 2-5% growth expected, low risk but limited upside potential.';
+                    break;
+                case 'moderate':
+                    forecast = 'Moderate scenario: 5-12% growth expected, balanced risk-reward profile.';
+                    break;
+                case 'aggressive':
+                    forecast = 'Aggressive scenario: 15-25% growth expected, high potential but increased uncertainty.';
+                    break;
+            }
+            
+            text.textContent = forecast;
+            result.style.display = 'block';
+        }
+        
+        // Chart initialization functions
+        function initAirPassengersChart() {
+            const ctx = document.getElementById('airPassengersChart');
+            if (!ctx || ctx.chart) return; // Prevent multiple initializations
+            
+            const months = [];
+            const passengers = [];
+            
+            // Sample data based on our actual dataset
+            const sampleData = [
+                {month: '2019-01', passengers: 417},
+                {month: '2019-02', passengers: 391},
+                {month: '2019-03', passengers: 419},
+                {month: '2019-04', passengers: 461},
+                {month: '2019-05', passengers: 472},
+                {month: '2019-06', passengers: 535},
+                {month: '2019-07', passengers: 622},
+                {month: '2019-08', passengers: 606},
+                {month: '2019-09', passengers: 508},
+                {month: '2019-10', passengers: 461},
+                {month: '2019-11', passengers: 390},
+                {month: '2019-12', passengers: 432}
+            ];
+            
+            sampleData.forEach(item => {
+                months.push(item.month);
+                passengers.push(item.passengers);
+            });
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Monthly Passengers (thousands)',
+                        data: passengers,
+                        borderColor: '#1e3a8a',
+                        backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Air Passenger Demand - 2019',
+                            font: {
+                                size: 16,
+                                family: 'Helvetica'
+                            }
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Passengers (thousands)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function initRetailCorrelationChart() {
+            const ctx = document.getElementById('retailCorrelationChart');
+            if (!ctx || ctx.chart) return;
+            
+            // Sample correlation data
+            const correlationData = [
+                {x: 25, y: 180}, {x: 45, y: 220}, {x: 35, y: 195}, {x: 65, y: 280},
+                {x: 55, y: 250}, {x: 75, y: 320}, {x: 85, y: 350}, {x: 95, y: 380},
+                {x: 40, y: 210}, {x: 50, y: 235}, {x: 60, y: 265}, {x: 70, y: 295},
+                {x: 30, y: 185}, {x: 80, y: 340}, {x: 90, y: 365}, {x: 100, y: 395}
+            ];
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Marketing Spend vs Daily Sales',
+                        data: correlationData,
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#1e3a8a',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Marketing Spend vs Daily Sales Correlation',
+                            font: {
+                                size: 16,
+                                family: 'Helvetica'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Marketing Spend ($)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Daily Sales ($)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function initDepartmentStoreChart() {
+            const ctx = document.getElementById('departmentStoreChart');
+            if (!ctx || ctx.chart) return;
+            
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const entertainment = [149, 157, 330, 199, 241, 300, 285, 320, 275, 250, 280, 310];
+            const totalSales = [284, 298, 488, 353, 387, 450, 430, 470, 420, 395, 425, 460];
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Entertainment Sales',
+                        data: entertainment,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        borderWidth: 2,
+                        fill: false
+                    }, {
+                        label: 'Total Sales',
+                        data: totalSales,
+                        borderColor: '#1e3a8a',
+                        backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Department Store: Entertainment vs Total Sales',
+                            font: {
+                                size: 16,
+                                family: 'Helvetica'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Sales ($000s)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize first slide
+        showSlide(0);
+    </script>
+</body>
+</html>
