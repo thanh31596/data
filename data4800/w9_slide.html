@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Natural Language Processing Fundamentals</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            padding: 60px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: white;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slide h1 {
+            font-size: 3.5em;
+            font-weight: 300;
+            margin-bottom: 0.5em;
+            text-align: center;
+            color: #2c3e50;
+            letter-spacing: -0.02em;
+        }
+
+        .slide h2 {
+            font-size: 2.8em;
+            font-weight: 300;
+            margin-bottom: 0.8em;
+            text-align: center;
+            color: #34495e;
+        }
+
+        .slide h3 {
+            font-size: 2.2em;
+            font-weight: 400;
+            margin-bottom: 0.6em;
+            color: #2c3e50;
+        }
+
+        .slide p, .slide li {
+            font-size: 1.4em;
+            line-height: 1.6;
+            margin-bottom: 0.8em;
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        .slide ul {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .slide li {
+            margin-bottom: 0.6em;
+            text-align: left;
+        }
+
+        .slide table {
+            border-collapse: collapse;
+            margin: 1em auto;
+            font-size: 1.2em;
+            max-width: 800px;
+        }
+
+        .slide th, .slide td {
+            border: 2px solid #dee2e6;
+            padding: 0.8em;
+            text-align: center;
+        }
+
+        .slide th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .visualization {
+            margin: 2em 0;
+            padding: 2em;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            background: #fafafa;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .demo-text {
+            background: #e8f4f8;
+            padding: 1.5em;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.2em;
+            margin: 1em 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .token {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 0.3em 0.6em;
+            margin: 0.2em;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .pos-tag {
+            font-size: 0.8em;
+            background: #e74c3c;
+            color: white;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            margin-left: 0.3em;
+        }
+
+        .probability-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            margin: 0.5em 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+        }
+
+        .probability-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            font-size: 1.1em;
+            color: #7f8c8d;
+            z-index: 1000;
+        }
+
+        .interactive-demo {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 2em;
+            margin: 1em 0;
+            max-width: 800px;
+        }
+
+        .demo-input {
+            width: 100%;
+            padding: 1em;
+            font-size: 1.1em;
+            border: 2px solid #ecf0f1;
+            border-radius: 5px;
+            margin-bottom: 1em;
+        }
+
+        .demo-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.8em 1.5em;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 1em;
+        }
+
+        .demo-output {
+            background: #f8f9fa;
+            padding: 1.5em;
+            border-radius: 5px;
+            margin-top: 1em;
+            border-left: 4px solid #2ecc71;
+        }
+
+        .math-formula {
+            background: #f8f9fa;
+            padding: 1.5em;
+            border-radius: 8px;
+            font-size: 1.3em;
+            text-align: center;
+            margin: 1em 0;
+            border: 2px solid #e9ecef;
+        }
+
+        .bayes-demo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2em;
+            margin: 2em 0;
+            max-width: 900px;
+        }
+
+        .sentiment-example {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 1.5em;
+            border-radius: 10px;
+            margin: 1em 0;
+        }
+
+        .positive { border-left: 4px solid #2ecc71; }
+        .negative { border-left: 4px solid #e74c3c; }
+
+        .word-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1em;
+            padding: 2em;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 1em 0;
+        }
+
+        .word-item {
+            background: white;
+            padding: 0.5em 1em;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 2px solid #ecf0f1;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            border-left: 3px solid #ffc107;
+        }
+
+        .calculation-step {
+            background: #e8f5e8;
+            padding: 1.2em;
+            margin: 1em 0;
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">28</span>
+        </div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Natural Language Processing</h1>
+            <p style="font-size: 2em; color: #7f8c8d; margin-bottom: 1em;">Understanding Text with Computers</p>
+            <p style="font-size: 1.6em;">A Beginner's Guide to NLP and Text Classification</p>
+            <div style="margin-top: 3em; font-size: 1.2em; color: #95a5a6;">
+                <p>Week 9 - DATA4800</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: What is NLP? -->
+        <div class="slide">
+            <h2>What is Natural Language Processing?</h2>
+            <p>NLP is teaching computers to understand and work with human language</p>
+            
+            <div class="visualization">
+                <h3>Think of it like teaching a computer to read and understand:</h3>
+                <div class="word-cloud">
+                    <div class="word-item" style="font-size: 1.4em;">📧 Emails</div>
+                    <div class="word-item" style="font-size: 1.2em;">📱 Text Messages</div>
+                    <div class="word-item" style="font-size: 1.6em;">📰 News Articles</div>
+                    <div class="word-item" style="font-size: 1.3em;">⭐ Product Reviews</div>
+                    <div class="word-item" style="font-size: 1.5em;">📚 Books</div>
+                    <div class="word-item" style="font-size: 1.1em;">🐦 Social Media</div>
+                </div>
+            </div>
+
+            <p>Just like humans learn to read step by step, computers need to learn too!</p>
+        </div>
+
+        <!-- Slide 3: NLTK Introduction -->
+        <div class="slide">
+            <h2>Meet NLTK: Our Text Processing Toolbox</h2>
+            <p>Natural Language Toolkit (NLTK) is like a Swiss Army knife for text processing</p>
+            
+            <div class="visualization">
+                <h3>NLTK helps us with:</h3>
+                <ul style="font-size: 1.5em; line-height: 2;">
+                    <li>🔧 Breaking text into pieces (Tokenization)</li>
+                    <li>🌱 Finding word roots (Stemming)</li>
+                    <li>🚮 Removing unnecessary words (Stop words)</li>
+                    <li>🏷️ Labeling word types (Tagging)</li>
+                    <li>🧠 Understanding sentiment (Classification)</li>
+                </ul>
+            </div>
+
+            <p>Think of NLTK as your helpful assistant for all text-related tasks!</p>
+        </div>
+
+        <!-- Slide 4: Tokenization Concept -->
+        <div class="slide">
+            <h2>Step 1: Tokenization</h2>
+            <p>Breaking text into smaller, manageable pieces</p>
+            
+            <div class="visualization">
+                <h3>Like cutting a sandwich into bite-sized pieces!</h3>
+                
+                <div class="demo-text">
+                    Original text: "I love machine learning!"
+                </div>
+                
+                <div style="text-align: center; margin: 2em 0;">
+                    <span style="font-size: 2em;">⬇️</span>
+                    <p style="margin: 0.5em 0; font-weight: 600;">Break it down into words</p>
+                    <span style="font-size: 2em;">⬇️</span>
+                </div>
+                
+                <div style="text-align: center;">
+                    <span class="token">I</span>
+                    <span class="token">love</span>
+                    <span class="token">machine</span>
+                    <span class="token">learning</span>
+                    <span class="token">!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Word vs Sentence Tokenization -->
+        <div class="slide">
+            <h2>Two Types of Tokenization</h2>
+            
+            <div class="bayes-demo">
+                <div>
+                    <h3>Word Tokenization</h3>
+                    <div class="demo-text">
+                        "I like apples"
+                    </div>
+                    <div style="margin: 1em 0;">⬇️</div>
+                    <div>
+                        <span class="token">I</span>
+                        <span class="token">like</span>
+                        <span class="token">apples</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Sentence Tokenization</h3>
+                    <div class="demo-text">
+                        "I went to the beach. I bought ice-cream."
+                    </div>
+                    <div style="margin: 1em 0;">⬇️</div>
+                    <div>
+                        <div class="token" style="display: block; margin: 0.5em 0;">I went to the beach</div>
+                        <div class="token" style="display: block; margin: 0.5em 0;">I bought ice-cream</div>
+                    </div>
+                </div>
+            </div>
+            
+            <p>Choose the right tool for the right job!</p>
+        </div>
+
+        <!-- Slide 6: Interactive Tokenization Demo -->
+        <div class="slide">
+            <h2>Try Tokenization Yourself!</h2>
+            
+            <div class="interactive-demo">
+                <h3>Type a sentence below:</h3>
+                <input type="text" id="tokenize-input" class="demo-input" placeholder="Enter your sentence here..." value="I love learning about NLP!">
+                <button class="demo-button" onclick="tokenizeText()">Tokenize Words</button>
+                <button class="demo-button" onclick="tokenizeSentences()">Tokenize Sentences</button>
+                
+                <div id="tokenize-output" class="demo-output">
+                    <p><strong>Word Tokens:</strong></p>
+                    <div id="word-tokens"></div>
+                    <p style="margin-top: 1em;"><strong>Character Count:</strong> <span id="char-count">0</span></p>
+                    <p><strong>Word Count:</strong> <span id="word-count">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Stemming and Lemmatization -->
+        <div class="slide">
+            <h2>Step 2: Finding Word Roots</h2>
+            <p>Stemming and Lemmatization help us find the basic form of words</p>
+            
+            <div class="visualization">
+                <h3>Think of it like finding the family tree of words:</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 2em; align-items: center; margin: 2em 0;">
+                    <div>
+                        <h4 style="color: #e74c3c;">Different Forms</h4>
+                        <div class="word-item" style="margin: 0.5em; background: #ffe6e6;">working</div>
+                        <div class="word-item" style="margin: 0.5em; background: #ffe6e6;">worked</div>
+                        <div class="word-item" style="margin: 0.5em; background: #ffe6e6;">worker</div>
+                        <div class="word-item" style="margin: 0.5em; background: #ffe6e6;">works</div>
+                    </div>
+                    
+                    <div style="font-size: 3em;">➡️</div>
+                    
+                    <div>
+                        <h4 style="color: #27ae60;">Root Form</h4>
+                        <div class="word-item" style="font-size: 1.5em; background: #e8f5e8; padding: 1em 2em;">work</div>
+                    </div>
+                </div>
+                
+                <p><strong>Why?</strong> So the computer knows these are all talking about the same concept!</p>
+            </div>
+        </div>
+
+        <!-- Slide 8: Stemming vs Lemmatization -->
+        <div class="slide">
+            <h2>Stemming vs Lemmatization</h2>
+            
+            <div class="bayes-demo">
+                <div>
+                    <h3>Stemming</h3>
+                    <p style="font-size: 1.2em;">Quick and simple - just cuts off endings</p>
+                    <div class="demo-text">
+                        running → run<br>
+                        flies → fli<br>
+                        better → better
+                    </div>
+                    <p><span class="highlight">Fast but sometimes imperfect</span></p>
+                </div>
+                
+                <div>
+                    <h3>Lemmatization</h3>
+                    <p style="font-size: 1.2em;">Slower but smarter - understands grammar</p>
+                    <div class="demo-text">
+                        running → run<br>
+                        flies → fly<br>
+                        better → good
+                    </div>
+                    <p><span class="highlight">More accurate but takes more time</span></p>
+                </div>
+            </div>
+            
+            <p>Choose based on your needs: speed vs accuracy!</p>
+        </div>
+
+        <!-- Slide 9: Stop Words -->
+        <div class="slide">
+            <h2>Step 3: Removing Stop Words</h2>
+            <p>Some words don't add much meaning - we can remove them</p>
+            
+            <div class="visualization">
+                <h3>Before Stop Word Removal:</h3>
+                <div class="demo-text">
+                    "This is an example sentence demonstrating stop word removal."
+                </div>
+                
+                <div style="margin: 2em 0;">
+                    <p>Common stop words: <strong>the, is, an, a, and, or, but, in, on, at, to, for, of, with, by</strong></p>
+                </div>
+                
+                <h3>After Stop Word Removal:</h3>
+                <div class="demo-text" style="background: #e8f5e8;">
+                    "example sentence demonstrating stop word removal."
+                </div>
+                
+                <p><strong>Result:</strong> We keep only the words that carry important meaning!</p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Part of Speech Tagging -->
+        <div class="slide">
+            <h2>Step 4: Part of Speech Tagging</h2>
+            <p>Labeling each word with its role in the sentence</p>
+            
+            <div class="visualization">
+                <h3>Like assigning jobs to each word:</h3>
+                
+                <div class="demo-text">
+                    Original: "I really like the artificial intelligence used in this package."
+                </div>
+                
+                <div style="margin: 2em 0; line-height: 2;">
+                    <span class="token">I<span class="pos-tag">PRONOUN</span></span>
+                    <span class="token">really<span class="pos-tag">ADVERB</span></span>
+                    <span class="token">like<span class="pos-tag">VERB</span></span>
+                    <span class="token">the<span class="pos-tag">ARTICLE</span></span>
+                    <span class="token">artificial<span class="pos-tag">ADJECTIVE</span></span>
+                    <span class="token">intelligence<span class="pos-tag">NOUN</span></span>
+                    <span class="token">used<span class="pos-tag">VERB</span></span>
+                </div>
+                
+                <p><strong>Why?</strong> Helps computers understand sentence structure and meaning!</p>
+            </div>
+        </div>
+
+        <!-- Slide 11: Intro to Classification -->
+        <div class="slide">
+            <h2>Text Classification</h2>
+            <p>Teaching computers to categorize text automatically</p>
+            
+            <div class="visualization">
+                <h3>Real-world examples:</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2em; margin: 2em 0;">
+                    <div class="sentiment-example positive">
+                        <h4>📧 Email Filtering</h4>
+                        <p>Spam vs Important</p>
+                    </div>
+                    
+                    <div class="sentiment-example negative">
+                        <h4>⭐ Review Analysis</h4>
+                        <p>Positive vs Negative</p>
+                    </div>
+                    
+                    <div class="sentiment-example positive">
+                        <h4>📰 News Categorization</h4>
+                        <p>Sports, Politics, Tech</p>
+                    </div>
+                    
+                    <div class="sentiment-example negative">
+                        <h4>💬 Customer Support</h4>
+                        <p>Urgent vs Routine</p>
+                    </div>
+                </div>
+                
+                <p>Computers learn from examples, just like we do!</p>
+            </div>
+        </div>
+
+        <!-- Slide 12: What is Naive Bayes? -->
+        <div class="slide">
+            <h2>Meet Naive Bayes Classifier</h2>
+            <p>A simple but powerful method for text classification</p>
+            
+            <div class="visualization">
+                <h3>Named after Thomas Bayes (1700s mathematician)</h3>
+                
+                <div style="margin: 2em 0;">
+                    <h4>Why "Naive"? 🤔</h4>
+                    <p style="font-size: 1.3em;">It makes a simple assumption: <span class="highlight">all words are independent</span></p>
+                    <p>Like assuming that finding "delicious" in a review doesn't affect finding "tasty"</p>
+                </div>
+                
+                <div style="margin: 2em 0;">
+                    <h4>Why use it? 🎯</h4>
+                    <ul style="font-size: 1.2em;">
+                        <li>Fast and simple</li>
+                        <li>Works well with text</li>
+                        <li>Needs less training data</li>
+                        <li>Easy to understand</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Probability Basics -->
+        <div class="slide">
+            <h2>Understanding Probability</h2>
+            <p>Before diving into Bayes, let's understand probability simply</p>
+            
+            <div class="visualization">
+                <h3>Probability = How likely something is to happen</h3>
+                
+                <div style="margin: 2em 0;">
+                    <h4>🎲 Rolling a dice:</h4>
+                    <div class="probability-bar">
+                        <div class="probability-fill" style="width: 16.67%;"></div>
+                        <div class="probability-label">1/6 chance (16.67%)</div>
+                    </div>
+                    
+                    <h4>☀️ Sunny day:</h4>
+                    <div class="probability-bar">
+                        <div class="probability-fill" style="width: 70%;"></div>
+                        <div class="probability-label">7/10 chance (70%)</div>
+                    </div>
+                    
+                    <h4>⭐ Positive review:</h4>
+                    <div class="probability-bar">
+                        <div class="probability-fill" style="width: 60%;"></div>
+                        <div class="probability-label">6/10 chance (60%)</div>
+                    </div>
+                </div>
+                
+                <p>Probability ranges from 0% (never happens) to 100% (always happens)</p>
+            </div>
+        </div>
+
+        <!-- Slide 14: Conditional Probability -->
+        <div class="slide">
+            <h2>Conditional Probability</h2>
+            <p>The probability of something happening <strong>given</strong> that something else happened</p>
+            
+            <div class="visualization">
+                <h3>Real-life example:</h3>
+                
+                <div class="demo-text">
+                    What's the probability it's positive review GIVEN that it contains "amazing"?
+                </div>
+                
+                <div style="margin: 2em 0;">
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 2em; align-items: center;">
+                        <div>
+                            <h4>We see "amazing"</h4>
+                            <div class="word-item" style="background: #fff3cd;">amazing</div>
+                        </div>
+                        
+                        <div style="font-size: 2em;">➡️</div>
+                        
+                        <div>
+                            <h4>Higher chance of positive!</h4>
+                            <div class="probability-bar">
+                                <div class="probability-fill" style="width: 85%;"></div>
+                                <div class="probability-label">85% positive</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p>Written as: P(Positive | "amazing") = 85%</p>
+            </div>
+        </div>
+
+        <!-- Slide 15: How Naive Bayes Works -->
+        <div class="slide">
+            <h2>How Naive Bayes Decides</h2>
+            <p>It looks at each word and asks: "Does this word make positive or negative more likely?"</p>
+            
+            <div class="visualization">
+                <h3>Example Review: "The food was amazing but service slow"</h3>
+                
+                <div style="margin: 2em 0;">
+                    <div class="demo-text">
+                        <div style="margin: 1em 0;">
+                            <span class="token" style="background: #2ecc71;">amazing</span> 
+                            <span style="margin-left: 1em;">→ 80% positive</span>
+                        </div>
+                        <div style="margin: 1em 0;">
+                            <span class="token" style="background: #f39c12;">food</span> 
+                            <span style="margin-left: 1em;">→ 60% positive</span>
+                        </div>
+                        <div style="margin: 1em 0;">
+                            <span class="token" style="background: #e74c3c;">slow</span> 
+                            <span style="margin-left: 1em;">→ 20% positive</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="math-formula">
+                    Combine all probabilities → Final prediction
+                </div>
+                
+                <p>The algorithm weighs all the evidence to make a decision!</p>
+            </div>
+        </div>
+
+        <!-- Slide 16: The Math (Simplified) -->
+        <div class="slide">
+            <h2>The Math Behind It (Don't Worry!)</h2>
+            <p>Here's the formula, but think of it as a recipe for combining evidence</p>
+            
+            <div class="visualization">
+                <div class="math-formula">
+                    P(Category | Words) ∝ P(Category) × P(Word₁ | Category) × P(Word₂ | Category) × ...
+                </div>
+                
+                <h3>In plain English:</h3>
+                <div style="margin: 2em 0; font-size: 1.3em; line-height: 1.8;">
+                    <p><strong>P(Category)</strong> = How common is this category overall?</p>
+                    <p><strong>P(Word | Category)</strong> = How often does this word appear in this category?</p>
+                    <p><strong>Multiply everything</strong> = Combined evidence</p>
+                </div>
+                
+                <div class="highlight">
+                    <p><strong>Key insight:</strong> We multiply probabilities because we assume words are independent (the "naive" part!)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 17: Training the Classifier -->
+        <div class="slide">
+            <h2>Training: Learning from Examples</h2>
+            <p>The computer learns by looking at lots of examples with known answers</p>
+            
+            <div class="visualization">
+                <h3>Training Data Example:</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em; margin: 2em 0;">
+                    <div>
+                        <h4 style="color: #27ae60;">✅ Positive Examples</h4>
+                        <div class="sentiment-example positive">
+                            "Great food, excellent service!"
+                        </div>
+                        <div class="sentiment-example positive">
+                            "Amazing experience, loved it!"
+                        </div>
+                        <div class="sentiment-example positive">
+                            "Fantastic quality, highly recommend"
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #e74c3c;">❌ Negative Examples</h4>
+                        <div class="sentiment-example negative">
+                            "Terrible food, slow service"
+                        </div>
+                        <div class="sentiment-example negative">
+                            "Awful experience, never again"
+                        </div>
+                        <div class="sentiment-example negative">
+                            "Poor quality, waste of money"
+                        </div>
+                    </div>
+                </div>
+                
+                <p>The more examples, the better the computer gets at recognizing patterns!</p>
+            </div>
+        </div>
+
+        <!-- Slide 18: Making Predictions -->
+        <div class="slide">
+            <h2>Making Predictions on New Text</h2>
+            <p>Now the trained classifier can predict categories for new, unseen text</p>
+            
+            <div class="interactive-demo">
+                <h3>Try the classifier:</h3>
+                <input type="text" id="classify-input" class="demo-input" placeholder="Enter a review to classify..." value="The food was delicious but the service was terrible">
+                <button class="demo-button" onclick="classifyText()">Classify Sentiment</button>
+                
+                <div id="classify-output" class="demo-output">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+                        <div>
+                            <h4>Positive Probability</h4>
+                            <div class="probability-bar">
+                                <div class="probability-fill" id="positive-bar" style="width: 35%;"></div>
+                                <div class="probability-label" id="positive-label">35%</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>Negative Probability</h4>
+                            <div class="probability-bar">
+                                <div class="probability-fill" id="negative-bar" style="width: 65%; background: linear-gradient(90deg, #e74c3c, #c0392b);"></div>
+                                <div class="probability-label" id="negative-label">65%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="prediction-result" style="font-size: 1.4em; font-weight: 600; margin-top: 1em; color: #e74c3c;">Prediction: NEGATIVE</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 19: Business Applications -->
+        <div class="slide">
+            <h2>Real Business Applications</h2>
+            <p>How companies use NLP and Naive Bayes in the real world</p>
+            
+            <div class="visualization">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2em; margin: 2em 0;">
+                    <div class="sentiment-example positive">
+                        <h4>🛍️ E-commerce</h4>
+                        <ul>
+                            <li>Product review analysis</li>
+                            <li>Customer feedback categorization</li>
+                            <li>Recommendation systems</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="sentiment-example negative">
+                        <h4>🏦 Finance</h4>
+                        <ul>
+                            <li>Fraud detection in text</li>
+                            <li>Credit scoring explanations</li>
+                            <li>Investment sentiment analysis</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="sentiment-example positive">
+                        <h4>📞 Customer Service</h4>
+                        <ul>
+                            <li>Automated chatbots</li>
+                            <li>Ticket priority classification</li>
+                            <li>FAQ matching</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="sentiment-example negative">
+                        <h4>📈 Marketing</h4>
+                        <ul>
+                            <li>Social media monitoring</li>
+                            <li>Brand sentiment tracking</li>
+                            <li>Customer segmentation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 20: Bag of Words Introduction -->
+        <div class="slide">
+            <h2>Advanced Topic: Bag of Words</h2>
+            <p>Converting text into numbers that computers can process</p>
+            
+            <div class="visualization">
+                <h3>The Problem: Computers need numbers, not words</h3>
+                
+                <div class="demo-text" style="background: #ffe6e6;">
+                    Computer sees: "This product works well"<br>
+                    Computer thinks: ??? 🤔
+                </div>
+                
+                <div style="margin: 2em 0; text-align: center;">
+                    <span style="font-size: 2em;">⬇️</span>
+                    <p style="margin: 0.5em 0; font-weight: 600;">Convert to numbers</p>
+                    <span style="font-size: 2em;">⬇️</span>
+                </div>
+                
+                <div class="demo-text" style="background: #e8f5e8;">
+                    Computer sees: [1, 1, 1, 1, 0, 0]<br>
+                    Computer thinks: I can work with this! ✅
+                </div>
+                
+                <p><strong>Bag of Words:</strong> Count how many times each word appears, ignore word order</p>
+            </div>
+        </div>
+
+        <!-- Slide 21: Bag of Words Step by Step -->
+        <div class="slide">
+            <h2>How Bag of Words Works</h2>
+            
+            <div class="visualization">
+                <h3>Step-by-step example:</h3>
+                
+                <div style="margin: 2em 0;">
+                    <h4>1. Define your vocabulary (dictionary of known words):</h4>
+                    <div class="word-cloud">
+                        <div class="word-item">product</div>
+                        <div class="word-item">recommend</div>
+                        <div class="word-item">works</div>
+                        <div class="word-item">hesitate</div>
+                        <div class="word-item">suggest</div>
+                    </div>
+                    
+                    <h4>2. Count words in sentence:</h4>
+                    <div class="demo-text">
+                        "This product works extremely well, and I do not hesitate to recommend it to others"
+                    </div>
+                    
+                    <h4>3. Create the bag of words vector:</h4>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1em; margin: 1em 0;">
+                        <div class="token" style="background: #2ecc71;">product: 1</div>
+                        <div class="token" style="background: #2ecc71;">recommend: 1</div>
+                        <div class="token" style="background: #2ecc71;">works: 1</div>
+                        <div class="token" style="background: #2ecc71;">hesitate: 1</div>
+                        <div class="token" style="background: #e74c3c;">suggest: 0</div>
+                    </div>
+                    
+                    <div class="math-formula">
+                        Final vector: (1, 1, 1, 1, 0)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 22: Bag of Words Interactive Demo -->
+        <div class="slide">
+            <h2>Try Bag of Words Yourself!</h2>
+            
+            <div class="interactive-demo">
+                <h3>Vocabulary: {good, bad, movie, acting, plot}</h3>
+                <input type="text" id="bow-input" class="demo-input" placeholder="Enter a movie review..." value="The movie was good but the acting was bad">
+                <button class="demo-button" onclick="createBagOfWords()">Create Bag of Words</button>
+                
+                <div id="bow-output" class="demo-output">
+                    <h4>Word Counts:</h4>
+                    <div id="word-counts" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1em; margin: 1em 0;">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    <h4>Bag of Words Vector:</h4>
+                    <div id="bow-vector" class="math-formula"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 23: Naive Bayes with Real Data -->
+        <div class="slide">
+            <h2>Advanced: Naive Bayes Calculations</h2>
+            <p>Working with real training data to make predictions</p>
+            
+            <div class="visualization">
+                <h3>Training Data Example:</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Opinion</th>
+                            <th>Word 1</th>
+                            <th>Word 2</th>
+                            <th>Label</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td>1</td><td>0</td><td style="background: #d4edda;">Positive</td></tr>
+                        <tr><td>2</td><td>1</td><td>0</td><td style="background: #d4edda;">Positive</td></tr>
+                        <tr><td>3</td><td>1</td><td>1</td><td style="background: #d4edda;">Positive</td></tr>
+                        <tr><td>4</td><td>0</td><td>1</td><td style="background: #d4edda;">Positive</td></tr>
+                        <tr><td>5</td><td>0</td><td>1</td><td style="background: #f8d7da;">Negative</td></tr>
+                        <tr><td>6</td><td>0</td><td>1</td><td style="background: #f8d7da;">Negative</td></tr>
+                        <tr><td>7</td><td>0</td><td>0</td><td style="background: #fff3cd;">Negative</td></tr>
+                        <tr><td>8</td><td>0</td><td>1</td><td style="background: #fff3cd;">Neutral</td></tr>
+                        <tr><td>9</td><td>0</td><td>0</td><td style="background: #fff3cd;">Neutral</td></tr>
+                        <tr><td>10</td><td>1</td><td>0</td><td style="background: #fff3cd;">Neutral</td></tr>
+                    </tbody>
+                </table>
+                
+                <p><strong>Question:</strong> What's the probability of each class when neither word appears (Word1=0, Word2=0)?</p>
+            </div>
+        </div>
+
+        <!-- Slide 24: Naive Bayes Calculation Steps -->
+        <div class="slide">
+            <h2>Step-by-Step Naive Bayes Calculation</h2>
+            
+            <div class="visualization">
+                <h3>Calculate P(Class | Word1=0, Word2=0)</h3>
+                
+                <div class="calculation-step">
+                    <strong>Step 1: Count class frequencies from training data</strong><br>
+                    • Positive: 4 out of 10 → P(Positive) = 0.4<br>
+                    • Negative: 3 out of 10 → P(Negative) = 0.3<br>
+                    • Neutral: 3 out of 10 → P(Neutral) = 0.3
+                </div>
+                
+                <div class="calculation-step">
+                    <strong>Step 2: Calculate P(Word1=0 | each class)</strong><br>
+                    • P(Word1=0 | Positive) = 1/4 = 0.25 (opinions 4 out of 1,2,3,4)<br>
+                    • P(Word1=0 | Negative) = 3/3 = 1.0 (all negative have Word1=0)<br>
+                    • P(Word1=0 | Neutral) = 2/3 = 0.67 (opinions 8,9 out of 8,9,10)
+                </div>
+                
+                <div class="calculation-step">
+                    <strong>Step 3: Calculate P(Word2=0 | each class)</strong><br>
+                    • P(Word2=0 | Positive) = 2/4 = 0.5 (opinions 1,2 out of 1,2,3,4)<br>
+                    • P(Word2=0 | Negative) = 1/3 = 0.33 (opinion 7 out of 5,6,7)<br>
+                    • P(Word2=0 | Neutral) = 2/3 = 0.67 (opinions 9,10 out of 8,9,10)
+                </div>
+                
+                <div class="math-formula">
+                    P(Positive) × P(Word1=0|Pos) × P(Word2=0|Pos) = 0.4 × 0.25 × 0.5 = 0.05<br>
+                    P(Negative) × P(Word1=0|Neg) × P(Word2=0|Neg) = 0.3 × 1.0 × 0.33 = 0.1<br>
+                    P(Neutral) × P(Word1=0|Neu) × P(Word2=0|Neu) = 0.3 × 0.67 × 0.67 = 0.13
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 25: Word Embeddings Introduction -->
+        <div class="slide">
+            <h2>Advanced Topic: Word Embeddings</h2>
+            <p>Representing words as vectors that capture meaning relationships</p>
+            
+            <div class="visualization">
+                <h3>Beyond Bag of Words: Understanding Word Relationships</h3>
+                
+                <div class="bayes-demo">
+                    <div>
+                        <h4>Bag of Words Problem:</h4>
+                        <div class="demo-text">
+                            "king" = [1, 0, 0, 0]<br>
+                            "queen" = [0, 1, 0, 0]<br>
+                            "man" = [0, 0, 1, 0]
+                        </div>
+                        <p>❌ No relationship between words</p>
+                    </div>
+                    
+                    <div>
+                        <h4>Word Embeddings:</h4>
+                        <div class="demo-text">
+                            "king" = [0.63, 0.18, 0.35, 0.82]<br>
+                            "queen" = [0.67, 0.44, -0.09, 0.52]<br>
+                            "man" = [0.00, 0.63, 0.18, 0.35]
+                        </div>
+                        <p>✅ Captures relationships and meaning</p>
+                    </div>
+                </div>
+                
+                <div class="highlight">
+                    <p><strong>Magic:</strong> Similar words have similar vectors!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 26: Word Vector Arithmetic -->
+        <div class="slide">
+            <h2>Word Vector Arithmetic</h2>
+            <p>The famous equation: King - Man + Woman = Queen</p>
+            
+            <div class="visualization">
+                <h3>Vector Math with Words:</h3>
+                
+                <div style="margin: 2em 0;">
+                    <div class="demo-text">
+                        <strong>Given vectors:</strong><br>
+                        king = (0.632, 0.176, 0.353, 0.818)<br>
+                        man = (0.000, 0.632, 0.176, 0.353)<br>
+                        woman = (0.039, 0.896, 0.998, 0.050)
+                    </div>
+                    
+                    <div class="math-formula">
+                        queen = king - man + woman
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1em; margin: 2em 0;">
+                        <div class="calculation-step">
+                            <strong>v₀:</strong><br>
+                            0.632 - 0.000 + 0.039<br>
+                            = 0.671
+                        </div>
+                        <div class="calculation-step">
+                            <strong>v₁:</strong><br>
+                            0.176 - 0.632 + 0.896<br>
+                            = 0.440
+                        </div>
+                        <div class="calculation-step">
+                            <strong>v₂:</strong><br>
+                            0.353 - 0.176 + 0.998<br>
+                            = 1.175
+                        </div>
+                        <div class="calculation-step">
+                            <strong>v₃:</strong><br>
+                            0.818 - 0.353 + 0.050<br>
+                            = 0.515
+                        </div>
+                    </div>
+                    
+                    <div class="math-formula">
+                        queen ≈ (0.671, 0.440, 1.175, 0.515)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 27: Interactive Word Arithmetic -->
+        <div class="slide">
+            <h2>Try Word Arithmetic Yourself!</h2>
+            
+            <div class="interactive-demo">
+                <h3>Vector Calculator: A - B + C = ?</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2em; margin: 2em 0;">
+                    <div>
+                        <label>Vector A (king):</label>
+                        <input type="text" id="vector-a" class="demo-input" value="0.632,0.176,0.353,0.818">
+                    </div>
+                    <div>
+                        <label>Vector B (man):</label>
+                        <input type="text" id="vector-b" class="demo-input" value="0.000,0.632,0.176,0.353">
+                    </div>
+                    <div>
+                        <label>Vector C (woman):</label>
+                        <input type="text" id="vector-c" class="demo-input" value="0.039,0.896,0.998,0.050">
+                    </div>
+                </div>
+                <button class="demo-button" onclick="calculateWordVector()">Calculate A - B + C</button>
+                
+                <div id="vector-output" class="demo-output">
+                    <h4>Result Vector:</h4>
+                    <div id="result-vector" class="math-formula"></div>
+                    <p>This should be close to the "queen" vector!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 28: Summary -->
+        <div class="slide">
+            <h2>Summary: Complete NLP Toolkit</h2>
+            <p>You've mastered the essential NLP concepts for text analysis!</p>
+            
+            <div class="visualization">
+                <h3>🎯 Your Complete Toolkit:</h3>
+                
+                <div style="margin: 2em 0;">
+                    <div class="demo-text" style="margin: 1em 0;">
+                        <strong>1. Text Preprocessing:</strong> Tokenization → Stemming → Stop Words → POS Tagging
+                    </div>
+                    
+                    <div class="demo-text" style="margin: 1em 0;">
+                        <strong>2. Text Representation:</strong> Bag of Words → Count vectors for ML
+                    </div>
+                    
+                    <div class="demo-text" style="margin: 1em 0;">
+                        <strong>3. Naive Bayes:</strong> Probability-based classification with real calculations
+                    </div>
+                    
+                    <div class="demo-text" style="margin: 1em 0;">
+                        <strong>4. Word Embeddings:</strong> Vector arithmetic capturing word relationships
+                    </div>
+                </div>
+                
+                <div class="highlight" style="margin: 2em 0; font-size: 1.3em;">
+                    <p><strong>You can now:</strong> Process text, build classifiers, and understand word relationships!</p>
+                </div>
+                
+                <p style="font-size: 1.4em; color: #3498db; font-weight: 600;">
+                    🚀 Ready to tackle any NLP challenge!
+                </p>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn" onclick="previousSlide()">← Previous</button>
+            <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            
+            // Update navigation buttons
+            document.getElementById('prev-btn').disabled = currentSlide === 0;
+            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+
+        // Interactive demos
+        function tokenizeText() {
+            const input = document.getElementById('tokenize-input').value;
+            const words = input.trim().split(/\s+/).filter(word => word.length > 0);
+            
+            const wordTokensDiv = document.getElementById('word-tokens');
+            wordTokensDiv.innerHTML = words.map(word => `<span class="token">${word}</span>`).join(' ');
+            
+            document.getElementById('char-count').textContent = input.length;
+            document.getElementById('word-count').textContent = words.length;
+        }
+
+        function tokenizeSentences() {
+            const input = document.getElementById('tokenize-input').value;
+            const sentences = input.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            
+            const wordTokensDiv = document.getElementById('word-tokens');
+            wordTokensDiv.innerHTML = sentences.map(sentence => 
+                `<div class="token" style="display: block; margin: 0.5em 0;">${sentence.trim()}</div>`
+            ).join('');
+            
+            document.getElementById('char-count').textContent = input.length;
+            document.getElementById('word-count').textContent = sentences.length + ' sentences';
+        }
+
+        function classifyText() {
+            const input = document.getElementById('classify-input').value.toLowerCase();
+            
+            // Simple sentiment analysis simulation
+            const positiveWords = ['great', 'excellent', 'amazing', 'fantastic', 'wonderful', 'delicious', 'perfect', 'love', 'good', 'nice'];
+            const negativeWords = ['terrible', 'awful', 'horrible', 'bad', 'slow', 'poor', 'hate', 'worst', 'disappointing', 'sad'];
+            
+            let positiveScore = 0;
+            let negativeScore = 0;
+            
+            const words = input.split(/\s+/);
+            
+            words.forEach(word => {
+                if (positiveWords.includes(word)) positiveScore += 1;
+                if (negativeWords.includes(word)) negativeScore += 1;
+            });
+            
+            // Add base probability
+            positiveScore += 0.5;
+            negativeScore += 0.5;
+            
+            const total = positiveScore + negativeScore;
+            const positiveProbability = Math.round((positiveScore / total) * 100);
+            const negativeProbability = 100 - positiveProbability;
+            
+            // Update UI
+            document.getElementById('positive-bar').style.width = positiveProbability + '%';
+            document.getElementById('negative-bar').style.width = negativeProbability + '%';
+            document.getElementById('positive-label').textContent = positiveProbability + '%';
+            document.getElementById('negative-label').textContent = negativeProbability + '%';
+            
+            const prediction = positiveProbability > negativeProbability ? 'POSITIVE' : 'NEGATIVE';
+            const resultElement = document.getElementById('prediction-result');
+            resultElement.textContent = `Prediction: ${prediction}`;
+            resultElement.style.color = prediction === 'POSITIVE' ? '#27ae60' : '#e74c3c';
+        }
+
+        // Bag of Words demo
+        function createBagOfWords() {
+            const input = document.getElementById('bow-input').value.toLowerCase();
+            const vocabulary = ['good', 'bad', 'movie', 'acting', 'plot'];
+            const words = input.split(/\s+/);
+            
+            // Count words
+            const counts = vocabulary.map(vocabWord => {
+                const count = words.filter(word => word.includes(vocabWord)).length;
+                return count;
+            });
+            
+            // Update word counts display
+            const wordCountsDiv = document.getElementById('word-counts');
+            wordCountsDiv.innerHTML = vocabulary.map((word, index) => 
+                `<div class="token" style="background: ${counts[index] > 0 ? '#2ecc71' : '#e74c3c'};">
+                    ${word}: ${counts[index]}
+                </div>`
+            ).join('');
+            
+            // Update vector display
+            document.getElementById('bow-vector').textContent = `(${counts.join(', ')})`;
+        }
+
+        // Word vector arithmetic demo
+        function calculateWordVector() {
+            try {
+                const vectorA = document.getElementById('vector-a').value.split(',').map(x => parseFloat(x.trim()));
+                const vectorB = document.getElementById('vector-b').value.split(',').map(x => parseFloat(x.trim()));
+                const vectorC = document.getElementById('vector-c').value.split(',').map(x => parseFloat(x.trim()));
+                
+                if (vectorA.length !== vectorB.length || vectorB.length !== vectorC.length) {
+                    throw new Error('Vectors must have the same length');
+                }
+                
+                // Calculate A - B + C
+                const result = vectorA.map((a, i) => a - vectorB[i] + vectorC[i]);
+                const rounded = result.map(x => Math.round(x * 1000) / 1000);
+                
+                document.getElementById('result-vector').textContent = `(${rounded.join(', ')})`;
+            } catch (error) {
+                document.getElementById('result-vector').textContent = 'Error: Please check your input vectors';
+            }
+        }
+
+        // Initialize
+        showSlide(0);
+        tokenizeText();
+        classifyText();
+        if (document.getElementById('bow-input')) createBagOfWords();
+        if (document.getElementById('vector-a')) calculateWordVector();
+    </script>
+</body>
+</html>
