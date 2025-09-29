@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Interpretability and Explainability</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            height: 100%;
+            max-height: 800px;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            color: #CC0000;
+            font-size: 3em;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        h2 {
+            color: #CC0000;
+            font-size: 2.2em;
+            margin-bottom: 25px;
+            font-weight: 300;
+        }
+
+        h3 {
+            color: #CC0000;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        p {
+            font-size: 1.3em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        ul {
+            font-size: 1.3em;
+            line-height: 2;
+            margin-left: 40px;
+            margin-bottom: 20px;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            background: #CC0000;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: Helvetica, Arial, sans-serif;
+            border-radius: 3px;
+        }
+
+        button:hover {
+            background: #AA0000;
+        }
+
+        button:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+        }
+
+        .slide-number {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .definition-box {
+            background: #F8F8F8;
+            border-left: 4px solid #CC0000;
+            padding: 25px;
+            margin: 20px 0;
+            font-size: 1.2em;
+        }
+
+        .example-box {
+            background: #FAFAFA;
+            border: 1px solid #DDD;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .visualization {
+            margin: 30px 0;
+            padding: 20px;
+            background: #FAFAFA;
+            border: 1px solid #E0E0E0;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .column-box {
+            padding: 20px;
+            background: #F5F5F5;
+            border-left: 3px solid #CC0000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #DDD;
+        }
+
+        th {
+            background: #F0F0F0;
+            color: #CC0000;
+            font-weight: 500;
+        }
+
+        .formula {
+            background: #F8F8F8;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            text-align: center;
+            border: 1px solid #E0E0E0;
+        }
+
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .step-indicator {
+            display: inline-block;
+            background: #CC0000;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-right: 10px;
+            font-size: 0.9em;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .key-point {
+            background: #FFF9E6;
+            border-left: 4px solid #CC0000;
+            padding: 15px 20px;
+            margin: 15px 0;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <div class="center-content">
+                <h1>Model Interpretability and Explainability</h1>
+                <p style="font-size: 1.5em; margin-top: 30px;">Understanding How Machine Learning Models Make Decisions</p>
+                <p style="font-size: 1.2em; margin-top: 50px; color: #666;">A Practical Guide for Non-Technical Audiences</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Why This Matters -->
+        <div class="slide">
+            <h2>Why Understanding Models Matters</h2>
+            <p>Imagine asking a colleague for a recommendation and they simply say "Trust me." You would naturally want to know their reasoning.</p>
+            
+            <div class="key-point">
+                <strong>The same principle applies to machine learning models.</strong> When a model makes predictions that affect real decisions—like approving loans, diagnosing diseases, or hiring candidates—we need to understand why.
+            </div>
+
+            <p>This presentation will help you understand:</p>
+            <ul>
+                <li>How different models vary in transparency</li>
+                <li>Methods to understand model decisions</li>
+                <li>Practical techniques for explaining predictions</li>
+                <li>Real-world applications and examples</li>
+            </ul>
+        </div>
+
+        <!-- Slide 3: What is Model Interpretability? -->
+        <div class="slide">
+            <h2>What is Model Interpretability?</h2>
+            
+            <div class="definition-box">
+                <strong>Model interpretability</strong> refers to the degree to which a human can understand how a model arrives at its predictions.
+            </div>
+
+            <p>Think of interpretability as the difference between:</p>
+            
+            <div class="two-column">
+                <div class="column-box">
+                    <h3 style="font-size: 1.3em;">A Clear Recipe</h3>
+                    <p style="font-size: 1.1em;">You can see each ingredient and step, understanding exactly how the final dish is created.</p>
+                </div>
+                <div class="column-box">
+                    <h3 style="font-size: 1.3em;">A Secret Formula</h3>
+                    <p style="font-size: 1.1em;">You know what goes in and what comes out, but the process in between is mysterious.</p>
+                </div>
+            </div>
+
+            <p>As models become more complex, they often become less interpretable—but also potentially more accurate.</p>
+        </div>
+
+        <!-- Slide 4: The Interpretability Spectrum -->
+        <div class="slide">
+            <h2>The Interpretability Spectrum</h2>
+            <p>Machine learning models exist on a spectrum from highly interpretable to highly complex:</p>
+            
+            <div class="visualization">
+                <canvas id="spectrumCanvas" width="1000" height="300"></canvas>
+            </div>
+
+            <div class="key-point">
+                This is often called the <strong>accuracy-interpretability tradeoff</strong>: simpler models are easier to understand, while complex models may be more accurate but harder to interpret.
+            </div>
+        </div>
+
+        <!-- Slide 5: White-Box Models -->
+        <div class="slide">
+            <h2>White-Box Models: Transparent by Design</h2>
+            
+            <div class="definition-box">
+                <strong>White-box models</strong> have transparent internal structures where you can trace exactly how inputs become outputs.
+            </div>
+
+            <h3>Common White-Box Models:</h3>
+            <ul>
+                <li><strong>Linear Regression:</strong> Direct mathematical relationship between inputs and output</li>
+                <li><strong>Logistic Regression:</strong> Clear probability calculations</li>
+                <li><strong>Decision Trees:</strong> Visual series of yes/no questions</li>
+            </ul>
+
+            <div class="example-box">
+                <strong>Example:</strong> A decision tree for loan approval might ask: "Is income above $50,000?" → Yes → "Is credit score above 700?" → Yes → "Approve loan"
+                
+                <p style="margin-top: 15px;">You can follow the exact path the model took to reach its decision.</p>
+            </div>
+        </div>
+
+        <!-- Slide 6: Black-Box Models -->
+        <div class="slide">
+            <h2>Black-Box Models: Powerful but Opaque</h2>
+            
+            <div class="definition-box">
+                <strong>Black-box models</strong> have complex internal structures that make it difficult to trace how inputs become outputs.
+            </div>
+
+            <h3>Common Black-Box Models:</h3>
+            <ul>
+                <li><strong>Neural Networks:</strong> Thousands or millions of interconnected calculations</li>
+                <li><strong>Ensemble Models:</strong> Combinations of multiple models</li>
+                <li><strong>Support Vector Machines:</strong> Complex mathematical transformations</li>
+            </ul>
+
+            <div class="example-box">
+                <strong>Example:</strong> A neural network for loan approval processes the application through multiple hidden layers with thousands of calculations. While it may be highly accurate, you cannot easily trace why it approved or rejected a specific application.
+            </div>
+        </div>
+
+        <!-- Slide 7: Why We Need Both -->
+        <div class="slide">
+            <h2>When to Use Each Type</h2>
+            
+            <div class="two-column">
+                <div>
+                    <h3>Choose White-Box Models When:</h3>
+                    <ul style="font-size: 1.1em;">
+                        <li>Regulatory compliance requires explanations</li>
+                        <li>Decisions significantly impact individuals</li>
+                        <li>Stakeholders need to trust the system</li>
+                        <li>Simple relationships exist in the data</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Choose Black-Box Models When:</h3>
+                    <ul style="font-size: 1.1em;">
+                        <li>Maximum accuracy is critical</li>
+                        <li>Relationships are highly complex</li>
+                        <li>Large amounts of data are available</li>
+                        <li>Explanation can be added later</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="key-point">
+                The choice is not always either/or. Modern techniques allow us to make black-box models more interpretable while maintaining their accuracy.
+            </div>
+        </div>
+
+        <!-- Slide 8: Linear Regression - The Foundation -->
+        <div class="slide">
+            <h2>Linear Regression: A White-Box Example</h2>
+            
+            <p>Linear regression is one of the most interpretable models. It creates a simple mathematical formula:</p>
+
+            <div class="formula">
+                Prediction = Base Value + (Feature₁ × Weight₁) + (Feature₂ × Weight₂) + ...
+            </div>
+
+            <div class="example-box">
+                <strong>House Price Prediction Example:</strong>
+                <div class="formula">
+                    Price = $100,000 + (Square Feet × $150) + (Bedrooms × $20,000)
+                </div>
+                <p>For a 1,500 sq ft house with 3 bedrooms:</p>
+                <p>Price = $100,000 + (1,500 × $150) + (3 × $20,000) = <strong>$385,000</strong></p>
+            </div>
+
+            <p>Each weight tells you exactly how much that feature contributes to the prediction.</p>
+        </div>
+
+        <!-- Slide 9: Understanding Weights -->
+        <div class="slide">
+            <h2>Interpreting Linear Regression Weights</h2>
+            
+            <p>The weights (also called coefficients) in linear regression have clear meanings:</p>
+
+            <div class="definition-box">
+                A weight of +150 for "Square Feet" means: <strong>Each additional square foot increases the predicted price by $150</strong>, holding all other features constant.
+            </div>
+
+            <h3>Practical Interpretation:</h3>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Weight</th>
+                    <th>Interpretation</th>
+                </tr>
+                <tr>
+                    <td>Square Feet</td>
+                    <td>+$150</td>
+                    <td>Each additional sq ft adds $150 to price</td>
+                </tr>
+                <tr>
+                    <td>Age (years)</td>
+                    <td>-$2,000</td>
+                    <td>Each year older reduces price by $2,000</td>
+                </tr>
+                <tr>
+                    <td>Bedrooms</td>
+                    <td>+$20,000</td>
+                    <td>Each additional bedroom adds $20,000</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Slide 10: Feature Contributions -->
+        <div class="slide">
+            <h2>Calculating Feature Contributions</h2>
+            
+            <p>For any specific prediction, we can break down exactly how much each feature contributed:</p>
+
+            <div class="example-box">
+                <strong>Example: Predicting price for a specific house</strong>
+                <table style="margin-top: 15px;">
+                    <tr>
+                        <th>Feature</th>
+                        <th>Value</th>
+                        <th>Average Value</th>
+                        <th>Weight</th>
+                        <th>Contribution</th>
+                    </tr>
+                    <tr>
+                        <td>Square Feet</td>
+                        <td>2,000</td>
+                        <td>1,500</td>
+                        <td>+$150</td>
+                        <td><strong>+$75,000</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Bedrooms</td>
+                        <td>4</td>
+                        <td>3</td>
+                        <td>+$20,000</td>
+                        <td><strong>+$20,000</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Age (years)</td>
+                        <td>15</td>
+                        <td>10</td>
+                        <td>-$2,000</td>
+                        <td><strong>-$10,000</strong></td>
+                    </tr>
+                </table>
+                <p style="margin-top: 15px;"><strong>Total impact from average: +$85,000</strong></p>
+            </div>
+        </div>
+
+        <!-- Slide 11: Logistic Regression Introduction -->
+        <div class="slide">
+            <h2>Logistic Regression: Predicting Probabilities</h2>
+            
+            <p>Logistic regression extends linear regression to predict probabilities (between 0 and 1):</p>
+
+            <div class="definition-box">
+                Instead of predicting a continuous value like price, logistic regression predicts the <strong>probability of an outcome</strong>, such as: Will a customer purchase? Will a loan default? Will a patient recover?
+            </div>
+
+            <div class="example-box">
+                <strong>Example: Loan Default Prediction</strong>
+                <p>Input features: Income, Credit Score, Debt-to-Income Ratio</p>
+                <p>Output: Probability of default (e.g., 0.23 = 23% chance of default)</p>
+                <p style="margin-top: 15px;">The model combines the features into a score, then converts it to a probability between 0% and 100%.</p>
+            </div>
+        </div>
+
+        <!-- Slide 12: Making Decisions with Probabilities -->
+        <div class="slide">
+            <h2>From Probabilities to Decisions</h2>
+            
+            <p>Once we have a probability, we need a decision rule. This is called a <strong>threshold</strong>:</p>
+
+            <div class="visualization">
+                <canvas id="thresholdCanvas" width="1000" height="250"></canvas>
+            </div>
+
+            <p>Common approach: If probability > 0.5 (50%), predict "Yes", otherwise predict "No"</p>
+
+            <div class="key-point">
+                The threshold can be adjusted based on the costs of different types of errors. We will explore this in detail later.
+            </div>
+        </div>
+
+        <!-- Slide 13: The Challenge with Complex Models -->
+        <div class="slide">
+            <h2>Why Black-Box Models Are Difficult</h2>
+            
+            <p>As models become more complex, direct interpretation becomes impossible:</p>
+
+            <div class="two-column">
+                <div class="column-box">
+                    <h3 style="font-size: 1.3em;">Simple Model</h3>
+                    <p style="font-size: 1.1em;">10 features</p>
+                    <p style="font-size: 1.1em;">10 weights to interpret</p>
+                    <p style="font-size: 1.1em;">Direct relationships</p>
+                </div>
+                <div class="column-box">
+                    <h3 style="font-size: 1.3em;">Complex Model</h3>
+                    <p style="font-size: 1.1em;">10 features</p>
+                    <p style="font-size: 1.1em;">10,000+ internal calculations</p>
+                    <p style="font-size: 1.1em;">Non-linear interactions</p>
+                </div>
+            </div>
+
+            <p>Additionally, features often interact in complex ways—the effect of one feature may depend on the values of others.</p>
+
+            <div class="key-point">
+                This is where <strong>model interpretability techniques</strong> become essential: methods to understand black-box models without looking at their internal structure.
+            </div>
+        </div>
+
+        <!-- Slide 14: Shapley Values Introduction -->
+        <div class="slide">
+            <h2>Shapley Values: A Fair Way to Assign Credit</h2>
+            
+            <p>Shapley values come from game theory and answer the question: <strong>"How much did each feature contribute to this prediction?"</strong></p>
+
+            <div class="definition-box">
+                The Shapley value of a feature represents its <strong>average contribution</strong> to the prediction, considering all possible combinations of features.
+            </div>
+
+            <p>Think of it like a team project:</p>
+            <div class="example-box">
+                <strong>Analogy: Team Contribution</strong>
+                <p>Imagine three people working on a project that earns $1,000:</p>
+                <ul style="font-size: 1.1em;">
+                    <li>How much credit does each person deserve?</li>
+                    <li>It depends on what they accomplished alone vs. together</li>
+                    <li>Shapley values calculate a fair division of credit</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 15: How Shapley Values Work -->
+        <div class="slide">
+            <h2>Calculating Shapley Values: The Process</h2>
+            
+            <p><span class="step-indicator">Step 1</span> Start with average prediction when no features are known</p>
+            <p><span class="step-indicator">Step 2</span> Add features one at a time in different orders</p>
+            <p><span class="step-indicator">Step 3</span> Measure how much each feature changes the prediction</p>
+            <p><span class="step-indicator">Step 4</span> Average the contributions across all possible orders</p>
+
+            <div class="example-box" style="margin-top: 30px;">
+                <strong>Simplified Example: Loan Approval Model</strong>
+                <table style="margin-top: 15px; font-size: 1em;">
+                    <tr>
+                        <th>Feature</th>
+                        <th>Shapley Value</th>
+                        <th>Interpretation</th>
+                    </tr>
+                    <tr>
+                        <td>High Income</td>
+                        <td>+0.15</td>
+                        <td>Increases approval probability by 15%</td>
+                    </tr>
+                    <tr>
+                        <td>Good Credit</td>
+                        <td>+0.22</td>
+                        <td>Increases approval probability by 22%</td>
+                    </tr>
+                    <tr>
+                        <td>High Debt</td>
+                        <td>-0.08</td>
+                        <td>Decreases approval probability by 8%</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Slide 16: Shapley Values Properties -->
+        <div class="slide">
+            <h2>Key Properties of Shapley Values</h2>
+            
+            <h3>Why Shapley Values Are Useful:</h3>
+
+            <div class="definition-box">
+                <strong>1. Completeness:</strong> The sum of all Shapley values equals the difference between the prediction and the average prediction.
+            </div>
+
+            <div class="definition-box">
+                <strong>2. Fairness:</strong> If two features contribute equally, they receive equal Shapley values.
+            </div>
+
+            <div class="definition-box">
+                <strong>3. Consistency:</strong> If a feature's contribution increases, its Shapley value never decreases.
+            </div>
+
+            <p style="margin-top: 30px;">These properties make Shapley values the gold standard for explaining individual predictions in machine learning.</p>
+        </div>
+
+        <!-- Slide 17: LIME Introduction -->
+        <div class="slide">
+            <h2>LIME: Local Interpretable Model-Agnostic Explanations</h2>
+            
+            <div class="definition-box">
+                <strong>LIME</strong> explains individual predictions by fitting a simple, interpretable model around that specific prediction.
+            </div>
+
+            <p>The core idea:</p>
+            <ul>
+                <li>Focus on one prediction at a time</li>
+                <li>Create similar examples by slightly changing the input</li>
+                <li>See how the prediction changes</li>
+                <li>Fit a simple model (like linear regression) to these local examples</li>
+                <li>Use the simple model to explain the prediction</li>
+            </ul>
+
+            <div class="key-point">
+                Think of LIME as "approximating a complex surface with a simple plane" in the region you care about.
+            </div>
+        </div>
+
+        <!-- Slide 18: How LIME Works -->
+        <div class="slide">
+            <h2>LIME Process: Step-by-Step</h2>
+            
+            <p><span class="step-indicator">Step 1</span> Take the prediction you want to explain (e.g., "Loan Approved")</p>
+            
+            <p><span class="step-indicator">Step 2</span> Create variations of this application by changing features slightly</p>
+            
+            <p><span class="step-indicator">Step 3</span> Get predictions from the complex model for all variations</p>
+            
+            <p><span class="step-indicator">Step 4</span> Fit a simple linear model to these local predictions</p>
+            
+            <p><span class="step-indicator">Step 5</span> Use the simple model's weights as the explanation</p>
+
+            <div class="example-box" style="margin-top: 30px;">
+                <strong>Result:</strong> "This loan was approved primarily because of high income (+0.4 contribution) and good credit score (+0.3), despite moderate debt (-0.1)."
+            </div>
+        </div>
+
+        <!-- Slide 19: LIME vs Shapley Values -->
+        <div class="slide">
+            <h2>Comparing LIME and Shapley Values</h2>
+            
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th>LIME</th>
+                    <th>Shapley Values</th>
+                </tr>
+                <tr>
+                    <td>Theoretical Foundation</td>
+                    <td>Local approximation</td>
+                    <td>Game theory</td>
+                </tr>
+                <tr>
+                    <td>Computation Speed</td>
+                    <td>Fast</td>
+                    <td>Slow for many features</td>
+                </tr>
+                <tr>
+                    <td>Consistency</td>
+                    <td>May vary between runs</td>
+                    <td>Always consistent</td>
+                </tr>
+                <tr>
+                    <td>Completeness</td>
+                    <td>Approximate</td>
+                    <td>Exact</td>
+                </tr>
+                <tr>
+                    <td>Best Use Case</td>
+                    <td>Quick explanations</td>
+                    <td>Rigorous explanations</td>
+                </tr>
+            </table>
+
+            <p style="margin-top: 30px;">Both methods are valuable—choose based on your needs for speed vs. precision.</p>
+        </div>
+
+        <!-- Slide 20: Real-World Application Case Study -->
+        <div class="slide">
+            <h2>Case Study: LendingClub Loan Predictions</h2>
+            
+            <p>Let's examine a real-world application of model interpretability:</p>
+
+            <div class="example-box">
+                <strong>Business Problem:</strong> Predict whether a loan applicant will repay or default
+                
+                <p style="margin-top: 15px;"><strong>Why Interpretability Matters:</strong></p>
+                <ul style="font-size: 1.1em;">
+                    <li>Regulatory requirements demand explanations</li>
+                    <li>Applicants deserve to know why they were rejected</li>
+                    <li>Business analysts need to understand model behavior</li>
+                    <li>Model validation requires transparency</li>
+                </ul>
+            </div>
+
+            <p style="margin-top: 20px;">We will use a simplified version with four key features to demonstrate interpretability techniques.</p>
+        </div>
+
+        <!-- Slide 21: LendingClub Data Overview -->
+        <div class="slide">
+            <h2>Understanding the Data</h2>
+            
+            <p>Our simplified model uses four features to predict loan outcomes:</p>
+
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                    <th>Example Values</th>
+                </tr>
+                <tr>
+                    <td>Home Ownership</td>
+                    <td>Does applicant own or rent?</td>
+                    <td>Own (1) or Rent (0)</td>
+                </tr>
+                <tr>
+                    <td>Income</td>
+                    <td>Annual income in thousands</td>
+                    <td>$45,000</td>
+                </tr>
+                <tr>
+                    <td>Debt-to-Income Ratio</td>
+                    <td>Monthly debt as % of income</td>
+                    <td>25%</td>
+                </tr>
+                <tr>
+                    <td>Credit Score</td>
+                    <td>FICO credit score</td>
+                    <td>720</td>
+                </tr>
+            </table>
+
+            <div class="key-point" style="margin-top: 30px;">
+                <strong>Target Variable:</strong> Good Loan (1) or Default (0)
+            </div>
+        </div>
+
+        <!-- Slide 22: The Logistic Regression Model -->
+        <div class="slide">
+            <h2>The Loan Prediction Model</h2>
+            
+            <p>Using logistic regression, we built a model with this equation:</p>
+
+            <div class="formula" style="font-size: 1em;">
+                Score = -6.15 + (0.30 × HomeOwnership) + (0.0006 × Income)<br>
+                - (0.037 × DebtRatio) + (0.012 × CreditScore)
+            </div>
+
+            <p>This score is then converted to a probability:</p>
+
+            <div class="formula" style="font-size: 1em;">
+                Probability of Good Loan = 1 / (1 + e<sup>-Score</sup>)
+            </div>
+
+            <div class="example-box" style="margin-top: 30px;">
+                <strong>Example Calculation:</strong>
+                <p>For an applicant with: Own home (1), Income $50,000, Debt ratio 20%, Credit score 700</p>
+                <p>Score = -6.15 + 0.30 + 30 - 0.74 + 8.4 = 31.81</p>
+                <p><strong>Probability ≈ 100%</strong> (very likely to repay)</p>
+            </div>
+        </div>
+
+        <!-- Slide 23: Interpreting the Weights -->
+        <div class="slide">
+            <h2>What Do These Weights Mean?</h2>
+            
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Weight</th>
+                    <th>Practical Interpretation</th>
+                </tr>
+                <tr>
+                    <td>Home Ownership</td>
+                    <td>+0.30</td>
+                    <td>Owning a home increases the score, making approval more likely</td>
+                </tr>
+                <tr>
+                    <td>Income (per $1,000)</td>
+                    <td>+0.0006</td>
+                    <td>Each additional $1,000 of income slightly increases approval likelihood</td>
+                </tr>
+                <tr>
+                    <td>Debt-to-Income Ratio</td>
+                    <td>-0.037</td>
+                    <td>Higher debt burden reduces approval likelihood</td>
+                </tr>
+                <tr>
+                    <td>Credit Score</td>
+                    <td>+0.012</td>
+                    <td>Each point of credit score increases approval likelihood</td>
+                </tr>
+            </table>
+
+            <div class="key-point" style="margin-top: 30px;">
+                <strong>Key Insight:</strong> Credit score has the strongest impact, followed by debt ratio. Home ownership and income have smaller but still meaningful effects.
+            </div>
+        </div>
+
+        <!-- Slide 24: Making a Decision - Thresholds -->
+        <div class="slide">
+            <h2>Choosing a Decision Threshold</h2>
+            
+            <p>Once we have a probability, we need to decide: approve or reject? This requires choosing a <strong>threshold</strong>.</p>
+
+            <div class="two-column" style="margin-top: 30px;">
+                <div class="column-box">
+                    <h3 style="font-size: 1.2em;">Lower Threshold (70%)</h3>
+                    <ul style="font-size: 1.1em;">
+                        <li>Approve more loans</li>
+                        <li>More profit from good loans</li>
+                        <li>More losses from defaults</li>
+                    </ul>
+                </div>
+                <div class="column-box">
+                    <h3 style="font-size: 1.2em;">Higher Threshold (85%)</h3>
+                    <ul style="font-size: 1.1em;">
+                        <li>Approve fewer loans</li>
+                        <li>Less profit (fewer loans)</li>
+                        <li>Fewer losses (fewer defaults)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="key-point" style="margin-top: 30px;">
+                The optimal threshold depends on business goals: the cost of a default versus the profit from a good loan.
+            </div>
+        </div>
+
+        <!-- Slide 25: Confusion Matrix -->
+        <div class="slide">
+            <h2>Evaluating Model Performance</h2>
+            
+            <p>A <strong>confusion matrix</strong> shows all possible prediction outcomes:</p>
+
+            <table style="margin-top: 30px; text-align: center;">
+                <tr>
+                    <th></th>
+                    <th>Predicted: Repay</th>
+                    <th>Predicted: Default</th>
+                </tr>
+                <tr>
+                    <th>Actually: Repay</th>
+                    <td style="background: #E8F5E9;">True Positive (TP)<br>Correctly approved</td>
+                    <td style="background: #FFEBEE;">False Negative (FN)<br>Wrongly rejected</td>
+                </tr>
+                <tr>
+                    <th>Actually: Default</th>
+                    <td style="background: #FFEBEE;">False Positive (FP)<br>Wrongly approved</td>
+                    <td style="background: #E8F5E9;">True Negative (TN)<br>Correctly rejected</td>
+                </tr>
+            </table>
+
+            <p style="margin-top: 30px;">Each cell represents a different type of decision outcome, with different business consequences.</p>
+        </div>
+
+        <!-- Slide 26: Understanding Accuracy Metrics -->
+        <div class="slide">
+            <h2>Key Performance Metrics</h2>
+            
+            <div class="definition-box">
+                <strong>Accuracy:</strong> What percentage of all predictions were correct?<br>
+                Formula: (TP + TN) / (TP + TN + FP + FN)
+            </div>
+
+            <div class="definition-box">
+                <strong>True Positive Rate (Sensitivity):</strong> Of all good loans, what percentage did we approve?<br>
+                Formula: TP / (TP + FN)
+            </div>
+
+            <div class="definition-box">
+                <strong>True Negative Rate (Specificity):</strong> Of all bad loans, what percentage did we reject?<br>
+                Formula: TN / (TN + FP)
+            </div>
+
+            <p style="margin-top: 30px;">Different thresholds create different tradeoffs between these metrics.</p>
+        </div>
+
+        <!-- Slide 27: The ROC Curve -->
+        <div class="slide">
+            <h2>ROC Curve: Visualizing Threshold Tradeoffs</h2>
+            
+            <p>The <strong>ROC (Receiver Operating Characteristic) curve</strong> shows model performance across all possible thresholds:</p>
+
+            <div class="visualization">
+                <canvas id="rocCanvas" width="500" height="400"></canvas>
+            </div>
+
+            <p>The curve shows: As we approve more loans (higher sensitivity), we also accept more defaults (lower specificity).</p>
+
+            <div class="key-point">
+                <strong>Area Under Curve (AUC):</strong> A summary metric. 1.0 = perfect model, 0.5 = random guessing.
+            </div>
+        </div>
+
+        <!-- Slide 28: Precision and Recall -->
+        <div class="slide">
+            <h2>Precision and Recall: Business Perspectives</h2>
+            
+            <div class="definition-box">
+                <strong>Precision:</strong> Of the loans we approved, what percentage actually repaid?<br>
+                Formula: TP / (TP + FP)<br>
+                <em>Business view: How accurate are our approvals?</em>
+            </div>
+
+            <div class="definition-box">
+                <strong>Recall:</strong> Of all good loans, what percentage did we approve?<br>
+                Formula: TP / (TP + FN)<br>
+                <em>Business view: How much opportunity are we capturing?</em>
+            </div>
+
+            <div class="example-box" style="margin-top: 30px;">
+                <strong>Business Tradeoff:</strong>
+                <p>High Precision = Few mistakes, but miss opportunities</p>
+                <p>High Recall = Capture more opportunities, but make more mistakes</p>
+            </div>
+        </div>
+
+        <!-- Slide 29: Practical Example with Numbers -->
+        <div class="slide">
+            <h2>Real Numbers: Different Thresholds</h2>
+            
+            <p>Let's compare three different threshold strategies:</p>
+
+            <table style="font-size: 0.9em;">
+                <tr>
+                    <th>Metric</th>
+                    <th>Threshold: 75%</th>
+                    <th>Threshold: 80%</th>
+                    <th>Threshold: 85%</th>
+                </tr>
+                <tr>
+                    <td>Loans Approved</td>
+                    <td>72.5%</td>
+                    <td>49.2%</td>
+                    <td>25.8%</td>
+                </tr>
+                <tr>
+                    <td>Accuracy</td>
+                    <td>70.0%</td>
+                    <td>57.1%</td>
+                    <td>40.6%</td>
+                </tr>
+                <tr>
+                    <td>True Positive Rate</td>
+                    <td>76.8%</td>
+                    <td>53.9%</td>
+                    <td>28.7%</td>
+                </tr>
+                <tr>
+                    <td>Precision</td>
+                    <td>83.9%</td>
+                    <td>86.9%</td>
+                    <td>88.3%</td>
+                </tr>
+            </table>
+
+            <div class="key-point" style="margin-top: 20px;">
+                <strong>Insight:</strong> At 75%, we approve many loans but make more errors. At 85%, we're very accurate but approve few loans. The optimal choice depends on business strategy.
+            </div>
+        </div>
+
+        <!-- Slide 30: Feature Importance -->
+        <div class="slide">
+            <h2>Which Features Matter Most?</h2>
+            
+            <p>We can visualize feature importance by examining how much each feature affects predictions:</p>
+
+            <div class="visualization">
+                <canvas id="featureImportanceCanvas" width="800" height="400"></canvas>
+            </div>
+
+            <div class="key-point" style="margin-top: 30px;">
+                <strong>Key Findings:</strong> Credit score is the dominant factor, followed by debt-to-income ratio. Income and home ownership have smaller but meaningful impacts.
+            </div>
+        </div>
+
+        <!-- Slide 31: Practical Recommendations -->
+        <div class="slide">
+            <h2>Implementing Model Interpretability: Best Practices</h2>
+            
+            <h3>For Decision Makers:</h3>
+            <ul>
+                <li>Always ask for explanations of important predictions</li>
+                <li>Understand the tradeoffs in threshold selection</li>
+                <li>Consider both model accuracy and interpretability</li>
+                <li>Ensure compliance with regulatory requirements</li>
+            </ul>
+
+            <h3>For Model Developers:</h3>
+            <ul>
+                <li>Start with interpretable models when possible</li>
+                <li>Use Shapley values or LIME for complex models</li>
+                <li>Provide clear documentation of model behavior</li>
+                <li>Regularly validate that explanations match reality</li>
+            </ul>
+
+            <div class="key-point" style="margin-top: 30px;">
+                <strong>Remember:</strong> A less accurate but interpretable model may be more valuable than a highly accurate black box, especially in regulated industries.
+            </div>
+        </div>
+
+        <!-- Slide 32: Key Takeaways -->
+        <div class="slide">
+            <h2>Key Takeaways</h2>
+            
+            <div class="definition-box">
+                <strong>1. Interpretability is a spectrum:</strong> Models range from transparent (linear regression) to opaque (neural networks).
+            </div>
+
+            <div class="definition-box">
+                <strong>2. Multiple tools available:</strong> Shapley values, LIME, and other techniques can explain black-box models.
+            </div>
+
+            <div class="definition-box">
+                <strong>3. Context matters:</strong> Choose your approach based on regulatory requirements, stakeholder needs, and business goals.
+            </div>
+
+            <div class="definition-box">
+                <strong>4. Tradeoffs are inevitable:</strong> Balance accuracy, interpretability, and business requirements.
+            </div>
+
+            <div class="key-point" style="margin-top: 40px;">
+                <strong>Final thought:</strong> As machine learning becomes more prevalent in high-stakes decisions, interpretability is not optional—it's essential for trust, compliance, and effective decision-making.
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-number">
+        <span id="currentSlide">1</span> / 32
+    </div>
+
+    <div class="navigation">
+        <button id="prevBtn" onclick="changeSlide(-1)">Previous</button>
+        <button id="nextBtn" onclick="changeSlide(1)">Next</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+
+            // Trigger visualizations for specific slides
+            if (currentSlide === 3) drawSpectrum();
+            if (currentSlide === 11) drawThreshold();
+            if (currentSlide === 26) drawROC();
+            if (currentSlide === 29) drawFeatureImportance();
+        }
+
+        function changeSlide(direction) {
+            showSlide(currentSlide + direction);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // Draw spectrum visualization
+        function drawSpectrum() {
+            const canvas = document.getElementById('spectrumCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw gradient arrow
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, '#4CAF50');
+            gradient.addColorStop(1, '#CC0000');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(50, 100, 900, 40);
+            
+            // Draw arrow head
+            ctx.beginPath();
+            ctx.moveTo(950, 120);
+            ctx.lineTo(980, 120);
+            ctx.lineTo(965, 90);
+            ctx.lineTo(965, 150);
+            ctx.lineTo(980, 120);
+            ctx.fillStyle = '#CC0000';
+            ctx.fill();
+            
+            // Labels
+            ctx.font = '18px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            
+            ctx.fillText('Linear Regression', 150, 80);
+            ctx.fillText('Decision Trees', 350, 80);
+            ctx.fillText('Random Forest', 550, 80);
+            ctx.fillText('Neural Networks', 850, 80);
+            
+            ctx.fillText('High Interpretability', 150, 180);
+            ctx.fillText('Low Interpretability', 850, 180);
+            
+            ctx.fillText('Lower Accuracy', 150, 220);
+            ctx.fillText('Higher Accuracy', 850, 220);
+        }
+
+        // Draw threshold visualization
+        function drawThreshold() {
+            const canvas = document.getElementById('thresholdCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw probability scale
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(100, 125);
+            ctx.lineTo(900, 125);
+            ctx.stroke();
+            
+            // Draw threshold line
+            ctx.strokeStyle = '#CC0000';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(500, 50);
+            ctx.lineTo(500, 200);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Labels
+            ctx.font = '16px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            
+            ctx.fillText('0%', 100, 150);
+            ctx.fillText('25%', 300, 150);
+            ctx.fillText('50% (Threshold)', 500, 40);
+            ctx.fillText('75%', 700, 150);
+            ctx.fillText('100%', 900, 150);
+            
+            ctx.fillText('Predict: NO', 300, 200);
+            ctx.fillText('Predict: YES', 700, 200);
+            
+            // Regions
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+            ctx.fillRect(100, 50, 400, 75);
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+            ctx.fillRect(500, 50, 400, 75);
+        }
+
+        // Draw ROC curve
+        function drawROC() {
+            const canvas = document.getElementById('rocCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(60, 40);
+            ctx.lineTo(60, 360);
+            ctx.lineTo(460, 360);
+            ctx.stroke();
+            
+            // Draw diagonal (random)
+            ctx.strokeStyle = '#CCC';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(60, 360);
+            ctx.lineTo(460, 40);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw ROC curve
+            ctx.strokeStyle = '#CC0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(60, 360);
+            ctx.quadraticCurveTo(100, 200, 200, 100);
+            ctx.quadraticCurveTo(300, 60, 460, 40);
+            ctx.stroke();
+            
+            // Labels
+            ctx.font = '14px Helvetica';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            
+            ctx.fillText('False Positive Rate', 260, 390);
+            ctx.save();
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('True Positive Rate', -200, 30);
+            ctx.restore();
+            
+            ctx.fillText('0', 60, 375);
+            ctx.fillText('1', 460, 375);
+            ctx.textAlign = 'right';
+            ctx.fillText('0', 55, 365);
+            ctx.fillText('1', 55, 45);
+            
+            // AUC annotation
+            ctx.fillStyle = '#CC0000';
+            ctx.font = '16px Helvetica';
+            ctx.fillText('AUC = 0.84', 420, 200);
+        }
+
+        // Draw feature importance
+        function drawFeatureImportance() {
+            const canvas = document.getElementById('featureImportanceCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const features = [
+                { name: 'Credit Score', value: 0.45 },
+                { name: 'Debt-to-Income Ratio', value: 0.30 },
+                { name: 'Income', value: 0.15 },
+                { name: 'Home Ownership', value: 0.10 }
+            ];
+            
+            const maxWidth = 600;
+            const barHeight = 60;
+            const startX = 150;
+            const startY = 50;
+            
+            features.forEach((feature, i) => {
+                const y = startY + i * (barHeight + 20);
+                const width = feature.value * maxWidth;
+                
+                // Draw bar
+                ctx.fillStyle = '#CC0000';
+                ctx.fillRect(startX, y, width, barHeight);
+                
+                // Draw label
+                ctx.fillStyle = '#333';
+                ctx.font = '16px Helvetica';
+                ctx.textAlign = 'right';
+                ctx.fillText(feature.name, startX - 10, y + barHeight / 2 + 5);
+                
+                // Draw value
+                ctx.textAlign = 'left';
+                ctx.fillText((feature.value * 100).toFixed(0) + '%', startX + width + 10, y + barHeight / 2 + 5);
+            });
+            
+            // Title
+            ctx.font = '18px Helvetica';
+            ctx.textAlign = 'center';
+            ctx.fillText('Relative Feature Importance', 400, 30);
+        }
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
