@@ -3,975 +3,1569 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data4400 Week 3: Time Series Forecasting by Stephen Vu</title>
+    <title>DATA4400 Week 3: Stationarity, Correlation Analysis and Time Series Properties</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: Helvetica, Arial, sans-serif;
-            background-color: #ffffff;
+            background: white;
+            color: #333;
             overflow: hidden;
         }
-        
-        .slide {
+
+        .slide-container {
             width: 100vw;
             height: 100vh;
-            display: none;
-            padding: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
         }
-        
+
+        .slide {
+            display: none;
+            width: 90%;
+            max-width: 1200px;
+            height: 85vh;
+            padding: 40px 60px;
+            position: relative;
+        }
+
         .slide.active {
-            display: flex;
-            flex-direction: column;
+            display: block;
+            animation: fadeIn 0.5s;
         }
-        
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         h1 {
-            font-size: 42px;
-            margin-bottom: 40px;
-            color: #333;
-            text-align: center;
-        }
-        
-        h2 {
-            font-size: 36px;
+            color: #DC143C;
+            font-size: 2.5em;
             margin-bottom: 30px;
-            color: #333;
+            border-bottom: 3px solid #DC143C;
+            padding-bottom: 15px;
         }
-        
+
+        h2 {
+            color: #DC143C;
+            font-size: 2em;
+            margin-bottom: 25px;
+        }
+
         h3 {
-            font-size: 28px;
+            color: #DC143C;
+            font-size: 1.5em;
             margin-bottom: 20px;
-            color: #444;
+            margin-top: 25px;
         }
-        
+
         p, li {
-            font-size: 22px;
-            line-height: 1.6;
-            color: #555;
+            font-size: 1.1em;
+            line-height: 1.8;
             margin-bottom: 15px;
         }
-        
+
+        ul {
+            margin-left: 30px;
+        }
+
         .navigation {
             position: fixed;
             bottom: 30px;
             right: 30px;
             display: flex;
-            gap: 10px;
+            gap: 15px;
             z-index: 1000;
         }
-        
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
+
+        .nav-btn {
+            background: #DC143C;
             color: white;
             border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            cursor: pointer;
             border-radius: 5px;
-            transition: background-color 0.3s;
+            transition: background 0.3s;
         }
-        
-        button:hover {
-            background-color: #0056b3;
+
+        .nav-btn:hover {
+            background: #B01030;
         }
-        
-        button:disabled {
-            background-color: #ccc;
+
+        .nav-btn:disabled {
+            background: #ccc;
             cursor: not-allowed;
         }
-        
+
         .slide-number {
-            position: absolute;
+            position: fixed;
             bottom: 30px;
             left: 30px;
-            font-size: 16px;
+            font-size: 1.1em;
             color: #666;
         }
-        
-        .split-content {
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 30px 0;
+        }
+
+        .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 40px;
-            margin-top: 30px;
-            height: 70%;
-        }
-        
-        .triple-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 30px;
-            margin-top: 30px;
-            height: 70%;
-        }
-        
-        .component-box {
-            border: 2px solid #ddd;
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #f9f9f9;
-        }
-        
-        .chart-container {
-            width: 100%;
-            height: 300px;
-            margin-top: 20px;
-        }
-        
-        .equation {
-            font-size: 28px;
-            text-align: center;
             margin: 30px 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
         }
-        
+
+        .box {
+            border: 2px solid #DC143C;
+            padding: 25px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .box h4 {
+            color: #DC143C;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 20px;
+            border-left: 4px solid #DC143C;
+            margin: 20px 0;
+        }
+
+        .formula {
+            font-size: 1.4em;
+            text-align: center;
+            padding: 25px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin: 25px 0;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .quiz-container {
+            margin: 30px 0;
+        }
+
+        .quiz-question {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #DC143C;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
         .quiz-option {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            text-align: left;
-            background-color: #f5f5f5;
+            padding: 15px 25px;
             border: 2px solid #ddd;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            color: #000000;
+            background: white;
+            font-size: 1.1em;
         }
-        
+
         .quiz-option:hover {
-            background-color: #e0e0e0;
+            border-color: #DC143C;
+            background: #fff5f5;
         }
-        
+
+        .quiz-option.selected {
+            border-color: #DC143C;
+            background: #ffebee;
+        }
+
         .quiz-option.correct {
-            background-color: #d4edda;
             border-color: #28a745;
+            background: #d4edda;
         }
-        
+
         .quiz-option.incorrect {
-            background-color: #f8d7da;
             border-color: #dc3545;
+            background: #f8d7da;
         }
-        
-        .data-table {
+
+        .quiz-feedback {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            display: none;
+        }
+
+        .quiz-feedback.show {
+            display: block;
+        }
+
+        .quiz-feedback.correct {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+
+        .quiz-feedback.incorrect {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+
+        .title-slide {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .title-slide h1 {
+            font-size: 3em;
+            border: none;
+            margin-bottom: 40px;
+        }
+
+        .title-slide h2 {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 50px;
+        }
+
+        .course-info {
+            font-size: 1.3em;
+            color: #666;
+            margin-top: 40px;
+        }
+
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin: 20px 0;
         }
-        
-        .data-table th, .data-table td {
+
+        th, td {
             border: 1px solid #ddd;
             padding: 12px;
-            text-align: center;
+            text-align: left;
         }
-        
-        .data-table th {
-            background-color: #f2f2f2;
+
+        th {
+            background: #DC143C;
+            color: white;
             font-weight: bold;
         }
-        
-        .data-table input {
-            width: 80px;
-            padding: 5px;
-            border: 1px solid #ccc;
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .concept-card {
+            padding: 20px;
+            border: 2px solid #DC143C;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .concept-card h4 {
+            color: #DC143C;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .logo {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .exercise-box {
+            background: #f0f8ff;
+            border: 2px solid #DC143C;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .exercise-box h3 {
+            margin-top: 0;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 8px;
             border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #DC143C;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
             text-align: center;
-        }
-        
-        .highlight {
-            background-color: #fff3cd;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-        
-        .agenda-item {
-            padding: 15px;
-            margin: 10px 0;
-            background-color: #f8f9fa;
-            border-left: 4px solid #007bff;
-            font-size: 24px;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <!-- Slide 1: Title -->
-    <div class="slide active">
-        <h1>Data4400: Time Series Analysis</h1>
-        <h2 style="text-align: center; margin-top: 50px;">Week 3: Advanced Forecasting Techniques</h2>
-        <p style="text-align: center; font-size: 28px; margin-top: 40px;">Moving Average, Naive Forecast, Time Series Decomposition</p>
-        <div class="slide-number">1 / 30</div>
-    </div>
-
-    <!-- Slide 2: Recap Part 1 -->
-    <div class="slide">
-        <h2>Recap: Time Series Components (Part 1)</h2>
-        <div class="split-content">
-            <div class="component-box">
-                <h3>1. Stationary Component</h3>
-                <p>A series with constant mean and variance over time</p>
-                <canvas id="stationaryChart" class="chart-container"></canvas>
-            </div>
-            <div class="component-box">
-                <h3>2. Long-term Trend</h3>
-                <p>The general direction of the data over an extended period</p>
-                <canvas id="trendChart" class="chart-container"></canvas>
+    <div class="slide-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <div class="title-slide">
+                <h1>DATA4400<br>Data-Driven Forecasting</h1>
+                <h2>Week 3: Stationarity, Correlation Analysis<br>and Time Series Properties</h2>
+                <div class="course-info">
+                    Kaplan Business School Australia<br>
+                    Term 2, 2025
+                </div>
             </div>
         </div>
-        <div class="slide-number">2 / 30</div>
-    </div>
 
-    <!-- Slide 3: Recap Part 2 -->
-    <div class="slide">
-        <h2>Recap: Time Series Components (Part 2)</h2>
-        <div class="triple-content">
-            <div class="component-box">
-                <h3>3. Seasonality</h3>
-                <p>Regular patterns that repeat at fixed intervals</p>
-                <canvas id="seasonalChart" class="chart-container"></canvas>
+        <!-- Slide 2: Learning Outcomes -->
+        <div class="slide">
+            <h1>Learning Outcomes</h1>
+            <p>By the end of this week, you will be able to:</p>
+            <div class="concept-grid">
+                <div class="concept-card">
+                    <h4>1. Analyse Time Series Components</h4>
+                    <p>Identify and decompose trend, seasonal, cyclical, and irregular components in business data</p>
+                </div>
+                <div class="concept-card">
+                    <h4>2. Evaluate Stationarity</h4>
+                    <p>Understand why stationarity matters and test whether data is stationary using statistical methods</p>
+                </div>
+                <div class="concept-card">
+                    <h4>3. Apply Differencing</h4>
+                    <p>Transform non-stationary data into stationary format using appropriate differencing techniques</p>
+                </div>
+                <div class="concept-card">
+                    <h4>4. Prepare Data for Forecasting</h4>
+                    <p>Apply data preparation techniques to ensure reliable forecast model development</p>
+                </div>
             </div>
-            <div class="component-box">
-                <h3>4. Cyclical Patterns</h3>
-                <p>Long-term fluctuations without fixed period</p>
-                <canvas id="cyclicalChart" class="chart-container"></canvas>
-            </div>
-            <div class="component-box">
-                <h3>5. Irregularity</h3>
-                <p>Random, unpredictable fluctuations</p>
-                <canvas id="irregularChart" class="chart-container"></canvas>
-            </div>
-        </div>
-        <div class="slide-number">3 / 31</div>
-    </div>
-
-    <!-- Slide 4: Quiz 1 -->
-    <div class="slide">
-        <h2>Quiz: Identify the Time Series Component</h2>
-        <canvas id="quizChart1" style="width: 100%; height: 300px; margin: 20px 0;"></canvas>
-        <p style="font-size: 24px; margin-bottom: 20px;">Which component is primarily shown in this time series?</p>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">A. Stationary Component</button>
-        <button class="quiz-option" onclick="checkAnswer(this, true)">B. Seasonal Pattern</button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">C. Long-term Trend</button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">D. Irregular Component</button>
-        <div class="slide-number">4 / 31</div>
-    </div>
-
-    <!-- Slide 5: Today's Agenda -->
-    <div class="slide">
-        <h2>Today's Learning Objectives</h2>
-        <p style="font-size: 24px; margin-bottom: 30px;">Building on last week's foundation of time series components and regression models...</p>
-        <div class="agenda-item">1. Naive Forecast Method</div>
-        <div class="agenda-item">2. Understanding Smoothing Techniques</div>
-        <div class="agenda-item">3. Moving Average Implementation</div>
-        <div class="agenda-item">4. Time Series Decomposition</div>
-        <div class="agenda-item">5. Multiplicative vs. Additive Models</div>
-        <p style="margin-top: 30px; font-style: italic;">These techniques help us extract meaningful patterns from noisy data for better forecasting</p>
-        <div class="slide-number">5 / 31</div>
-    </div>
-
-    <!-- Slide 6: Naive Forecast -->
-    <div class="slide">
-        <h2>Naive Forecast Method</h2>
-        <p>The simplest forecasting method: tomorrow's value equals today's value</p>
-        <div class="equation">
-            ŷ<sub>t+1</sub> = y<sub>t</sub>
-        </div>
-        <p>Where ŷ<sub>t+1</sub> is the forecast for the next period and y<sub>t</sub> is the current observation</p>
-        <canvas id="naiveChart" style="width: 100%; height: 350px; margin-top: 30px;"></canvas>
-        <div class="slide-number">6 / 31</div>
-    </div>
-
-    <!-- Slide 7: Forecasting Aim -->
-    <div class="slide">
-        <h2>The Fundamental Aim of Forecasting</h2>
-        <p style="font-size: 26px; text-align: center; margin: 40px 0;">To predict future values based on identified patterns from historical data</p>
-        <div class="split-content">
-            <div>
-                <h3>Noisy Time Series</h3>
-                <canvas id="noisyChart" class="chart-container"></canvas>
-                <p style="text-align: center; color: #dc3545;">Difficult to predict</p>
-            </div>
-            <div>
-                <h3>Smooth Time Series</h3>
-                <canvas id="smoothChart" class="chart-container"></canvas>
-                <p style="text-align: center; color: #28a745;">Easier to predict</p>
+            <div class="highlight">
+                <strong>Key Principle:</strong> Understanding data characteristics is fundamental to selecting appropriate forecasting methods and ensuring accurate business predictions.
             </div>
         </div>
-        <div class="slide-number">7 / 31</div>
-    </div>
 
-    <!-- Slide 8: Smoothing Introduction -->
-    <div class="slide">
-        <h2>Introduction to Smoothing Techniques</h2>
-        <h3>Purpose of Smoothing:</h3>
-        <ul style="font-size: 24px; margin-left: 40px;">
-            <li>Reduce the impact of random variation in time series data</li>
-            <li>Make underlying patterns more readily identifiable</li>
-            <li>Create a modified series that is more uniform and less irregular</li>
-        </ul>
-        <canvas id="smoothingDemo" style="width: 100%; height: 350px; margin-top: 30px;"></canvas>
-        <div class="slide-number">8 / 31</div>
-    </div>
-
-    <!-- Slide 9: Smoothing Benefits -->
-    <div class="slide">
-        <h2>Benefits of Smoothing Techniques</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px;">
-            <div>
-                <h3>Before Smoothing</h3>
-                <ul>
-                    <li>High noise levels obscure patterns</li>
-                    <li>Difficult to identify trends</li>
-                    <li>Random variations dominate</li>
-                </ul>
-            </div>
-            <div>
-                <h3>After Smoothing</h3>
-                <ul>
-                    <li>Clear pattern emergence</li>
-                    <li>Trend identification simplified</li>
-                    <li>Reduced random fluctuations</li>
-                </ul>
-            </div>
-        </div>
-        <canvas id="beforeAfterSmoothing" style="width: 100%; height: 300px; margin-top: 30px;"></canvas>
-        <div class="slide-number">9 / 31</div>
-    </div>
-
-    <!-- Slide 10: Quiz 2 -->
-    <div class="slide">
-        <h2>Quiz: Smoothing Techniques</h2>
-        <canvas id="quizChart2" style="width: 100%; height: 300px; margin: 20px 0;"></canvas>
-        <p style="font-size: 24px; margin-bottom: 20px;">Which series would benefit most from smoothing techniques?</p>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">A. Series A (Blue) - Already smooth with clear trend</button>
-        <button class="quiz-option" onclick="checkAnswer(this, true)">B. Series B (Red) - High variability obscuring patterns</button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">C. Both equally</button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">D. Neither needs smoothing</button>
-        <div class="slide-number">10 / 31</div>
-    </div>
-
-    <!-- Slide 11: Moving Average Introduction -->
-    <div class="slide">
-        <h2>Moving Average: A Fundamental Smoothing Technique</h2>
-        <p>Moving Average calculates the average of the most recent k observations</p>
-        <div class="equation">
-            MA(k)<sub>t</sub> = (y<sub>t</sub> + y<sub>t-1</sub> + ... + y<sub>t-k+1</sub>) / k
-        </div>
-        <p>Where k is the number of periods in the moving average window</p>
-        <canvas id="movingAverageChart" style="width: 100%; height: 350px; margin-top: 30px;"></canvas>
-        <div class="slide-number">11 / 31</div>
-    </div>
-
-    <!-- Slide 12: MA Comparison Animation -->
-    <div class="slide">
-        <h2>Comparing Moving Averages: MA(2) vs MA(3)</h2>
-        <p>Click the button to see how different window sizes affect smoothing</p>
-        <button onclick="animateMA()" style="margin: 20px auto; display: block;">Animate Comparison</button>
-        <canvas id="maComparisonChart" style="width: 100%; height: 400px;"></canvas>
-        <div id="maDataDisplay" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px;">
-                <h4>MA(2) Calculation</h4>
-                <p id="ma2Calc" style="font-family: monospace;"></p>
-            </div>
-            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px;">
-                <h4>MA(3) Calculation</h4>
-                <p id="ma3Calc" style="font-family: monospace;"></p>
-            </div>
-        </div>
-        <div class="slide-number">12 / 31</div>
-    </div>
-
-    <!-- Slide 13: Exercise -->
-    <div class="slide">
-        <h2>Exercise: Forecasting Comparison</h2>
-        <p>Complete the table below using Naive Forecast, MA(2), and MA(3). Calculate the absolute errors.</p>
-        <table class="data-table">
-            <thead>
+        <!-- Slide 3: Course Roadmap -->
+        <div class="slide">
+            <h1>DATA4400 Course Roadmap</h1>
+            <table>
                 <tr>
-                    <th>Period</th>
-                    <th>Actual Value</th>
-                    <th>Naive Forecast</th>
-                    <th>MA(2) Forecast</th>
-                    <th>MA(3) Forecast</th>
-                    <th>|Error| Naive</th>
-                    <th>|Error| MA(2)</th>
-                    <th>|Error| MA(3)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>42</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
+                    <th style="width: 15%">Week</th>
+                    <th>Topic</th>
                 </tr>
                 <tr>
-                    <td>2</td>
-                    <td>48</td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td>-</td>
-                    <td>-</td>
+                    <td>Week 1</td>
+                    <td>Forecasting Foundations and Data Preparation</td>
                 </tr>
                 <tr>
-                    <td>3</td>
-                    <td>51</td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td>-</td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td>-</td>
+                    <td>Week 2</td>
+                    <td>Generative AI in Forecasting and Moving Averages</td>
+                </tr>
+                <tr style="background: #ffebee;">
+                    <td><strong>Week 3</strong></td>
+                    <td><strong>Stationarity, Correlation Analysis, and Time Series Properties</strong></td>
                 </tr>
                 <tr>
-                    <td>4</td>
-                    <td>46</td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
+                    <td>Week 4</td>
+                    <td>Introductory Forecasting Methods</td>
                 </tr>
                 <tr>
-                    <td>5</td>
-                    <td>50</td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
+                    <td>Week 6</td>
+                    <td>Prophet for Business Forecasting</td>
                 </tr>
                 <tr>
-                    <td colspan="5" style="text-align: right; font-weight: bold;">Sum of Absolute Errors:</td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
-                    <td><input type="text" placeholder="?"></td>
+                    <td>Week 7</td>
+                    <td>ARIMA and SARIMA Modeling Fundamentals</td>
                 </tr>
-            </tbody>
-        </table>
-        <p style="margin-top: 20px; font-style: italic;">Which method has the lowest sum of absolute errors?</p>
-        <div class="slide-number">13 / 31</div>
-    </div>
+                <tr>
+                    <td>Week 8</td>
+                    <td>Vector Autoregression (VAR) and Multivariate Methods</td>
+                </tr>
+            </table>
+        </div>
 
-    <!-- Slide 14: Time Series Decomposition Introduction -->
-    <div class="slide">
-        <h2>Time Series Decomposition</h2>
-        <h3>Why Decompose Time Series?</h3>
-        <ul style="font-size: 24px; margin-left: 40px;">
-            <li>Isolate individual components for better understanding</li>
-            <li>Remove seasonality to identify underlying trends</li>
-            <li>Improve forecasting accuracy by modeling components separately</li>
-            <li>Identify irregular patterns and outliers</li>
-        </ul>
-        <canvas id="decompositionChart" style="width: 100%; height: 350px; margin-top: 30px;"></canvas>
-        <div class="slide-number">14 / 31</div>
-    </div>
-
-    <!-- Slide 15: Decomposition Types Overview -->
-    <div class="slide">
-        <h2>Two Types of Time Series Decomposition</h2>
-        <div class="split-content">
-            <div class="component-box">
-                <h3>Additive Model</h3>
-                <div class="equation">Y<sub>t</sub> = Trend + Seasonal + Irregular</div>
-                <p>Used when seasonal fluctuations are relatively constant over time</p>
+        <!-- Slide 4: Introduction to Time Series Components -->
+        <div class="slide">
+            <h1>Understanding Time Series Components</h1>
+            <p>Every time series can be decomposed into fundamental components that help us understand patterns and build accurate forecasts.</p>
+            
+            <div class="concept-grid">
+                <div class="concept-card">
+                    <h4>Trend (T)</h4>
+                    <p>Long-term directional movement showing overall increase, decrease, or stability in data over extended periods</p>
+                </div>
+                <div class="concept-card">
+                    <h4>Seasonal (S)</h4>
+                    <p>Regular, predictable fluctuations that repeat over fixed periods (daily, weekly, monthly, quarterly)</p>
+                </div>
+                <div class="concept-card">
+                    <h4>Cyclical (C)</h4>
+                    <p>Longer-term fluctuations without fixed periods, often related to economic or business cycles spanning several years</p>
+                </div>
+                <div class="concept-card">
+                    <h4>Irregular (I)</h4>
+                    <p>Random fluctuations or noise that cannot be attributed to other patterns; includes unpredictable external shocks</p>
+                </div>
             </div>
-            <div class="component-box">
-                <h3>Multiplicative Model</h3>
-                <div class="equation">Y<sub>t</sub> = Trend × Seasonal × Irregular</div>
-                <p>Used when seasonal fluctuations change proportionally to the level of the time series</p>
+
+            <div class="highlight">
+                <strong>Important:</strong> A stationary time series has constant mean and variance over time, with no trend or seasonal components. Most forecasting models require stationarity.
             </div>
         </div>
-        <div class="slide-number">15 / 31</div>
-    </div>
 
-    <!-- Slide 16: Additive Decomposition Visual -->
-    <div class="slide">
-        <h2>Additive Decomposition: Visual Example</h2>
-        <canvas id="additiveDecompChart" style="width: 100%; height: 500px; margin-top: 20px;"></canvas>
-        <p style="text-align: center; margin-top: 20px;">Notice how the seasonal component has constant amplitude</p>
-        <div class="slide-number">16 / 31</div>
-    </div>
-
-    <!-- Slide 17: Multiplicative Decomposition Visual -->
-    <div class="slide">
-        <h2>Multiplicative Decomposition: Visual Example</h2>
-        <canvas id="multiplicativeDecompChart" style="width: 100%; height: 500px; margin-top: 20px;"></canvas>
-        <p style="text-align: center; margin-top: 20px;">Notice how the seasonal component amplitude increases with the trend</p>
-        <div class="slide-number">17 / 31</div>
-    </div>
-
-    <!-- Slide 18: Choosing Decomposition Type -->
-    <div class="slide">
-        <h2>Choosing Between Additive and Multiplicative</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px;">
-            <div class="component-box">
-                <h3>Use Additive When:</h3>
-                <ul>
-                    <li>Seasonal fluctuations are constant</li>
-                    <li>Variance doesn't change with level</li>
-                    <li>Linear relationships exist</li>
-                </ul>
-                <canvas id="additiveExampleChart" style="width: 100%; height: 200px; margin-top: 20px;"></canvas>
-            </div>
-            <div class="component-box">
-                <h3>Use Multiplicative When:</h3>
-                <ul>
-                    <li>Seasonal fluctuations vary with level</li>
-                    <li>Percentage changes are constant</li>
-                    <li>Data shows exponential growth</li>
-                </ul>
-                <canvas id="multiplicativeExampleChart" style="width: 100%; height: 200px; margin-top: 20px;"></canvas>
-            </div>
-        </div>
-        <div class="slide-number">18 / 31</div>
-    </div>
-
-    <!-- Slide 19: Quiz 3 -->
-    <div class="slide">
-        <h2>Quiz: Decomposition Model Selection</h2>
-        <canvas id="quizChart3" style="width: 100%; height: 350px; margin: 20px 0;"></canvas>
-        <p style="font-size: 24px; margin-bottom: 20px;">Which decomposition model would be most appropriate for this time series?</p>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">A. Additive Model - constant seasonal variation</button>
-        <button class="quiz-option" onclick="checkAnswer(this, true)">B. Multiplicative Model - increasing seasonal variation</button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">C. Either model would work equally well</button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">D. No decomposition needed</button>
-        <div class="slide-number">19 / 34</div>
-    </div>
-
-    <!-- Slide 20: Introduction to Prophet -->
-    <div class="slide">
-        <h2>Facebook Prophet: Modern Time Series Forecasting</h2>
-        <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <p style="font-size: 24px; text-align: center; margin: 0;">
-                Prophet = Trend + Seasonality + Holidays + Error
-            </p>
-        </div>
-        
-        <div class="split-content">
-            <div>
-                <h3>Why Prophet?</h3>
-                <ul style="font-size: 20px;">
-                    <li>Handles missing data and outliers</li>
-                    <li>Automatic seasonality detection</li>
-                    <li>Built-in holiday effects</li>
-                    <li>Human-interpretable parameters</li>
-                    <li>Works well "out of the box"</li>
-                </ul>
-            </div>
-            <div>
-                <h3>Prophet vs Traditional Methods</h3>
-                <canvas id="prophetComparisonChart" style="width: 100%; height: 250px;"></canvas>
-            </div>
-        </div>
-        
-        <p style="font-size: 18px; margin-top: 20px; text-align: center; color: #666;">
-            Developed by Facebook for business forecasting at scale
-        </p>
-        <div class="slide-number">20 / 34</div>
-    </div>
-
-    <!-- Slide 21: Prophet Components -->
-    <div class="slide">
-        <h2>Prophet Model Components</h2>
-        <div class="equation" style="font-size: 24px;">
-            y(t) = g(t) + s(t) + h(t) + ε<sub>t</sub>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
-            <div class="component-box">
-                <h3>📈 g(t): Trend</h3>
-                <p>Non-periodic changes (growth or decline)</p>
-                <ul style="font-size: 18px;">
-                    <li>Linear growth (default)</li>
-                    <li>Logistic growth (with cap)</li>
-                    <li>Automatic changepoint detection</li>
-                </ul>
-                <canvas id="trendComponentChart" style="width: 100%; height: 150px; margin-top: 10px;"></canvas>
+        <!-- Slide 5: Individual Component - Trend -->
+        <div class="slide">
+            <h1>Component 1: Trend</h1>
+            <p>The trend component shows the long-term directional movement in data, revealing overall growth, decline, or stability.</p>
+            
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="trendChart"></canvas>
             </div>
             
-            <div class="component-box">
-                <h3>🔄 s(t): Seasonality</h3>
-                <p>Periodic changes (weekly, yearly)</p>
-                <ul style="font-size: 18px;">
-                    <li>Fourier series modeling</li>
-                    <li>Weekly: 7-day cycle</li>
-                    <li>Yearly: 365.25-day cycle</li>
-                </ul>
-                <canvas id="seasonalComponentChart" style="width: 100%; height: 150px; margin-top: 10px;"></canvas>
-            </div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-            <div class="component-box">
-                <h3>🎉 h(t): Holidays/Events</h3>
-                <p>Irregular events with predictable effects</p>
-                <ul style="font-size: 18px;">
-                    <li>User-specified dates</li>
-                    <li>Can include windows (e.g., ±1 day)</li>
-                    <li>Country-specific holidays</li>
-                </ul>
-            </div>
-            
-            <div class="component-box">
-                <h3>🎲 ε<sub>t</sub>: Error Term</h3>
-                <p>Random fluctuations not explained by model</p>
-                <ul style="font-size: 18px;">
-                    <li>Assumed normally distributed</li>
-                    <li>Represents uncertainty</li>
-                    <li>Used for prediction intervals</li>
-                </ul>
-            </div>
-        </div>
-        <div class="slide-number">21 / 34</div>
-    </div>
-
-    <!-- Slide 22: Prophet in Action -->
-    <div class="slide">
-        <h2>Prophet in Action: Retail Sales Example</h2>
-        <canvas id="prophetFullExample" style="width: 100%; height: 400px; margin-top: 20px;"></canvas>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 30px;">
-            <div style="text-align: center;">
-                <h4 style="color: #dc3545;">Historical Data</h4>
-                <p style="font-size: 16px;">3 years of daily sales</p>
-            </div>
-            <div style="text-align: center;">
-                <h4 style="color: #28a745;">Prophet Forecast</h4>
-                <p style="font-size: 16px;">90-day prediction</p>
-            </div>
-            <div style="text-align: center;">
-                <h4 style="color: #ffc107;">Uncertainty Bands</h4>
-                <p style="font-size: 16px;">80% confidence interval</p>
-            </div>
-        </div>
-        
-        <p style="font-size: 20px; text-align: center; margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 8px;">
-            Notice: Prophet automatically detects weekly patterns (weekend peaks) and yearly seasonality (holiday shopping)
-        </p>
-        <div class="slide-number">22 / 34</div>
-    </div>
-
-    <!-- Slide 23: Prophet Exercise -->
-    <div class="slide">
-        <h2>Exercise: Prophet vs Naive Forecasting</h2>
-        <p style="font-size: 20px;">Given 5 days of historical sales data, forecast the next 3 days using both methods.</p>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-            <div>
-                <h4>Historical Data (January 2025)</h4>
-                <table class="data-table" style="font-size: 18px;">
-                    <tr>
-                        <th>Date</th>
-                        <th>Day</th>
-                        <th>Sales</th>
-                    </tr>
-                    <tr><td>Jan 20 (Mon)</td><td>Monday</td><td>120</td></tr>
-                    <tr><td>Jan 21 (Tue)</td><td>Tuesday</td><td>118</td></tr>
-                    <tr><td>Jan 22 (Wed)</td><td>Wednesday</td><td>119</td></tr>
-                    <tr><td>Jan 23 (Thu)</td><td>Thursday</td><td>121</td></tr>
-                    <tr><td>Jan 24 (Fri)</td><td>Friday</td><td>125</td></tr>
-                </table>
-            </div>
-            
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                <h4>Prophet Model Components</h4>
-                <p style="font-size: 16px; margin: 5px 0;"><strong>Trend:</strong> g(t) = 119 + 1.2×t</p>
-                <p style="font-size: 14px; margin: 5px 0;">(t = 0 for Jan 20, t = 1 for Jan 21, etc.)</p>
+            <div class="two-column" style="margin-top: 20px;">
+                <div class="box">
+                    <h4>Characteristics</h4>
+                    <ul>
+                        <li>Smooth, continuous movement</li>
+                        <li>Persists over extended periods (years)</li>
+                        <li>Can be linear or non-linear</li>
+                        <li>Represents fundamental shifts</li>
+                    </ul>
+                </div>
                 
-                <h5 style="margin-top: 10px;">Weekly Seasonality s(t):</h5>
-                <table style="font-size: 14px; margin: 5px 0;">
-                    <tr>
-                        <td>Mon: 0</td>
-                        <td>Tue: -2</td>
-                        <td>Wed: -1</td>
-                    </tr>
-                    <tr>
-                        <td>Thu: +1</td>
-                        <td>Fri: +4</td>
-                        <td>Sat: +8</td>
-                    </tr>
-                    <tr>
-                        <td colspan="3">Sun: +5</td>
-                    </tr>
-                </table>
-                
-                <p style="font-size: 14px; margin: 10px 0;"><strong>Special Event:</strong> Jan 25 (Sat) Marketing Campaign: h(t) = +10</p>
-                <p style="font-size: 16px; margin: 5px 0;"><strong>Formula:</strong> y(t) = g(t) + s(t) + h(t)</p>
+                <div class="box">
+                    <h4>Business Examples</h4>
+                    <ul>
+                        <li><strong>Upward:</strong> Technology adoption, population growth</li>
+                        <li><strong>Downward:</strong> Declining industries, market saturation</li>
+                        <li><strong>Stable:</strong> Mature markets, regulated prices</li>
+                    </ul>
+                </div>
             </div>
         </div>
-        
-        <h4 style="margin-top: 20px;">Complete the Forecast Table:</h4>
-        <table class="data-table" style="font-size: 16px;">
-            <thead>
+
+        <!-- Slide 6: Individual Components - Seasonal and Cyclical -->
+        <div class="slide">
+            <h1>Component 2 & 3: Seasonal and Cyclical Patterns</h1>
+            
+            <div class="two-column">
+                <div>
+                    <h3>Seasonal Component</h3>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="seasonalChart"></canvas>
+                    </div>
+                    <div class="box">
+                        <h4>Key Features</h4>
+                        <ul>
+                            <li><strong>Fixed Period:</strong> Daily, weekly, monthly, quarterly</li>
+                            <li><strong>Predictable:</strong> Repeats consistently</li>
+                            <li><strong>Examples:</strong> Retail sales (holidays), electricity (daily patterns)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Cyclical Component</h3>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="cyclicalChart"></canvas>
+                    </div>
+                    <div class="box">
+                        <h4>Key Features</h4>
+                        <ul>
+                            <li><strong>Variable Period:</strong> No fixed duration</li>
+                            <li><strong>Business Driven:</strong> Economic cycles, market conditions</li>
+                            <li><strong>Examples:</strong> Housing market, unemployment rates</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Individual Component - Irregular -->
+        <div class="slide">
+            <h1>Component 4: Irregular (Random) Component</h1>
+            <p>The irregular component represents unpredictable, random fluctuations that remain after removing trend, seasonal, and cyclical patterns.</p>
+            
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="irregularChart"></canvas>
+            </div>
+            
+            <div class="two-column" style="margin-top: 20px;">
+                <div class="box">
+                    <h4>Characteristics</h4>
+                    <ul>
+                        <li>No systematic pattern</li>
+                        <li>Unpredictable by definition</li>
+                        <li>Constant mean (usually zero)</li>
+                        <li>Represents "noise" in data</li>
+                    </ul>
+                </div>
+                
+                <div class="box">
+                    <h4>Sources in Business</h4>
+                    <ul>
+                        <li>Measurement errors</li>
+                        <li>Unexpected events (strikes, weather)</li>
+                        <li>Random consumer behavior</li>
+                        <li>External shocks (natural disasters)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Important:</strong> After modeling trend, seasonal, and cyclical components, residuals should resemble irregular (white noise) patterns, indicating a good model fit.
+            </div>
+        </div>
+
+        <!-- Slide 8: Time Series Components Combined -->
+        <div class="slide">
+            <h1>How Components Combine</h1>
+            <p>Real-world time series data results from combining all four components:</p>
+            <div class="chart-container">
+                <canvas id="componentsChart"></canvas>
+            </div>
+            <div class="formula">
+                Observed Data = Trend + Seasonal + Cyclical + Irregular
+            </div>
+            <p><strong>Key Insight:</strong> Successful forecasting requires identifying and modeling each component appropriately to capture the underlying data structure accurately.</p>
+        </div>
+
+        <!-- Slide 9: Business Example - Airport Passenger Traffic -->
+        <div class="slide">
+            <h1>Real-World Example: Airport Passenger Traffic</h1>
+            <p>Consider international airport passenger data analyzed in Week 1. We can identify all four components:</p>
+            
+            <div class="two-column">
+                <div>
+                    <div class="box">
+                        <h4>Trend Component</h4>
+                        <p><strong>Pattern:</strong> Long-term growth in passenger numbers</p>
+                        <p><strong>Business Driver:</strong> Increasing global travel demand and population growth</p>
+                    </div>
+                    
+                    <div class="box">
+                        <h4>Seasonal Component</h4>
+                        <p><strong>Pattern:</strong> Regular spikes during school holidays</p>
+                        <p><strong>Business Driver:</strong> Family vacation patterns and academic calendars</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="box">
+                        <h4>Cyclical Component</h4>
+                        <p><strong>Pattern:</strong> Multi-year fluctuations linked to economic conditions</p>
+                        <p><strong>Business Driver:</strong> Global economic cycles and major events affecting travel</p>
+                    </div>
+                    
+                    <div class="box">
+                        <h4>Irregular Component</h4>
+                        <p><strong>Pattern:</strong> Unexpected variations in daily traffic</p>
+                        <p><strong>Business Driver:</strong> Weather disruptions, strikes, or sudden events</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: QUIZ 1 -->
+        <div class="slide">
+            <h1>Quiz 1: Time Series Components</h1>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    An ice cream company notices that sales increase every summer and decrease every winter, following the same pattern each year. Which component does this represent?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(1, 'A', false)">
+                        A) Trend - because sales are changing over time
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(1, 'B', true)">
+                        B) Seasonal - because the pattern repeats at fixed intervals
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(1, 'C', false)">
+                        C) Cyclical - because it involves sales cycles
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(1, 'D', false)">
+                        D) Irregular - because weather is unpredictable
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback1"></div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Data Characteristics Matter -->
+        <div class="slide">
+            <h1>Why Understanding Data Characteristics Matters</h1>
+            <p>Examining data characteristics is essential for choosing appropriate models, preparing data effectively, and ensuring forecasts align with business objectives.</p>
+            
+            <table>
                 <tr>
-                    <th rowspan="2">Date</th>
-                    <th rowspan="2">Day</th>
-                    <th rowspan="2">t</th>
-                    <th colspan="4">Prophet Components</th>
-                    <th rowspan="2">Naive<br>Forecast</th>
+                    <th>Aspect</th>
+                    <th>Importance</th>
+                    <th>Business Impact</th>
                 </tr>
                 <tr>
-                    <th>g(t)</th>
-                    <th>s(t)</th>
-                    <th>h(t)</th>
-                    <th>y(t) = g+s+h</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Jan 25</td>
-                    <td>Sat</td>
-                    <td>5</td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
+                    <td><strong>Model Selection</strong></td>
+                    <td>Traits like seasonality and trends determine which forecasting method is most suitable</td>
+                    <td>Selecting the wrong model leads to inaccurate predictions and poor decisions</td>
                 </tr>
                 <tr>
-                    <td>Jan 26</td>
-                    <td>Sun</td>
-                    <td>6</td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
+                    <td><strong>Data Preparation</strong></td>
+                    <td>Awareness of missing values, outliers, or instability guides cleaning and transformation</td>
+                    <td>Poor data quality directly translates to unreliable forecasts</td>
                 </tr>
                 <tr>
-                    <td>Jan 27</td>
-                    <td>Mon</td>
-                    <td>7</td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
-                    <td><input type="text" placeholder="?" style="width: 50px;"></td>
+                    <td><strong>Business Relevance</strong></td>
+                    <td>Matching data granularity with decision-making timeframes</td>
+                    <td>Ensures forecasts support practical objectives and actionable insights</td>
                 </tr>
-            </tbody>
-        </table>
-        <p style="margin-top: 15px; font-size: 18px; text-align: center;">Which method better captures the weekend effect and marketing event?</p>
-        <div class="slide-number">23 / 34</div>
-    </div>
-
-    <!-- Slide 24: Hands-on Exercise Instructions -->
-    <div class="slide">
-        <h2>Hands-on Exercise: RetailIndustry.xlsx Analysis</h2>
-        <h3 style="color: #007bff; margin-bottom: 25px;">Using Exploratory.io for Time Series Forecasting</h3>
-        
-        <div style="background-color: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
-            <h4 style="margin-bottom: 15px;">Dataset Description:</h4>
-            <p style="font-size: 20px;">Daily retail data containing: Date, Marketing Spend ($), Number of Promotions, 
-            Website Traffic (thousands), Customer Footfall (thousands), Daily Sales ($)</p>
+                <tr>
+                    <td><strong>Risk Management</strong></td>
+                    <td>Investigating data thoroughly reduces uncertainty</td>
+                    <td>Sets realistic expectations for forecast reliability and confidence intervals</td>
+                </tr>
+            </table>
         </div>
-        
-        <h4>Your Tasks:</h4>
-        <ol style="font-size: 22px; margin-left: 40px; line-height: 2;">
-            <li><strong>Import Data:</strong> Load RetailIndustry.xlsx into Exploratory.io</li>
-            <li><strong>Moving Average:</strong> Apply MA(7) and MA(14) to Daily Sales</li>
-            <li><strong>Regression Model:</strong> Build a regression model using Marketing Spend, Promotions, and Website Traffic as predictors</li>
-            <li><strong>Prophet Forecast:</strong> Use Prophet to forecast Daily Sales for 70 days ahead</li>
-            <li><strong>Analysis:</strong> Investigate seasonal patterns and evaluate model performance</li>
-        </ol>
-        
-        <p style="margin-top: 30px; font-size: 20px; color: #dc3545; font-weight: bold;">
-            Complete the analysis before answering the following quiz questions
-        </p>
-        <div class="slide-number">20 / 31</div>
-    </div>
 
-    <!-- Slide 21: Quiz Question 1 -->
-    <div class="slide">
-        <h2>Quiz Question 1: Moving Average Analysis</h2>
-        <p style="font-size: 24px; margin-bottom: 30px;">
-            After applying MA(7) and MA(14) to the Daily Sales data, which statement best describes the relationship between these two moving averages?
-        </p>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            A. MA(7) produces a smoother line than MA(14) with less lag
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, true)">
-            B. MA(14) produces a smoother line than MA(7) but with more lag
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            C. Both moving averages produce identical smoothing effects
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            D. MA(7) has more lag than MA(14) in following the trend
-        </button>
-        <div style="margin-top: 40px; padding: 20px; background-color: #e8f4f8; border-radius: 8px;">
-            <p style="font-size: 18px; color: #666;">
-                <strong>Hint:</strong> Consider how window size affects smoothness and responsiveness to changes
-            </p>
-        </div>
-        <div class="slide-number">21 / 31</div>
-    </div>
+        <!-- Slide 12: Data Preparation Techniques -->
+        <div class="slide">
+            <h1>Essential Data Preparation Techniques</h1>
+            
+            <h3>Handling Data Quality Issues</h3>
+            <ul>
+                <li><strong>Missing Values:</strong> Impute using interpolation methods or remove incomplete periods to maintain series continuity</li>
+                <li><strong>Outliers:</strong> Detect anomalies using statistical methods and decide whether to remove, replace, or model separately</li>
+                <li><strong>Stationarity Transformation:</strong> Apply differencing or deseasonalization to stabilize mean and variance</li>
+            </ul>
 
-    <!-- Slide 22: Quiz Question 2 -->
-    <div class="slide">
-        <h2>Quiz Question 2: Regression Model Insights</h2>
-        <p style="font-size: 24px; margin-bottom: 30px;">
-            In your regression model predicting Daily Sales, which variable would you expect to have the strongest positive correlation based on typical retail patterns?
-        </p>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            A. Number of Promotions only
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            B. Marketing Spend only
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, true)">
-            C. Customer Footfall (foot traffic in store)
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            D. Website Traffic only
-        </button>
-        <div style="margin-top: 40px; padding: 20px; background-color: #e8f4f8; border-radius: 8px;">
-            <p style="font-size: 18px; color: #666;">
-                <strong>Hint:</strong> Think about which metric most directly indicates purchase intent in a physical retail setting
-            </p>
-        </div>
-        <div class="slide-number">22 / 31</div>
-    </div>
-
-    <!-- Slide 23: Quiz Question 3 -->
-    <div class="slide">
-        <h2>Quiz Question 3: Prophet Seasonality Detection</h2>
-        <p style="font-size: 24px; margin-bottom: 30px;">
-            When using Prophet to analyze the RetailIndustry daily sales data, which seasonal patterns would you most likely observe?
-        </p>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            A. Only yearly seasonality with peaks in summer
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, true)">
-            B. Weekly seasonality with weekend peaks and potential monthly patterns
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            C. No seasonal patterns, only random fluctuations
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            D. Hourly seasonality patterns
-        </button>
-        <div style="margin-top: 40px; padding: 20px; background-color: #e8f4f8; border-radius: 8px;">
-            <p style="font-size: 18px; color: #666;">
-                <strong>Hint:</strong> Consider typical retail shopping behaviors and the daily frequency of the data
-            </p>
-        </div>
-        <div class="slide-number">23 / 31</div>
-    </div>
-
-    <!-- Slide 24: Quiz Question 4 -->
-    <div class="slide">
-        <h2>Quiz Question 4: Model Comparison</h2>
-        <p style="font-size: 24px; margin-bottom: 30px;">
-            For forecasting daily sales 70 days ahead with significant promotional events planned, which approach would likely provide the most accurate predictions?
-        </p>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            A. Simple Moving Average (MA) alone
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            B. Linear regression without external variables
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, true)">
-            C. Prophet with external regressors (marketing spend, promotions)
-        </button>
-        <button class="quiz-option" onclick="checkAnswer(this, false)">
-            D. Naive forecast method
-        </button>
-        <div style="margin-top: 40px; padding: 20px; background-color: #e8f4f8; border-radius: 8px;">
-            <p style="font-size: 18px; color: #666;">
-                <strong>Hint:</strong> Consider which method can incorporate known future events and external factors
-            </p>
-        </div>
-        <div class="slide-number">24 / 34</div>
-    </div>
-
-    <!-- Slide 25: Exercise Summary and Next Steps -->
-    <div class="slide">
-        <h2>Exercise Summary: Key Takeaways</h2>
-        <div style="background-color: #f0f8ff; padding: 30px; border-radius: 10px; margin-bottom: 25px;">
-            <h3 style="margin-bottom: 20px;">What You've Learned from the Analysis:</h3>
-            <ul style="font-size: 22px; margin-left: 30px;">
-                <li>Moving averages trade off responsiveness for smoothness</li>
-                <li>External factors significantly impact retail sales</li>
-                <li>Prophet can capture complex seasonal patterns automatically</li>
-                <li>Combining methods often yields better forecasts</li>
+            <h3>Enhancing Data for Modeling</h3>
+            <ul>
+                <li><strong>Data Smoothing:</strong> Use moving averages or exponential smoothing to reduce random variation and reveal underlying trends</li>
+                <li><strong>Feature Engineering:</strong> Create lagged values, rolling statistics, or calendar-based variables (day of week, holiday indicators)</li>
+                <li><strong>Scaling and Normalization:</strong> Adjust value ranges to improve model convergence, especially for algorithms sensitive to magnitude</li>
             </ul>
         </div>
-        
-        <h3 style="margin-top: 30px;">Next Steps in Exploratory.io:</h3>
-        <ol style="font-size: 22px; margin-left: 40px; line-height: 1.8;">
-            <li>Export your Prophet forecast results</li>
-            <li>Create visualization comparing all three methods</li>
-            <li>Calculate forecast accuracy metrics (MAE, RMSE)</li>
-            <li>Document your findings and insights</li>
-        </ol>
-        
-        <p style="margin-top: 30px; font-size: 20px; text-align: center; color: #007bff;">
-            <strong>Remember to save your Exploratory.io project for future reference!</strong>
-        </p>
-        <div class="slide-number">25 / 34</div>
+
+        <!-- Slide 13: Decomposition Example -->
+        <div class="slide">
+            <h1>Time Series Decomposition in Practice</h1>
+            <p>Decomposition separates observed data into its constituent components for independent analysis and modeling.</p>
+            
+            <div class="chart-container">
+                <canvas id="decompositionChart"></canvas>
+            </div>
+            
+            <p><strong>Mathematical Representation:</strong></p>
+            <div class="formula">
+                Y<sub>t</sub> = T<sub>t</sub> + S<sub>t</sub> + C<sub>t</sub> + I<sub>t</sub>
+            </div>
+            <p style="text-align: center;">where Y<sub>t</sub> is the observed value at time t</p>
+        </div>
+
+        <!-- Slide 14: QUIZ 2 -->
+        <div class="slide">
+            <h1>Quiz 2: Data Preparation</h1>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    A retail company has sales data with several missing weeks due to system errors. What is the MOST appropriate first step?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(2, 'A', false)">
+                        A) Proceed with forecasting using available data only
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(2, 'B', false)">
+                        B) Replace all missing values with zero
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(2, 'C', true)">
+                        C) Impute missing values using interpolation methods
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(2, 'D', false)">
+                        D) Delete the entire dataset and collect new data
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback2"></div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Introduction to Stationarity -->
+        <div class="slide">
+            <h1>Understanding Stationarity</h1>
+            
+            <p>A time series is <strong>stationary</strong> when its statistical properties remain constant over time.</p>
+            
+            <div class="two-column">
+                <div class="box">
+                    <h4>Stationary in Mean</h4>
+                    <p>The average value does not change over time</p>
+                    <p><strong>Example:</strong> Daily temperature fluctuations around a constant average</p>
+                </div>
+                
+                <div class="box">
+                    <h4>Stationary in Variance</h4>
+                    <p>The spread of values remains constant over time</p>
+                    <p><strong>Example:</strong> Measurement errors with consistent precision</p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Formal Definition:</strong> A time series is stationary if both its mean and variance are constant over time, and its autocovariance does not depend on time.
+            </div>
+
+            <p><strong>Key Characteristic:</strong> A stationary time series has no trend and no seasonal component. It represents the irregular or remainder component after removing systematic patterns.</p>
+        </div>
+
+        <!-- Slide 16: Why Stationarity Matters -->
+        <div class="slide">
+            <h1>Why Stationarity is Necessary for Forecasting</h1>
+            
+            <p>Many statistical forecasting models assume stationarity because:</p>
+            
+            <div class="concept-grid">
+                <div class="concept-card">
+                    <h4>Statistical Properties</h4>
+                    <p>Constant mean, variance, and autocovariance enable reliable parameter estimation and prediction intervals</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Model Simplicity</h4>
+                    <p>Stationary series remove time-dependent structures, making patterns easier to identify and model mathematically</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Prediction Stability</h4>
+                    <p>Long-term forecasts converge to the mean with predictable confidence intervals rather than diverging infinitely</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Model Performance</h4>
+                    <p>Non-stationary data leads to spurious relationships and unreliable forecasts with poor out-of-sample accuracy</p>
+                </div>
+            </div>
+
+            <div class="formula">
+                Long-term Forecast = μ ± confidence interval
+            </div>
+            <p style="text-align: center;">where μ is the constant mean of the stationary series</p>
+        </div>
+
+        <!-- Slide 17: Stationary vs Non-Stationary Visual -->
+        <div class="slide">
+            <h1>Visual Comparison: Stationary vs Non-Stationary</h1>
+            
+            <div class="chart-container">
+                <canvas id="stationaryComparisonChart"></canvas>
+            </div>
+            
+            <div class="two-column" style="margin-top: 30px;">
+                <div class="box">
+                    <h4>Stationary Series Characteristics</h4>
+                    <ul>
+                        <li>Fluctuates around constant mean</li>
+                        <li>Consistent variance throughout</li>
+                        <li>No systematic trend or season</li>
+                        <li>Predictable long-term behavior</li>
+                    </ul>
+                </div>
+                
+                <div class="box">
+                    <h4>Non-Stationary Series Characteristics</h4>
+                    <ul>
+                        <li>Trending upward or downward</li>
+                        <li>Changing variance over time</li>
+                        <li>Contains systematic patterns</li>
+                        <li>Unpredictable long-term forecasts</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 18: QUIZ 3 -->
+        <div class="slide">
+            <h1>Quiz 3: Stationarity Concepts</h1>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    Which of the following time series is MOST likely to be stationary?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(3, 'A', false)">
+                        A) Monthly smartphone sales showing continuous growth over 5 years
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(3, 'B', false)">
+                        B) Daily temperature readings showing strong seasonal patterns
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(3, 'C', true)">
+                        C) Daily measurement errors from a calibrated scientific instrument
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(3, 'D', false)">
+                        D) Annual GDP showing long-term economic growth
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback3"></div>
+            </div>
+        </div>
+
+        <!-- Slide 19: Differencing Concept -->
+        <div class="slide">
+            <h1>Differencing: Making Data Stationary</h1>
+            
+            <p>Differencing is the primary technique for transforming non-stationary time series into stationary form by removing trends and stabilizing variance.</p>
+            
+            <h3>First-Order Differencing</h3>
+            <div class="formula">
+                ∇Y<sub>t</sub> = Y<sub>t</sub> - Y<sub>t-1</sub>
+            </div>
+            <p style="text-align: center;"><em>Subtract the previous observation from the current observation</em></p>
+            
+            <div class="highlight">
+                <strong>Business Translation:</strong> Instead of forecasting actual sales values, we forecast the <em>change</em> in sales from one period to the next. This removes the trend component.
+            </div>
+            
+            <h3>What Differencing Achieves</h3>
+            <ul>
+                <li><strong>Removes Linear Trends:</strong> Eliminates systematic upward or downward movement in data</li>
+                <li><strong>Stabilizes Mean:</strong> Creates a series that fluctuates around zero</li>
+                <li><strong>Preserves Patterns:</strong> Maintains short-term dynamics and relationships in the data</li>
+            </ul>
+        </div>
+
+        <!-- Slide 20: Differencing Example -->
+        <div class="slide">
+            <h1>Differencing in Action: Simple Example</h1>
+            
+            <div class="two-column">
+                <div>
+                    <h3>Original Sales Data</h3>
+                    <table>
+                        <tr>
+                            <th>Month</th>
+                            <th>Sales ($)</th>
+                        </tr>
+                        <tr><td>January</td><td>100</td></tr>
+                        <tr><td>February</td><td>120</td></tr>
+                        <tr><td>March</td><td>140</td></tr>
+                        <tr><td>April</td><td>160</td></tr>
+                        <tr><td>May</td><td>180</td></tr>
+                    </table>
+                    <p><strong>Pattern:</strong> Clear upward trend (+$20 per month)</p>
+                    <p><strong>Status:</strong> Non-stationary (changing mean)</p>
+                </div>
+                
+                <div>
+                    <h3>After First Differencing</h3>
+                    <table>
+                        <tr>
+                            <th>Month</th>
+                            <th>Change ($)</th>
+                        </tr>
+                        <tr><td>February</td><td>+20</td></tr>
+                        <tr><td>March</td><td>+20</td></tr>
+                        <tr><td>April</td><td>+20</td></tr>
+                        <tr><td>May</td><td>+20</td></tr>
+                    </table>
+                    <p><strong>Pattern:</strong> Constant change values</p>
+                    <p><strong>Status:</strong> Stationary (constant mean = 20)</p>
+                </div>
+            </div>
+            
+            <div class="highlight" style="margin-top: 30px;">
+                <strong>Result:</strong> The differenced series is now stationary with mean = 20 and constant variance, making it suitable for modeling.
+            </div>
+        </div>
+
+        <!-- Slide 21: Order of Differencing -->
+        <div class="slide">
+            <h1>Order of Differencing</h1>
+            
+            <p>The <strong>order of differencing (d)</strong> indicates how many times we apply the differencing operation to achieve stationarity.</p>
+            
+            <h3>First-Order Differencing (d=1)</h3>
+            <div class="formula">
+                ∇Y<sub>t</sub> = Y<sub>t</sub> - Y<sub>t-1</sub>
+            </div>
+            <p><strong>Use Case:</strong> Removes linear trends; sufficient for most time series (approximately 80% of cases)</p>
+            
+            <h3>Second-Order Differencing (d=2)</h3>
+            <div class="formula">
+                ∇²Y<sub>t</sub> = ∇Y<sub>t</sub> - ∇Y<sub>t-1</sub> = (Y<sub>t</sub> - Y<sub>t-1</sub>) - (Y<sub>t-1</sub> - Y<sub>t-2</sub>)
+            </div>
+            <p><strong>Use Case:</strong> Removes quadratic trends; required when data shows acceleration or deceleration patterns</p>
+            
+            <div class="highlight">
+                <strong>Important Principle:</strong> Use the minimum differencing needed to achieve stationarity. Over-differencing can introduce artificial patterns and reduce forecast accuracy.
+            </div>
+        </div>
+
+        <!-- Slide 22: Seasonal Differencing -->
+        <div class="slide">
+            <h1>Seasonal Differencing</h1>
+            
+            <p>When data exhibits seasonal patterns, we use seasonal differencing to remove seasonality while preserving other characteristics.</p>
+            
+            <h3>Seasonal Differencing Formula</h3>
+            <div class="formula">
+                ∇<sub>m</sub>Y<sub>t</sub> = Y<sub>t</sub> - Y<sub>t-m</sub>
+            </div>
+            <p style="text-align: center;">where m is the seasonal period (e.g., 12 for monthly data with yearly seasonality)</p>
+            
+            <div class="two-column">
+                <div class="box">
+                    <h4>Example: Quarterly Data</h4>
+                    <p>For quarterly sales with annual seasonality:</p>
+                    <div class="formula" style="font-size: 1.2em;">
+                        ∇<sub>4</sub>Y<sub>t</sub> = Y<sub>t</sub> - Y<sub>t-4</sub>
+                    </div>
+                    <p>Compare Q1 2024 with Q1 2023, Q2 2024 with Q2 2023, etc.</p>
+                </div>
+                
+                <div class="box">
+                    <h4>Combined Differencing</h4>
+                    <p>For data with both trend and seasonality:</p>
+                    <ol>
+                        <li>Apply seasonal differencing first</li>
+                        <li>Then apply regular differencing if needed</li>
+                    </ol>
+                    <p>This removes both systematic components</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 23: Testing for Stationarity -->
+        <div class="slide">
+            <h1>Statistical Tests for Stationarity</h1>
+            
+            <p>Visual inspection is useful, but formal statistical tests provide objective evidence of stationarity.</p>
+            
+            <h3>1. Augmented Dickey-Fuller (ADF) Test</h3>
+            <div class="box">
+                <p><strong>Null Hypothesis (H₀):</strong> The series has a unit root (is non-stationary)</p>
+                <p><strong>Alternative Hypothesis (H₁):</strong> The series is stationary</p>
+                <p><strong>Decision Rule:</strong> If p-value < 0.05, reject H₀ and conclude the series is stationary</p>
+                <p><strong>Most Common:</strong> This is the standard test used in practice</p>
+            </div>
+            
+            <h3>2. KPSS Test</h3>
+            <div class="box">
+                <p><strong>Null Hypothesis (H₀):</strong> The series is stationary</p>
+                <p><strong>Alternative Hypothesis (H₁):</strong> The series has a unit root (is non-stationary)</p>
+                <p><strong>Decision Rule:</strong> If p-value < 0.05, reject H₀ and conclude the series is non-stationary</p>
+                <p><strong>Use Case:</strong> Used to confirm ADF test results (reversed hypotheses provide validation)</p>
+            </div>
+        </div>
+
+        <!-- Slide 24: Unit Root Concept -->
+        <div class="slide">
+            <h1>Understanding Unit Roots</h1>
+            
+            <p>A <strong>unit root</strong> is a mathematical property indicating that shocks to the time series have permanent effects, making the series non-stationary.</p>
+            
+            <h3>Mathematical Representation</h3>
+            <div class="formula">
+                Y<sub>t</sub> = ρY<sub>t-1</sub> + ε<sub>t</sub>
+            </div>
+            
+            <div class="two-column">
+                <div class="box">
+                    <h4>Unit Root Present (ρ = 1)</h4>
+                    <p><strong>Implication:</strong> Non-stationary</p>
+                    <p>Shocks persist indefinitely</p>
+                    <p>Variance grows over time</p>
+                    <p>Series can wander arbitrarily far from its starting point</p>
+                    <p><strong>Example:</strong> Stock prices (random walk)</p>
+                </div>
+                
+                <div class="box">
+                    <h4>No Unit Root (|ρ| < 1)</h4>
+                    <p><strong>Implication:</strong> Stationary</p>
+                    <p>Shocks dissipate over time</p>
+                    <p>Variance remains constant</p>
+                    <p>Series reverts to its mean</p>
+                    <p><strong>Example:</strong> Measurement errors</p>
+                </div>
+            </div>
+            
+            <p style="margin-top: 30px;"><strong>Testing Strategy:</strong> Use ADF test to detect unit roots. If present, apply differencing to remove them.</p>
+        </div>
+
+        <!-- Slide 25: QUIZ 4 -->
+        <div class="slide">
+            <h1>Quiz 4: Differencing and Testing</h1>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    You conduct an ADF test on your sales data and obtain a p-value of 0.68. What should you conclude?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(4, 'A', false)">
+                        A) The data is stationary and ready for modeling
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(4, 'B', true)">
+                        B) The data is non-stationary and requires differencing
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(4, 'C', false)">
+                        C) The test is inconclusive; collect more data
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(4, 'D', false)">
+                        D) Apply second-order differencing immediately
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback4"></div>
+            </div>
+        </div>
+
+        <!-- Slide 23: Discrete White Noise -->
+        <div class="slide">
+            <h1>Discrete White Noise (DWN)</h1>
+            
+            <p>White noise represents pure randomness with no predictable patterns—the simplest stationary time series.</p>
+            
+            <h3>Mathematical Definition</h3>
+            <div class="formula">
+                Y<sub>t</sub> = ε<sub>t</sub>
+            </div>
+            <p style="text-align: center;">where ε<sub>t</sub> are independent random variables with mean 0 and constant variance σ²</p>
+            
+            <div class="concept-grid">
+                <div class="concept-card">
+                    <h4>Independence</h4>
+                    <p>Each observation is completely independent of all others; knowing past values provides no information about future values</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Constant Mean</h4>
+                    <p>The average value remains at zero throughout the entire series</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Constant Variance</h4>
+                    <p>The spread of values around the mean does not change over time</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Unpredictability</h4>
+                    <p>The best forecast for any future value is simply the mean (zero)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 24: White Noise Business Application -->
+        <div class="slide">
+            <h1>White Noise in Business Context</h1>
+            
+            <div class="chart-container">
+                <canvas id="whiteNoiseChart"></canvas>
+            </div>
+            
+            <h3>Business Example: Website Traffic Analysis</h3>
+            <p>A company tracks daily website visitors. After removing trends and seasonal patterns, the remaining fluctuations behave like white noise (±100 visitors around 1000 average).</p>
+            
+            <div class="highlight">
+                <strong>Business Insight:</strong> If residuals after modeling resemble white noise, it indicates:
+                <ul>
+                    <li>The model has captured all systematic patterns</li>
+                    <li>Remaining variation is purely random (unavoidable)</li>
+                    <li>No further improvement is possible without new variables</li>
+                    <li>Forecast uncertainty is minimized</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 25: Random Walk Model -->
+        <div class="slide">
+            <h1>Random Walk Model</h1>
+            
+            <p>A random walk is a non-stationary process where the current value equals the previous value plus a random shock.</p>
+            
+            <h3>Random Walk Without Drift</h3>
+            <div class="formula">
+                Y<sub>t</sub> = Y<sub>t-1</sub> + ε<sub>t</sub>
+            </div>
+            
+            <div class="two-column">
+                <div class="box">
+                    <h4>Characteristics</h4>
+                    <ul>
+                        <li>Stationary in mean (expected value = 0)</li>
+                        <li>Non-stationary in variance (increases over time)</li>
+                        <li>Best forecast = current value</li>
+                        <li>No tendency to return to any level</li>
+                    </ul>
+                </div>
+                
+                <div class="box">
+                    <h4>Examples in Finance</h4>
+                    <ul>
+                        <li>Stock prices (efficient market hypothesis)</li>
+                        <li>Exchange rates</li>
+                        <li>Commodity prices</li>
+                        <li>Interest rates (short-term)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <p style="margin-top: 20px;"><strong>Key Property:</strong> Differencing a random walk produces white noise, making it stationary: ∇Y<sub>t</sub> = Y<sub>t</sub> - Y<sub>t-1</sub> = ε<sub>t</sub></p>
+        </div>
+
+        <!-- Slide 26: Random Walk with Drift -->
+        <div class="slide">
+            <h1>Random Walk with Drift</h1>
+            
+            <p>Adding a drift term introduces a systematic trend component to the random walk.</p>
+            
+            <h3>Mathematical Model</h3>
+            <div class="formula">
+                Y<sub>t</sub> = δ + Y<sub>t-1</sub> + ε<sub>t</sub>
+            </div>
+            <p style="text-align: center;">where δ is the drift parameter (constant change per period)</p>
+            
+            <div class="two-column">
+                <div class="box">
+                    <h4>Positive Drift (δ > 0)</h4>
+                    <p>Series tends to increase over time</p>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li>GDP growth</li>
+                        <li>Inflation expectations</li>
+                        <li>Technology adoption</li>
+                    </ul>
+                </div>
+                
+                <div class="box">
+                    <h4>Negative Drift (δ < 0)</h4>
+                    <p>Series tends to decrease over time</p>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li>Product price deflation</li>
+                        <li>Market share erosion</li>
+                        <li>Resource depletion</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="highlight" style="margin-top: 30px;">
+                <strong>Stationarity:</strong> Random walk with drift is non-stationary in both mean and variance. First-order differencing removes the unit root but leaves the drift as a constant term.
+            </div>
+        </div>
+
+        <!-- Slide 27: Naïve Forecasting Method -->
+        <div class="slide">
+            <h1>Naïve Forecasting Method</h1>
+            
+            <p>The naïve method uses the most recent observation as the forecast for all future periods.</p>
+            
+            <h3>Forecast Formula</h3>
+            <div class="formula">
+                Ŷ<sub>t+h</sub> = Y<sub>t</sub>
+            </div>
+            <p style="text-align: center;">where Ŷ<sub>t+h</sub> is the forecast h periods ahead and Y<sub>t</sub> is the current observation</p>
+            
+            <div class="two-column">
+                <div class="box">
+                    <h4>When Naïve Works Well</h4>
+                    <ul>
+                        <li>Data follows random walk</li>
+                        <li>Short-term forecasts needed</li>
+                        <li>No clear patterns present</li>
+                        <li>Benchmark for comparison</li>
+                    </ul>
+                </div>
+                
+                <div class="box">
+                    <h4>Limitations</h4>
+                    <ul>
+                        <li>Ignores trends completely</li>
+                        <li>Cannot capture seasonality</li>
+                        <li>Poor for long-term forecasts</li>
+                        <li>Oversimplifies complex patterns</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Benchmark Role:</strong> The naïve method serves as a baseline. More sophisticated models should outperform naïve forecasts; if they don't, simpler methods are preferable.
+            </div>
+        </div>
+
+        <!-- Slide 28: QUIZ 5 -->
+        <div class="slide">
+            <h1>Quiz 5: Forecasting Models</h1>
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    Stock prices are best modeled as a random walk. If the stock price today is $50, what is the naïve forecast for tomorrow?
+                </div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(5, 'A', false)">
+                        A) $50 plus the average historical daily change
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(5, 'B', true)">
+                        B) $50 (the current price)
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(5, 'C', false)">
+                        C) The average of all historical stock prices
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(5, 'D', false)">
+                        D) Cannot forecast due to randomness
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback5"></div>
+            </div>
+        </div>
+
+        <!-- Slide 29: Practical Implementation Steps -->
+        <div class="slide">
+            <h1>Practical Implementation: Step-by-Step Guide</h1>
+            
+            <h3><span class="step-number">1</span> Visual Inspection</h3>
+            <p>Plot your time series and identify obvious trends, seasonality, or changing variance</p>
+            
+            <h3><span class="step-number">2</span> Decomposition</h3>
+            <p>Separate the series into trend, seasonal, and remainder components using decomposition methods</p>
+            
+            <h3><span class="step-number">3</span> Stationarity Testing</h3>
+            <p>Apply ADF test. If p-value > 0.05, the series is non-stationary and requires transformation</p>
+            
+            <h3><span class="step-number">4</span> Apply Differencing</h3>
+            <p>Start with first-order differencing. For seasonal data, apply seasonal differencing</p>
+            
+            <h3><span class="step-number">5</span> Retest Stationarity</h3>
+            <p>Conduct ADF test on differenced series. If p-value < 0.05, you have achieved stationarity</p>
+            
+            <h3><span class="step-number">6</span> Model Selection</h3>
+            <p>With stationary data, you can now apply appropriate forecasting methods (ARIMA, exponential smoothing, etc.)</p>
+        </div>
+
+        <!-- Slide 30: Common Pitfalls to Avoid -->
+        <div class="slide">
+            <h1>Common Pitfalls in Time Series Analysis</h1>
+            
+            <table>
+                <tr>
+                    <th style="width: 30%">Pitfall</th>
+                    <th style="width: 35%">Consequence</th>
+                    <th style="width: 35%">Solution</th>
+                </tr>
+                <tr>
+                    <td><strong>Over-differencing</strong></td>
+                    <td>Introduces artificial patterns and reduces forecast accuracy</td>
+                    <td>Use minimum differencing needed; check ADF test after each difference</td>
+                </tr>
+                <tr>
+                    <td><strong>Ignoring seasonality</strong></td>
+                    <td>Models fail to capture regular patterns, leading to systematic errors</td>
+                    <td>Use seasonal differencing or seasonal adjustment before modeling</td>
+                </tr>
+                <tr>
+                    <td><strong>Not testing stationarity</strong></td>
+                    <td>Models produce unreliable forecasts with no theoretical foundation</td>
+                    <td>Always conduct ADF test before applying statistical forecasting methods</td>
+                </tr>
+                <tr>
+                    <td><strong>Treating outliers as patterns</strong></td>
+                    <td>Models overfit to anomalies and fail on normal data</td>
+                    <td>Identify and handle outliers separately before modeling</td>
+                </tr>
+                <tr>
+                    <td><strong>Using inappropriate models</strong></td>
+                    <td>Forecasts fail to capture actual data behavior</td>
+                    <td>Match model assumptions to data characteristics through testing</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Slide 31: Connecting to Assessment 3 -->
+        <div class="slide">
+            <h1>Applying Week 3 Concepts to Your Assessment</h1>
+            
+            <div class="exercise-box">
+                <h3>Assessment 3 Requirements</h3>
+                <p>For your individual forecasting project, you must:</p>
+                
+                <ol>
+                    <li><strong>Decompose Your Data</strong>
+                        <ul>
+                            <li>Identify trend, seasonal, and irregular components</li>
+                            <li>Explain which components are present and their business meaning</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Test for Stationarity</strong>
+                        <ul>
+                            <li>Conduct ADF test on your original series</li>
+                            <li>Report test statistics and p-values in your report</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Apply Transformations</strong>
+                        <ul>
+                            <li>If non-stationary, apply appropriate differencing</li>
+                            <li>Document your transformation decisions</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Justify Your Approach</strong>
+                        <ul>
+                            <li>Explain to non-technical stakeholders why these steps matter</li>
+                            <li>Connect data characteristics to business implications</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Slide 32: Python Implementation Preview -->
+        <div class="slide">
+            <h1>Python Implementation Overview</h1>
+            
+            <p>This week's Python notebooks provide hands-on practice with:</p>
+            
+            <div class="concept-grid">
+                <div class="concept-card">
+                    <h4>Notebook 1: Time Series Features</h4>
+                    <p>Identify components, calculate descriptive statistics, and visualize patterns</p>
+                    <p><code>DATA4400_W03_2_tsFeatures.ipynb</code></p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Notebook 2: Decomposition</h4>
+                    <p>Apply additive and multiplicative decomposition to separate components</p>
+                    <p><code>DATA4400_W03_3_tsDecomposition.ipynb</code></p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Notebook 3: Stationarity Testing</h4>
+                    <p>Conduct ADF tests and apply differencing transformations</p>
+                    <p><code>DATA4400_W03_4_Stationarity.ipynb</code></p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Notebook 4: Naïve Forecasting</h4>
+                    <p>Implement naïve method and evaluate forecast accuracy</p>
+                    <p><code>DATA4400_W03_5_Naive.ipynb</code></p>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Key Libraries:</strong> We will use <code>pandas</code>, <code>statsmodels</code>, and <code>matplotlib</code> for all implementations
+            </div>
+        </div>
+
+        <!-- Slide 34: Week 3 Summary -->
+        <div class="slide">
+            <h1>Week 3 Key Takeaways</h1>
+            
+            <h3>Core Concepts Mastered</h3>
+            <div class="concept-grid">
+                <div class="concept-card">
+                    <h4>1. Time Series Components</h4>
+                    <p>Every series contains trend, seasonal, cyclical, and irregular components that must be identified and modeled appropriately</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>2. Stationarity Requirement</h4>
+                    <p>Statistical forecasting models require constant mean and variance; non-stationary data must be transformed</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>3. Differencing Technique</h4>
+                    <p>Differencing removes trends and stabilizes variance, converting non-stationary series to stationary form</p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>4. Testing Procedures</h4>
+                    <p>ADF test provides objective evidence of stationarity; p-value < 0.05 indicates stationary series</p>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Looking Ahead:</strong> Week 4 builds on these foundations by introducing exponential smoothing and more advanced forecasting methods that leverage stationary data properties.
+            </div>
+        </div>
+
+        <!-- Slide 35: Python Implementation Preview -->
+        <div class="slide">
+            <h1>Python Implementation Overview</h1>
+            
+            <p>This week's Python notebooks provide hands-on practice with:</p>
+            
+            <div class="concept-grid">
+                <div class="concept-card">
+                    <h4>Notebook 1: Time Series Features</h4>
+                    <p>Identify components, calculate descriptive statistics, and visualize patterns</p>
+                    <p><code>DATA4400_W03_2_tsFeatures.ipynb</code></p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Notebook 2: Decomposition</h4>
+                    <p>Apply additive and multiplicative decomposition to separate components</p>
+                    <p><code>DATA4400_W03_3_tsDecomposition.ipynb</code></p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Notebook 3: Stationarity Testing</h4>
+                    <p>Conduct ADF tests and apply differencing transformations</p>
+                    <p><code>DATA4400_W03_4_Stationarity.ipynb</code></p>
+                </div>
+                
+                <div class="concept-card">
+                    <h4>Notebook 4: Naïve Forecasting</h4>
+                    <p>Implement naïve method and evaluate forecast accuracy</p>
+                    <p><code>DATA4400_W03_5_Naive.ipynb</code></p>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Key Libraries:</strong> We will use <code>pandas</code>, <code>statsmodels</code>, and <code>matplotlib</code> for all implementations
+            </div>
+        </div>
+
+        <!-- Slide 36: Connecting to Assessment 3 -->
+        <div class="slide">
+            <h1>Applying Week 3 Concepts to Your Assessment</h1>
+            
+            <div class="exercise-box">
+                <h3>Assessment 3 Requirements</h3>
+                <p>For your individual forecasting project, you must:</p>
+                
+                <ol>
+                    <li><strong>Decompose Your Data</strong>
+                        <ul>
+                            <li>Identify trend, seasonal, and irregular components</li>
+                            <li>Explain which components are present and their business meaning</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Test for Stationarity</strong>
+                        <ul>
+                            <li>Conduct ADF test on your original series</li>
+                            <li>Report test statistics and p-values in your report</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Apply Transformations</strong>
+                        <ul>
+                            <li>If non-stationary, apply appropriate differencing</li>
+                            <li>Document your transformation decisions</li>
+                        </ul>
+                    </li>
+                    
+                    <li><strong>Justify Your Approach</strong>
+                        <ul>
+                            <li>Explain to non-technical stakeholders why these steps matter</li>
+                            <li>Connect data characteristics to business implications</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Slide 37: Next Steps and Resources -->
+        <div class="slide">
+            <h1>Next Steps and Additional Resources</h1>
+            
+            <h3>Immediate Actions</h3>
+            <ol>
+                <li>Complete all four Python notebooks for Week 3</li>
+                <li>Practice decomposition and stationarity testing with your Assessment 3 dataset</li>
+                <li>Review quiz questions and ensure you understand all concepts</li>
+                <li>Prepare questions for next week's class discussion</li>
+            </ol>
+            
+            <h3>Recommended Resources</h3>
+            <ul>
+                <li><strong>Textbook:</strong> Hyndman & Athanasopoulos - <em>Forecasting: Principles and Practice</em> (Chapters 8-9)</li>
+                <li><strong>Documentation:</strong> Python statsmodels library for time series analysis</li>
+                <li><strong>Practice Datasets:</strong> Available on Moodle for additional exercises</li>
+            </ul>
+            
+            <h3>Preparing for Week 4</h3>
+            <p>Next week we introduce exponential smoothing methods that build directly on stationarity concepts. Ensure you are comfortable with:</p>
+            <ul>
+                <li>Interpreting ADF test results</li>
+                <li>Applying first-order differencing</li>
+                <li>Understanding when data is ready for modeling</li>
+            </ul>
+            
+            <div class="highlight">
+                <strong>Questions?</strong> Use the discussion forum on Moodle or attend office hours for additional support.
+            </div>
+        </div>
     </div>
 
-    <!-- Additional slides to reach 31 total -->
-    <div class="slide">
-        <h2>Summary: Forecasting Techniques</h2>
-        <ul style="font-size: 24px; margin-left: 40px;">
-            <li>Naive Forecast: Simple baseline method</li>
-            <li>Moving Average: Smooths out short-term fluctuations</li>
-            <li>Time Series Decomposition: Separates components for analysis</li>
-            <li>Choose appropriate methods based on data characteristics</li>
-        </ul>
-        <h1>Reminder: Next Week is the assessment 1 week. Form a group of 3-4 people for this assessment.</h1>
-        <div class="slide-number">26 / 34</div>
-    </div>
-
-  
-    </div>
-
-
-
+    <div class="slide-number" id="slideNumber">Slide 1 of 37</div>
+    
     <div class="navigation">
-        <button id="prevBtn" onclick="changeSlide(-1)">Previous</button>
-        <button id="nextBtn" onclick="changeSlide(1)">Next</button>
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
     </div>
+
+    <div class="logo">Kaplan Business School Australia</div>
 
     <script>
         let currentSlide = 0;
         const slides = document.querySelectorAll('.slide');
         const totalSlides = slides.length;
 
+        // Quiz answers tracking
+        const quizAnswers = {
+            1: false,
+            2: false,
+            3: false,
+            4: false,
+            5: false
+        };
+
         function showSlide(n) {
-            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide].classList.remove('active');
             currentSlide = (n + totalSlides) % totalSlides;
             slides[currentSlide].classList.add('active');
             
+            document.getElementById('slideNumber').textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
             document.getElementById('prevBtn').disabled = currentSlide === 0;
             document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
             
-            // Update slide numbers
-            slides.forEach((slide, index) => {
-                const slideNumber = slide.querySelector('.slide-number');
-                if (slideNumber) {
-                    slideNumber.textContent = `${index + 1} / ${totalSlides}`;
-                }
-            });
-            
-            // Draw charts when slides become visible
-            drawChartsForSlide(currentSlide);
+            // Initialize charts when reaching chart slides
+            if (currentSlide === 4) initTrendChart();
+            if (currentSlide === 5) {
+                initSeasonalChart();
+                initCyclicalChart();
+            }
+            if (currentSlide === 6) initIrregularChart();
+            if (currentSlide === 7) initComponentsChart();
+            if (currentSlide === 12) initDecompositionChart();
+            if (currentSlide === 16) initStationaryComparisonChart();
+            if (currentSlide === 26) initWhiteNoiseChart();
         }
 
         function changeSlide(direction) {
@@ -979,1177 +1573,491 @@
         }
 
         // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') changeSlide(-1);
-            if (e.key === 'ArrowRight') changeSlide(1);
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') changeSlide(-1);
+            if (event.key === 'ArrowRight') changeSlide(1);
         });
 
-        // Chart drawing functions
-        function drawChartsForSlide(slideIndex) {
-            switch(slideIndex) {
-                case 1: // Slide 2
-                    drawStationaryChart();
-                    drawTrendChart();
-                    break;
-                case 2: // Slide 3
-                    drawSeasonalChart();
-                    drawCyclicalChart();
-                    drawIrregularChart();
-                    break;
-                case 3: // Slide 4
-                    drawQuizChart1();
-                    break;
-                case 5: // Slide 6
-                    drawNaiveChart();
-                    break;
-                case 6: // Slide 7
-                    drawNoisyVsSmoothCharts();
-                    break;
-                case 7: // Slide 8
-                    drawSmoothingDemo();
-                    break;
-                case 8: // Slide 9
-                    drawBeforeAfterSmoothing();
-                    break;
-                case 9: // Slide 10
-                    drawQuizChart2();
-                    break;
-                case 10: // Slide 11
-                    drawMovingAverageChart();
-                    break;
-                case 11: // Slide 12
-                    setupMAComparison();
-                    break;
-                case 13: // Slide 14
-                    drawDecompositionChart();
-                    break;
-                case 15: // Slide 16
-                    drawAdditiveDecompChart();
-                    break;
-                case 16: // Slide 17
-                    drawMultiplicativeDecompChart();
-                    break;
-                case 17: // Slide 18
-                    drawDecompositionExamples();
-                    break;
-                case 18: // Slide 19
-                    drawQuizChart3();
-                    break;
-                case 19: // Slide 20 - Prophet Introduction
-                    drawProphetComparisonChart();
-                    break;
-                case 20: // Slide 21 - Prophet Components
-                    drawProphetComponentCharts();
-                    break;
-                case 21: // Slide 22 - Prophet in Action
-                    drawProphetFullExample();
-                    break;
-            }
-        }
-
-        // Chart drawing implementations
-        function drawLineChart(canvasId, data, label, color = '#007bff') {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
+        // Quiz functionality
+        function checkAnswer(quizNum, selectedOption, isCorrect) {
+            if (quizAnswers[quizNum]) return; // Already answered
             
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
+            const options = document.querySelectorAll(`#feedback${quizNum}`).parentNode.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(`feedback${quizNum}`);
             
-            ctx.clearRect(0, 0, width, height);
-            
-            const padding = 40;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            // Draw data
-            const xStep = graphWidth / (data.length - 1);
-            const yMin = Math.min(...data);
-            const yMax = Math.max(...data);
-            const yScale = graphHeight / (yMax - yMin);
-            
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            data.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - yMin) * yScale;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Draw points
-            ctx.fillStyle = color;
-            data.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - yMin) * yScale;
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, 2 * Math.PI);
-                ctx.fill();
-            });
-        }
-
-        function drawStationaryChart() {
-            const data = Array(50).fill(0).map(() => 50 + Math.random() * 10 - 5);
-            drawLineChart('stationaryChart', data, 'Stationary', '#28a745');
-        }
-
-        function drawTrendChart() {
-            const data = Array(50).fill(0).map((_, i) => 30 + i * 0.8 + Math.random() * 5);
-            drawLineChart('trendChart', data, 'Trend', '#dc3545');
-        }
-
-        function drawSeasonalChart() {
-            const data = Array(50).fill(0).map((_, i) => 50 + 20 * Math.sin(i * 2 * Math.PI / 12) + Math.random() * 3);
-            drawLineChart('seasonalChart', data, 'Seasonal', '#ffc107');
-        }
-
-        function drawCyclicalChart() {
-            const data = [];
-            let trend = 30;
-            for (let i = 0; i < 30; i++) {
-                // Simulate long-term ups and downs using low-frequency sine with random phase shifts
-                const cycle = 10 * Math.sin(i * 2 * Math.PI / (40 + Math.random() * 20));
-                trend += (Math.random() - 0.5) * 0.5;  // slow drift
-                const noise = Math.random() * 2;
-                data.push(trend + cycle + noise);
-            }
-            drawLineChart('cyclicalChart', data, 'Cyclical', '#17a2b8');
-        }
-
-        function drawIrregularChart() {
-            const data = Array(50).fill(0).map(() => 50 + Math.random() * 20 - 10);
-            drawLineChart('irregularChart', data, 'Irregular', '#6c757d');
-        }
-
-        function drawQuizChart1() {
-            const data = Array(48).fill(0).map((_, i) => 50 + 25 * Math.sin(i * 2 * Math.PI / 12) + Math.random() * 5);
-            drawLineChart('quizChart1', data, 'Time Series', '#007bff');
-        }
-
-        function drawNaiveChart() {
-            const canvas = document.getElementById('naiveChart');
-            if (!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-
-            ctx.clearRect(0, 0, width, height);
-
-            const actualData = [45, 48, 52, 49, 51, 55, 53];
-            const lastValue = actualData[actualData.length - 1];
-
-            // Forecasts: only AFTER actual data
-            const forecastHorizon = 5;
-            const naiveForecast = Array(forecastHorizon).fill(lastValue);
-            const regressionForecast = Array(forecastHorizon).fill(0).map((_, i) =>
-                lastValue + (Math.sin(i) * 2) // simple zig-zag
-            );
-
-            const padding = 60;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-
-            const totalPoints = actualData.length + forecastHorizon;
-            const xStep = graphWidth / (totalPoints - 1);
-
-            // Axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-
-            // Draw actual data
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            actualData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 40) * (graphHeight / 20);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-
-            // Draw naive forecast (flat line)
-            ctx.strokeStyle = '#28a745'; // green
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            const startNaiveX = padding + (actualData.length - 1) * xStep;
-            const startNaiveY = height - padding - (lastValue - 40) * (graphHeight / 20);
-            ctx.moveTo(startNaiveX, startNaiveY);
-            naiveForecast.forEach((value, i) => {
-                const x = padding + (actualData.length + i) * xStep;
-                const y = startNaiveY;
-                ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-
-            // Draw regression forecast (zig-zag)
-            ctx.strokeStyle = '#dc3545'; // red
-            ctx.beginPath();
-            ctx.moveTo(startNaiveX, startNaiveY); // start from last actual point
-            regressionForecast.forEach((value, i) => {
-                const x = padding + (actualData.length + i) * xStep;
-                const y = height - padding - (value - 40) * (graphHeight / 20);
-                ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Legend
-            ctx.font = '14px Helvetica';
-            ctx.fillStyle = '#007bff';
-            ctx.fillText('Actual', width - 130, 30);
-            ctx.fillStyle = '#28a745';
-            ctx.fillText('Naive Forecast', width - 130, 50);
-            ctx.fillStyle = '#dc3545';
-            ctx.fillText('Regression Forecast', width - 130, 70);
-        }
-
-
-        function drawNoisyVsSmoothCharts() {
-            // Noisy chart
-            const noisyData = Array(50).fill(0).map((_, i) => 50 + i * 0.5 + Math.random() * 30 - 15);
-            drawLineChart('noisyChart', noisyData, 'Noisy', '#dc3545');
-            
-            // Smooth chart
-            const smoothData = Array(50).fill(0).map((_, i) => 50 + i * 0.5 + Math.sin(i * 0.2) * 5);
-            drawLineChart('smoothChart', smoothData, 'Smooth', '#28a745');
-        }
-
-        function drawSmoothingDemo() {
-            const canvas = document.getElementById('smoothingDemo');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            const originalData = Array(50).fill(0).map((_, i) => 50 + i * 0.3 + Math.random() * 20 - 10);
-            const smoothedData = originalData.map((val, i, arr) => {
-                if (i < 2) return val;
-                return (arr[i-2] + arr[i-1] + val) / 3;
-            });
-            
-            const padding = 60;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            // Draw original data
-            const xStep = graphWidth / (originalData.length - 1);
-            ctx.strokeStyle = '#dc3545';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            originalData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 30) * (graphHeight / 40);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Draw smoothed data
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            smoothedData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 30) * (graphHeight / 40);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Legend
-            ctx.font = '16px Helvetica';
-            ctx.fillStyle = '#dc3545';
-            ctx.fillText('Original Data', width - 150, 30);
-            ctx.fillStyle = '#007bff';
-            ctx.fillText('Smoothed Data', width - 150, 55);
-        }
-
-        function drawBeforeAfterSmoothing() {
-            const canvas = document.getElementById('beforeAfterSmoothing');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            // Generate data with trend and noise
-            const trendData = Array(60).fill(0).map((_, i) => 40 + i * 0.5 + 10 * Math.sin(i * 2 * Math.PI / 20));
-            const noisyData = trendData.map(val => val + Math.random() * 15 - 7.5);
-            const smoothedData = noisyData.map((val, i, arr) => {
-                if (i < 4 || i >= arr.length - 4) return val;
-                return arr.slice(i-4, i+5).reduce((a, b) => a + b) / 9;
-            });
-            
-            const padding = 60;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            // Draw all three lines
-            const xStep = graphWidth / (trendData.length - 1);
-            
-            // Original noisy data
-            ctx.strokeStyle = 'rgba(220, 53, 69, 0.5)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            noisyData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 20) * (graphHeight / 60);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // True trend
-            ctx.strokeStyle = '#28a745';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            trendData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 20) * (graphHeight / 60);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // Smoothed data
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            smoothedData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 20) * (graphHeight / 60);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Legend
-            ctx.font = '14px Helvetica';
-            ctx.fillStyle = '#dc3545';
-            ctx.fillText('Original (Noisy)', width - 160, 30);
-            ctx.fillStyle = '#28a745';
-            ctx.fillText('True Pattern', width - 160, 50);
-            ctx.fillStyle = '#007bff';
-            ctx.fillText('After Smoothing', width - 160, 70);
-        }
-
-        function drawQuizChart2() {
-            const canvas = document.getElementById('quizChart2');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            // Series A - Already smooth
-            const seriesA = Array(50).fill(0).map((_, i) => 50 + i * 0.4 + 5 * Math.sin(i * 0.3));
-            
-            // Series B - Very noisy
-            const seriesB = Array(50).fill(0).map((_, i) => 50 + i * 0.4 + Math.random() * 30 - 15);
-            
-            const padding = 60;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            const xStep = graphWidth / (seriesA.length - 1);
-            
-            // Draw Series A
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            seriesA.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 30) * (graphHeight / 50);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Draw Series B
-            ctx.strokeStyle = '#dc3545';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            seriesB.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 30) * (graphHeight / 50);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Legend
-            ctx.font = '16px Helvetica';
-            ctx.fillStyle = '#007bff';
-            ctx.fillText('Series A', width - 100, 30);
-            ctx.fillStyle = '#dc3545';
-            ctx.fillText('Series B', width - 100, 55);
-        }
-
-        function drawMovingAverageChart() {
-            const canvas = document.getElementById('movingAverageChart');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            const originalData = [42, 45, 48, 46, 52, 51, 49, 53, 55, 52, 54, 58];
-            const ma3Data = originalData.map((val, i, arr) => {
-                if (i < 2) return null;
-                return (arr[i-2] + arr[i-1] + val) / 3;
-            });
-            
-            const padding = 60;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            const xStep = graphWidth / (originalData.length - 1);
-            
-            // Draw original data
-            ctx.strokeStyle = '#6c757d';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            originalData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 40) * (graphHeight / 20);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Draw points
-            ctx.fillStyle = '#6c757d';
-            originalData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 40) * (graphHeight / 20);
-                ctx.beginPath();
-                ctx.arc(x, y, 5, 0, 2 * Math.PI);
-                ctx.fill();
-            });
-            
-            // Draw MA(3)
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            let firstPoint = true;
-            ma3Data.forEach((value, i) => {
-                if (value !== null) {
-                    const x = padding + i * xStep;
-                    const y = height - padding - (value - 40) * (graphHeight / 20);
-                    if (firstPoint) {
-                        ctx.moveTo(x, y);
-                        firstPoint = false;
+            options.forEach(option => {
+                option.style.pointerEvents = 'none';
+                if (option.textContent.trim().startsWith(selectedOption)) {
+                    option.classList.add('selected');
+                    if (isCorrect) {
+                        option.classList.add('correct');
                     } else {
-                        ctx.lineTo(x, y);
+                        option.classList.add('incorrect');
                     }
                 }
             });
-            ctx.stroke();
             
-            // Draw MA points
-            ctx.fillStyle = '#007bff';
-            ma3Data.forEach((value, i) => {
-                if (value !== null) {
-                    const x = padding + i * xStep;
-                    const y = height - padding - (value - 40) * (graphHeight / 20);
-                    ctx.beginPath();
-                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
-            });
-            
-            // Legend
-            ctx.font = '16px Helvetica';
-            ctx.fillStyle = '#6c757d';
-            ctx.fillText('Original Data', width - 150, 30);
-            ctx.fillStyle = '#007bff';
-            ctx.fillText('MA(3)', width - 150, 55);
-            
-            // Labels for x-axis
-            ctx.font = '12px Helvetica';
-            ctx.fillStyle = '#666';
-            ctx.textAlign = 'center';
-            originalData.forEach((_, i) => {
-                const x = padding + i * xStep;
-                ctx.fillText(`t${i+1}`, x, height - padding + 20);
-            });
-        }
-
-        function setupMAComparison() {
-            const canvas = document.getElementById('maComparisonChart');
-            if (!canvas) return;
-            
-            const originalData = [42, 45, 48, 46, 52, 51, 49, 53, 55, 52];
-            drawMAComparisonChart(originalData);
-        }
-
-        function drawMAComparisonChart(data) {
-            const canvas = document.getElementById('maComparisonChart');
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            const ma2Data = data.map((val, i, arr) => {
-                if (i < 1) return null;
-                return (arr[i-1] + val) / 2;
-            });
-            
-            const ma3Data = data.map((val, i, arr) => {
-                if (i < 2) return null;
-                return (arr[i-2] + arr[i-1] + val) / 3;
-            });
-            
-            const padding = 60;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            const xStep = graphWidth / (data.length - 1);
-            
-            // Draw original data
-            ctx.strokeStyle = '#6c757d';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            data.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - 40) * (graphHeight / 20);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Draw MA(2)
-            ctx.strokeStyle = '#28a745';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            let firstPoint2 = true;
-            ma2Data.forEach((value, i) => {
-                if (value !== null) {
-                    const x = padding + i * xStep;
-                    const y = height - padding - (value - 40) * (graphHeight / 20);
-                    if (firstPoint2) {
-                        ctx.moveTo(x, y);
-                        firstPoint2 = false;
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-            });
-            ctx.stroke();
-            
-            // Draw MA(3)
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            let firstPoint3 = true;
-            ma3Data.forEach((value, i) => {
-                if (value !== null) {
-                    const x = padding + i * xStep;
-                    const y = height - padding - (value - 40) * (graphHeight / 20);
-                    if (firstPoint3) {
-                        ctx.moveTo(x, y);
-                        firstPoint3 = false;
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-            });
-            ctx.stroke();
-            
-            // Legend
-            ctx.font = '16px Helvetica';
-            ctx.fillStyle = '#6c757d';
-            ctx.fillText('Original', width - 150, 30);
-            ctx.fillStyle = '#28a745';
-            ctx.fillText('MA(2)', width - 150, 55);
-            ctx.fillStyle = '#007bff';
-            ctx.fillText('MA(3)', width - 150, 80);
-        }
-
-        let animationStep = 0;
-        function animateMA() {
-            const data = [42, 45, 48, 46, 52, 51, 49, 53, 55, 52];
-            const ma2Calc = document.getElementById('ma2Calc');
-            const ma3Calc = document.getElementById('ma3Calc');
-            
-            if (animationStep < data.length) {
-                drawMAComparisonChart(data.slice(0, Math.min(animationStep + 3, data.length)));
-                
-                // Show calculations
-                if (animationStep >= 1) {
-                    ma2Calc.innerHTML = `Period ${animationStep + 1}: (${data[animationStep-1]} + ${data[animationStep]}) / 2 = ${((data[animationStep-1] + data[animationStep]) / 2).toFixed(1)}`;
-                }
-                if (animationStep >= 2) {
-                    ma3Calc.innerHTML = `Period ${animationStep + 1}: (${data[animationStep-2]} + ${data[animationStep-1]} + ${data[animationStep]}) / 3 = ${((data[animationStep-2] + data[animationStep-1] + data[animationStep]) / 3).toFixed(1)}`;
-                }
-                
-                animationStep++;
-                if (animationStep < data.length) {
-                    setTimeout(() => animateMA(), 800);
-                }
-            } else {
-                animationStep = 0;
-            }
-        }
-
-        function drawDecompositionChart() {
-            const canvas = document.getElementById('decompositionChart');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            // Generate components
-            const n = 60;
-            const trend = Array(n).fill(0).map((_, i) => 50 + i * 0.3);
-            const seasonal = Array(n).fill(0).map((_, i) => 10 * Math.sin(i * 2 * Math.PI / 12));
-            const irregular = Array(n).fill(0).map(() => Math.random() * 4 - 2);
-            const combined = trend.map((t, i) => t + seasonal[i] + irregular[i]);
-            
-            const padding = 40;
-            const sectionHeight = (height - 2 * padding) / 4;
-            
-            // Draw each component
-            const components = [
-                { data: combined, label: 'Original Series', color: '#333' },
-                { data: trend, label: 'Trend', color: '#dc3545' },
-                { data: seasonal, label: 'Seasonal', color: '#28a745' },
-                { data: irregular, label: 'Irregular', color: '#6c757d' }
-            ];
-            
-            components.forEach((comp, idx) => {
-                const yOffset = padding + idx * sectionHeight;
-                
-                // Label
-                ctx.font = '14px Helvetica';
-                ctx.fillStyle = comp.color;
-                ctx.fillText(comp.label, 10, yOffset + sectionHeight / 2);
-                
-                // Draw line
-                ctx.strokeStyle = comp.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                
-                const xStep = (width - 2 * padding - 100) / (comp.data.length - 1);
-                const yMin = Math.min(...comp.data);
-                const yMax = Math.max(...comp.data);
-                const yScale = (sectionHeight - 20) / (yMax - yMin);
-                
-                comp.data.forEach((value, i) => {
-                    const x = padding + 80 + i * xStep;
-                    const y = yOffset + sectionHeight / 2 - (value - (yMax + yMin) / 2) * yScale;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-            });
-        }
-
-        function drawAdditiveDecompChart() {
-            const canvas = document.getElementById('additiveDecompChart');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            // Generate additive components
-            const n = 72;
-            const trend = Array(n).fill(0).map((_, i) => 100 + i * 0.5);
-            const seasonal = Array(n).fill(0).map((_, i) => 20 * Math.sin(i * 2 * Math.PI / 12));
-            const irregular = Array(n).fill(0).map(() => Math.random() * 10 - 5);
-            const combined = trend.map((t, i) => t + seasonal[i] + irregular[i]);
-            
-            const padding = 50;
-            const sectionHeight = (height - 2 * padding) / 4;
-            
-            // Draw components
-            const components = [
-                { data: combined, label: 'Y = T + S + I', color: '#333' },
-                { data: trend, label: 'Trend (T)', color: '#dc3545' },
-                { data: seasonal, label: 'Seasonal (S)', color: '#28a745' },
-                { data: irregular, label: 'Irregular (I)', color: '#6c757d' }
-            ];
-            
-            components.forEach((comp, idx) => {
-                const yOffset = padding + idx * sectionHeight;
-                
-                // Draw dividing line
-                if (idx > 0) {
-                    ctx.strokeStyle = '#ddd';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(padding, yOffset);
-                    ctx.lineTo(width - padding, yOffset);
-                    ctx.stroke();
-                }
-                
-                // Label
-                ctx.font = '16px Helvetica';
-                ctx.fillStyle = comp.color;
-                ctx.fillText(comp.label, padding, yOffset + 20);
-                
-                // Draw line
-                ctx.strokeStyle = comp.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                
-                const xStep = (width - 2 * padding) / (comp.data.length - 1);
-                const yMin = Math.min(...comp.data);
-                const yMax = Math.max(...comp.data);
-                const yScale = (sectionHeight - 40) / (yMax - yMin);
-                
-                comp.data.forEach((value, i) => {
-                    const x = padding + i * xStep;
-                    const y = yOffset + 30 + (sectionHeight - 40) - (value - yMin) * yScale;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-            });
-        }
-
-        function drawMultiplicativeDecompChart() {
-            const canvas = document.getElementById('multiplicativeDecompChart');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            // Generate multiplicative components
-            const n = 72;
-            const trend = Array(n).fill(0).map((_, i) => 50 + i * 0.8);
-            const seasonal = Array(n).fill(0).map((_, i) => 1 + 0.3 * Math.sin(i * 2 * Math.PI / 12));
-            const irregular = Array(n).fill(0).map(() => 1 + (Math.random() * 0.1 - 0.05));
-            const combined = trend.map((t, i) => t * seasonal[i] * irregular[i]);
-            
-            const padding = 50;
-            const sectionHeight = (height - 2 * padding) / 4;
-            
-            // Draw components
-            const components = [
-                { data: combined, label: 'Y = T × S × I', color: '#333' },
-                { data: trend, label: 'Trend (T)', color: '#dc3545' },
-                { data: seasonal, label: 'Seasonal (S)', color: '#28a745' },
-                { data: irregular, label: 'Irregular (I)', color: '#6c757d' }
-            ];
-            
-            components.forEach((comp, idx) => {
-                const yOffset = padding + idx * sectionHeight;
-                
-                // Draw dividing line
-                if (idx > 0) {
-                    ctx.strokeStyle = '#ddd';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(padding, yOffset);
-                    ctx.lineTo(width - padding, yOffset);
-                    ctx.stroke();
-                }
-                
-                // Label
-                ctx.font = '16px Helvetica';
-                ctx.fillStyle = comp.color;
-                ctx.fillText(comp.label, padding, yOffset + 20);
-                
-                // Draw line
-                ctx.strokeStyle = comp.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                
-                const xStep = (width - 2 * padding) / (comp.data.length - 1);
-                const yMin = Math.min(...comp.data);
-                const yMax = Math.max(...comp.data);
-                const yScale = (sectionHeight - 40) / (yMax - yMin);
-                
-                comp.data.forEach((value, i) => {
-                    const x = padding + i * xStep;
-                    const y = yOffset + 30 + (sectionHeight - 40) - (value - yMin) * yScale;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-            });
-        }
-
-        function drawDecompositionExamples() {
-            drawAdditiveExampleChart();
-            drawMultiplicativeExampleChart();
-        }
-
-        function drawAdditiveExampleChart() {
-            const data = Array(48).fill(0).map((_, i) => 
-                100 + i * 0.2 + 15 * Math.sin(i * 2 * Math.PI / 12) + Math.random() * 5
-            );
-            drawLineChart('additiveExampleChart', data, 'Additive', '#007bff');
-        }
-
-        function drawMultiplicativeExampleChart() {
-            const data = Array(48).fill(0).map((_, i) => 
-                (50 + i * 0.5) * (1 + 0.4 * Math.sin(i * 2 * Math.PI / 12)) * (1 + Math.random() * 0.1 - 0.05)
-            );
-            drawLineChart('multiplicativeExampleChart', data, 'Multiplicative', '#dc3545');
-        }
-
-        function drawQuizChart3() {
-            const canvas = document.getElementById('quizChart3');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            // Generate data with increasing seasonal amplitude
-            const n = 60;
-            const data = Array(n).fill(0).map((_, i) => {
-                const trend = 50 + i * 0.8;
-                const seasonalAmplitude = 5 + i * 0.2; // Increasing amplitude
-                const seasonal = seasonalAmplitude * Math.sin(i * 2 * Math.PI / 12);
-                return trend + seasonal + Math.random() * 3;
-            });
-            
-            drawLineChart('quizChart3', data, 'Time Series', '#17a2b8');
-        }
-
-        // Prophet chart drawing functions
-        function drawProphetComparisonChart() {
-            const canvas = document.getElementById('prophetComparisonChart');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            // Sample data with outliers and missing values
-            const data = Array(50).fill(0).map((_, i) => {
-                if (i === 15 || i === 35) return null; // Missing data
-                const base = 100 + i * 2 + 20 * Math.sin(i * 2 * Math.PI / 7);
-                if (i === 25) return base + 50; // Outlier
-                return base + Math.random() * 10;
-            });
-            
-            const padding = 40;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            // Draw data with gaps
-            const xStep = graphWidth / (data.length - 1);
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            let inPath = false;
-            
-            data.forEach((value, i) => {
-                if (value !== null) {
-                    const x = padding + i * xStep;
-                    const y = height - padding - (value - 50) * (graphHeight / 150);
-                    
-                    if (!inPath) {
-                        ctx.moveTo(x, y);
-                        inPath = true;
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                } else {
-                    inPath = false;
-                }
-            });
-            ctx.stroke();
-            
-            // Draw points
-            ctx.fillStyle = '#007bff';
-            data.forEach((value, i) => {
-                if (value !== null) {
-                    const x = padding + i * xStep;
-                    const y = height - padding - (value - 50) * (graphHeight / 150);
-                    ctx.beginPath();
-                    ctx.arc(x, y, i === 25 ? 6 : 3, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
-            });
-            
-            // Labels
-            ctx.font = '12px Helvetica';
-            ctx.fillStyle = '#666';
-            ctx.fillText('Missing data handled', padding + 15 * xStep - 30, height - padding - 20);
-            ctx.fillText('Outlier detected', padding + 25 * xStep - 30, height - padding - 100);
-        }
-
-        function drawProphetComponentCharts() {
-            // Draw trend component
-            const trendCanvas = document.getElementById('trendComponentChart');
-            if (trendCanvas) {
-                const ctx = trendCanvas.getContext('2d');
-                const width = trendCanvas.width = trendCanvas.offsetWidth;
-                const height = trendCanvas.height = trendCanvas.offsetHeight;
-                
-                ctx.clearRect(0, 0, width, height);
-                
-                // Linear trend with changepoint
-                const data = Array(50).fill(0).map((_, i) => {
-                    if (i < 25) return 50 + i * 0.8;
-                    return 70 + (i - 25) * 1.5;
-                });
-                
-                drawLineChart('trendComponentChart', data, 'Trend', '#dc3545');
-                
-                // Mark changepoint
-                ctx.strokeStyle = '#666';
-                ctx.setLineDash([5, 5]);
-                ctx.beginPath();
-                ctx.moveTo(width / 2, 20);
-                ctx.lineTo(width / 2, height - 20);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.font = '12px Helvetica';
-                ctx.fillStyle = '#666';
-                ctx.fillText('Changepoint', width / 2 + 5, 30);
-            }
-            
-            // Draw seasonal component
-            const seasonalCanvas = document.getElementById('seasonalComponentChart');
-            if (seasonalCanvas) {
-                const data = Array(50).fill(0).map((_, i) => 
-                    10 * Math.sin(i * 2 * Math.PI / 7) + 5 * Math.sin(i * 2 * Math.PI / 365.25)
-                );
-                drawLineChart('seasonalComponentChart', data, 'Seasonal', '#28a745');
-            }
-        }
-
-        function drawProphetFullExample() {
-            const canvas = document.getElementById('prophetFullExample');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = canvas.offsetHeight;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            const padding = 60;
-            const graphWidth = width - 2 * padding;
-            const graphHeight = height - 2 * padding;
-            
-            // Generate realistic retail data (3 years + 90 days forecast)
-            const historicalDays = 365 * 3;
-            const forecastDays = 90;
-            const totalDays = historicalDays + forecastDays;
-            
-            // Historical data
-            const historicalData = Array(historicalDays).fill(0).map((_, i) => {
-                const trend = 1000 + i * 0.5;
-                const weekly = 200 * Math.sin((i % 7) * 2 * Math.PI / 7 - Math.PI/2);
-                const yearly = 300 * Math.sin(i * 2 * Math.PI / 365.25);
-                const noise = Math.random() * 100 - 50;
-                return trend + weekly + yearly + noise;
-            });
-            
-            // Forecast data
-            const forecastData = Array(forecastDays).fill(0).map((_, i) => {
-                const day = historicalDays + i;
-                const trend = 1000 + day * 0.5;
-                const weekly = 200 * Math.sin((day % 7) * 2 * Math.PI / 7 - Math.PI/2);
-                const yearly = 300 * Math.sin(day * 2 * Math.PI / 365.25);
-                return trend + weekly + yearly;
-            });
-            
-            // Draw axes
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, height - padding);
-            ctx.lineTo(width - padding, height - padding);
-            ctx.stroke();
-            
-            const xStep = graphWidth / totalDays;
-            const allData = [...historicalData, ...forecastData];
-            const yMin = Math.min(...allData) - 200;
-            const yMax = Math.max(...allData) + 200;
-            const yScale = graphHeight / (yMax - yMin);
-            
-            // Draw historical data
-            ctx.strokeStyle = '#dc3545';
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = 0.7;
-            ctx.beginPath();
-            historicalData.forEach((value, i) => {
-                const x = padding + i * xStep;
-                const y = height - padding - (value - yMin) * yScale;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            ctx.globalAlpha = 1;
-            
-            // Draw forecast line
-            ctx.strokeStyle = '#28a745';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(padding + historicalDays * xStep, height - padding - (historicalData[historicalData.length - 1] - yMin) * yScale);
-            forecastData.forEach((value, i) => {
-                const x = padding + (historicalDays + i) * xStep;
-                const y = height - padding - (value - yMin) * yScale;
-                ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            
-            // Draw uncertainty bands
-            ctx.fillStyle = 'rgba(255, 193, 7, 0.3)';
-            ctx.beginPath();
-            ctx.moveTo(padding + historicalDays * xStep, height - padding - (historicalData[historicalData.length - 1] - yMin) * yScale);
-            
-            // Upper band
-            forecastData.forEach((value, i) => {
-                const x = padding + (historicalDays + i) * xStep;
-                const y = height - padding - (value + 200 - yMin) * yScale;
-                ctx.lineTo(x, y);
-            });
-            
-            // Lower band (reverse)
-            for (let i = forecastDays - 1; i >= 0; i--) {
-                const x = padding + (historicalDays + i) * xStep;
-                const y = height - padding - (forecastData[i] - 200 - yMin) * yScale;
-                ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-            ctx.fill();
-            
-            // Dividing line
-            ctx.strokeStyle = '#666';
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.moveTo(padding + historicalDays * xStep, padding);
-            ctx.lineTo(padding + historicalDays * xStep, height - padding);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // Labels
-            ctx.font = '14px Helvetica';
-            ctx.fillStyle = '#666';
-            ctx.textAlign = 'center';
-            ctx.fillText('Historical Data', padding + historicalDays * xStep / 2, height - 20);
-            ctx.fillText('Forecast', padding + historicalDays * xStep + forecastDays * xStep / 2, height - 20);
-            
-            // Y-axis label
-            ctx.save();
-            ctx.translate(20, height / 2);
-            ctx.rotate(-Math.PI / 2);
-            ctx.fillText('Daily Sales ($)', 0, 0);
-            ctx.restore();
-        }
-
-        function checkAnswer(button, isCorrect) {
-            const options = button.parentElement.querySelectorAll('.quiz-option');
-            options.forEach(opt => {
-                opt.classList.remove('correct', 'incorrect');
-                opt.disabled = true;
-            });
+            quizAnswers[quizNum] = true;
+            feedback.classList.add('show');
             
             if (isCorrect) {
-                button.classList.add('correct');
+                feedback.classList.add('correct');
+                const explanations = {
+                    1: "Correct! Seasonal patterns repeat at fixed, predictable intervals (daily, weekly, monthly, yearly). Ice cream sales follow annual weather patterns.",
+                    2: "Correct! Interpolation methods estimate missing values based on surrounding data points, maintaining the time series structure and relationships.",
+                    3: "Correct! Measurement errors from calibrated instruments typically have constant mean (zero) and variance, with no systematic patterns—characteristics of stationarity.",
+                    4: "Correct! A p-value of 0.68 is much greater than 0.05, so we fail to reject the null hypothesis. The data has a unit root and requires differencing.",
+                    5: "Correct! The naïve method for a random walk uses the current observation as the forecast for all future periods. Today's value = $50, so tomorrow's forecast = $50."
+                };
+                feedback.textContent = "✓ " + explanations[quizNum];
             } else {
-                button.classList.add('incorrect');
+                feedback.classList.add('incorrect');
+                const corrections = {
+                    1: "Not quite. While the pattern involves time, seasonality specifically refers to regular repetition at fixed intervals. Trends show long-term direction, cycles lack fixed periods, and irregular components are unpredictable.",
+                    2: "Incorrect. Proceeding without handling missing data introduces bias. Setting values to zero distorts the series. Deleting the dataset wastes valuable information. Interpolation preserves the time series structure.",
+                    3: "Incorrect. Series with trends, seasonal patterns, or economic growth are non-stationary because their mean changes over time. Measurement errors typically fluctuate around zero with constant variance.",
+                    4: "Incorrect. The p-value (0.68) is above 0.05, meaning we cannot reject the null hypothesis. This indicates non-stationarity. We should apply first-order differencing and retest.",
+                    5: "Incorrect. The naïve method uses only the most recent observation, not historical averages or changes. For a random walk, the best forecast is simply the current value."
+                };
+                feedback.textContent = "✗ " + corrections[quizNum];
             }
         }
 
-        // Initialize
+        // Chart initialization functions
+        function initTrendChart() {
+            const ctx = document.getElementById('trendChart');
+            if (!ctx || ctx.chart) return;
+            
+            const years = Array.from({length: 10}, (_, i) => 2015 + i);
+            const upwardTrend = years.map((y, i) => 100 + i * 15);
+            const downwardTrend = years.map((y, i) => 250 - i * 12);
+            const stableTrend = Array(10).fill(150);
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Upward Trend (e.g., E-commerce sales)',
+                        data: upwardTrend,
+                        borderColor: '#32CD32',
+                        backgroundColor: 'rgba(50, 205, 50, 0.1)',
+                        tension: 0.1,
+                        borderWidth: 3,
+                        pointRadius: 4
+                    }, {
+                        label: 'Downward Trend (e.g., Print media)',
+                        data: downwardTrend,
+                        borderColor: '#DC143C',
+                        backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                        tension: 0.1,
+                        borderWidth: 3,
+                        pointRadius: 4
+                    }, {
+                        label: 'Stable Trend (e.g., Utility consumption)',
+                        data: stableTrend,
+                        borderColor: '#4169E1',
+                        backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Different Types of Trend Components',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Value' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Year' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initSeasonalChart() {
+            const ctx = document.getElementById('seasonalChart');
+            if (!ctx || ctx.chart) return;
+            
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 
+                           'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const seasonal = months.map((m, i) => {
+                const monthNum = i % 12;
+                // Ice cream sales pattern - high in summer, low in winter
+                return 50 + 40 * Math.sin((monthNum - 3) * Math.PI / 6);
+            });
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Ice Cream Sales Pattern (Repeating Annually)',
+                        data: seasonal,
+                        borderColor: '#FF6347',
+                        backgroundColor: 'rgba(255, 99, 71, 0.2)',
+                        tension: 0.4,
+                        borderWidth: 3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Seasonal Component: Fixed Period (12 months)',
+                            font: { size: 14 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            title: { display: true, text: 'Sales Index' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Month' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initCyclicalChart() {
+            const ctx = document.getElementById('cyclicalChart');
+            if (!ctx || ctx.chart) return;
+            
+            const quarters = Array.from({length: 40}, (_, i) => `Q${(i % 4) + 1}-${Math.floor(i / 4) + 2015}`);
+            const cyclical = quarters.map((q, i) => {
+                // Business cycle - varies between 5-7 years
+                return 100 + 30 * Math.sin(i * Math.PI / 12) + 15 * Math.sin(i * Math.PI / 20);
+            });
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: quarters,
+                    datasets: [{
+                        label: 'Housing Market Cycle (Variable Period)',
+                        data: cyclical,
+                        borderColor: '#9370DB',
+                        backgroundColor: 'rgba(147, 112, 219, 0.2)',
+                        tension: 0.4,
+                        borderWidth: 3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Cyclical Component: No Fixed Period',
+                            font: { size: 14 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            title: { display: true, text: 'Market Index' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Quarter' },
+                            ticks: {
+                                maxRotation: 90,
+                                minRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initIrregularChart() {
+            const ctx = document.getElementById('irregularChart');
+            if (!ctx || ctx.chart) return;
+            
+            const days = Array.from({length: 100}, (_, i) => i + 1);
+            const irregular = days.map(() => (Math.random() - 0.5) * 40);
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Random Fluctuations (White Noise)',
+                        data: irregular,
+                        borderColor: '#808080',
+                        backgroundColor: 'rgba(128, 128, 128, 0.1)',
+                        tension: 0,
+                        borderWidth: 1,
+                        pointRadius: 2
+                    }, {
+                        label: 'Mean = 0',
+                        data: Array(100).fill(0),
+                        borderColor: '#DC143C',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Irregular Component: Pure Randomness',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            title: { display: true, text: 'Deviation from Mean' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Time Period' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initComponentsChart() {
+            const ctx = document.getElementById('componentsChart');
+            if (!ctx || ctx.chart) return;
+            
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const trend = [100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120, 122];
+            const seasonal = [0, -5, -8, -5, 5, 15, 20, 18, 10, 0, -8, -10];
+            const observed = trend.map((t, i) => t + seasonal[i] + (Math.random() - 0.5) * 3);
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Observed Data',
+                        data: observed,
+                        borderColor: '#DC143C',
+                        backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 3
+                    }, {
+                        label: 'Trend Component',
+                        data: trend,
+                        borderColor: '#4169E1',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Time Series with Trend and Seasonal Components',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: false,
+                            title: { display: true, text: 'Value' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Time Period' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initDecompositionChart() {
+            const ctx = document.getElementById('decompositionChart');
+            if (!ctx || ctx.chart) return;
+            
+            const time = Array.from({length: 36}, (_, i) => i + 1);
+            const trend = time.map(t => 100 + t * 0.5);
+            const seasonal = time.map(t => 10 * Math.sin(2 * Math.PI * t / 12));
+            const irregular = time.map(() => (Math.random() - 0.5) * 5);
+            const observed = time.map((_, i) => trend[i] + seasonal[i] + irregular[i]);
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: time,
+                    datasets: [{
+                        label: 'Observed',
+                        data: observed,
+                        borderColor: '#DC143C',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }, {
+                        label: 'Trend',
+                        data: trend,
+                        borderColor: '#4169E1',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }, {
+                        label: 'Seasonal',
+                        data: seasonal.map((s, i) => s + 100),
+                        borderColor: '#32CD32',
+                        borderWidth: 2,
+                        borderDash: [2, 2],
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Time Series Decomposition Example',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            title: { display: true, text: 'Value' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Time Period' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initStationaryComparisonChart() {
+            const ctx = document.getElementById('stationaryComparisonChart');
+            if (!ctx || ctx.chart) return;
+            
+            const time = Array.from({length: 100}, (_, i) => i);
+            const stationary = time.map(() => 50 + (Math.random() - 0.5) * 20);
+            const nonStationary = time.map((t) => 30 + t * 0.3 + (Math.random() - 0.5) * 5);
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: time,
+                    datasets: [{
+                        label: 'Stationary Series',
+                        data: stationary,
+                        borderColor: '#32CD32',
+                        backgroundColor: 'rgba(50, 205, 50, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }, {
+                        label: 'Non-Stationary Series (with trend)',
+                        data: nonStationary,
+                        borderColor: '#DC143C',
+                        backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Stationary vs Non-Stationary Time Series',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            title: { display: true, text: 'Value' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Time' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initWhiteNoiseChart() {
+            const ctx = document.getElementById('whiteNoiseChart');
+            if (!ctx || ctx.chart) return;
+            
+            const time = Array.from({length: 100}, (_, i) => i);
+            const whiteNoise = time.map(() => 1000 + (Math.random() - 0.5) * 200);
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: time,
+                    datasets: [{
+                        label: 'Daily Website Visitors (after removing patterns)',
+                        data: whiteNoise,
+                        borderColor: '#666',
+                        backgroundColor: 'rgba(102, 102, 102, 0.1)',
+                        borderWidth: 1,
+                        pointRadius: 1
+                    }, {
+                        label: 'Mean (1000 visitors)',
+                        data: Array(100).fill(1000),
+                        borderColor: '#DC143C',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'White Noise: Pure Random Fluctuations',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            title: { display: true, text: 'Visitors' },
+                            min: 850,
+                            max: 1150
+                        },
+                        x: {
+                            title: { display: true, text: 'Day' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize first slide
         showSlide(0);
     </script>
 </body>
