@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4: Introductory Forecasting Methods</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            padding: 60px 80px;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            color: #CC0000;
+            font-size: 48px;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        h2 {
+            color: #CC0000;
+            font-size: 36px;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        h3 {
+            color: #CC0000;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        ul {
+            font-size: 22px;
+            line-height: 1.8;
+            margin-left: 30px;
+        }
+
+        li {
+            margin-bottom: 15px;
+        }
+
+        .formula-box {
+            background: #f5f5f5;
+            border-left: 4px solid #CC0000;
+            padding: 25px;
+            margin: 20px 0;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .key-point {
+            background: #fff5f5;
+            border: 2px solid #CC0000;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 20px;
+            line-height: 1.6;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+
+        .comparison-table th {
+            background: #CC0000;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        .quiz {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .quiz-question {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .quiz-option {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .quiz-option:hover {
+            border-color: #CC0000;
+            background: #fff5f5;
+        }
+
+        .quiz-option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .quiz-feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 18px;
+            display: none;
+        }
+
+        .quiz-feedback.show {
+            display: block;
+        }
+
+        .quiz-feedback.correct {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+
+        .quiz-feedback.incorrect {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-button {
+            background: #CC0000;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+
+        .nav-button:hover {
+            background: #990000;
+        }
+
+        .nav-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .slide-number {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .decision-tree {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 8px;
+            font-size: 18px;
+            line-height: 2;
+            font-family: monospace;
+        }
+
+        .example-box {
+            background: #e8f4f8;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+
+        .step-box {
+            background: white;
+            border: 2px solid #CC0000;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .step-number {
+            background: #CC0000;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #ddd;
+        }
+
+        .metric-card h4 {
+            color: #CC0000;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .logo {
+            position: fixed;
+            bottom: 30px;
+            right: 120px;
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide active">
+    <div class="content">
+        <h1>DATA4400</h1>
+        <h1>Data-Driven Forecasting</h1>
+        <div class="subtitle" style="margin-top: 40px;">Week 4: Introductory Forecasting Methods</div>
+        <div class="subtitle" style="font-size: 20px; margin-top: 60px;">Smoothing Techniques and Exponential Methods</div>
+    </div>
+</div>
+
+<!-- Slide 2: Learning Outcomes -->
+<div class="slide">
+    <h2>Learning Outcomes</h2>
+    <div class="content">
+        <div class="key-point">
+            By the end of this session, you will be able to:
+        </div>
+        <ul>
+            <li><strong>Analyse</strong> different smoothing techniques and their applications in business forecasting</li>
+            <li><strong>Apply</strong> exponential smoothing methods to time series data</li>
+            <li><strong>Understand</strong> time series decomposition for trend and seasonal analysis</li>
+            <li><strong>Evaluate</strong> forecasting models using error metrics and information criteria</li>
+            <li><strong>Select</strong> appropriate forecasting methods based on data characteristics</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Slide 3: Why Smoothing Matters -->
+<div class="slide">
+    <h2>The Challenge: Noisy Data</h2>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <h3>The Problem</h3>
+                <ul>
+                    <li>Real-world data contains <strong>random fluctuations</strong> (noise)</li>
+                    <li>Noise obscures meaningful <strong>patterns and trends</strong></li>
+                    <li>Raw data makes forecasting unreliable</li>
+                </ul>
+                <div class="key-point" style="margin-top: 30px;">
+                    <strong>Smoothing</strong> filters out short-term noise to reveal long-term signals
+                </div>
+            </div>
+            <div>
+                <div class="chart-container">
+                    <canvas id="noisyDataChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 4: Smoothing Techniques Overview -->
+<div class="slide">
+    <h2>Smoothing Techniques: Overview</h2>
+    <div class="content">
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Technique</th>
+                    <th>Core Concept</th>
+                    <th>Best Used For</th>
+                    <th>Key Feature</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Moving Average</strong></td>
+                    <td>Equal weights to past values</td>
+                    <td>Stable data, no trend</td>
+                    <td>Simple, easy to interpret</td>
+                </tr>
+                <tr>
+                    <td><strong>Single Exponential</strong></td>
+                    <td>Decreasing weights for older data</td>
+                    <td>Stable data, emphasize recent</td>
+                    <td>More weight to recent observations</td>
+                </tr>
+                <tr>
+                    <td><strong>Double Exponential</strong></td>
+                    <td>Adds trend component</td>
+                    <td>Data with trend, no seasonality</td>
+                    <td>Captures direction of change</td>
+                </tr>
+                <tr>
+                    <td><strong>Triple Exponential</strong></td>
+                    <td>Adds trend + seasonal components</td>
+                    <td>Data with trend and seasonality</td>
+                    <td>Handles complex patterns</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Slide 5: Moving Average Recap -->
+<div class="slide">
+    <h2>Recall: Moving Averages</h2>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <h3>How It Works</h3>
+                <div class="formula-box">
+                    MA = (Y<sub>t</sub> + Y<sub>t-1</sub> + ... + Y<sub>t-k+1</sub>) / k
+                </div>
+                <ul>
+                    <li><strong>k</strong> = number of periods to average</li>
+                    <li>Each observation has <strong>equal weight</strong></li>
+                    <li>Larger k = smoother result</li>
+                    <li>Creates forecast centered at time (t+t-k+1)/2</li>
+                </ul>
+            </div>
+            <div>
+                <div class="chart-container">
+                    <canvas id="movingAverageChart"></canvas>
+                </div>
+                <p style="text-align: center; font-size: 16px; color: #666;">3-point vs 5-point moving averages</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 6: Quiz 1 -->
+<div class="slide">
+    <h2>Knowledge Check 1</h2>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">
+                A retail store tracks daily sales with random spikes from promotions. The data shows no trend or seasonal pattern. Which method is most appropriate?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+                    A) Double Exponential Smoothing (Holt's method)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true, 1)">
+                    B) Simple Moving Average or Single Exponential Smoothing
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+                    C) Triple Exponential Smoothing (Holt-Winters)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+                    D) No smoothing needed
+                </div>
+            </div>
+            <div class="quiz-feedback" id="feedback1"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 7: Single Exponential Smoothing Introduction -->
+<div class="slide">
+    <h2>Single Exponential Smoothing</h2>
+    <div class="content">
+        <h3>The Core Idea</h3>
+        <div class="key-point">
+            <strong>Recent observations matter more than older ones</strong>
+        </div>
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>Key Characteristics</h3>
+                <ul>
+                    <li>Assigns <strong>exponentially decreasing weights</strong> to past observations</li>
+                    <li>Newest data gets highest weight</li>
+                    <li>Oldest data gets lowest weight</li>
+                    <li>Controlled by parameter <strong>α (alpha)</strong></li>
+                    <li>Best for data with <strong>no clear trend or seasonality</strong></li>
+                </ul>
+            </div>
+            <div>
+                <div class="example-box">
+                    <h4 style="color: #0066cc; margin-bottom: 10px;">Business Example</h4>
+                    <strong>ATM Cash Withdrawals</strong><br><br>
+                    A bank monitors daily cash withdrawals at ATMs. Demand fluctuates but remains stable overall, with occasional spikes on weekends.<br><br>
+                    <strong>Solution:</strong> Single Exponential Smoothing emphasizes recent withdrawal patterns while smoothing out random daily variations.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 8: Single Exponential Smoothing Formula -->
+<div class="slide">
+    <h2>Single Exponential Smoothing: The Formula</h2>
+    <div class="content">
+        <div class="formula-box" style="font-size: 32px;">
+            Ŷ<sub>t+1</sub> = α × Y<sub>t</sub> + (1 - α) × Ŷ<sub>t</sub>
+        </div>
+        
+        <div class="two-column" style="margin-top: 40px;">
+            <div>
+                <h3>Components Explained</h3>
+                <ul>
+                    <li><strong>Ŷ<sub>t+1</sub></strong> = Forecast for next period</li>
+                    <li><strong>Y<sub>t</sub></strong> = Actual value in current period</li>
+                    <li><strong>Ŷ<sub>t</sub></strong> = Forecast for current period</li>
+                    <li><strong>α (alpha)</strong> = Smoothing constant (0 ≤ α ≤ 1)</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Understanding Alpha (α)</h3>
+                <div class="step-box">
+                    <strong>α close to 1 (e.g., 0.9):</strong><br>
+                    Heavy weight on recent data → Responsive to changes
+                </div>
+                <div class="step-box">
+                    <strong>α close to 0 (e.g., 0.1):</strong><br>
+                    Heavy weight on historical forecasts → Smooth and stable
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 9: Worked Example -->
+<div class="slide">
+    <h2>Worked Example: Single Exponential Smoothing</h2>
+    <div class="content">
+        <div class="example-box">
+            <h3 style="color: #0066cc;">Scenario: Forecasting Monthly Demand (α = 0.9)</h3>
+        </div>
+        
+        <table class="comparison-table" style="font-size: 20px;">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Actual Demand (Y<sub>t</sub>)</th>
+                    <th>Forecast (Ŷ<sub>t</sub>)</th>
+                    <th>Calculation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>13</td>
+                    <td>-</td>
+                    <td>No prior forecast available</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>17</td>
+                    <td>13</td>
+                    <td>Naive forecast (use Y<sub>1</sub>)</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>19</td>
+                    <td>16.6</td>
+                    <td>0.9×17 + 0.1×13 = 15.3 + 1.3 = 16.6</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>23</td>
+                    <td>18.76</td>
+                    <td>0.9×19 + 0.1×16.6 = 17.1 + 1.66 = 18.76</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>24</td>
+                    <td>22.58</td>
+                    <td>0.9×23 + 0.1×18.76 = 20.7 + 1.88 = 22.58</td>
+                </tr>
+                <tr style="background: #fff5f5;">
+                    <td><strong>6</strong></td>
+                    <td><strong>?</strong></td>
+                    <td><strong>23.86</strong></td>
+                    <td><strong>0.9×24 + 0.1×22.58 = 21.6 + 2.26 = 23.86</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Slide 10: Alpha Comparison -->
+<div class="slide">
+    <h2>Impact of Alpha (α) on Forecasts</h2>
+    <div class="content">
+        <div class="chart-container" style="height: 450px;">
+            <canvas id="alphaComparisonChart"></canvas>
+        </div>
+        <div class="key-point" style="margin-top: 20px;">
+            <strong>Key Insight:</strong> Higher α values make the forecast more responsive to recent changes but may amplify noise. Lower α values produce smoother forecasts but may lag behind actual changes.
+        </div>
+    </div>
+</div>
+
+<!-- Slide 11: Quiz 2 -->
+<div class="slide">
+    <h2>Knowledge Check 2</h2>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">
+                A forecaster uses α = 0.2 in Single Exponential Smoothing. What does this indicate about their forecasting approach?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+                    A) They want forecasts to respond quickly to recent changes
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true, 2)">
+                    B) They prefer smooth, stable forecasts that emphasize historical patterns
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+                    C) The data has strong seasonality
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+                    D) They are using double exponential smoothing
+                </div>
+            </div>
+            <div class="quiz-feedback" id="feedback2"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 12: Double Exponential Smoothing Introduction -->
+<div class="slide">
+    <h2>Double Exponential Smoothing (Holt's Method)</h2>
+    <div class="content">
+        <div class="key-point">
+            <strong>Problem:</strong> Single Exponential Smoothing does not perform well when data has a <strong>trend</strong>
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>The Solution</h3>
+                <ul>
+                    <li>Add a <strong>trend component</strong> to the model</li>
+                    <li>Uses <strong>two</strong> smoothing parameters:
+                        <ul>
+                            <li><strong>α (alpha)</strong> for the level</li>
+                            <li><strong>β (beta)</strong> for the trend</li>
+                        </ul>
+                    </li>
+                    <li>Captures both current value and direction of change</li>
+                    <li>Best for <strong>trending but non-seasonal</strong> data</li>
+                </ul>
+            </div>
+            <div>
+                <div class="example-box">
+                    <h4 style="color: #0066cc; margin-bottom: 10px;">Business Example</h4>
+                    <strong>E-Commerce Sales Growth</strong><br><br>
+                    An online retailer experiences steady monthly sales growth due to increasing market penetration, but no seasonal patterns.<br><br>
+                    <strong>Solution:</strong> Holt's method captures both the current sales level and the growth trend.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 13: Double Exponential Formulas -->
+<div class="slide">
+    <h2>Double Exponential Smoothing: Formulas</h2>
+    <div class="content">
+        <div class="step-box">
+            <span class="step-number">1</span>
+            <strong>Level Equation:</strong>
+            <div class="formula-box" style="margin-top: 10px;">
+                C<sub>t</sub> = α × Y<sub>t</sub> + (1 - α) × (C<sub>t-1</sub> + T<sub>t-1</sub>)
+            </div>
+            <p style="margin-top: 10px; font-size: 18px;">Smooths the current process level at time t</p>
+        </div>
+
+        <div class="step-box">
+            <span class="step-number">2</span>
+            <strong>Trend Equation:</strong>
+            <div class="formula-box" style="margin-top: 10px;">
+                T<sub>t</sub> = β × (C<sub>t</sub> - C<sub>t-1</sub>) + (1 - β) × T<sub>t-1</sub>
+            </div>
+            <p style="margin-top: 10px; font-size: 18px;">Smooths the trend value at time t</p>
+        </div>
+
+        <div class="step-box">
+            <span class="step-number">3</span>
+            <strong>Forecast Equation:</strong>
+            <div class="formula-box" style="margin-top: 10px;">
+                Ŷ<sub>t+1</sub> = C<sub>t</sub> + T<sub>t</sub>
+            </div>
+            <p style="margin-top: 10px; font-size: 18px;">Combines level and trend to produce forecast</p>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 14: Understanding Alpha and Beta -->
+<div class="slide">
+    <h2>Understanding the Smoothing Parameters</h2>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <h3>Alpha (α) - Level Smoothing</h3>
+                <div class="step-box">
+                    <strong>Controls:</strong> Influence of recent data on the forecasted value
+                </div>
+                <div class="step-box">
+                    <strong>High α (e.g., 0.8):</strong><br>
+                    Forecast reacts quickly to changes in data level
+                </div>
+                <div class="step-box">
+                    <strong>Low α (e.g., 0.2):</strong><br>
+                    Forecast changes gradually, more stable
+                </div>
+            </div>
+            <div>
+                <h3>Beta (β) - Trend Smoothing</h3>
+                <div class="step-box">
+                    <strong>Controls:</strong> Influence of recent data on the trend
+                </div>
+                <div class="step-box">
+                    <strong>High β (e.g., 0.8):</strong><br>
+                    Trend responds quickly to changes in direction
+                </div>
+                <div class="step-box">
+                    <strong>Low β (e.g., 0.2):</strong><br>
+                    Trend is smooth and stable
+                </div>
+            </div>
+        </div>
+        <div class="key-point" style="margin-top: 30px;">
+            <strong>Best Practice:</strong> Optimal α and β values are typically found by minimizing error metrics (RMSE) on historical data
+        </div>
+    </div>
+</div>
+
+<!-- Slide 15: Quiz 3 -->
+<div class="slide">
+    <h2>Knowledge Check 3</h2>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">
+                Your company's quarterly revenue has been growing steadily by approximately 5% each quarter. There are no seasonal effects. Which forecasting method should you use?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+                    A) Simple Moving Average
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+                    B) Single Exponential Smoothing
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true, 3)">
+                    C) Double Exponential Smoothing (Holt's method)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+                    D) Triple Exponential Smoothing (Holt-Winters)
+                </div>
+            </div>
+            <div class="quiz-feedback" id="feedback3"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 16: Triple Exponential Smoothing -->
+<div class="slide">
+    <h2>Triple Exponential Smoothing (Holt-Winters)</h2>
+    <div class="content">
+        <div class="key-point">
+            <strong>When to Use:</strong> Data exhibits both <strong>trend</strong> and <strong>seasonality</strong>
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>Key Features</h3>
+                <ul>
+                    <li>Extends Holt's method with <strong>seasonal component</strong></li>
+                    <li>Three smoothing parameters:
+                        <ul>
+                            <li><strong>α</strong> for level</li>
+                            <li><strong>β</strong> for trend</li>
+                            <li><strong>γ (gamma)</strong> for seasonality</li>
+                        </ul>
+                    </li>
+                    <li>Handles complex, realistic patterns</li>
+                    <li>Two variations:
+                        <ul>
+                            <li><strong>Additive:</strong> Seasonal fluctuations are constant</li>
+                            <li><strong>Multiplicative:</strong> Seasonal fluctuations grow with level</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <div class="example-box">
+                    <h4 style="color: #0066cc; margin-bottom: 10px;">Business Example</h4>
+                    <strong>Airline Passenger Demand</strong><br><br>
+                    Airline passenger numbers show:
+                    <ul style="margin-top: 10px;">
+                        <li>Long-term growth trend</li>
+                        <li>Seasonal peaks (summer holidays)</li>
+                        <li>Seasonal dips (off-peak periods)</li>
+                    </ul>
+                    <strong>Solution:</strong> Holt-Winters captures level, trend, and seasonal patterns simultaneously.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 17: When Seasonality Matters -->
+<div class="slide">
+    <h2>Identifying Seasonality in Data</h2>
+    <div class="content">
+        <div class="chart-container" style="height: 400px;">
+            <canvas id="seasonalityChart"></canvas>
+        </div>
+        <div class="two-column" style="margin-top: 20px;">
+            <div class="key-point">
+                <strong>Seasonality:</strong> Regular, repeating patterns at fixed intervals (monthly, quarterly, yearly)
+            </div>
+            <div class="key-point">
+                <strong>Examples:</strong> Retail sales (holidays), electricity demand (summer/winter), tourism (peak seasons)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 18: Decision Framework -->
+<div class="slide">
+    <h2>Choosing the Right Smoothing Method</h2>
+    <div class="content">
+        <div class="decision-tree">
+<strong style="color: #CC0000;">DECISION FRAMEWORK</strong>
+
+Does your data have a TREND?
+│
+├─ NO → Does it have SEASONALITY?
+│        │
+│        ├─ NO → <strong>Single Exponential Smoothing</strong> ✓
+│        │        (or Simple Moving Average)
+│        │
+│        └─ YES → <strong>Seasonal Naive or Decomposition</strong>
+│
+└─ YES → Does it have SEASONALITY?
+         │
+         ├─ NO → <strong>Double Exponential Smoothing</strong> ✓
+         │        (Holt's Method)
+         │
+         └─ YES → <strong>Triple Exponential Smoothing</strong> ✓
+                  (Holt-Winters Method)
+        </div>
+        
+        <div class="key-point" style="margin-top: 30px;">
+            <strong>Remember:</strong> Always visualize your data first. Plot the time series to identify trends and seasonal patterns before selecting a method.
+        </div>
+    </div>
+</div>
+
+<!-- Slide 19: Business Applications Summary -->
+<div class="slide">
+    <h2>Business Applications of Smoothing Methods</h2>
+    <div class="content">
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Industry</th>
+                    <th>Forecasting Need</th>
+                    <th>Data Pattern</th>
+                    <th>Recommended Method</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Banking</strong></td>
+                    <td>Daily ATM cash withdrawals</td>
+                    <td>Stable, random fluctuations</td>
+                    <td>Single Exponential Smoothing</td>
+                </tr>
+                <tr>
+                    <td><strong>E-Commerce</strong></td>
+                    <td>Monthly online sales</td>
+                    <td>Upward trend, no seasonality</td>
+                    <td>Double Exponential (Holt's)</td>
+                </tr>
+                <tr>
+                    <td><strong>Airlines</strong></td>
+                    <td>Passenger demand</td>
+                    <td>Trend + seasonal peaks</td>
+                    <td>Triple Exponential (Holt-Winters)</td>
+                </tr>
+                <tr>
+                    <td><strong>Retail</strong></td>
+                    <td>Product inventory</td>
+                    <td>Stable demand</td>
+                    <td>Moving Average or Single ES</td>
+                </tr>
+                <tr>
+                    <td><strong>Manufacturing</strong></td>
+                    <td>Production planning</td>
+                    <td>Trend + seasonal orders</td>
+                    <td>Triple Exponential (Holt-Winters)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Slide 20: Quiz 4 -->
+<div class="slide">
+    <h2>Knowledge Check 4</h2>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">
+                You are analyzing monthly electricity demand data. You observe that demand increases steadily each year (trend) and has clear summer and winter peaks (seasonality). Additionally, the seasonal peaks are getting larger as overall demand grows. Which model and type should you use?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+                    A) Holt-Winters with Additive Seasonality
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true, 4)">
+                    B) Holt-Winters with Multiplicative Seasonality
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+                    C) Double Exponential Smoothing
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+                    D) Single Exponential Smoothing
+                </div>
+            </div>
+            <div class="quiz-feedback" id="feedback4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 21: Time Series Decomposition -->
+<div class="slide">
+    <h2>Time Series Decomposition</h2>
+    <div class="content">
+        <h3>Breaking Down Time Series Components</h3>
+        <div class="key-point">
+            Time series can be decomposed into distinct components to better understand underlying patterns
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>Additive Decomposition</h3>
+                <div class="formula-box">
+                    Y<sub>t</sub> = S<sub>t</sub> + T<sub>t</sub> + R<sub>t</sub>
+                </div>
+                <ul>
+                    <li><strong>Y<sub>t</sub></strong> = Observed value</li>
+                    <li><strong>S<sub>t</sub></strong> = Seasonal component</li>
+                    <li><strong>T<sub>t</sub></strong> = Trend-cycle component</li>
+                    <li><strong>R<sub>t</sub></strong> = Remainder (noise)</li>
+                </ul>
+                <p style="margin-top: 15px; font-size: 18px;"><strong>Use when:</strong> Seasonal fluctuations are roughly constant over time</p>
+            </div>
+            <div>
+                <h3>Multiplicative Decomposition</h3>
+                <div class="formula-box">
+                    Y<sub>t</sub> = S<sub>t</sub> × T<sub>t</sub> × R<sub>t</sub>
+                </div>
+                <ul>
+                    <li>Components interact multiplicatively</li>
+                    <li>Seasonal effect varies with level</li>
+                    <li>More common in business data</li>
+                    <li>Can transform to additive using logarithms</li>
+                </ul>
+                <p style="margin-top: 15px; font-size: 18px;"><strong>Use when:</strong> Seasonal fluctuations grow with the trend</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 22: Decomposition Visualization -->
+<div class="slide">
+    <h2>Visualizing Decomposition</h2>
+    <div class="content">
+        <div class="chart-container" style="height: 500px;">
+            <canvas id="decompositionChart"></canvas>
+        </div>
+        <div class="key-point" style="margin-top: 20px;">
+            <strong>Benefit:</strong> Decomposition helps identify which components drive your data, informing method selection and improving forecast accuracy
+        </div>
+    </div>
+</div>
+
+<!-- Slide 23: Model Evaluation Introduction -->
+<div class="slide">
+    <h2>Evaluating Forecast Accuracy</h2>
+    <div class="content">
+        <div class="key-point">
+            <strong>Question:</strong> How do we know if our forecast is good?
+        </div>
+        
+        <h3 style="margin-top: 40px;">Error Metrics</h3>
+        <p style="font-size: 20px; line-height: 1.6;">
+            We measure the difference between actual values and forecasted values using <strong>error metrics</strong>. These metrics quantify forecast performance.
+        </p>
+        
+        <div class="metric-grid" style="margin-top: 30px;">
+            <div class="metric-card">
+                <h4>RMSE</h4>
+                <p>Root Mean Square Error</p>
+                <p style="margin-top: 10px; font-size: 16px;">Penalizes large errors heavily</p>
+            </div>
+            <div class="metric-card">
+                <h4>MAE</h4>
+                <p>Mean Absolute Error</p>
+                <p style="margin-top: 10px; font-size: 16px;">Average size of errors</p>
+            </div>
+            <div class="metric-card">
+                <h4>MAPE</h4>
+                <p>Mean Absolute Percentage Error</p>
+                <p style="margin-top: 10px; font-size: 16px;">Percentage-based accuracy</p>
+            </div>
+        </div>
+        
+        <div class="key-point" style="margin-top: 30px;">
+            <strong>Golden Rule:</strong> Lower error values = Better forecast performance
+        </div>
+    </div>
+</div>
+
+<!-- Slide 24: RMSE Explained -->
+<div class="slide">
+    <h2>Root Mean Square Error (RMSE)</h2>
+    <div class="content">
+        <div class="formula-box" style="font-size: 28px;">
+            RMSE = √[(1/n) × Σ(Y<sub>i</sub> - Ŷ<sub>i</sub>)²]
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>What It Measures</h3>
+                <ul>
+                    <li>Average magnitude of forecast errors</li>
+                    <li>Same units as the original data</li>
+                    <li>Squares errors before averaging (penalizes large errors)</li>
+                    <li>More sensitive to outliers than MAE</li>
+                </ul>
+                
+                <h3 style="margin-top: 30px;">When to Use</h3>
+                <ul>
+                    <li>When large errors are particularly costly</li>
+                    <li>Comparing models on same dataset</li>
+                    <li>Most commonly reported metric</li>
+                </ul>
+            </div>
+            <div>
+                <div class="example-box">
+                    <h4 style="color: #0066cc; margin-bottom: 10px;">Worked Example</h4>
+                    <strong>Forecast Errors:</strong> -10, +5, -3, +8<br><br>
+                    
+                    <div class="step-box">
+                        <span class="step-number">1</span>
+                        Square each error:<br>
+                        100, 25, 9, 64
+                    </div>
+                    
+                    <div class="step-box">
+                        <span class="step-number">2</span>
+                        Average:<br>
+                        (100 + 25 + 9 + 64) / 4 = 49.5
+                    </div>
+                    
+                    <div class="step-box">
+                        <span class="step-number">3</span>
+                        Take square root:<br>
+                        √49.5 = <strong>7.04</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 25: MAPE Explained -->
+<div class="slide">
+    <h2>Mean Absolute Percentage Error (MAPE)</h2>
+    <div class="content">
+        <div class="formula-box" style="font-size: 28px;">
+            MAPE = (1/n) × Σ|((Y<sub>i</sub> - Ŷ<sub>i</sub>) / Y<sub>i</sub>)| × 100%
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>What It Measures</h3>
+                <ul>
+                    <li>Average percentage error of forecasts</li>
+                    <li>Scale-independent (allows comparison across datasets)</li>
+                    <li>Easy to interpret (e.g., "5% error")</li>
+                    <li>Avoids positive/negative cancellation</li>
+                </ul>
+                
+                <h3 style="margin-top: 30px;">Advantages</h3>
+                <ul>
+                    <li>Intuitive interpretation as percentage</li>
+                    <li>Can compare accuracy across different products/regions</li>
+                    <li>Commonly used in business contexts</li>
+                </ul>
+                
+                <h3 style="margin-top: 20px;">Limitations</h3>
+                <ul>
+                    <li>Cannot be used when actual values are zero</li>
+                    <li>Asymmetric (penalizes over-forecasts more than under-forecasts)</li>
+                </ul>
+            </div>
+            <div>
+                <div class="example-box">
+                    <h4 style="color: #0066cc; margin-bottom: 10px;">Interpretation Guide</h4>
+                    
+                    <div class="step-box">
+                        <strong>MAPE < 10%</strong><br>
+                        Excellent forecast accuracy
+                    </div>
+                    
+                    <div class="step-box">
+                        <strong>MAPE 10-20%</strong><br>
+                        Good forecast accuracy
+                    </div>
+                    
+                    <div class="step-box">
+                        <strong>MAPE 20-50%</strong><br>
+                        Reasonable forecast accuracy
+                    </div>
+                    
+                    <div class="step-box">
+                        <strong>MAPE > 50%</strong><br>
+                        Poor forecast accuracy
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 26: MSE Explained -->
+<div class="slide">
+    <h2>Mean Squared Error (MSE)</h2>
+    <div class="content">
+        <div class="formula-box" style="font-size: 28px;">
+            MSE = (1/n) × Σ(Y<sub>i</sub> - Ŷ<sub>i</sub>)²
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>What It Measures</h3>
+                <ul>
+                    <li>Average of squared errors</li>
+                    <li>RMSE = √MSE</li>
+                    <li>Used in optimization algorithms</li>
+                    <li>Heavily penalizes large errors</li>
+                </ul>
+                
+                <div class="key-point" style="margin-top: 30px;">
+                    <strong>Relationship to RMSE:</strong><br><br>
+                    MSE is in squared units, making interpretation difficult. RMSE converts back to original units by taking the square root.
+                </div>
+            </div>
+            <div>
+                <h3>Comparison of Error Metrics</h3>
+                <table class="comparison-table" style="font-size: 16px;">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Units</th>
+                            <th>Outlier Sensitivity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>RMSE</strong></td>
+                            <td>Original units</td>
+                            <td>High</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MSE</strong></td>
+                            <td>Squared units</td>
+                            <td>High</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MAE</strong></td>
+                            <td>Original units</td>
+                            <td>Low</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MAPE</strong></td>
+                            <td>Percentage</td>
+                            <td>Medium</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 27: Practical Error Calculation -->
+<div class="slide">
+    <h2>Practical Example: Calculating Errors</h2>
+    <div class="content">
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Actual (Y)</th>
+                    <th>Forecast MA (Ŷ)</th>
+                    <th>Forecast ES (Ŷ)</th>
+                    <th>Error MA</th>
+                    <th>Error ES</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>3</td>
+                    <td>19</td>
+                    <td>15</td>
+                    <td>16.6</td>
+                    <td>4</td>
+                    <td>2.4</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>23</td>
+                    <td>18</td>
+                    <td>18.76</td>
+                    <td>5</td>
+                    <td>4.24</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>24</td>
+                    <td>21</td>
+                    <td>22.58</td>
+                    <td>3</td>
+                    <td>1.42</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="metric-grid" style="margin-top: 30px;">
+            <div class="metric-card">
+                <h4>RMSE (MA)</h4>
+                <p style="font-size: 24px; margin-top: 10px; color: #CC0000;">4.08</p>
+            </div>
+            <div class="metric-card">
+                <h4>RMSE (ES)</h4>
+                <p style="font-size: 24px; margin-top: 10px; color: #28a745;">2.86</p>
+            </div>
+            <div class="metric-card">
+                <h4>Winner</h4>
+                <p style="font-size: 18px; margin-top: 10px;"><strong>Exponential Smoothing</strong> (lower RMSE)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 28: Quiz 5 -->
+<div class="slide">
+    <h2>Knowledge Check 5</h2>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">
+                You are comparing two forecasting models. Model A has RMSE = 15.2 and MAPE = 8.5%. Model B has RMSE = 18.7 and MAPE = 7.2%. Which statement is correct?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+                    A) Model A is clearly better because it has lower RMSE
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+                    B) Model B is clearly better because it has lower MAPE
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true, 5)">
+                    C) Model A has smaller absolute errors, but Model B has better percentage accuracy
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+                    D) The models cannot be compared using these metrics
+                </div>
+            </div>
+            <div class="quiz-feedback" id="feedback5"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 29: Model Selection Criteria -->
+<div class="slide">
+    <h2>Model Selection: Information Criteria</h2>
+    <div class="content">
+        <div class="key-point">
+            <strong>Beyond Error Metrics:</strong> Information criteria help choose between different model types while penalizing complexity
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>Akaike Information Criterion (AIC)</h3>
+                <div class="formula-box" style="font-size: 20px;">
+                    AIC = -2 × log(Likelihood) + 2k
+                </div>
+                <ul>
+                    <li><strong>k</strong> = number of parameters</li>
+                    <li>Penalizes model complexity</li>
+                    <li>Use <strong>AICc</strong> for small samples</li>
+                    <li>Lower AIC = Better model</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Bayesian Information Criterion (BIC)</h3>
+                <div class="formula-box" style="font-size: 20px;">
+                    BIC = -2 × log(Likelihood) + k × log(n)
+                </div>
+                <ul>
+                    <li><strong>n</strong> = sample size</li>
+                    <li>Stronger penalty for complexity than AIC</li>
+                    <li>Favors simpler models</li>
+                    <li>Lower BIC = Better model</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="key-point" style="margin-top: 30px;">
+            <strong>Use Case:</strong> When comparing Single vs Double vs Triple Exponential Smoothing, use AIC/BIC to balance fit quality against model complexity
+        </div>
+    </div>
+</div>
+
+<!-- Slide 30: Model Selection in Practice -->
+<div class="slide">
+    <h2>Practical Model Comparison</h2>
+    <div class="content">
+        <h3>Example: Choosing Between Smoothing Methods</h3>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Parameters</th>
+                    <th>RMSE</th>
+                    <th>MAPE</th>
+                    <th>AIC</th>
+                    <th>BIC</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Single ES</strong></td>
+                    <td>1 (α)</td>
+                    <td>8.45</td>
+                    <td>6.2%</td>
+                    <td>245.3</td>
+                    <td>248.7</td>
+                </tr>
+                <tr style="background: #d4edda;">
+                    <td><strong>Double ES</strong></td>
+                    <td>2 (α, β)</td>
+                    <td>6.12</td>
+                    <td>4.8%</td>
+                    <td>228.1</td>
+                    <td>233.2</td>
+                </tr>
+                <tr>
+                    <td><strong>Triple ES</strong></td>
+                    <td>3 (α, β, γ)</td>
+                    <td>6.08</td>
+                    <td>4.7%</td>
+                    <td>230.5</td>
+                    <td>237.3</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div class="key-point">
+                <strong>Analysis:</strong> Double ES offers the best balance. Triple ES has marginally better error metrics but higher information criteria due to added complexity.
+            </div>
+            <div class="key-point">
+                <strong>Decision:</strong> Choose Double Exponential Smoothing - simpler model with comparable accuracy
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 31: Tools for Forecasting -->
+<div class="slide">
+    <h2>Software Tools for Implementation</h2>
+    <div class="content">
+        <h3>Course Tools</h3>
+        
+        <div class="metric-grid">
+            <div class="metric-card">
+                <h4>Python</h4>
+                <p style="margin-top: 15px; text-align: left; padding: 0 15px;">
+                    • statsmodels library<br>
+                    • ExponentialSmoothing()<br>
+                    • Full control over parameters<br>
+                    • Programmatic forecasting
+                </p>
+            </div>
+            <div class="metric-card">
+                <h4>Tableau</h4>
+                <p style="margin-top: 15px; text-align: left; padding: 0 15px;">
+                    • Built-in forecasting<br>
+                    • Automatic parameter selection<br>
+                    • Visual exploration<br>
+                    • Business-friendly interface
+                </p>
+            </div>
+            <div class="metric-card">
+                <h4>Exploratory.io</h4>
+                <p style="margin-top: 15px; text-align: left; padding: 0 15px;">
+                    • No-code forecasting<br>
+                    • Automatic decomposition<br>
+                    • Model comparison<br>
+                    • Quick prototyping
+                </p>
+            </div>
+        </div>
+        
+        <div class="key-point" style="margin-top: 40px;">
+            <strong>Today's Activity:</strong> You will implement these methods in Python and visualize forecasts in Tableau
+        </div>
+    </div>
+</div>
+
+<!-- Slide 32: Key Takeaways -->
+<div class="slide">
+    <h2>Key Takeaways</h2>
+    <div class="content">
+        <div class="step-box">
+            <span class="step-number">1</span>
+            <strong>Smoothing removes noise</strong> from time series data to reveal underlying patterns
+        </div>
+        
+        <div class="step-box">
+            <span class="step-number">2</span>
+            <strong>Choose methods based on data characteristics:</strong>
+            <ul style="margin-top: 10px; margin-left: 40px;">
+                <li>Stable data → Single Exponential Smoothing</li>
+                <li>Trending data → Double Exponential Smoothing (Holt's)</li>
+                <li>Trending + Seasonal → Triple Exponential Smoothing (Holt-Winters)</li>
+            </ul>
+        </div>
+        
+        <div class="step-box">
+            <span class="step-number">3</span>
+            <strong>Alpha (α) controls responsiveness:</strong> High α = reactive, Low α = stable
+        </div>
+        
+        <div class="step-box">
+            <span class="step-number">4</span>
+            <strong>Decomposition breaks down data</strong> into Seasonal, Trend, and Remainder components
+        </div>
+        
+        <div class="step-box">
+            <span class="step-number">5</span>
+            <strong>Evaluate models using error metrics</strong> (RMSE, MAPE, MSE) and information criteria (AIC, BIC)
+        </div>
+        
+        <div class="step-box">
+            <span class="step-number">6</span>
+            <strong>Lower error values = Better forecasts.</strong> Always compare multiple models.
+        </div>
+    </div>
+</div>
+
+<!-- Slide 33: Connection to Assessment -->
+<div class="slide">
+    <h2>Connecting to Your Assessment</h2>
+    <div class="content">
+        <h3>Assessment 3: Individual Forecasting Project</h3>
+        
+        <div class="key-point">
+            <strong>How This Week's Content Helps:</strong>
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>Technical Skills</h3>
+                <ul>
+                    <li>Select appropriate forecasting methods based on your data patterns</li>
+                    <li>Implement smoothing techniques in Python</li>
+                    <li>Calculate and interpret error metrics</li>
+                    <li>Visualize forecasts effectively</li>
+                    <li>Justify method selection with data characteristics</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Presentation Skills</h3>
+                <ul>
+                    <li>Explain forecasting methods to business stakeholders</li>
+                    <li>Present accuracy metrics clearly</li>
+                    <li>Justify model choice with evidence</li>
+                    <li>Communicate uncertainty and limitations</li>
+                    <li>Provide actionable recommendations</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="example-box" style="margin-top: 30px;">
+            <strong>Pro Tip:</strong> For your assessment, start by visualizing your data to identify trends and seasonality. This will guide your method selection and strengthen your justification.
+        </div>
+    </div>
+</div>
+
+<!-- Slide 34: Summary and Next Steps -->
+<div class="slide">
+    <h2>Summary and Next Steps</h2>
+    <div class="content">
+        <h3>Today's Journey</h3>
+        <div class="two-column">
+            <div>
+                <h3>What We Covered</h3>
+                <ul>
+                    <li>Smoothing techniques for noise reduction</li>
+                    <li>Single, Double, and Triple Exponential Smoothing</li>
+                    <li>Time series decomposition</li>
+                    <li>Model evaluation using error metrics</li>
+                    <li>Model selection using information criteria</li>
+                    <li>Practical business applications</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Next Week: Prophet</h3>
+                <ul>
+                    <li>Facebook's Prophet forecasting tool</li>
+                    <li>Handling holidays and special events</li>
+                    <li>Automatic changepoint detection</li>
+                    <li>Business-oriented forecasting at scale</li>
+                    <li>Uncertainty intervals and visualization</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="key-point" style="margin-top: 40px;">
+            <strong>Action Items:</strong>
+            <ul style="margin-top: 15px;">
+                <li>Complete Python activities for hands-on practice</li>
+                <li>Experiment with Tableau forecasting features</li>
+                <li>Review error calculation methods</li>
+                <li>Begin thinking about your Assessment 3 dataset</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="navigation">
+    <button class="nav-button" id="prevBtn" onclick="changeSlide(-1)">Previous</button>
+    <button class="nav-button" id="nextBtn" onclick="changeSlide(1)">Next</button>
+</div>
+
+<div class="slide-number">
+    <span id="slideNum">1</span> / 34
+</div>
+
+<div class="logo">
+    KAPLAN BUSINESS SCHOOL
+</div>
+
+<script>
+let currentSlide = 0;
+const slides = document.querySelectorAll('.slide');
+const totalSlides = slides.length;
+
+// Quiz state
+const quizAttempts = [false, false, false, false, false];
+
+function showSlide(n) {
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (n + totalSlides) % totalSlides;
+    slides[currentSlide].classList.add('active');
+    
+    document.getElementById('slideNum').textContent = currentSlide + 1;
+    document.getElementById('prevBtn').disabled = currentSlide === 0;
+    document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+    
+    // Initialize charts when needed
+    if (currentSlide === 2) initNoisyDataChart();
+    if (currentSlide === 4) initMovingAverageChart();
+    if (currentSlide === 9) initAlphaComparisonChart();
+    if (currentSlide === 16) initSeasonalityChart();
+    if (currentSlide === 21) initDecompositionChart();
+}
+
+function changeSlide(direction) {
+    showSlide(currentSlide + direction);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft') changeSlide(-1);
+    if (e.key === 'ArrowRight') changeSlide(1);
+});
+
+// Quiz functionality
+function checkAnswer(element, isCorrect, quizNumber) {
+    if (quizAttempts[quizNumber - 1]) return; // Already answered
+    
+    const options = element.parentElement.children;
+    const feedback = document.getElementById('feedback' + quizNumber);
+    
+    // Disable all options
+    for (let option of options) {
+        option.style.pointerEvents = 'none';
+    }
+    
+    if (isCorrect) {
+        element.classList.add('correct');
+        feedback.textContent = '✓ Correct! ' + getCorrectFeedback(quizNumber);
+        feedback.className = 'quiz-feedback correct show';
+    } else {
+        element.classList.add('incorrect');
+        feedback.textContent = '✗ Not quite. ' + getIncorrectFeedback(quizNumber);
+        feedback.className = 'quiz-feedback incorrect show';
+    }
+    
+    quizAttempts[quizNumber - 1] = true;
+}
+
+function getCorrectFeedback(quizNumber) {
+    const feedbacks = [
+        'For stable data with random fluctuations and no trend or seasonality, simple methods like Moving Average or Single Exponential Smoothing are most appropriate.',
+        'A low alpha (0.2) means 80% weight is on the previous forecast, creating smooth, stable predictions that emphasize long-term patterns.',
+        'When data shows a consistent trend but no seasonal pattern, Double Exponential Smoothing (Holt\'s method) captures both the level and direction of change.',
+        'Multiplicative seasonality is appropriate when seasonal peaks grow proportionally with the overall trend level.',
+        'Different metrics can favor different models. RMSE measures absolute error magnitude, while MAPE measures percentage accuracy.'
+    ];
+    return feedbacks[quizNumber - 1];
+}
+
+function getIncorrectFeedback(quizNumber) {
+    const feedbacks = [
+        'Consider the data characteristics: no trend, no seasonality, just random fluctuations. Complex methods are unnecessary here.',
+        'Think about the formula: when α is low, (1-α) is high, giving more weight to the previous forecast rather than recent data.',
+        'Review the decision framework: data with trend but no seasonality requires a method that can capture the upward/downward movement.',
+        'When seasonal effects grow with the trend (larger peaks as overall demand increases), multiplicative models are more appropriate than additive.',
+        'Both models have trade-offs. Consider what each metric measures and why they might disagree.'
+    ];
+    return feedbacks[quizNumber - 1];
+}
+
+// Chart initialization functions
+function initNoisyDataChart() {
+    const ctx = document.getElementById('noisyDataChart');
+    if (!ctx || ctx.chart) return;
+    
+    const months = Array.from({length: 24}, (_, i) => i + 1);
+    const trend = months.map(m => 50 + m * 2);
+    const noise = months.map(() => (Math.random() - 0.5) * 20);
+    const noisyData = trend.map((t, i) => t + noise[i]);
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Raw Data (with noise)',
+                    data: noisyData,
+                    borderColor: '#666',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 3
+                },
+                {
+                    label: 'Underlying Trend',
+                    data: trend,
+                    borderColor: '#CC0000',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    borderDash: [5, 5],
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: false }
+            }
+        }
+    });
+}
+
+function initMovingAverageChart() {
+    const ctx = document.getElementById('movingAverageChart');
+    if (!ctx || ctx.chart) return;
+    
+    const data = [42, 45, 30, 50, 42, 40, 28, 22, 32, 50, 57, 42, 37, 33, 45, 64, 58, 35, 40, 25];
+    const months = Array.from({length: 20}, (_, i) => i + 1);
+    
+    // 3-point MA
+    const ma3 = data.map((_, i, arr) => {
+        if (i < 1 || i >= arr.length - 1) return null;
+        return (arr[i-1] + arr[i] + arr[i+1]) / 3;
+    });
+    
+    // 5-point MA
+    const ma5 = data.map((_, i, arr) => {
+        if (i < 2 || i >= arr.length - 2) return null;
+        return (arr[i-2] + arr[i-1] + arr[i] + arr[i+1] + arr[i+2]) / 5;
+    });
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Original Data',
+                    data: data,
+                    borderColor: '#333',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 4
+                },
+                {
+                    label: '3-Point MA',
+                    data: ma3,
+                    borderColor: '#0066cc',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 0
+                },
+                {
+                    label: '5-Point MA',
+                    data: ma5,
+                    borderColor: '#28a745',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+}
+
+function initAlphaComparisonChart() {
+    const ctx = document.getElementById('alphaComparisonChart');
+    if (!ctx || ctx.chart) return;
+    
+    const actual = [100, 105, 103, 110, 108, 115, 112, 118, 120, 125];
+    const months = Array.from({length: 10}, (_, i) => i + 1);
+    
+    // SES with α = 0.9
+    const ses09 = [100];
+    for (let i = 1; i < actual.length; i++) {
+        ses09.push(0.9 * actual[i-1] + 0.1 * ses09[i-1]);
+    }
+    
+    // SES with α = 0.3
+    const ses03 = [100];
+    for (let i = 1; i < actual.length; i++) {
+        ses03.push(0.3 * actual[i-1] + 0.7 * ses03[i-1]);
+    }
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Actual Data',
+                    data: actual,
+                    borderColor: '#333',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 5
+                },
+                {
+                    label: 'SES (α = 0.9) - Responsive',
+                    data: ses09,
+                    borderColor: '#CC0000',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 3
+                },
+                {
+                    label: 'SES (α = 0.3) - Smooth',
+                    data: ses03,
+                    borderColor: '#0066cc',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: false }
+            }
+        }
+    });
+}
+
+function initSeasonalityChart() {
+    const ctx = document.getElementById('seasonalityChart');
+    if (!ctx || ctx.chart) return;
+    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const years = ['2022', '2023', '2024'];
+    const labels = [];
+    const data = [];
+    
+    for (let y of years) {
+        for (let m of months) {
+            labels.push(m + ' ' + y);
+        }
+    }
+    
+    // Generate seasonal data with trend
+    let base = 100;
+    const seasonalPattern = [0.8, 0.85, 0.95, 1.0, 1.05, 1.15, 1.2, 1.15, 1.05, 1.0, 0.95, 0.9];
+    
+    for (let y = 0; y < 3; y++) {
+        for (let m = 0; m < 12; m++) {
+            data.push(base * seasonalPattern[m] + (Math.random() - 0.5) * 5);
+        }
+        base += 15; // Trend
+    }
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Sales with Trend and Seasonality',
+                data: data,
+                borderColor: '#CC0000',
+                backgroundColor: 'rgba(204, 0, 0, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+}
+
+function initDecompositionChart() {
+    const ctx = document.getElementById('decompositionChart');
+    if (!ctx || ctx.chart) return;
+    
+    const months = Array.from({length: 36}, (_, i) => i + 1);
+    const trend = months.map(m => 100 + m * 1.5);
+    const seasonal = months.map(m => 10 * Math.sin(m * Math.PI / 6));
+    const noise = months.map(() => (Math.random() - 0.5) * 5);
+    const observed = trend.map((t, i) => t + seasonal[i] + noise[i]);
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Observed Data',
+                    data: observed,
+                    borderColor: '#333',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Trend Component',
+                    data: trend,
+                    borderColor: '#CC0000',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Seasonal Component',
+                    data: seasonal,
+                    borderColor: '#0066cc',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left'
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Initialize first slide
+showSlide(0);
+</script>
+
+</body>
+</html>
