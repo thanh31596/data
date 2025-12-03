@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Understanding Treatment Effects & SHAP Values</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.2em;
+    }
+    
+    h2 {
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 8px;
+      margin-top: 40px;
+    }
+    
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .vis-container {
+      height: 350px;
+      margin: 20px 0;
+      position: relative;
+    }
+    
+    .btn {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+    
+    .btn:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .person {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      transition: all 0.8s ease;
+    }
+    
+    .treated {
+      background-color: #e74c3c;
+      border: 2px solid #c0392b;
+    }
+    
+    .control {
+      background-color: #3498db;
+      border: 2px solid #2980b9;
+    }
+    
+    .legend {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+      gap: 30px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .legend-color {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+    }
+    
+    .slider-container {
+      margin: 20px 0;
+    }
+    
+    .slider {
+      width: 100%;
+      margin: 10px 0;
+    }
+    
+    .panel {
+      display: none;
+      width: 100%;
+    }
+    
+    .panel.active {
+      display: block;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+    
+    .tab-btn {
+      background-color: #e0e0e0;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+    }
+    
+    .tab-btn.active {
+      background-color: #3498db;
+      color: white;
+    }
+    
+    .highlight {
+      background-color: #ffffcc;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    
+    .bar-chart {
+      display: flex;
+      height: 300px;
+      align-items: flex-end;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+    
+    .bar {
+      width: 80px;
+      background-color: #3498db;
+      margin: 0 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      transition: height 1s ease;
+      position: relative;
+    }
+    
+    .bar-label {
+      position: absolute;
+      bottom: -30px;
+      text-align: center;
+      color: #333;
+    }
+    
+    .axis-label {
+      position: absolute;
+      left: -60px;
+      transform: rotate(-90deg);
+      transform-origin: center;
+      width: 100px;
+      text-align: center;
+      top: 50%;
+    }
+    
+    .tooltip {
+      position: absolute;
+      background-color: rgba(0,0,0,0.8);
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      max-width: 200px;
+    }
+    
+    .shap-feature {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+      position: relative;
+      height: 40px;
+    }
+    
+    .shap-bar {
+      position: absolute;
+      height: 30px;
+      top: 5px;
+      border-radius: 3px;
+      transition: width 0.8s ease;
+    }
+    
+    .shap-feature-name {
+      position: absolute;
+      z-index: 1;
+      left: 10px;
+      top: 10px;
+      font-weight: bold;
+    }
+    
+    .shap-value {
+      position: absolute;
+      z-index: 1;
+      right: 10px;
+      top: 10px;
+      font-weight: bold;
+    }
+    
+    .positive {
+      background-color: #2ecc71;
+      right: 50%;
+    }
+    
+    .negative {
+      background-color: #e74c3c;
+      left: 50%;
+    }
+    
+    .shap-baseline {
+      position: absolute;
+      width: 2px;
+      background-color: #333;
+      height: 100%;
+      left: 50%;
+      z-index: 2;
+    }
+    
+    .explanation {
+      background-color: #f8f9fa;
+      border-left: 4px solid #3498db;
+      padding: 10px 15px;
+      margin: 15px 0;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    
+    .data-table th, .data-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    
+    .data-table th {
+      background-color: #f2f2f2;
+    }
+    
+    .data-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    
+    .pulse {
+      animation: pulse 1.5s infinite;
+    }
+    
+    .tab-content {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 0 4px 4px 4px;
+      background-color: white;
+    }
+    
+    .nav-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 0;
+      list-style: none;
+      padding: 0;
+    }
+    
+    .nav-item {
+      margin-bottom: -1px;
+    }
+    
+    .nav-link {
+      display: block;
+      padding: 0.5rem 1rem;
+      border: 1px solid transparent;
+      border-top-left-radius: 0.25rem;
+      border-top-right-radius: 0.25rem;
+      cursor: pointer;
+      background-color: #f8f9fa;
+      text-decoration: none;
+      color: #495057;
+    }
+    
+    .nav-link.active {
+      background-color: #fff;
+      border-color: #ddd #ddd #fff;
+      color: #3498db;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Understanding Treatment Effects & SHAP Values</h1>
+  
+  <div class="section">
+    <h2>About Our Sample Dataset</h2>
+    <p>In this visualization, we'll use a sample dataset about a <span class="highlight">tutoring program</span> (our treatment) and how it affects <span class="highlight">student exam scores</span> (our outcome).</p>
+    
+    <p>Our dataset has the following information about 40 students:</p>
+    <ul>
+      <li><strong>Treatment:</strong> Whether the student received tutoring (treatment group) or not (control group)</li>
+      <li><strong>Math Score:</strong> The student's final exam score in mathematics (0-100)</li>
+      <li><strong>Grade Level:</strong> 9th, 10th, 11th, or 12th grade</li>
+      <li><strong>Previous Performance:</strong> Low, Medium, or High (based on previous grades)</li>
+    </ul>
+    
+    <button class="btn" id="showDataBtn">Show Sample Data</button>
+    
+    <div id="dataTableContainer" style="display: none; margin-top: 15px; max-height: 300px; overflow-y: auto;">
+      <table class="data-table" id="dataTable">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Treatment</th>
+            <th>Math Score</th>
+            <th>Grade Level</th>
+            <th>Previous Performance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>1. Average Treatment Effect (ATE)</h2>
+    
+    <div class="explanation">
+      <p>The <strong>Average Treatment Effect (ATE)</strong> measures the average difference in outcomes between all treated units and all control units in the entire population.</p>
+      <p>In our example, it's the average difference in math scores between students who received tutoring and students who didn't.</p>
+      <p><strong>ATE = Average Outcome(Treated) - Average Outcome(Control)</strong></p>
+    </div>
+    
+    <button class="btn" id="visualizeATE">Visualize ATE</button>
+    <div class="vis-container" id="ateVisualization">
+      <!-- Visualization will be populated by JavaScript -->
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color treated"></div>
+        <span>Tutoring (Treatment)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color control"></div>
+        <span>No Tutoring (Control)</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>2. Conditional Average Treatment Effect (CATE)</h2>
+    
+    <div class="explanation">
+      <p>The <strong>Conditional Average Treatment Effect (CATE)</strong> is the average treatment effect for a specific subgroup of the population.</p>
+      <p>In our example, we can see how tutoring affects students differently based on their grade level or previous performance.</p>
+    </div>
+    
+    <div class="tab-buttons">
+      <button class="tab-btn active" data-tab="gradeLevel">By Grade Level</button>
+      <button class="tab-btn" data-tab="prevPerformance">By Previous Performance</button>
+    </div>
+    
+    <div class="panel active" id="gradeLevel">
+      <button class="btn" id="visualizeCATEGrade">Visualize CATE by Grade Level</button>
+      <div class="vis-container" id="cateGradeVisualization">
+        <!-- Visualization will be populated by JavaScript -->
+      </div>
+    </div>
+    
+    <div class="panel" id="prevPerformance">
+      <button class="btn" id="visualizeCATEPerf">Visualize CATE by Previous Performance</button>
+      <div class="vis-container" id="catePerfVisualization">
+        <!-- Visualization will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>3. Heterogeneous Treatment Effects (HTE)</h2>
+    
+    <div class="explanation">
+      <p><strong>Heterogeneous Treatment Effects (HTE)</strong> means that the treatment has different effects for different individuals or groups.</p>
+      <p>When we see different CATEs across subgroups, we have heterogeneous treatment effects.</p>
+    </div>
+    
+    <button class="btn" id="visualizeHTE">Visualize Heterogeneous Effects</button>
+    <div class="vis-container" id="hteVisualization">
+      <!-- Visualization will be populated by JavaScript -->
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>4. Local Average Treatment Effect (LATE)</h2>
+    
+    <div class="explanation">
+      <p>The <strong>Local Average Treatment Effect (LATE)</strong> is the average treatment effect for "compliers" - units that receive treatment when encouraged but wouldn't otherwise.</p>
+      <p>In our example, imagine some students were offered tutoring (encouragement), but not all accepted it. LATE measures the effect for those who took the tutoring because they were encouraged.</p>
+    </div>
+    
+    <button class="btn" id="visualizeLATE">Visualize LATE</button>
+    <div class="vis-container" id="lateVisualization">
+      <!-- Visualization will be populated by JavaScript -->
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>5. SHAP Values</h2>
+    
+    <div class="explanation">
+      <p><strong>SHAP (SHapley Additive exPlanations) values</strong> explain how each feature contributes to a prediction.</p>
+      <p>For our tutoring example, SHAP values can show how much each factor (tutoring, grade level, previous performance) contributed to a student's predicted math score.</p>
+    </div>
+    
+    <div>
+      <p>Select a student to see how different factors affect their predicted math score:</p>
+      <select id="studentSelector" class="btn">
+        <!-- Options will be populated by JavaScript -->
+      </select>
+    </div>
+    
+    <div class="vis-container" id="shapVisualization">
+      <div class="shap-baseline"></div>
+      <!-- SHAP visualization will be populated by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    // Sample data generation
+    const generateData = () => {
+      const gradeLevel = ['9th', '10th', '11th', '12th'];
+      const prevPerformance = ['Low', 'Medium', 'High'];
+      const data = [];
+      
+      // Base effects
+      const baseTreatmentEffect = 8; // Average improvement due to tutoring
+      const gradeEffects = {
+        '9th': 5,   // 9th graders benefit more from tutoring
+        '10th': 10, // 10th graders benefit most
+        '11th': 7,  // 11th graders benefit somewhat more
+        '12th': 3   // 12th graders benefit less
+      };
+      
+      const perfEffects = {
+        'Low': 12,    // Low performers benefit most
+        'Medium': 7,  // Medium performers benefit somewhat
+        'High': 2     // High performers benefit less
+      };
+      
+      // Generate 40 students
+      for (let i = 1; i <= 40; i++) {
+        const grade = gradeLevel[Math.floor(Math.random() * gradeLevel.length)];
+        const perf = prevPerformance[Math.floor(Math.random() * prevPerformance.length)];
+        const treatment = Math.random() < 0.5 ? 1 : 0; // 50% chance of getting treatment
+        
+        // Base score determined by previous performance
+        let baseScore;
+        if (perf === 'Low') baseScore = 50 + Math.floor(Math.random() * 15);
+        else if (perf === 'Medium') baseScore = 65 + Math.floor(Math.random() * 15);
+        else baseScore = 80 + Math.floor(Math.random() * 15);
+        
+        // Treatment effect varies by grade and previous performance
+        let treatmentEffect = 0;
+        if (treatment === 1) {
+          treatmentEffect = baseTreatmentEffect + gradeEffects[grade] * 0.5 + perfEffects[perf];
+          // Add some random noise
+          treatmentEffect += Math.floor(Math.random() * 6) - 3;
+        }
+        
+        // Final score (capped at 100)
+        const mathScore = Math.min(Math.round(baseScore + treatmentEffect), 100);
+        
+        data.push({
+          id: i,
+          treatment,
+          mathScore,
+          gradeLevel: grade,
+          prevPerformance: perf,
+          // For LATE
+          offered: Math.random() < 0.7 ? 1 : 0, // 70% were offered tutoring
+          complier: Math.random() < 0.8 ? 1 : 0  // 80% would comply with encouragement
+        });
+      }
+      
+      return data;
+    };
+    
+    // Generate and store our dataset
+    const studentData = generateData();
+    
+    // Populate the data table
+    const populateDataTable = () => {
+      const tableBody = document.querySelector('#dataTable tbody');
+      tableBody.innerHTML = '';
+      
+      studentData.slice(0, 10).forEach(student => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>Student ${student.id}</td>
+          <td>${student.treatment ? 'Yes' : 'No'}</td>
+          <td>${student.mathScore}</td>
+          <td>${student.gradeLevel}</td>
+          <td>${student.prevPerformance}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+      
+      // Add a note that we're only showing 10 students
+      const noteRow = document.createElement('tr');
+      noteRow.innerHTML = `
+        <td colspan="5" style="text-align: center; font-style: italic;">
+          (Showing 10 of 40 students for brevity)
+        </td>
+      `;
+      tableBody.appendChild(noteRow);
+    };
+    
+    // Toggle data table visibility
+    document.getElementById('showDataBtn').addEventListener('click', function() {
+      const tableContainer = document.getElementById('dataTableContainer');
+      if (tableContainer.style.display === 'none') {
+        populateDataTable();
+        tableContainer.style.display = 'block';
+        this.textContent = 'Hide Sample Data';
+      } else {
+        tableContainer.style.display = 'none';
+        this.textContent = 'Show Sample Data';
+      }
+    });
+    
+    // Tab functionality
+    document.querySelectorAll('.tab-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+        
+        // Add active class to clicked tab
+        this.classList.add('active');
+        document.getElementById(this.dataset.tab).classList.add('active');
+      });
+    });
+    
+    // Calculate ATE
+    const calcATE = () => {
+      const treated = studentData.filter(student => student.treatment === 1);
+      const control = studentData.filter(student => student.treatment === 0);
+      
+      const avgTreated = treated.reduce((sum, student) => sum + student.mathScore, 0) / treated.length;
+      const avgControl = control.reduce((sum, student) => sum + student.mathScore, 0) / control.length;
+      
+      return {
+        treated: avgTreated,
+        control: avgControl,
+        ate: avgTreated - avgControl
+      };
+    };
+    
+    // Calculate CATE by grade level
+    const calcCATEByGrade = () => {
+      const gradeLevel = ['9th', '10th', '11th', '12th'];
+      const result = {};
+      
+      gradeLevel.forEach(grade => {
+        const treatedInGrade = studentData.filter(student => student.treatment === 1 && student.gradeLevel === grade);
+        const controlInGrade = studentData.filter(student => student.treatment === 0 && student.gradeLevel === grade);
+        
+        if (treatedInGrade.length > 0 && controlInGrade.length > 0) {
+          const avgTreated = treatedInGrade.reduce((sum, student) => sum + student.mathScore, 0) / treatedInGrade.length;
+          const avgControl = controlInGrade.reduce((sum, student) => sum + student.mathScore, 0) / controlInGrade.length;
+          
+          result[grade] = {
+            treated: avgTreated,
+            control: avgControl,
+            cate: avgTreated - avgControl,
+            treatedCount: treatedInGrade.length,
+            controlCount: controlInGrade.length
+          };
+        }
+      });
+      
+      return result;
+    };
+    
+    // Calculate CATE by previous performance
+    const calcCATEByPerf = () => {
+      const perfLevels = ['Low', 'Medium', 'High'];
+      const result = {};
+      
+      perfLevels.forEach(perf => {
+        const treatedWithPerf = studentData.filter(student => student.treatment === 1 && student.prevPerformance === perf);
+        const controlWithPerf = studentData.filter(student => student.treatment === 0 && student.prevPerformance === perf);
+        
+        if (treatedWithPerf.length > 0 && controlWithPerf.length > 0) {
+          const avgTreated = treatedWithPerf.reduce((sum, student) => sum + student.mathScore, 0) / treatedWithPerf.length;
+          const avgControl = controlWithPerf.reduce((sum, student) => sum + student.mathScore, 0) / controlWithPerf.length;
+          
+          result[perf] = {
+            treated: avgTreated,
+            control: avgControl,
+            cate: avgTreated - avgControl,
+            treatedCount: treatedWithPerf.length,
+            controlCount: controlWithPerf.length
+          };
+        }
+      });
+      
+      return result;
+    };
+    
+    // Calculate LATE
+    const calcLATE = () => {
+      // Identify compliers (those who take treatment when offered)
+      const compliers = studentData.filter(student => 
+        student.complier === 1 && 
+        ((student.offered === 1 && student.treatment === 1) || 
+         (student.offered === 0 && student.treatment === 0))
+      );
+      
+      // Calculate treatment effect for compliers
+      const treatedCompliers = compliers.filter(student => student.treatment === 1);
+      const controlCompliers = compliers.filter(student => student.treatment === 0);
+      
+      const avgTreatedCompliers = treatedCompliers.reduce((sum, student) => sum + student.mathScore, 0) / treatedCompliers.length;
+      const avgControlCompliers = controlCompliers.reduce((sum, student) => sum + student.mathScore, 0) / controlCompliers.length;
+      
+      // Calculate LATE
+      return {
+        treated: avgTreatedCompliers,
+        control: avgControlCompliers,
+        late: avgTreatedCompliers - avgControlCompliers,
+        complierCount: compliers.length,
+        totalCount: studentData.length
+      };
+    };
+    
+    // Visualize ATE
+    document.getElementById('visualizeATE').addEventListener('click', function() {
+      const container = document.getElementById('ateVisualization');
+      container.innerHTML = '';
+      
+      // Calculate ATE
+      const ateResult = calcATE();
+      
+      // Create bar chart
+      const barChart = document.createElement('div');
+      barChart.className = 'bar-chart';
+      
+      // Axis label
+      const axisLabel = document.createElement('div');
+      axisLabel.className = 'axis-label';
+      axisLabel.textContent = 'Math Score';
+      barChart.appendChild(axisLabel);
+      
+      // Control bar
+      const controlBar = document.createElement('div');
+      controlBar.className = 'bar';
+      controlBar.style.backgroundColor = '#3498db';
+      controlBar.style.height = '0px';
+      controlBar.innerHTML = Math.round(ateResult.control);
+      
+      const controlLabel = document.createElement('div');
+      controlLabel.className = 'bar-label';
+      controlLabel.textContent = 'No Tutoring';
+      controlBar.appendChild(controlLabel);
+      
+      // Treated bar
+      const treatedBar = document.createElement('div');
+      treatedBar.className = 'bar';
+      treatedBar.style.backgroundColor = '#e74c3c';
+      treatedBar.style.height = '0px';
+      treatedBar.innerHTML = Math.round(ateResult.treated);
+      
+      const treatedLabel = document.createElement('div');
+      treatedLabel.className = 'bar-label';
+      treatedLabel.textContent = 'Tutoring';
+      treatedBar.appendChild(treatedLabel);
+      
+      // Difference annotation
+      const diffBar = document.createElement('div');
+      diffBar.className = 'bar';
+      diffBar.style.backgroundColor = '#2ecc71';
+      diffBar.style.height = '0px';
+      diffBar.innerHTML = `+${Math.round(ateResult.ate)}`;
+      
+      const diffLabel = document.createElement('div');
+      diffLabel.className = 'bar-label';
+      diffLabel.textContent = 'ATE (Difference)';
+      diffBar.appendChild(diffLabel);
+      
+      barChart.appendChild(controlBar);
+      barChart.appendChild(treatedBar);
+      barChart.appendChild(diffBar);
+      container.appendChild(barChart);
+      
+      // Animate bars
+      setTimeout(() => {
+        controlBar.style.height = `${ateResult.control * 2}px`;
+        treatedBar.style.height = `${ateResult.treated * 2}px`;
+        diffBar.style.height = `${ateResult.ate * 10}px`;
+      }, 100);
+      
+      // Add explanation
+      const explanation = document.createElement('div');
+      explanation.className = 'explanation';
+      explanation.innerHTML = `
+        <p>On average, students who received tutoring (treatment group) scored <strong>${Math.round(ateResult.treated)}</strong> on their math exam.</p>
+        <p>Students who didn't receive tutoring (control group) scored <strong>${Math.round(ateResult.control)}</strong> on average.</p>
+        <p>The <strong>Average Treatment Effect (ATE)</strong> is the difference: <strong>${Math.round(ateResult.ate)} points</strong>.</p>
+        <p>This suggests that, on average, tutoring improved math scores by about ${Math.round(ateResult.ate)} points.</p>
+      `;
+      container.appendChild(explanation);
+    });
+    
+    // Visualize CATE by Grade Level
+    document.getElementById('visualizeCATEGrade').addEventListener('click', function() {
+      const container = document.getElementById('cateGradeVisualization');
+      container.innerHTML = '';
+      
+      // Calculate CATE by grade
+      const cateResults = calcCATEByGrade();
+      
+      // Create bar chart
+      const barChart = document.createElement('div');
+      barChart.className = 'bar-chart';
+      barChart.style.height = '400px';
+      barChart.style.alignItems = 'flex-end';
+      
+      // Axis label
+      const axisLabel = document.createElement('div');
+      axisLabel.className = 'axis-label';
+      axisLabel.textContent = 'Treatment Effect (Score Improvement)';
+      barChart.appendChild(axisLabel);
+      
+      // Create bars for each grade
+      Object.entries(cateResults).forEach(([grade, result]) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = '0px';
+        bar.style.width = '60px';
+        bar.innerHTML = Math.round(result.cate);
+        
+        // Color based on effect size
+        if (result.cate > 10) bar.style.backgroundColor = '#27ae60';
+        else if (result.cate > 5) bar.style.backgroundColor = '#2ecc71';
+        else bar.style.backgroundColor = '#3498db';
+        
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+        label.textContent = grade;
+        bar.appendChild(label);
+        
+        barChart.appendChild(bar);
+        
+        // Animate bars
+        setTimeout(() => {
+          bar.style.height = `${result.cate * 15}px`;
+        }, 100);
+      });
+      
+      container.appendChild(barChart);
+      
+      // Add explanation
+      const explanation = document.createElement('div');
+      explanation.className = 'explanation';
+      
+      let maxGrade = '';
+      let maxEffect = 0;
+      let minGrade = '';
+      let minEffect = Infinity;
+      
+      Object.entries(cateResults).forEach(([grade, result]) => {
+        if (result.cate > maxEffect) {
+          maxEffect = result.cate;
+          maxGrade = grade;
+        }
+        if (result.cate < minEffect) {
+          minEffect = result.cate;
+          minGrade = grade;
+        }
+      });
+      
+      explanation.innerHTML = `
+        <p>The effect of tutoring varies across grade levels:</p>
+        <ul>
+          ${Object.entries(cateResults).map(([grade, result]) => 
+            `<li><strong>${grade} grade:</strong> Tutoring improved scores by <strong>${Math.round(result.cate)} points</strong></li>`
+          ).join('')}
+        </ul>
+        <p>Tutoring seems most effective for <strong>${maxGrade} grade</strong> students (${Math.round(maxEffect)} point improvement) and least effective for <strong>${minGrade} grade</strong> students (${Math.round(minEffect)} point improvement).</p>
+      `;
+      
+      container.appendChild(explanation);
+    });
+    
+    // Visualize CATE by Previous Performance
+    document.getElementById('visualizeCATEPerf').addEventListener('click', function() {
+      const container = document.getElementById('catePerfVisualization');
+      container.innerHTML = '';
+      
+      // Calculate CATE by previous performance
+      const cateResults = calcCATEByPerf();
+      
+      // Create bar chart
+      const barChart = document.createElement('div');
+      barChart.className = 'bar-chart';
+      barChart.style.height = '400px';
+      
+      // Axis label
+      const axisLabel = document.createElement('div');
+      axisLabel.className = 'axis-label';
+      axisLabel.textContent = 'Treatment Effect (Score Improvement)';
+      barChart.appendChild(axisLabel);
+      
+      // Create bars for each performance level
+      Object.entries(cateResults).forEach(([perf, result]) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = '0px';
+        bar.style.width = '80px';
+        bar.innerHTML = Math.round(result.cate);
+        
+        // Color based on performance level
+        if (perf === 'Low') bar.style.backgroundColor = '#e74c3c';
+        else if (perf === 'Medium') bar.style.backgroundColor = '#3498db';
+        else bar.style.backgroundColor = '#2ecc71';
+        
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+        label.textContent = `${perf} performers`;
+        bar.appendChild(label);
+        
+        barChart.appendChild(bar);
+        
+        // Animate bars
+        setTimeout(() => {
+          bar.style.height = `${result.cate * 15}px`;
+        }, 100);
+      });
+      
+      container.appendChild(barChart);
+      
+      // Add explanation
+      const explanation = document.createElement('div');
+      explanation.className = 'explanation';
+      
+      let maxPerf = '';
+      let maxEffect = 0;
+      let minPerf = '';
+      let minEffect = Infinity;
+      
+      Object.entries(cateResults).forEach(([perf, result]) => {
+        if (result.cate > maxEffect) {
+          maxEffect = result.cate;
+          maxPerf = perf;
+        }
+        if (result.cate < minEffect) {
+          minEffect = result.cate;
+          minPerf = perf;
+        }
+      });
+      
+      explanation.innerHTML = `
+        <p>The effect of tutoring varies based on previous performance:</p>
+        <ul>
+          ${Object.entries(cateResults).map(([perf, result]) => 
+            `<li><strong>${perf} performers:</strong> Tutoring improved scores by <strong>${Math.round(result.cate)} points</strong></li>`
+          ).join('')}
+        </ul>
+        <p>Tutoring seems most effective for <strong>${maxPerf} performers</strong> (${Math.round(maxEffect)} point improvement) and least effective for <strong>${minPerf} performers</strong> (${Math.round(minEffect)} point improvement).</p>
+      `;
+      
+      container.appendChild(explanation);
+    });
+    
+    // Visualize HTE
+    document.getElementById('visualizeHTE').addEventListener('click', function() {
+      const container = document.getElementById('hteVisualization');
+      container.innerHTML = '';
+      
+      // Get both CATE results
+      const cateGrade = calcCATEByGrade();
+      const catePerf = calcCATEByPerf();
+      const ate = calcATE();
+      
+      // Create visualization
+      const vizDiv = document.createElement('div');
+      vizDiv.style.height = '100%';
+      vizDiv.style.display = 'flex';
+      vizDiv.style.flexDirection = 'column';
+      
+      // Add title
+      const title = document.createElement('h3');
+      title.textContent = 'Treatment Effect Varies Across Different Groups';
+      title.style.textAlign = 'center';
+      vizDiv.appendChild(title);
+      
+      // Create scatter plot
+      const scatterPlot = document.createElement('div');
+      scatterPlot.style.height = '250px';
+      scatterPlot.style.position = 'relative';
+      scatterPlot.style.border = '1px solid #ddd';
+      scatterPlot.style.marginTop = '20px';
+      
+      // Add horizontal line for ATE
+      const ateLine = document.createElement('div');
+      ateLine.style.position = 'absolute';
+      ateLine.style.width = '100%';
+      ateLine.style.height = '2px';
+      ateLine.style.backgroundColor = '#3498db';
+      ateLine.style.top = `${150 - Math.round(ate.ate) * 5}px`;
+      ateLine.style.zIndex = '1';
+      
+      const ateLabel = document.createElement('div');
+      ateLabel.style.position = 'absolute';
+      ateLabel.style.right = '5px';
+      ateLabel.style.top = `${150 - Math.round(ate.ate) * 5 - 20}px`;
+      ateLabel.style.backgroundColor = '#f8f9fa';
+      ateLabel.style.padding = '2px 5px';
+      ateLabel.style.borderRadius = '3px';
+      ateLabel.style.fontSize = '12px';
+      ateLabel.textContent = `ATE = ${Math.round(ate.ate)}`;
+      
+      scatterPlot.appendChild(ateLine);
+      scatterPlot.appendChild(ateLabel);
+      
+      // Add data points
+      let pointId = 1;
+      
+      // Grade points
+      Object.entries(cateGrade).forEach(([grade, result]) => {
+        const point = document.createElement('div');
+        point.style.position = 'absolute';
+        point.style.width = '15px';
+        point.style.height = '15px';
+        point.style.borderRadius = '50%';
+        point.style.backgroundColor = '#e74c3c';
+        point.style.left = `${100 + (pointId * 60)}px`;
+        point.style.top = `${150 - Math.round(result.cate) * 5}px`;
+        point.style.zIndex = '2';
+        
+        // Add tooltip
+        point.setAttribute('title', `${grade} grade: +${Math.round(result.cate)} points`);
+        point.setAttribute('data-group', grade);
+        point.setAttribute('data-effect', Math.round(result.cate));
+        point.className = 'hte-point grade-point';
+        
+        scatterPlot.appendChild(point);
+        pointId++;
+      });
+      
+      // Performance points
+      pointId = 8;
+      Object.entries(catePerf).forEach(([perf, result]) => {
+        const point = document.createElement('div');
+        point.style.position = 'absolute';
+        point.style.width = '15px';
+        point.style.height = '15px';
+        point.style.borderRadius = '50%';
+        point.style.backgroundColor = '#2ecc71';
+        point.style.left = `${100 + (pointId * 60)}px`;
+        point.style.top = `${150 - Math.round(result.cate) * 5}px`;
+        point.style.zIndex = '2';
+        
+        // Add tooltip
+        point.setAttribute('title', `${perf} performers: +${Math.round(result.cate)} points`);
+        point.setAttribute('data-group', `${perf} performers`);
+        point.setAttribute('data-effect', Math.round(result.cate));
+        point.className = 'hte-point perf-point';
+        
+        scatterPlot.appendChild(point);
+        pointId++;
+      });
+      
+      // Add y-axis label
+      const yLabel = document.createElement('div');
+      yLabel.style.position = 'absolute';
+      yLabel.style.transform = 'rotate(-90deg)';
+      yLabel.style.transformOrigin = 'left top';
+      yLabel.style.left = '10px';
+      yLabel.style.top = '125px';
+      yLabel.style.fontSize = '12px';
+      yLabel.textContent = 'Treatment Effect';
+      scatterPlot.appendChild(yLabel);
+      
+      // Add legend
+      const legend = document.createElement('div');
+      legend.className = 'legend';
+      legend.style.justifyContent = 'center';
+      legend.style.marginTop = '10px';
+      
+      const gradeLegend = document.createElement('div');
+      gradeLegend.className = 'legend-item';
+      const gradeColor = document.createElement('div');
+      gradeColor.className = 'legend-color';
+      gradeColor.style.backgroundColor = '#e74c3c';
+      gradeLegend.appendChild(gradeColor);
+      gradeLegend.appendChild(document.createTextNode('Grade Level'));
+      
+      const perfLegend = document.createElement('div');
+      perfLegend.className = 'legend-item';
+      const perfColor = document.createElement('div');
+      perfColor.className = 'legend-color';
+      perfColor.style.backgroundColor = '#2ecc71';
+      perfLegend.appendChild(perfColor);
+      perfLegend.appendChild(document.createTextNode('Previous Performance'));
+      
+      legend.appendChild(gradeLegend);
+      legend.appendChild(perfLegend);
+      
+      vizDiv.appendChild(scatterPlot);
+      vizDiv.appendChild(legend);
+      container.appendChild(vizDiv);
+      
+      // Add tooltip functionality
+      const tooltip = document.createElement('div');
+      tooltip.className = 'tooltip';
+      document.body.appendChild(tooltip);
+      
+      document.querySelectorAll('.hte-point').forEach(point => {
+        point.addEventListener('mouseover', function(e) {
+          const group = this.getAttribute('data-group');
+          const effect = this.getAttribute('data-effect');
+          
+          tooltip.innerHTML = `<strong>${group}</strong>: +${effect} points`;
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${e.pageX + 10}px`;
+          tooltip.style.top = `${e.pageY + 10}px`;
+          
+          this.classList.add('pulse');
+        });
+        
+        point.addEventListener('mouseout', function() {
+          tooltip.style.display = 'none';
+          this.classList.remove('pulse');
+        });
+        
+        point.addEventListener('mousemove', function(e) {
+          tooltip.style.left = `${e.pageX + 10}px`;
+          tooltip.style.top = `${e.pageY + 10}px`;
+        });
+      });
+      
+      // Add explanation
+      const explanation = document.createElement('div');
+      explanation.className = 'explanation';
+      explanation.innerHTML = `
+        <p><strong>Heterogeneity in Treatment Effects:</strong> The impact of tutoring varies across different subgroups.</p>
+        <p>While the overall average treatment effect (ATE) is about ${Math.round(ate.ate)} points, we can see that:</p>
+        <ul>
+          <li>Some groups benefit much more than average (points above the blue line)</li>
+          <li>Some groups benefit less than average (points below the blue line)</li>
+        </ul>
+        <p>This heterogeneity is important because it helps us target interventions to those who will benefit most.</p>
+      `;
+      
+      container.appendChild(explanation);
+    });
+    
+    // Visualize LATE
+    document.getElementById('visualizeLATE').addEventListener('click', function() {
+      const container = document.getElementById('lateVisualization');
+      container.innerHTML = '';
+      
+      // Calculate LATE
+      const lateResult = calcLATE();
+      const ateResult = calcATE();
+      
+      // Create visualization
+      const vizDiv = document.createElement('div');
+      vizDiv.style.height = '100%';
+      
+      // Create bar chart
+      const barChart = document.createElement('div');
+      barChart.className = 'bar-chart';
+      
+      // Axis label
+      const axisLabel = document.createElement('div');
+      axisLabel.className = 'axis-label';
+      axisLabel.textContent = 'Treatment Effect (Score Improvement)';
+      barChart.appendChild(axisLabel);
+      
+      // ATE bar
+      const ateBar = document.createElement('div');
+      ateBar.className = 'bar';
+      ateBar.style.backgroundColor = '#3498db';
+      ateBar.style.height = '0px';
+      ateBar.innerHTML = Math.round(ateResult.ate);
+      
+      const ateLabel = document.createElement('div');
+      ateLabel.className = 'bar-label';
+      ateLabel.textContent = 'ATE (All Students)';
+      ateBar.appendChild(ateLabel);
+      
+      // LATE bar
+      const lateBar = document.createElement('div');
+      lateBar.className = 'bar';
+      lateBar.style.backgroundColor = '#9b59b6';
+      lateBar.style.height = '0px';
+      lateBar.innerHTML = Math.round(lateResult.late);
+      
+      const lateLabel = document.createElement('div');
+      lateLabel.className = 'bar-label';
+      lateLabel.textContent = 'LATE (Compliers)';
+      lateBar.appendChild(lateLabel);
+      
+      barChart.appendChild(ateBar);
+      barChart.appendChild(lateBar);
+      
+      vizDiv.appendChild(barChart);
+      container.appendChild(vizDiv);
+      
+      // Animate bars
+      setTimeout(() => {
+        ateBar.style.height = `${ateResult.ate * 15}px`;
+        lateBar.style.height = `${lateResult.late * 15}px`;
+      }, 100);
+      
+      // Add explanation
+      const explanation = document.createElement('div');
+      explanation.className = 'explanation';
+      explanation.innerHTML = `
+        <p><strong>Local Average Treatment Effect (LATE)</strong> measures the effect for "compliers" - students who would take tutoring if offered, but wouldn't seek it out otherwise.</p>
+        <p>In our example:</p>
+        <ul>
+          <li>The overall Average Treatment Effect (ATE) for all students is <strong>${Math.round(ateResult.ate)} points</strong></li>
+          <li>The Local Average Treatment Effect (LATE) for compliers is <strong>${Math.round(lateResult.late)} points</strong></li>
+        </ul>
+        <p>This suggests that students who comply with the tutoring program when encouraged (compliers) benefit ${Math.round(lateResult.late) > Math.round(ateResult.ate) ? 'more' : 'less'} than the average student.</p>
+        <p>LATE is particularly useful in situations where we can't force everyone to take the treatment, but we can encourage them.</p>
+      `;
+      
+      container.appendChild(explanation);
+    });
+    
+    // SHAP Values visualization
+    
+    // Generate SHAP data for each student
+    const generateShapData = () => {
+      return studentData.map(student => {
+        // Base value (average score across all students)
+        const baseValue = studentData.reduce((sum, s) => sum + s.mathScore, 0) / studentData.length;
+        
+        // Calculate "contributions" to the student's score
+        // These are our fictional SHAP values
+        let treatmentEffect = 0;
+        if (student.treatment === 1) {
+          // Treatment effect varies by grade and previous performance
+          if (student.gradeLevel === '10th') treatmentEffect = 10;
+          else if (student.gradeLevel === '9th') treatmentEffect = 5;
+          else if (student.gradeLevel === '11th') treatmentEffect = 7;
+          else treatmentEffect = 3;
+          
+          if (student.prevPerformance === 'Low') treatmentEffect += 12;
+          else if (student.prevPerformance === 'Medium') treatmentEffect += 7;
+          else treatmentEffect += 2;
+          
+          // Add some random noise
+          treatmentEffect += Math.floor(Math.random() * 4) - 2;
+        }
+        
+        let gradeEffect = 0;
+        if (student.gradeLevel === '9th') gradeEffect = -5;
+        else if (student.gradeLevel === '10th') gradeEffect = 0;
+        else if (student.gradeLevel === '11th') gradeEffect = 3;
+        else gradeEffect = 5;
+        
+        let perfEffect = 0;
+        if (student.prevPerformance === 'Low') perfEffect = -15;
+        else if (student.prevPerformance === 'Medium') perfEffect = 0;
+        else perfEffect = 15;
+        
+        // Make sure SHAP values sum to difference from base value
+        const shapSum = treatmentEffect + gradeEffect + perfEffect;
+        const diff = student.mathScore - baseValue - shapSum;
+        
+        // Adjust treatmentEffect to make everything balance
+        treatmentEffect += diff;
+        
+        return {
+          id: student.id,
+          mathScore: student.mathScore,
+          baseValue: Math.round(baseValue),
+          features: {
+            treatment: student.treatment === 1 ? 'Yes' : 'No',
+            gradeLevel: student.gradeLevel,
+            prevPerformance: student.prevPerformance
+          },
+          shapValues: {
+            treatment: treatmentEffect,
+            gradeLevel: gradeEffect,
+            prevPerformance: perfEffect
+          }
+        };
+      });
+    };
+    
+    const shapData = generateShapData();
+    
+    // Populate student selector
+    const studentSelector = document.getElementById('studentSelector');
+    shapData.slice(0, 10).forEach(student => {
+      const option = document.createElement('option');
+      option.value = student.id;
+      option.textContent = `Student ${student.id} (${student.features.gradeLevel} grade, ${student.features.prevPerformance} performer, Tutoring: ${student.features.treatment})`;
+      studentSelector.appendChild(option);
+    });
+    
+    // Visualize SHAP values
+    const visualizeShap = (studentId) => {
+      const container = document.getElementById('shapVisualization');
+      container.innerHTML = '<div class="shap-baseline"></div>';
+      
+      const student = shapData.find(s => s.id === parseInt(studentId));
+      if (!student) return;
+      
+      // Add title with prediction
+      const title = document.createElement('h3');
+      title.textContent = `Explaining Student ${student.id}'s Math Score: ${student.mathScore}`;
+      title.style.textAlign = 'center';
+      title.style.marginTop = '0';
+      container.appendChild(title);
+      
+      // Add base value
+      const baseValue = document.createElement('div');
+      baseValue.textContent = `Base value: ${student.baseValue} (average score)`;
+      baseValue.style.textAlign = 'center';
+      baseValue.style.marginBottom = '20px';
+      container.appendChild(baseValue);
+      
+      // Create SHAP visualization
+      const shapViz = document.createElement('div');
+      shapViz.style.position = 'relative';
+      shapViz.style.height = '200px';
+      shapViz.style.width = '100%';
+      
+      // Add features
+      const features = [
+        { name: 'Tutoring', key: 'treatment', value: student.features.treatment },
+        { name: 'Grade Level', key: 'gradeLevel', value: student.features.gradeLevel },
+        { name: 'Previous Performance', key: 'prevPerformance', value: student.features.prevPerformance }
+      ];
+      
+      features.forEach((feature, index) => {
+        const featureDiv = document.createElement('div');
+        featureDiv.className = 'shap-feature';
+        
+        // Feature name and value
+        const featureName = document.createElement('div');
+        featureName.className = 'shap-feature-name';
+        featureName.textContent = `${feature.name}: ${feature.value}`;
+        
+        // SHAP value
+        const shapValue = document.createElement('div');
+        shapValue.className = 'shap-value';
+        const value = student.shapValues[feature.key];
+        shapValue.textContent = value > 0 ? `+${Math.round(value)}` : Math.round(value);
+        
+        // SHAP bar
+        const shapBar = document.createElement('div');
+        shapBar.className = `shap-bar ${value >= 0 ? 'positive' : 'negative'}`;
+        
+        if (value >= 0) {
+          shapBar.style.width = '0%';
+          setTimeout(() => {
+            shapBar.style.width = `${Math.abs(value) * 2}%`;
+          }, 100 + index * 200);
+        } else {
+          shapBar.style.width = '0%';
+          setTimeout(() => {
+            shapBar.style.width = `${Math.abs(value) * 2}%`;
+          }, 100 + index * 200);
+        }
+        
+        featureDiv.appendChild(featureName);
+        featureDiv.appendChild(shapValue);
+        featureDiv.appendChild(shapBar);
+        shapViz.appendChild(featureDiv);
+      });
+      
+      container.appendChild(shapViz);
+      
+      // Add final prediction
+      const finalPrediction = document.createElement('div');
+      finalPrediction.style.textAlign = 'center';
+      finalPrediction.style.marginTop = '20px';
+      finalPrediction.innerHTML = `<strong>Final score = ${student.baseValue} (base) + ${Math.round(student.shapValues.treatment)} (tutoring) + ${Math.round(student.shapValues.gradeLevel)} (grade) + ${Math.round(student.shapValues.prevPerformance)} (previous performance) = ${student.mathScore}</strong>`;
+      container.appendChild(finalPrediction);
+      
+      // Add explanation
+      const explanation = document.createElement('div');
+      explanation.className = 'explanation';
+      explanation.innerHTML = `
+        <p><strong>SHAP values</strong> show how much each feature contributes to pushing the prediction away from the base value (average).</p>
+        <p>For Student ${student.id}:</p>
+        <ul>
+          <li>Tutoring contributed <strong>${Math.round(student.shapValues.treatment)} points</strong> ${student.shapValues.treatment >= 0 ? 'increase' : 'decrease'}</li>
+          <li>Being in ${student.features.gradeLevel} grade contributed <strong>${Math.abs(Math.round(student.shapValues.gradeLevel))} points</strong> ${student.shapValues.gradeLevel >= 0 ? 'increase' : 'decrease'}</li>
+          <li>Having ${student.features.prevPerformance.toLowerCase()} previous performance contributed <strong>${Math.abs(Math.round(student.shapValues.prevPerformance))} points</strong> ${student.shapValues.prevPerformance >= 0 ? 'increase' : 'decrease'}</li>
+        </ul>
+        <p>SHAP values help us understand which factors were most important for this specific student's outcome.</p>
+      `;
+      
+      container.appendChild(explanation);
+    };
+    
+    // Handle student selection change
+    studentSelector.addEventListener('change', function() {
+      visualizeShap(this.value);
+    });
+    
+    // Initialize visualizations
+    document.getElementById('visualizeATE').click();
+    document.getElementById('visualizeCATEGrade').click();
+    document.getElementById('visualizeHTE').click();
+    document.getElementById('visualizeLATE').click();
+    visualizeShap(studentSelector.value);
+  </script>
+</body>
+</html>
