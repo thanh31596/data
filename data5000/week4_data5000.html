@@ -1,1358 +1,1147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Understanding Treatment Effects & SHAP Values</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    
-    h1, h2, h3 {
-      color: #2c3e50;
-    }
-    
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      font-size: 2.2em;
-    }
-    
-    h2 {
-      border-bottom: 2px solid #3498db;
-      padding-bottom: 8px;
-      margin-top: 40px;
-    }
-    
-    .section {
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .vis-container {
-      height: 350px;
-      margin: 20px 0;
-      position: relative;
-    }
-    
-    .btn {
-      background-color: #3498db;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s ease;
-    }
-    
-    .btn:hover {
-      background-color: #2980b9;
-    }
-    
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin: 15px 0;
-    }
-    
-    .person {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      transition: all 0.8s ease;
-    }
-    
-    .treated {
-      background-color: #e74c3c;
-      border: 2px solid #c0392b;
-    }
-    
-    .control {
-      background-color: #3498db;
-      border: 2px solid #2980b9;
-    }
-    
-    .legend {
-      display: flex;
-      justify-content: center;
-      margin: 10px 0;
-      gap: 30px;
-    }
-    
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .legend-color {
-      width: 15px;
-      height: 15px;
-      border-radius: 50%;
-    }
-    
-    .slider-container {
-      margin: 20px 0;
-    }
-    
-    .slider {
-      width: 100%;
-      margin: 10px 0;
-    }
-    
-    .panel {
-      display: none;
-      width: 100%;
-    }
-    
-    .panel.active {
-      display: block;
-    }
-    
-    .tab-buttons {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 15px;
-    }
-    
-    .tab-btn {
-      background-color: #e0e0e0;
-      border: none;
-      padding: 8px 16px;
-      cursor: pointer;
-      border-radius: 4px 4px 0 0;
-    }
-    
-    .tab-btn.active {
-      background-color: #3498db;
-      color: white;
-    }
-    
-    .highlight {
-      background-color: #ffffcc;
-      padding: 2px 4px;
-      border-radius: 3px;
-    }
-    
-    .bar-chart {
-      display: flex;
-      height: 300px;
-      align-items: flex-end;
-      justify-content: space-around;
-      margin-top: 20px;
-    }
-    
-    .bar {
-      width: 80px;
-      background-color: #3498db;
-      margin: 0 5px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      font-weight: bold;
-      transition: height 1s ease;
-      position: relative;
-    }
-    
-    .bar-label {
-      position: absolute;
-      bottom: -30px;
-      text-align: center;
-      color: #333;
-    }
-    
-    .axis-label {
-      position: absolute;
-      left: -60px;
-      transform: rotate(-90deg);
-      transform-origin: center;
-      width: 100px;
-      text-align: center;
-      top: 50%;
-    }
-    
-    .tooltip {
-      position: absolute;
-      background-color: rgba(0,0,0,0.8);
-      color: white;
-      padding: 8px;
-      border-radius: 4px;
-      pointer-events: none;
-      display: none;
-      z-index: 100;
-      max-width: 200px;
-    }
-    
-    .shap-feature {
-      display: flex;
-      justify-content: space-between;
-      margin: 5px 0;
-      position: relative;
-      height: 40px;
-    }
-    
-    .shap-bar {
-      position: absolute;
-      height: 30px;
-      top: 5px;
-      border-radius: 3px;
-      transition: width 0.8s ease;
-    }
-    
-    .shap-feature-name {
-      position: absolute;
-      z-index: 1;
-      left: 10px;
-      top: 10px;
-      font-weight: bold;
-    }
-    
-    .shap-value {
-      position: absolute;
-      z-index: 1;
-      right: 10px;
-      top: 10px;
-      font-weight: bold;
-    }
-    
-    .positive {
-      background-color: #2ecc71;
-      right: 50%;
-    }
-    
-    .negative {
-      background-color: #e74c3c;
-      left: 50%;
-    }
-    
-    .shap-baseline {
-      position: absolute;
-      width: 2px;
-      background-color: #333;
-      height: 100%;
-      left: 50%;
-      z-index: 2;
-    }
-    
-    .explanation {
-      background-color: #f8f9fa;
-      border-left: 4px solid #3498db;
-      padding: 10px 15px;
-      margin: 15px 0;
-    }
-    
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 15px 0;
-    }
-    
-    .data-table th, .data-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-    
-    .data-table th {
-      background-color: #f2f2f2;
-    }
-    
-    .data-table tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); }
-    }
-    
-    .pulse {
-      animation: pulse 1.5s infinite;
-    }
-    
-    .tab-content {
-      border: 1px solid #ddd;
-      padding: 20px;
-      border-radius: 0 4px 4px 4px;
-      background-color: white;
-    }
-    
-    .nav-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      margin-bottom: 0;
-      list-style: none;
-      padding: 0;
-    }
-    
-    .nav-item {
-      margin-bottom: -1px;
-    }
-    
-    .nav-link {
-      display: block;
-      padding: 0.5rem 1rem;
-      border: 1px solid transparent;
-      border-top-left-radius: 0.25rem;
-      border-top-right-radius: 0.25rem;
-      cursor: pointer;
-      background-color: #f8f9fa;
-      text-decoration: none;
-      color: #495057;
-    }
-    
-    .nav-link.active {
-      background-color: #fff;
-      border-color: #ddd #ddd #fff;
-      color: #3498db;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4: Causal Machine Learning - DATA5000 (Enhanced)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            text-align: left;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        .slide h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            color: #dc143c;
+            font-weight: 400;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .slide h2 {
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            color: #dc143c;
+            font-weight: 400;
+            width: 100%;
+        }
+        
+        .slide h3 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #dc143c;
+            font-weight: 400;
+        }
+        
+        .slide h4 {
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            color: #dc143c;
+            font-weight: 400;
+        }
+        
+        .slide p, .slide li {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            max-width: 1200px;
+        }
+        
+        .slide ul, .slide ol {
+            text-align: left;
+            max-width: 1200px;
+            width: 100%;
+            margin-left: 40px;
+        }
+        
+        .slide li {
+            margin-bottom: 15px;
+            padding-left: 10px;
+        }
+        
+        .content-box {
+            background: #f8f9fa;
+            border-left: 5px solid #dc143c;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 5px;
+            max-width: 1100px;
+            width: 100%;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .column-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .example-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 1100px;
+            width: 100%;
+        }
+        
+        .exercise-box {
+            background: #e7f3ff;
+            border: 2px solid #2196f3;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 1100px;
+            width: 100%;
+        }
+        
+        .answer-box {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 1100px;
+            width: 100%;
+        }
+        
+        .warning-box {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 1100px;
+            width: 100%;
+        }
+        
+        table {
+            width: 100%;
+            max-width: 1100px;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+        
+        th, td {
+            border: 2px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #dc143c;
+            color: white;
+            font-weight: 400;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            padding: 12px 20px;
+            background: #dc143c;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background: #b8112e;
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .highlight {
+            background: #ffeb3b;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        strong {
+            color: #dc143c;
+        }
+        
+        .diagram {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            max-width: 800px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 1.1em;
+            line-height: 2;
+        }
+        
+        .code-block {
+            background: #263238;
+            color: #e8f5e8;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            white-space: pre-wrap;
+            max-width: 1100px;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-  <h1>Understanding Treatment Effects & SHAP Values</h1>
-  
-  <div class="section">
-    <h2>About Our Sample Dataset</h2>
-    <p>In this visualization, we'll use a sample dataset about a <span class="highlight">tutoring program</span> (our treatment) and how it affects <span class="highlight">student exam scores</span> (our outcome).</p>
-    
-    <p>Our dataset has the following information about 40 students:</p>
-    <ul>
-      <li><strong>Treatment:</strong> Whether the student received tutoring (treatment group) or not (control group)</li>
-      <li><strong>Math Score:</strong> The student's final exam score in mathematics (0-100)</li>
-      <li><strong>Grade Level:</strong> 9th, 10th, 11th, or 12th grade</li>
-      <li><strong>Previous Performance:</strong> Low, Medium, or High (based on previous grades)</li>
-    </ul>
-    
-    <button class="btn" id="showDataBtn">Show Sample Data</button>
-    
-    <div id="dataTableContainer" style="display: none; margin-top: 15px; max-height: 300px; overflow-y: auto;">
-      <table class="data-table" id="dataTable">
-        <thead>
-          <tr>
-            <th>Student ID</th>
-            <th>Treatment</th>
-            <th>Math Score</th>
-            <th>Grade Level</th>
-            <th>Previous Performance</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Data will be populated by JavaScript -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2>1. Average Treatment Effect (ATE)</h2>
-    
-    <div class="explanation">
-      <p>The <strong>Average Treatment Effect (ATE)</strong> measures the average difference in outcomes between all treated units and all control units in the entire population.</p>
-      <p>In our example, it's the average difference in math scores between students who received tutoring and students who didn't.</p>
-      <p><strong>ATE = Average Outcome(Treated) - Average Outcome(Control)</strong></p>
-    </div>
-    
-    <button class="btn" id="visualizeATE">Visualize ATE</button>
-    <div class="vis-container" id="ateVisualization">
-      <!-- Visualization will be populated by JavaScript -->
-    </div>
-    
-    <div class="legend">
-      <div class="legend-item">
-        <div class="legend-color treated"></div>
-        <span>Tutoring (Treatment)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color control"></div>
-        <span>No Tutoring (Control)</span>
-      </div>
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2>2. Conditional Average Treatment Effect (CATE)</h2>
-    
-    <div class="explanation">
-      <p>The <strong>Conditional Average Treatment Effect (CATE)</strong> is the average treatment effect for a specific subgroup of the population.</p>
-      <p>In our example, we can see how tutoring affects students differently based on their grade level or previous performance.</p>
-    </div>
-    
-    <div class="tab-buttons">
-      <button class="tab-btn active" data-tab="gradeLevel">By Grade Level</button>
-      <button class="tab-btn" data-tab="prevPerformance">By Previous Performance</button>
-    </div>
-    
-    <div class="panel active" id="gradeLevel">
-      <button class="btn" id="visualizeCATEGrade">Visualize CATE by Grade Level</button>
-      <div class="vis-container" id="cateGradeVisualization">
-        <!-- Visualization will be populated by JavaScript -->
-      </div>
-    </div>
-    
-    <div class="panel" id="prevPerformance">
-      <button class="btn" id="visualizeCATEPerf">Visualize CATE by Previous Performance</button>
-      <div class="vis-container" id="catePerfVisualization">
-        <!-- Visualization will be populated by JavaScript -->
-      </div>
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2>3. Heterogeneous Treatment Effects (HTE)</h2>
-    
-    <div class="explanation">
-      <p><strong>Heterogeneous Treatment Effects (HTE)</strong> means that the treatment has different effects for different individuals or groups.</p>
-      <p>When we see different CATEs across subgroups, we have heterogeneous treatment effects.</p>
-    </div>
-    
-    <button class="btn" id="visualizeHTE">Visualize Heterogeneous Effects</button>
-    <div class="vis-container" id="hteVisualization">
-      <!-- Visualization will be populated by JavaScript -->
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2>4. Local Average Treatment Effect (LATE)</h2>
-    
-    <div class="explanation">
-      <p>The <strong>Local Average Treatment Effect (LATE)</strong> is the average treatment effect for "compliers" - units that receive treatment when encouraged but wouldn't otherwise.</p>
-      <p>In our example, imagine some students were offered tutoring (encouragement), but not all accepted it. LATE measures the effect for those who took the tutoring because they were encouraged.</p>
-    </div>
-    
-    <button class="btn" id="visualizeLATE">Visualize LATE</button>
-    <div class="vis-container" id="lateVisualization">
-      <!-- Visualization will be populated by JavaScript -->
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2>5. SHAP Values</h2>
-    
-    <div class="explanation">
-      <p><strong>SHAP (SHapley Additive exPlanations) values</strong> explain how each feature contributes to a prediction.</p>
-      <p>For our tutoring example, SHAP values can show how much each factor (tutoring, grade level, previous performance) contributed to a student's predicted math score.</p>
-    </div>
-    
-    <div>
-      <p>Select a student to see how different factors affect their predicted math score:</p>
-      <select id="studentSelector" class="btn">
-        <!-- Options will be populated by JavaScript -->
-      </select>
-    </div>
-    
-    <div class="vis-container" id="shapVisualization">
-      <div class="shap-baseline"></div>
-      <!-- SHAP visualization will be populated by JavaScript -->
-    </div>
-  </div>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">35</span>
+        </div>
+        
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Week 4: Causal Machine Learning</h1>
+            <h2 style="text-align: center; color: #333;">DATA5000 - Artificial Intelligence Programming in Business Analytics</h2>
+            <p style="margin-top: 40px; font-size: 1.3em; color: #7f8c8d; text-align: center;">Understanding cause and effect in artificial intelligence</p>
+        </div>
+        
+        <!-- Slide 2: What We'll Cover Today -->
+        <div class="slide">
+            <h2>What We'll Cover Today</h2>
+            <div class="content-box">
+                <h4>Core Concepts</h4>
+                <ul>
+                    <li>The difference between correlation and causation</li>
+                    <li>Understanding confounders</li>
+                    <li>Four types of treatment effects</li>
+                    <li>Why causal analysis matters for business decisions</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>Practical Tools</h4>
+                <ul>
+                    <li>SHAP for explaining predictions</li>
+                    <li>EconML for finding causes</li>
+                    <li>Real business applications</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Slide 3: The Analytics Framework -->
+        <div class="slide">
+            <h2>The Four Types of Analytics</h2>
+            <table>
+                <tr>
+                    <th>Type</th>
+                    <th>Question</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td><strong>Descriptive</strong></td>
+                    <td>What happened?</td>
+                    <td>"Our sales dropped 20% last month"</td>
+                </tr>
+                <tr>
+                    <td><strong>Diagnostic</strong></td>
+                    <td>Why did it happen?</td>
+                    <td>"Sales dropped because our competitor launched a sale"</td>
+                </tr>
+                <tr>
+                    <td><strong>Predictive</strong></td>
+                    <td>What will happen?</td>
+                    <td>"Sales will likely drop another 15% next month"</td>
+                </tr>
+                <tr>
+                    <td><strong>Prescriptive</strong></td>
+                    <td>What should we do?</td>
+                    <td>"Offer free shipping and extend hours to recover 80% of lost sales"</td>
+                </tr>
+            </table>
+            <p style="margin-top: 30px; font-style: italic;">Today we focus on moving from prediction to prescription using causal analysis</p>
+        </div>
+        
+        <!-- Slide 4: Netflix Example -->
+        <div class="slide">
+            <h2>Prescriptive Analytics in Action</h2>
+            <div class="example-box">
+                <h4>Netflix: From Prediction to Recommendation</h4>
+                <p><strong>Predictive Analytics says:</strong><br>
+                "This user will likely watch more shows"</p>
+                <p style="margin-top: 15px;"><strong>Prescriptive Analytics says:</strong><br>
+                "Show this user Season 2 of Stranger Things NOW because that specific recommendation will cause them to stay subscribed"</p>
+            </div>
+            <div class="content-box">
+                <h4>The Key Difference</h4>
+                <p>Prediction tells you WHAT will happen</p>
+                <p>Prescription tells you HOW to change it</p>
+                <p>Business value comes from changing outcomes, not just predicting them</p>
+            </div>
+        </div>
+        
+        <!-- Slide 5: Correlation vs Causation - Ice Cream -->
+        <div class="slide">
+            <h2>Understanding Correlation vs. Causation</h2>
+            <div class="example-box">
+                <h4>The Ice Cream Example</h4>
+                <p><strong>Observation:</strong> Ice cream sales and drowning deaths both increase in summer</p>
+                <p style="margin-top: 15px; color: #dc3545;"><strong>Wrong Conclusion:</strong> "Ice cream causes drowning! Ban ice cream!"</p>
+                <p style="margin-top: 15px; color: #28a745;"><strong>Right Conclusion:</strong> Hot weather causes BOTH:</p>
+                <ul style="margin-left: 40px; margin-top: 10px;">
+                    <li>More people buy ice cream</li>
+                    <li>More people go swimming, leading to more drowning incidents</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>Key Lesson</h4>
+                <p>Just because two things happen together doesn't mean one causes the other. There might be a third factor causing both.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 6: Coffee Shop Example -->
+        <div class="slide">
+            <h2>Correlation vs. Causation: Business Example</h2>
+            <div class="example-box">
+                <h4>Coffee Shop Scenario</h4>
+                <p><strong>Observation:</strong> Customers who buy muffins also buy coffee</p>
+                <p style="margin-top: 15px;"><strong>Correlation:</strong> Muffin buyers tend to buy coffee</p>
+                <p style="margin-top: 15px;"><strong>Causation Question:</strong> Does offering a muffin discount CAUSE more coffee sales?</p>
+                <p style="margin-top: 15px;"><strong>Better Question:</strong> What if we offered a "coffee + muffin" combo? Would that CAUSE higher total revenue?</p>
+            </div>
+            <div class="warning-box">
+                <h4>Why This Matters</h4>
+                <p>If you just see correlation, you might discount muffins expecting coffee sales to rise. But if morning customers naturally buy both, the discount just loses you money.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 7: What is a Confounder -->
+        <div class="slide">
+            <h2>Confounders Explained Simply</h2>
+            <div class="content-box">
+                <h4>Definition</h4>
+                <p>A confounder is a hidden influencer that affects both your action AND your result, making you think one causes the other when it doesn't.</p>
+            </div>
+            <div class="diagram">
+              CONFOUNDER<br>
+           (Customer Age)<br>
+                ↙        ↘<br>
+        Action              Result<br>
+    (Exercise Habits) → (Health Score)
+            </div>
+            <div class="content-box">
+                <h4>Without Controlling for Age</h4>
+                <p>Young people exercise more AND are healthier</p>
+                <p>Conclusion: "Exercise causes better health!" (Partially true, but age is hiding part of the story)</p>
+                <h4 style="margin-top: 20px;">With Age Controlled</h4>
+                <p>Compare 30-year-olds who exercise vs. don't exercise</p>
+                <p>Compare 60-year-olds who exercise vs. don't exercise</p>
+                <p>Now we see the TRUE effect of exercise at each age level</p>
+            </div>
+        </div>
+        
+        <!-- Slide 8: Business Confounder Examples -->
+        <div class="slide">
+            <h2>Real Business Confounders</h2>
+            <table>
+                <tr>
+                    <th>Business Scenario</th>
+                    <th>Apparent Relationship</th>
+                    <th>Hidden Confounder</th>
+                </tr>
+                <tr>
+                    <td>Premium members buy more</td>
+                    <td>Premium status → Higher spending</td>
+                    <td>High income causes BOTH premium membership AND more spending</td>
+                </tr>
+                <tr>
+                    <td>Email opens lead to purchases</td>
+                    <td>Opening emails → Buying</td>
+                    <td>Brand loyalty causes BOTH email engagement AND purchases</td>
+                </tr>
+                <tr>
+                    <td>Training increases productivity</td>
+                    <td>Training → Performance</td>
+                    <td>Motivated employees seek training AND perform better</td>
+                </tr>
+                <tr>
+                    <td>Ads drive sales</td>
+                    <td>Ad clicks → Purchases</td>
+                    <td>Purchase intent causes BOTH ad clicking AND buying</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Slide 9: Exercise 1 - E-commerce -->
+        <div class="slide">
+            <h2>Exercise 1: Spot the Confounder</h2>
+            <div class="exercise-box">
+                <h4>Scenario</h4>
+                <p>An e-commerce company finds that customers who view product reviews spend 40% more.</p>
+                <h4 style="margin-top: 20px;">Question</h4>
+                <p>Should they force ALL customers to view reviews?</p>
+                <h4 style="margin-top: 20px;">Think About</h4>
+                <ol>
+                    <li>What type of customers naturally read reviews?</li>
+                    <li>Could there be a hidden factor (confounder)?</li>
+                    <li>Would showing reviews to uninterested customers have the same effect?</li>
+                </ol>
+            </div>
+            <p style="margin-top: 20px; font-style: italic;">Discuss with your group for 3 minutes</p>
+        </div>
+        
+        <!-- Slide 10: Exercise 1 Answer -->
+        <div class="slide">
+            <h2>Exercise 1: Answer</h2>
+            <div class="answer-box">
+                <h4>The Hidden Confounder: Customer Engagement Level</h4>
+                <p><strong>What's really happening:</strong></p>
+                <ul style="margin-left: 40px; margin-top: 10px;">
+                    <li>Engaged, interested customers READ reviews</li>
+                    <li>Engaged, interested customers ALSO spend more</li>
+                    <li>The engagement level is the hidden factor affecting both</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Conclusion:</strong> Simply showing reviews to uninterested customers won't cause the same spending increase. They're not engaged enough to care.</p>
+            </div>
+            <div class="content-box">
+                <h4>The Right Approach</h4>
+                <p>Identify what makes customers engaged, then work on increasing engagement rather than just forcing review views.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 11: Treatment Effects Introduction -->
+        <div class="slide">
+            <h2>What Are Treatment Effects?</h2>
+            <div class="content-box">
+                <h4>What is a "Treatment"?</h4>
+                <p>Any action, policy, or intervention you might take:</p>
+                <ul style="margin-left: 40px; margin-top: 10px;">
+                    <li>Sending a discount email</li>
+                    <li>Offering free shipping</li>
+                    <li>Hiring more staff</li>
+                    <li>Launching a new product feature</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>What is a "Treatment Effect"?</h4>
+                <p>The actual impact that action has on your outcome (sales, satisfaction, retention, etc.)</p>
+            </div>
+            <div class="example-box">
+                <h4>Why "Treatment"?</h4>
+                <p>The term comes from medical research (does this treatment cure the disease?), but in business:</p>
+                <ul style="margin-left: 40px; margin-top: 10px;">
+                    <li><strong>Treatment</strong> = Your business action</li>
+                    <li><strong>Effect</strong> = What it actually causes to happen</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Slide 12: Four Types of Treatment Effects -->
+        <div class="slide">
+            <h2>The Four Types of Treatment Effects</h2>
+            <div class="content-box">
+                <h4>1. Average Treatment Effect (ATE)</h4>
+                <p><strong>Question:</strong> "Does it work overall?"</p>
+                <p><strong>Measures:</strong> Impact across EVERYONE</p>
+                <p><strong>Example:</strong> "Free shipping increases average order value by $12"</p>
+            </div>
+            <div class="content-box">
+                <h4>2. Heterogeneous Treatment Effect (HTE)</h4>
+                <p><strong>Question:</strong> "Does it work differently for different groups?"</p>
+                <p><strong>Measures:</strong> How impact varies by group</p>
+                <p><strong>Example:</strong> "Free shipping increases orders by 30% for students but decreases orders by 5% for seniors"</p>
+            </div>
+        </div>
+        
+        <!-- Slide 13: Four Types Continued -->
+        <div class="slide">
+            <h2>The Four Types of Treatment Effects (Continued)</h2>
+            <div class="content-box">
+                <h4>3. Local Average Treatment Effect (LATE)</h4>
+                <p><strong>Question:</strong> "Does it work for those actually affected?"</p>
+                <p><strong>Measures:</strong> Impact only on those who changed behavior</p>
+                <p><strong>Example:</strong> "For customers who used the free shipping offer, orders increased by $25"</p>
+            </div>
+            <div class="content-box">
+                <h4>4. Conditional Average Treatment Effect (CATE)</h4>
+                <p><strong>Question:</strong> "Does it work for people like YOU?"</p>
+                <p><strong>Measures:</strong> Impact for specific individual characteristics</p>
+                <p><strong>Example:</strong> "For 25-year-old female customers in Sydney who shop on weekends, free shipping increases orders by $18"</p>
+            </div>
+        </div>
+        
+        <!-- Slide 14: Exercise 2 - Match Treatment Effects -->
+        <div class="slide">
+            <h2>Exercise 2: Which Treatment Effect?</h2>
+            <div class="exercise-box">
+                <h4>Match the business question to the right treatment effect type</h4>
+                <ol>
+                    <li>"Should we roll out free shipping to all customers?"</li>
+                    <li>"Does free shipping work better for our VIP customers or regular customers?"</li>
+                    <li>"For customers who actually used the free shipping offer, how much did their spending increase?"</li>
+                    <li>"For a 35-year-old customer in Melbourne who shops monthly, what impact would free shipping have?"</li>
+                </ol>
+                <h4 style="margin-top: 20px;">Options</h4>
+                <ul style="margin-left: 40px;">
+                    <li>ATE (Average Treatment Effect)</li>
+                    <li>HTE (Heterogeneous Treatment Effect)</li>
+                    <li>LATE (Local Average Treatment Effect)</li>
+                    <li>CATE (Conditional Average Treatment Effect)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Slide 15: Exercise 2 Answers -->
+        <div class="slide">
+            <h2>Exercise 2: Answers</h2>
+            <div class="answer-box">
+                <h4>Correct Matches</h4>
+                <ol>
+                    <li>"Should we roll out free shipping to all customers?"<br>
+                    <strong>→ ATE (Average Treatment Effect)</strong><br>
+                    You need to know the overall average impact</li>
+                    
+                    <li style="margin-top: 15px;">"Does free shipping work better for our VIP customers or regular customers?"<br>
+                    <strong>→ HTE (Heterogeneous Treatment Effect)</strong><br>
+                    You're comparing effects across different groups</li>
+                    
+                    <li style="margin-top: 15px;">"For customers who actually used the free shipping offer, how much did their spending increase?"<br>
+                    <strong>→ LATE (Local Average Treatment Effect)</strong><br>
+                    You're measuring the effect on those who were actually affected</li>
+                    
+                    <li style="margin-top: 15px;">"For a 35-year-old customer in Melbourne who shops monthly, what impact would free shipping have?"<br>
+                    <strong>→ CATE (Conditional Average Treatment Effect)</strong><br>
+                    You're getting personalized predictions based on specific characteristics</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- Slide 16: CATE Example Streaming -->
+        <div class="slide">
+            <h2>CATE Example: Personalization in Action</h2>
+            <div class="example-box">
+                <h4>Business Scenario: Streaming Service Recommendations</h4>
+                <p><strong>Problem:</strong> Should we recommend action movies or comedies to a new subscriber?</p>
+            </div>
+            <div class="code-block">For users who are:
+- Male, Age 18-25, watches on weekends, prefers mobile
+→ Action movies increase viewing time by 45 minutes
 
-  <script>
-    // Sample data generation
-    const generateData = () => {
-      const gradeLevel = ['9th', '10th', '11th', '12th'];
-      const prevPerformance = ['Low', 'Medium', 'High'];
-      const data = [];
-      
-      // Base effects
-      const baseTreatmentEffect = 8; // Average improvement due to tutoring
-      const gradeEffects = {
-        '9th': 5,   // 9th graders benefit more from tutoring
-        '10th': 10, // 10th graders benefit most
-        '11th': 7,  // 11th graders benefit somewhat more
-        '12th': 3   // 12th graders benefit less
-      };
-      
-      const perfEffects = {
-        'Low': 12,    // Low performers benefit most
-        'Medium': 7,  // Medium performers benefit somewhat
-        'High': 2     // High performers benefit less
-      };
-      
-      // Generate 40 students
-      for (let i = 1; i <= 40; i++) {
-        const grade = gradeLevel[Math.floor(Math.random() * gradeLevel.length)];
-        const perf = prevPerformance[Math.floor(Math.random() * prevPerformance.length)];
-        const treatment = Math.random() < 0.5 ? 1 : 0; // 50% chance of getting treatment
+For users who are:
+- Female, Age 18-25, watches on weekends, prefers mobile  
+→ Comedies increase viewing time by 38 minutes</div>
+            <div class="content-box">
+                <h4>Business Value</h4>
+                <p>Instead of one recommendation for everyone (ATE), personalize based on characteristics (CATE)</p>
+                <p><strong>Result:</strong> Higher engagement, lower churn, more subscription renewals</p>
+            </div>
+        </div>
         
-        // Base score determined by previous performance
-        let baseScore;
-        if (perf === 'Low') baseScore = 50 + Math.floor(Math.random() * 15);
-        else if (perf === 'Medium') baseScore = 65 + Math.floor(Math.random() * 15);
-        else baseScore = 80 + Math.floor(Math.random() * 15);
+        <!-- Slide 17: Boston Housing Context -->
+        <div class="slide">
+            <h2>The Boston Housing Dataset: Why This Matters</h2>
+            <div class="content-box">
+                <h4>The Historical Context</h4>
+                <ul>
+                    <li>1970s Boston housing data</li>
+                    <li>Shows how correlation can mislead</li>
+                    <li>Demonstrates why causal analysis is essential for ethical AI</li>
+                </ul>
+            </div>
+            <div class="warning-box">
+                <h4>The Problem</h4>
+                <p>Neighborhoods with more Black residents had lower home prices.</p>
+                <p style="margin-top: 10px;"><strong>Correlation-Based Model Would Say:</strong><br>
+                "Ethnicity predicts lower home prices"</p>
+            </div>
+            <div class="answer-box">
+                <h4>Causal Analysis Reveals</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Discriminatory policies forced Black residents into areas with worse infrastructure</li>
+                    <li>Poor infrastructure (pollution, crime, smaller houses) CAUSED lower prices</li>
+                    <li>Ethnicity was correlated but NOT causal</li>
+                </ul>
+            </div>
+        </div>
         
-        // Treatment effect varies by grade and previous performance
-        let treatmentEffect = 0;
-        if (treatment === 1) {
-          treatmentEffect = baseTreatmentEffect + gradeEffects[grade] * 0.5 + perfEffects[perf];
-          // Add some random noise
-          treatmentEffect += Math.floor(Math.random() * 6) - 3;
+        <!-- Slide 18: Boston Housing Lesson -->
+        <div class="slide">
+            <h2>Boston Housing Dataset: Business Lesson</h2>
+            <div class="content-box">
+                <h4>Why This Matters for Business Analytics</h4>
+                <p>Predictive models can perpetuate bias and historical injustice</p>
+                <p>Causal models help us understand what we can actually change</p>
+            </div>
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>Predictive Approach</h4>
+                    <p>"Use ethnicity as a feature because it predicts prices well"</p>
+                    <p style="margin-top: 10px; color: #dc3545;">Result: Perpetuates discrimination</p>
+                </div>
+                <div class="column-item">
+                    <h4>Causal Approach</h4>
+                    <p>"Identify what actually causes price differences: infrastructure, pollution, crime"</p>
+                    <p style="margin-top: 10px; color: #28a745;">Result: Focus on factors we can actually change</p>
+                </div>
+            </div>
+            <div class="example-box" style="margin-top: 30px;">
+                <h4>Today's Exercise</h4>
+                <p>We'll use this dataset to practice identifying true causal factors while avoiding bias</p>
+            </div>
+        </div>
+        
+        <!-- Slide 19: Exercise 3 - Telecom Scenario -->
+        <div class="slide">
+            <h2>Exercise 3: Telecom Churn Scenario</h2>
+            <div class="exercise-box">
+                <h4>You're analyzing why customers leave your telecom company</h4>
+                <p><strong>Data shows:</strong></p>
+                <ul style="margin-left: 40px; margin-top: 10px;">
+                    <li>Customers with more service calls churn more</li>
+                    <li>Customers with month-to-month contracts churn more</li>
+                    <li>Customers with higher bills churn more</li>
+                </ul>
+                <h4 style="margin-top: 20px;">Questions</h4>
+                <ol>
+                    <li>Are these correlations or causations?</li>
+                    <li>What might be confounders?</li>
+                    <li>What treatment could you test?</li>
+                    <li>Which type of treatment effect would help most?</li>
+                </ol>
+            </div>
+            <p style="margin-top: 20px; font-style: italic;">Discuss in your group for 5 minutes</p>
+        </div>
+        
+        <!-- Slide 20: Exercise 3 Answers -->
+        <div class="slide">
+            <h2>Exercise 3: Possible Answers</h2>
+            <div class="answer-box">
+                <h4>1. Correlation or Causation?</h4>
+                <ul style="margin-left: 40px;">
+                    <li><strong>Service calls:</strong> Likely causal (problems cause churn)</li>
+                    <li><strong>Month-to-month contracts:</strong> Could be correlation (uncertain customers choose flexible contracts AND are more likely to leave)</li>
+                    <li><strong>Higher bills:</strong> Could be both (high bills cause churn, but also price-insensitive customers pay more and churn less)</li>
+                </ul>
+            </div>
+            <div class="answer-box">
+                <h4>2. Possible Confounders</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Customer satisfaction affects both service calls AND churn</li>
+                    <li>Financial stability affects both contract choice AND churn</li>
+                    <li>Competitive offerings affect both price sensitivity AND churn</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Slide 21: Exercise 3 Answers Continued -->
+        <div class="slide">
+            <h2>Exercise 3: Possible Answers (Continued)</h2>
+            <div class="answer-box">
+                <h4>3. Possible Treatments</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Improve service quality (reduce need for calls)</li>
+                    <li>Offer contract incentives (discounts for longer commitments)</li>
+                    <li>Provide personalized pricing (based on usage patterns)</li>
+                    <li>Proactive support (reach out before problems occur)</li>
+                </ul>
+            </div>
+            <div class="answer-box">
+                <h4>4. Best Treatment Effect Type</h4>
+                <p><strong>CATE (Conditional Average Treatment Effect):</strong> Personalize interventions based on customer profile</p>
+                <p style="margin-top: 10px;">Example: "For high-value customers with service issues, offering a dedicated support line reduces churn by 25%"</p>
+                <p style="margin-top: 10px;"><strong>HTE (Heterogeneous Treatment Effect):</strong> Different strategies for different customer segments</p>
+                <p style="margin-top: 10px;">Example: "Contract incentives work for price-sensitive customers but not for quality-focused customers"</p>
+            </div>
+        </div>
+        
+        <!-- Slide 22: Prediction vs Action -->
+        <div class="slide">
+            <h2>From Prediction to Action: The Key Difference</h2>
+            <div class="two-column">
+                <div class="column-item" style="border-color: #ffc107;">
+                    <h4>Predictive ML Says</h4>
+                    <p>"Customers who call service 3+ times will likely churn"</p>
+                    <p style="margin-top: 15px; font-style: italic; color: #dc3545;">You can predict, but what do you DO about it?</p>
+                </div>
+                <div class="column-item" style="border-color: #28a745;">
+                    <h4>Causal ML Says</h4>
+                    <p>"Reducing service calls by 50% through proactive support will decrease churn by 15%"</p>
+                    <p style="margin-top: 15px; font-style: italic; color: #28a745;">You have an actionable strategy</p>
+                </div>
+            </div>
+            <div class="content-box" style="margin-top: 30px;">
+                <h4>Why This Matters</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Prediction tells you WHAT will happen</li>
+                    <li>Causation tells you HOW to change it</li>
+                    <li>Business value comes from changing outcomes, not just predicting them</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Slide 23: SHAP vs EconML -->
+        <div class="slide">
+            <h2>SHAP vs. EconML: Two Tools, Two Jobs</h2>
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>SHAP (Explainable AI)</h4>
+                    <p><strong>Job:</strong> Explain predictions</p>
+                    <p><strong>Answers:</strong> "Which features contributed most to this prediction?"</p>
+                    <p><strong>Type:</strong> Correlation-based</p>
+                    <p><strong>Example:</strong> "This customer will churn because they have a high bill, many service calls, and month-to-month contract"</p>
+                </div>
+                <div class="column-item">
+                    <h4>EconML (Causal ML)</h4>
+                    <p><strong>Job:</strong> Identify causes</p>
+                    <p><strong>Answers:</strong> "Which features, if changed, will change the outcome?"</p>
+                    <p><strong>Type:</strong> Causation-based</p>
+                    <p><strong>Example:</strong> "Reducing this customer's bill by $10 will decrease their churn probability by 12%"</p>
+                </div>
+            </div>
+            <div class="content-box" style="margin-top: 30px;">
+                <h4>Using Them Together</h4>
+                <ol>
+                    <li>Use SHAP to understand your predictive model</li>
+                    <li>Use EconML to find what you can actually change</li>
+                    <li>Make data-driven decisions with confidence</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- Slide 24: Today's Hands-On Exercise -->
+        <div class="slide">
+            <h2>Today's Hands-On Exercise Structure</h2>
+            <div class="content-box">
+                <h4>Step 1: Linear Regression (15 minutes)</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Build intuition with simple model</li>
+                    <li>Understand basic relationships</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>Step 2: Predictive ML + SHAP (25 minutes)</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Train a Random Forest model</li>
+                    <li>Use SHAP to find strongest predictors</li>
+                    <li>Interpret correlation-based insights</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>Step 3: Causal ML + EconML (25 minutes)</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Apply Double Machine Learning</li>
+                    <li>Identify true causal factors</li>
+                    <li>Compare with predictive insights</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>Step 4: Business Recommendations (10 minutes)</h4>
+                <ul style="margin-left: 40px;">
+                    <li>What actions would you take?</li>
+                    <li>What would you change first?</li>
+                    <li>How would you measure success?</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Slide 25: Common Mistakes -->
+        <div class="slide">
+            <h2>Common Mistakes to Avoid</h2>
+            <table>
+                <tr>
+                    <th>Mistake</th>
+                    <th>Fix</th>
+                </tr>
+                <tr>
+                    <td>Assuming correlation equals causation</td>
+                    <td>Always ask "What else could explain this pattern?"</td>
+                </tr>
+                <tr>
+                    <td>Ignoring confounders</td>
+                    <td>List potential hidden influences before drawing conclusions</td>
+                </tr>
+                <tr>
+                    <td>Using predictive insights for causal decisions</td>
+                    <td>Use SHAP for understanding, EconML for action</td>
+                </tr>
+                <tr>
+                    <td>Forgetting context</td>
+                    <td>Remember the Boston Housing lesson—historical and social context matters</td>
+                </tr>
+                <tr>
+                    <td>Treating all customers the same</td>
+                    <td>Use HTE or CATE to personalize strategies</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Slide 26: Quick Knowledge Check -->
+        <div class="slide">
+            <h2>Quick Knowledge Check</h2>
+            <div class="exercise-box">
+                <h4>Question 1</h4>
+                <p>True or False: If feature X has high SHAP value, changing X will change the prediction.</p>
+
+            </div>
+            <div class="exercise-box">
+                <h4>Question 2</h4>
+                <p>Which treatment effect answers: "Will free shipping work for everyone?"</p>
+
+            </div>
+            <div class="exercise-box">
+                <h4>Question 3</h4>
+                <p>What is a confounder?</p>
+
+            </div>
+            <div class="exercise-box">
+                <h4>Question 4</h4>
+                <p>Why is causal analysis important for ethical AI?</p>
+
+            </div>
+        </div>
+        
+        <!-- Slide 27: Group Exercise - Food Delivery -->
+        <div class="slide">
+            <h2>Group Exercise: Food Delivery App</h2>
+            <div class="exercise-box">
+                <h4>Scenario</h4>
+                <p>You work for a food delivery app.</p>
+                <h4 style="margin-top: 15px;">Data Shows</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Customers who order during peak hours pay more</li>
+                    <li>Customers in wealthy suburbs order more frequently</li>
+                    <li>Customers with loyalty points spend more per order</li>
+                </ul>
+                <h4 style="margin-top: 15px;">Your Task</h4>
+                <ol>
+                    <li>Identify potential confounders</li>
+                    <li>Design a treatment to test</li>
+                    <li>Choose which treatment effect to measure</li>
+                    <li>Explain what business decision you'd make</li>
+                </ol>
+            </div>
+            <p style="margin-top: 20px; font-style: italic;">5 minutes preparation, 2 minutes presentation per group</p>
+        </div>
+        
+        <!-- Slide 28: Example Answers Food Delivery -->
+        <div class="slide">
+            <h2>Food Delivery App: Possible Answers</h2>
+            <div class="answer-box">
+                <h4>1. Potential Confounders</h4>
+                <ul style="margin-left: 40px;">
+                    <li><strong>Peak hours:</strong> Busy professionals order during peak AND have higher incomes (so they pay more)</li>
+                    <li><strong>Wealthy suburbs:</strong> Higher disposable income causes both location choice AND order frequency</li>
+                    <li><strong>Loyalty points:</strong> Frequent users earn points AND spend more (engagement is the confounder)</li>
+                </ul>
+            </div>
+            <div class="answer-box">
+                <h4>2. Possible Treatments</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Offer peak-hour discounts to budget-conscious customers</li>
+                    <li>Provide free delivery in middle-income suburbs</li>
+                    <li>Give loyalty bonuses to low-frequency users to increase engagement</li>
+                </ul>
+            </div>
+            <div class="answer-box">
+                <h4>3. Treatment Effect Type</h4>
+                <p><strong>CATE:</strong> Personalize offers based on customer income level, location, and order history</p>
+                <p style="margin-top: 10px;"><strong>HTE:</strong> Compare treatment effects across income groups and locations</p>
+            </div>
+        </div>
+        
+        <!-- Slide 29: Nobel Prize Context -->
+        <div class="slide">
+            <h2>Why Causal Machine Learning is a Big Deal</h2>
+            <div class="content-box">
+                <h4>2021 Nobel Prize in Economics</h4>
+                <p>Awarded to researchers for causal inference methods</p>
+                <ul style="margin-left: 40px; margin-top: 10px;">
+                    <li>Guido Imbens (Stanford University)</li>
+                    <li>Joshua Angrist (MIT)</li>
+                    <li>David Card (UC Berkeley)</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>The Breakthrough: Double Machine Learning</h4>
+                <p>For the first time, Double Machine Learning (DML) signals the merger between Artificial Intelligence and Econometrics models</p>
+            </div>
+            <div class="example-box">
+                <h4>Key Consequence</h4>
+                <p>We can now use any AI model, especially Generative AI models that can understand the context of events that occurred in the past, to perform causal analysis at scale</p>
+            </div>
+        </div>
+        
+        <!-- Slide 30: Practical Tools Overview -->
+        <div class="slide">
+            <h2>The Tools We'll Use Today</h2>
+            <div class="content-box">
+                <h4>EconML Library</h4>
+                <p>Python package for causal machine learning</p>
+                <p>Developed by Microsoft Research</p>
+                <p>Implements methods from Nobel Prize-winning research</p>
+            </div>
+            <div class="content-box">
+                <h4>SHAP Library</h4>
+                <p>Explains individual predictions from any machine learning model</p>
+                <p>Shows which features contributed most to each prediction</p>
+                <p>Helps understand correlation patterns</p>
+            </div>
+            <div class="content-box">
+                <h4>DoubleML Library</h4>
+                <p>Implements Double Machine Learning methods</p>
+                <p>Combines machine learning with causal inference</p>
+                <p>Handles confounding and bias automatically</p>
+            </div>
+        </div>
+        
+        <!-- Slide 31: Notebook Overview -->
+        <div class="slide">
+            <h2>Today's Notebook: What You'll Do</h2>
+            <div class="content-box">
+                <h4>Dataset: Boston Housing (1970s)</h4>
+                <p>Median home values and neighborhood characteristics</p>
+                <p>13 features including crime rate, pollution, room count, etc.</p>
+                <p>506 neighborhoods in Boston area</p>
+            </div>
+            <div class="content-box">
+                <h4>Your Analysis Path</h4>
+                <ol>
+                    <li><strong>Linear Regression:</strong> Understand basic relationships</li>
+                    <li><strong>Random Forest + SHAP:</strong> Build accurate predictor and explain it</li>
+                    <li><strong>EconML Causal Analysis:</strong> Find what actually causes price changes</li>
+                    <li><strong>Compare Results:</strong> See how correlation differs from causation</li>
+                    <li><strong>Business Recommendations:</strong> What would you actually change?</li>
+                </ol>
+            </div>
+            <div class="example-box">
+                <h4>Key Question</h4>
+                <p>What factors can we actually change to improve housing affordability?</p>
+            </div>
+        </div>
+        
+        <!-- Slide 32: Expected Insights -->
+        <div class="slide">
+            <h2>What You'll Discover</h2>
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>SHAP Will Show You</h4>
+                    <p>Which features predict house prices best</p>
+                    <ul style="margin-left: 40px; margin-top: 10px;">
+                        <li>Number of rooms</li>
+                        <li>Crime rate</li>
+                        <li>Distance to employment</li>
+                        <li>Pollution levels</li>
+                        <li>And more...</li>
+                    </ul>
+                    <p style="margin-top: 10px; font-style: italic;">These are correlations</p>
+                </div>
+                <div class="column-item">
+                    <h4>EconML Will Show You</h4>
+                    <p>Which features actually cause price changes</p>
+                    <ul style="margin-left: 40px; margin-top: 10px;">
+                        <li>What happens if we reduce crime?</li>
+                        <li>What if we improve air quality?</li>
+                        <li>What if we add more rooms?</li>
+                    </ul>
+                    <p style="margin-top: 10px; font-style: italic;">These are causal effects</p>
+                </div>
+            </div>
+            <div class="warning-box" style="margin-top: 30px;">
+                <h4>Important</h4>
+                <p>Some factors that predict well may not be causal. Some causal factors may not be the strongest predictors. This is why we need both approaches.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 33: Assessment Connection -->
+        <div class="slide">
+            <h2>Connection to Assessment 1</h2>
+            <div class="content-box">
+                <h4>Assessment 1: Skills-Building Project (25%)</h4>
+                <p>Due: Week 5, Tuesday 23:55 AEST</p>
+                <p>Topic: Predictive and Prescriptive Analytics for Business Decision Making</p>
+            </div>
+            <div class="content-box">
+                <h4>What You'll Need to Do</h4>
+                <ol>
+                    <li>Choose a business dataset (or use one provided)</li>
+                    <li>Build predictive models (like today's Random Forest)</li>
+                    <li>Explain predictions using SHAP</li>
+                    <li>Perform causal analysis using EconML</li>
+                    <li>Make actionable business recommendations</li>
+                </ol>
+            </div>
+            <div class="example-box">
+                <h4>Today's Practice</h4>
+                <p>Everything you do in today's notebook is directly applicable to Assessment 1</p>
+                <p>Pay attention to the structure and methodology</p>
+            </div>
+        </div>
+        
+        <!-- Slide 34: Next Steps -->
+        <div class="slide">
+            <h2>Next Steps and Resources</h2>
+            <div class="content-box">
+                <h4>After Today's Class</h4>
+                <ol>
+                    <li>Complete the notebook if you haven't finished</li>
+                    <li>Experiment with different features and models</li>
+                    <li>Start thinking about your Assessment 1 dataset</li>
+                    <li>Review the comparison between SHAP and EconML results</li>
+                </ol>
+            </div>
+            <div class="content-box">
+                <h4>Additional Resources</h4>
+                <ul style="margin-left: 40px;">
+                    <li><strong>Video:</strong> "Double Machine Learning Algorithm" on YouTube</li>
+                    <li><strong>Documentation:</strong> EconML user guide (econml.azurewebsites.net)</li>
+                    <li><strong>Documentation:</strong> SHAP documentation (shap.readthedocs.io)</li>
+                    <li><strong>Reading:</strong> "The Book of Why" by Judea Pearl (Chapters 1-2)</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h4>Office Hours</h4>
+                <p>Available for questions about today's content and Assessment 1</p>
+            </div>
+        </div>
+        
+        <!-- Slide 35: Summary -->
+        <div class="slide">
+            <h2>Key Takeaways from Today</h2>
+            <div class="content-box">
+                <h4>Core Concepts</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Correlation shows patterns, causation shows what you can change</li>
+                    <li>Confounders are hidden factors that can mislead analysis</li>
+                    <li>Four types of treatment effects serve different business needs</li>
+                    <li>Ethical AI requires understanding causation, not just prediction</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>Practical Tools</h4>
+                <ul style="margin-left: 40px;">
+                    <li>SHAP explains predictions (correlation)</li>
+                    <li>EconML identifies causes (causation)</li>
+                    <li>Use both together for complete understanding</li>
+                </ul>
+            </div>
+            <div class="content-box">
+                <h4>Business Impact</h4>
+                <ul style="margin-left: 40px;">
+                    <li>Prediction tells you what will happen</li>
+                    <li>Causation tells you how to change it</li>
+                    <li>Real business value comes from taking action, not just predicting</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn" onclick="previousSlide()">← Previous</button>
+            <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('total-slides').textContent = totalSlides;
+        
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            
+            document.getElementById('prev-btn').disabled = currentSlide === 0;
+            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
         }
         
-        // Final score (capped at 100)
-        const mathScore = Math.min(Math.round(baseScore + treatmentEffect), 100);
-        
-        data.push({
-          id: i,
-          treatment,
-          mathScore,
-          gradeLevel: grade,
-          prevPerformance: perf,
-          // For LATE
-          offered: Math.random() < 0.7 ? 1 : 0, // 70% were offered tutoring
-          complier: Math.random() < 0.8 ? 1 : 0  // 80% would comply with encouragement
-        });
-      }
-      
-      return data;
-    };
-    
-    // Generate and store our dataset
-    const studentData = generateData();
-    
-    // Populate the data table
-    const populateDataTable = () => {
-      const tableBody = document.querySelector('#dataTable tbody');
-      tableBody.innerHTML = '';
-      
-      studentData.slice(0, 10).forEach(student => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>Student ${student.id}</td>
-          <td>${student.treatment ? 'Yes' : 'No'}</td>
-          <td>${student.mathScore}</td>
-          <td>${student.gradeLevel}</td>
-          <td>${student.prevPerformance}</td>
-        `;
-        tableBody.appendChild(row);
-      });
-      
-      // Add a note that we're only showing 10 students
-      const noteRow = document.createElement('tr');
-      noteRow.innerHTML = `
-        <td colspan="5" style="text-align: center; font-style: italic;">
-          (Showing 10 of 40 students for brevity)
-        </td>
-      `;
-      tableBody.appendChild(noteRow);
-    };
-    
-    // Toggle data table visibility
-    document.getElementById('showDataBtn').addEventListener('click', function() {
-      const tableContainer = document.getElementById('dataTableContainer');
-      if (tableContainer.style.display === 'none') {
-        populateDataTable();
-        tableContainer.style.display = 'block';
-        this.textContent = 'Hide Sample Data';
-      } else {
-        tableContainer.style.display = 'none';
-        this.textContent = 'Show Sample Data';
-      }
-    });
-    
-    // Tab functionality
-    document.querySelectorAll('.tab-btn').forEach(button => {
-      button.addEventListener('click', function() {
-        // Remove active class from all tabs
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
-        
-        // Add active class to clicked tab
-        this.classList.add('active');
-        document.getElementById(this.dataset.tab).classList.add('active');
-      });
-    });
-    
-    // Calculate ATE
-    const calcATE = () => {
-      const treated = studentData.filter(student => student.treatment === 1);
-      const control = studentData.filter(student => student.treatment === 0);
-      
-      const avgTreated = treated.reduce((sum, student) => sum + student.mathScore, 0) / treated.length;
-      const avgControl = control.reduce((sum, student) => sum + student.mathScore, 0) / control.length;
-      
-      return {
-        treated: avgTreated,
-        control: avgControl,
-        ate: avgTreated - avgControl
-      };
-    };
-    
-    // Calculate CATE by grade level
-    const calcCATEByGrade = () => {
-      const gradeLevel = ['9th', '10th', '11th', '12th'];
-      const result = {};
-      
-      gradeLevel.forEach(grade => {
-        const treatedInGrade = studentData.filter(student => student.treatment === 1 && student.gradeLevel === grade);
-        const controlInGrade = studentData.filter(student => student.treatment === 0 && student.gradeLevel === grade);
-        
-        if (treatedInGrade.length > 0 && controlInGrade.length > 0) {
-          const avgTreated = treatedInGrade.reduce((sum, student) => sum + student.mathScore, 0) / treatedInGrade.length;
-          const avgControl = controlInGrade.reduce((sum, student) => sum + student.mathScore, 0) / controlInGrade.length;
-          
-          result[grade] = {
-            treated: avgTreated,
-            control: avgControl,
-            cate: avgTreated - avgControl,
-            treatedCount: treatedInGrade.length,
-            controlCount: controlInGrade.length
-          };
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
         }
-      });
-      
-      return result;
-    };
-    
-    // Calculate CATE by previous performance
-    const calcCATEByPerf = () => {
-      const perfLevels = ['Low', 'Medium', 'High'];
-      const result = {};
-      
-      perfLevels.forEach(perf => {
-        const treatedWithPerf = studentData.filter(student => student.treatment === 1 && student.prevPerformance === perf);
-        const controlWithPerf = studentData.filter(student => student.treatment === 0 && student.prevPerformance === perf);
         
-        if (treatedWithPerf.length > 0 && controlWithPerf.length > 0) {
-          const avgTreated = treatedWithPerf.reduce((sum, student) => sum + student.mathScore, 0) / treatedWithPerf.length;
-          const avgControl = controlWithPerf.reduce((sum, student) => sum + student.mathScore, 0) / controlWithPerf.length;
-          
-          result[perf] = {
-            treated: avgTreated,
-            control: avgControl,
-            cate: avgTreated - avgControl,
-            treatedCount: treatedWithPerf.length,
-            controlCount: controlWithPerf.length
-          };
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
         }
-      });
-      
-      return result;
-    };
-    
-    // Calculate LATE
-    const calcLATE = () => {
-      // Identify compliers (those who take treatment when offered)
-      const compliers = studentData.filter(student => 
-        student.complier === 1 && 
-        ((student.offered === 1 && student.treatment === 1) || 
-         (student.offered === 0 && student.treatment === 0))
-      );
-      
-      // Calculate treatment effect for compliers
-      const treatedCompliers = compliers.filter(student => student.treatment === 1);
-      const controlCompliers = compliers.filter(student => student.treatment === 0);
-      
-      const avgTreatedCompliers = treatedCompliers.reduce((sum, student) => sum + student.mathScore, 0) / treatedCompliers.length;
-      const avgControlCompliers = controlCompliers.reduce((sum, student) => sum + student.mathScore, 0) / controlCompliers.length;
-      
-      // Calculate LATE
-      return {
-        treated: avgTreatedCompliers,
-        control: avgControlCompliers,
-        late: avgTreatedCompliers - avgControlCompliers,
-        complierCount: compliers.length,
-        totalCount: studentData.length
-      };
-    };
-    
-    // Visualize ATE
-    document.getElementById('visualizeATE').addEventListener('click', function() {
-      const container = document.getElementById('ateVisualization');
-      container.innerHTML = '';
-      
-      // Calculate ATE
-      const ateResult = calcATE();
-      
-      // Create bar chart
-      const barChart = document.createElement('div');
-      barChart.className = 'bar-chart';
-      
-      // Axis label
-      const axisLabel = document.createElement('div');
-      axisLabel.className = 'axis-label';
-      axisLabel.textContent = 'Math Score';
-      barChart.appendChild(axisLabel);
-      
-      // Control bar
-      const controlBar = document.createElement('div');
-      controlBar.className = 'bar';
-      controlBar.style.backgroundColor = '#3498db';
-      controlBar.style.height = '0px';
-      controlBar.innerHTML = Math.round(ateResult.control);
-      
-      const controlLabel = document.createElement('div');
-      controlLabel.className = 'bar-label';
-      controlLabel.textContent = 'No Tutoring';
-      controlBar.appendChild(controlLabel);
-      
-      // Treated bar
-      const treatedBar = document.createElement('div');
-      treatedBar.className = 'bar';
-      treatedBar.style.backgroundColor = '#e74c3c';
-      treatedBar.style.height = '0px';
-      treatedBar.innerHTML = Math.round(ateResult.treated);
-      
-      const treatedLabel = document.createElement('div');
-      treatedLabel.className = 'bar-label';
-      treatedLabel.textContent = 'Tutoring';
-      treatedBar.appendChild(treatedLabel);
-      
-      // Difference annotation
-      const diffBar = document.createElement('div');
-      diffBar.className = 'bar';
-      diffBar.style.backgroundColor = '#2ecc71';
-      diffBar.style.height = '0px';
-      diffBar.innerHTML = `+${Math.round(ateResult.ate)}`;
-      
-      const diffLabel = document.createElement('div');
-      diffLabel.className = 'bar-label';
-      diffLabel.textContent = 'ATE (Difference)';
-      diffBar.appendChild(diffLabel);
-      
-      barChart.appendChild(controlBar);
-      barChart.appendChild(treatedBar);
-      barChart.appendChild(diffBar);
-      container.appendChild(barChart);
-      
-      // Animate bars
-      setTimeout(() => {
-        controlBar.style.height = `${ateResult.control * 2}px`;
-        treatedBar.style.height = `${ateResult.treated * 2}px`;
-        diffBar.style.height = `${ateResult.ate * 10}px`;
-      }, 100);
-      
-      // Add explanation
-      const explanation = document.createElement('div');
-      explanation.className = 'explanation';
-      explanation.innerHTML = `
-        <p>On average, students who received tutoring (treatment group) scored <strong>${Math.round(ateResult.treated)}</strong> on their math exam.</p>
-        <p>Students who didn't receive tutoring (control group) scored <strong>${Math.round(ateResult.control)}</strong> on average.</p>
-        <p>The <strong>Average Treatment Effect (ATE)</strong> is the difference: <strong>${Math.round(ateResult.ate)} points</strong>.</p>
-        <p>This suggests that, on average, tutoring improved math scores by about ${Math.round(ateResult.ate)} points.</p>
-      `;
-      container.appendChild(explanation);
-    });
-    
-    // Visualize CATE by Grade Level
-    document.getElementById('visualizeCATEGrade').addEventListener('click', function() {
-      const container = document.getElementById('cateGradeVisualization');
-      container.innerHTML = '';
-      
-      // Calculate CATE by grade
-      const cateResults = calcCATEByGrade();
-      
-      // Create bar chart
-      const barChart = document.createElement('div');
-      barChart.className = 'bar-chart';
-      barChart.style.height = '400px';
-      barChart.style.alignItems = 'flex-end';
-      
-      // Axis label
-      const axisLabel = document.createElement('div');
-      axisLabel.className = 'axis-label';
-      axisLabel.textContent = 'Treatment Effect (Score Improvement)';
-      barChart.appendChild(axisLabel);
-      
-      // Create bars for each grade
-      Object.entries(cateResults).forEach(([grade, result]) => {
-        const bar = document.createElement('div');
-        bar.className = 'bar';
-        bar.style.height = '0px';
-        bar.style.width = '60px';
-        bar.innerHTML = Math.round(result.cate);
         
-        // Color based on effect size
-        if (result.cate > 10) bar.style.backgroundColor = '#27ae60';
-        else if (result.cate > 5) bar.style.backgroundColor = '#2ecc71';
-        else bar.style.backgroundColor = '#3498db';
-        
-        const label = document.createElement('div');
-        label.className = 'bar-label';
-        label.textContent = grade;
-        bar.appendChild(label);
-        
-        barChart.appendChild(bar);
-        
-        // Animate bars
-        setTimeout(() => {
-          bar.style.height = `${result.cate * 15}px`;
-        }, 100);
-      });
-      
-      container.appendChild(barChart);
-      
-      // Add explanation
-      const explanation = document.createElement('div');
-      explanation.className = 'explanation';
-      
-      let maxGrade = '';
-      let maxEffect = 0;
-      let minGrade = '';
-      let minEffect = Infinity;
-      
-      Object.entries(cateResults).forEach(([grade, result]) => {
-        if (result.cate > maxEffect) {
-          maxEffect = result.cate;
-          maxGrade = grade;
-        }
-        if (result.cate < minEffect) {
-          minEffect = result.cate;
-          minGrade = grade;
-        }
-      });
-      
-      explanation.innerHTML = `
-        <p>The effect of tutoring varies across grade levels:</p>
-        <ul>
-          ${Object.entries(cateResults).map(([grade, result]) => 
-            `<li><strong>${grade} grade:</strong> Tutoring improved scores by <strong>${Math.round(result.cate)} points</strong></li>`
-          ).join('')}
-        </ul>
-        <p>Tutoring seems most effective for <strong>${maxGrade} grade</strong> students (${Math.round(maxEffect)} point improvement) and least effective for <strong>${minGrade} grade</strong> students (${Math.round(minEffect)} point improvement).</p>
-      `;
-      
-      container.appendChild(explanation);
-    });
-    
-    // Visualize CATE by Previous Performance
-    document.getElementById('visualizeCATEPerf').addEventListener('click', function() {
-      const container = document.getElementById('catePerfVisualization');
-      container.innerHTML = '';
-      
-      // Calculate CATE by previous performance
-      const cateResults = calcCATEByPerf();
-      
-      // Create bar chart
-      const barChart = document.createElement('div');
-      barChart.className = 'bar-chart';
-      barChart.style.height = '400px';
-      
-      // Axis label
-      const axisLabel = document.createElement('div');
-      axisLabel.className = 'axis-label';
-      axisLabel.textContent = 'Treatment Effect (Score Improvement)';
-      barChart.appendChild(axisLabel);
-      
-      // Create bars for each performance level
-      Object.entries(cateResults).forEach(([perf, result]) => {
-        const bar = document.createElement('div');
-        bar.className = 'bar';
-        bar.style.height = '0px';
-        bar.style.width = '80px';
-        bar.innerHTML = Math.round(result.cate);
-        
-        // Color based on performance level
-        if (perf === 'Low') bar.style.backgroundColor = '#e74c3c';
-        else if (perf === 'Medium') bar.style.backgroundColor = '#3498db';
-        else bar.style.backgroundColor = '#2ecc71';
-        
-        const label = document.createElement('div');
-        label.className = 'bar-label';
-        label.textContent = `${perf} performers`;
-        bar.appendChild(label);
-        
-        barChart.appendChild(bar);
-        
-        // Animate bars
-        setTimeout(() => {
-          bar.style.height = `${result.cate * 15}px`;
-        }, 100);
-      });
-      
-      container.appendChild(barChart);
-      
-      // Add explanation
-      const explanation = document.createElement('div');
-      explanation.className = 'explanation';
-      
-      let maxPerf = '';
-      let maxEffect = 0;
-      let minPerf = '';
-      let minEffect = Infinity;
-      
-      Object.entries(cateResults).forEach(([perf, result]) => {
-        if (result.cate > maxEffect) {
-          maxEffect = result.cate;
-          maxPerf = perf;
-        }
-        if (result.cate < minEffect) {
-          minEffect = result.cate;
-          minPerf = perf;
-        }
-      });
-      
-      explanation.innerHTML = `
-        <p>The effect of tutoring varies based on previous performance:</p>
-        <ul>
-          ${Object.entries(cateResults).map(([perf, result]) => 
-            `<li><strong>${perf} performers:</strong> Tutoring improved scores by <strong>${Math.round(result.cate)} points</strong></li>`
-          ).join('')}
-        </ul>
-        <p>Tutoring seems most effective for <strong>${maxPerf} performers</strong> (${Math.round(maxEffect)} point improvement) and least effective for <strong>${minPerf} performers</strong> (${Math.round(minEffect)} point improvement).</p>
-      `;
-      
-      container.appendChild(explanation);
-    });
-    
-    // Visualize HTE
-    document.getElementById('visualizeHTE').addEventListener('click', function() {
-      const container = document.getElementById('hteVisualization');
-      container.innerHTML = '';
-      
-      // Get both CATE results
-      const cateGrade = calcCATEByGrade();
-      const catePerf = calcCATEByPerf();
-      const ate = calcATE();
-      
-      // Create visualization
-      const vizDiv = document.createElement('div');
-      vizDiv.style.height = '100%';
-      vizDiv.style.display = 'flex';
-      vizDiv.style.flexDirection = 'column';
-      
-      // Add title
-      const title = document.createElement('h3');
-      title.textContent = 'Treatment Effect Varies Across Different Groups';
-      title.style.textAlign = 'center';
-      vizDiv.appendChild(title);
-      
-      // Create scatter plot
-      const scatterPlot = document.createElement('div');
-      scatterPlot.style.height = '250px';
-      scatterPlot.style.position = 'relative';
-      scatterPlot.style.border = '1px solid #ddd';
-      scatterPlot.style.marginTop = '20px';
-      
-      // Add horizontal line for ATE
-      const ateLine = document.createElement('div');
-      ateLine.style.position = 'absolute';
-      ateLine.style.width = '100%';
-      ateLine.style.height = '2px';
-      ateLine.style.backgroundColor = '#3498db';
-      ateLine.style.top = `${150 - Math.round(ate.ate) * 5}px`;
-      ateLine.style.zIndex = '1';
-      
-      const ateLabel = document.createElement('div');
-      ateLabel.style.position = 'absolute';
-      ateLabel.style.right = '5px';
-      ateLabel.style.top = `${150 - Math.round(ate.ate) * 5 - 20}px`;
-      ateLabel.style.backgroundColor = '#f8f9fa';
-      ateLabel.style.padding = '2px 5px';
-      ateLabel.style.borderRadius = '3px';
-      ateLabel.style.fontSize = '12px';
-      ateLabel.textContent = `ATE = ${Math.round(ate.ate)}`;
-      
-      scatterPlot.appendChild(ateLine);
-      scatterPlot.appendChild(ateLabel);
-      
-      // Add data points
-      let pointId = 1;
-      
-      // Grade points
-      Object.entries(cateGrade).forEach(([grade, result]) => {
-        const point = document.createElement('div');
-        point.style.position = 'absolute';
-        point.style.width = '15px';
-        point.style.height = '15px';
-        point.style.borderRadius = '50%';
-        point.style.backgroundColor = '#e74c3c';
-        point.style.left = `${100 + (pointId * 60)}px`;
-        point.style.top = `${150 - Math.round(result.cate) * 5}px`;
-        point.style.zIndex = '2';
-        
-        // Add tooltip
-        point.setAttribute('title', `${grade} grade: +${Math.round(result.cate)} points`);
-        point.setAttribute('data-group', grade);
-        point.setAttribute('data-effect', Math.round(result.cate));
-        point.className = 'hte-point grade-point';
-        
-        scatterPlot.appendChild(point);
-        pointId++;
-      });
-      
-      // Performance points
-      pointId = 8;
-      Object.entries(catePerf).forEach(([perf, result]) => {
-        const point = document.createElement('div');
-        point.style.position = 'absolute';
-        point.style.width = '15px';
-        point.style.height = '15px';
-        point.style.borderRadius = '50%';
-        point.style.backgroundColor = '#2ecc71';
-        point.style.left = `${100 + (pointId * 60)}px`;
-        point.style.top = `${150 - Math.round(result.cate) * 5}px`;
-        point.style.zIndex = '2';
-        
-        // Add tooltip
-        point.setAttribute('title', `${perf} performers: +${Math.round(result.cate)} points`);
-        point.setAttribute('data-group', `${perf} performers`);
-        point.setAttribute('data-effect', Math.round(result.cate));
-        point.className = 'hte-point perf-point';
-        
-        scatterPlot.appendChild(point);
-        pointId++;
-      });
-      
-      // Add y-axis label
-      const yLabel = document.createElement('div');
-      yLabel.style.position = 'absolute';
-      yLabel.style.transform = 'rotate(-90deg)';
-      yLabel.style.transformOrigin = 'left top';
-      yLabel.style.left = '10px';
-      yLabel.style.top = '125px';
-      yLabel.style.fontSize = '12px';
-      yLabel.textContent = 'Treatment Effect';
-      scatterPlot.appendChild(yLabel);
-      
-      // Add legend
-      const legend = document.createElement('div');
-      legend.className = 'legend';
-      legend.style.justifyContent = 'center';
-      legend.style.marginTop = '10px';
-      
-      const gradeLegend = document.createElement('div');
-      gradeLegend.className = 'legend-item';
-      const gradeColor = document.createElement('div');
-      gradeColor.className = 'legend-color';
-      gradeColor.style.backgroundColor = '#e74c3c';
-      gradeLegend.appendChild(gradeColor);
-      gradeLegend.appendChild(document.createTextNode('Grade Level'));
-      
-      const perfLegend = document.createElement('div');
-      perfLegend.className = 'legend-item';
-      const perfColor = document.createElement('div');
-      perfColor.className = 'legend-color';
-      perfColor.style.backgroundColor = '#2ecc71';
-      perfLegend.appendChild(perfColor);
-      perfLegend.appendChild(document.createTextNode('Previous Performance'));
-      
-      legend.appendChild(gradeLegend);
-      legend.appendChild(perfLegend);
-      
-      vizDiv.appendChild(scatterPlot);
-      vizDiv.appendChild(legend);
-      container.appendChild(vizDiv);
-      
-      // Add tooltip functionality
-      const tooltip = document.createElement('div');
-      tooltip.className = 'tooltip';
-      document.body.appendChild(tooltip);
-      
-      document.querySelectorAll('.hte-point').forEach(point => {
-        point.addEventListener('mouseover', function(e) {
-          const group = this.getAttribute('data-group');
-          const effect = this.getAttribute('data-effect');
-          
-          tooltip.innerHTML = `<strong>${group}</strong>: +${effect} points`;
-          tooltip.style.display = 'block';
-          tooltip.style.left = `${e.pageX + 10}px`;
-          tooltip.style.top = `${e.pageY + 10}px`;
-          
-          this.classList.add('pulse');
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                previousSlide();
+            }
         });
         
-        point.addEventListener('mouseout', function() {
-          tooltip.style.display = 'none';
-          this.classList.remove('pulse');
-        });
-        
-        point.addEventListener('mousemove', function(e) {
-          tooltip.style.left = `${e.pageX + 10}px`;
-          tooltip.style.top = `${e.pageY + 10}px`;
-        });
-      });
-      
-      // Add explanation
-      const explanation = document.createElement('div');
-      explanation.className = 'explanation';
-      explanation.innerHTML = `
-        <p><strong>Heterogeneity in Treatment Effects:</strong> The impact of tutoring varies across different subgroups.</p>
-        <p>While the overall average treatment effect (ATE) is about ${Math.round(ate.ate)} points, we can see that:</p>
-        <ul>
-          <li>Some groups benefit much more than average (points above the blue line)</li>
-          <li>Some groups benefit less than average (points below the blue line)</li>
-        </ul>
-        <p>This heterogeneity is important because it helps us target interventions to those who will benefit most.</p>
-      `;
-      
-      container.appendChild(explanation);
-    });
-    
-    // Visualize LATE
-    document.getElementById('visualizeLATE').addEventListener('click', function() {
-      const container = document.getElementById('lateVisualization');
-      container.innerHTML = '';
-      
-      // Calculate LATE
-      const lateResult = calcLATE();
-      const ateResult = calcATE();
-      
-      // Create visualization
-      const vizDiv = document.createElement('div');
-      vizDiv.style.height = '100%';
-      
-      // Create bar chart
-      const barChart = document.createElement('div');
-      barChart.className = 'bar-chart';
-      
-      // Axis label
-      const axisLabel = document.createElement('div');
-      axisLabel.className = 'axis-label';
-      axisLabel.textContent = 'Treatment Effect (Score Improvement)';
-      barChart.appendChild(axisLabel);
-      
-      // ATE bar
-      const ateBar = document.createElement('div');
-      ateBar.className = 'bar';
-      ateBar.style.backgroundColor = '#3498db';
-      ateBar.style.height = '0px';
-      ateBar.innerHTML = Math.round(ateResult.ate);
-      
-      const ateLabel = document.createElement('div');
-      ateLabel.className = 'bar-label';
-      ateLabel.textContent = 'ATE (All Students)';
-      ateBar.appendChild(ateLabel);
-      
-      // LATE bar
-      const lateBar = document.createElement('div');
-      lateBar.className = 'bar';
-      lateBar.style.backgroundColor = '#9b59b6';
-      lateBar.style.height = '0px';
-      lateBar.innerHTML = Math.round(lateResult.late);
-      
-      const lateLabel = document.createElement('div');
-      lateLabel.className = 'bar-label';
-      lateLabel.textContent = 'LATE (Compliers)';
-      lateBar.appendChild(lateLabel);
-      
-      barChart.appendChild(ateBar);
-      barChart.appendChild(lateBar);
-      
-      vizDiv.appendChild(barChart);
-      container.appendChild(vizDiv);
-      
-      // Animate bars
-      setTimeout(() => {
-        ateBar.style.height = `${ateResult.ate * 15}px`;
-        lateBar.style.height = `${lateResult.late * 15}px`;
-      }, 100);
-      
-      // Add explanation
-      const explanation = document.createElement('div');
-      explanation.className = 'explanation';
-      explanation.innerHTML = `
-        <p><strong>Local Average Treatment Effect (LATE)</strong> measures the effect for "compliers" - students who would take tutoring if offered, but wouldn't seek it out otherwise.</p>
-        <p>In our example:</p>
-        <ul>
-          <li>The overall Average Treatment Effect (ATE) for all students is <strong>${Math.round(ateResult.ate)} points</strong></li>
-          <li>The Local Average Treatment Effect (LATE) for compliers is <strong>${Math.round(lateResult.late)} points</strong></li>
-        </ul>
-        <p>This suggests that students who comply with the tutoring program when encouraged (compliers) benefit ${Math.round(lateResult.late) > Math.round(ateResult.ate) ? 'more' : 'less'} than the average student.</p>
-        <p>LATE is particularly useful in situations where we can't force everyone to take the treatment, but we can encourage them.</p>
-      `;
-      
-      container.appendChild(explanation);
-    });
-    
-    // SHAP Values visualization
-    
-    // Generate SHAP data for each student
-    const generateShapData = () => {
-      return studentData.map(student => {
-        // Base value (average score across all students)
-        const baseValue = studentData.reduce((sum, s) => sum + s.mathScore, 0) / studentData.length;
-        
-        // Calculate "contributions" to the student's score
-        // These are our fictional SHAP values
-        let treatmentEffect = 0;
-        if (student.treatment === 1) {
-          // Treatment effect varies by grade and previous performance
-          if (student.gradeLevel === '10th') treatmentEffect = 10;
-          else if (student.gradeLevel === '9th') treatmentEffect = 5;
-          else if (student.gradeLevel === '11th') treatmentEffect = 7;
-          else treatmentEffect = 3;
-          
-          if (student.prevPerformance === 'Low') treatmentEffect += 12;
-          else if (student.prevPerformance === 'Medium') treatmentEffect += 7;
-          else treatmentEffect += 2;
-          
-          // Add some random noise
-          treatmentEffect += Math.floor(Math.random() * 4) - 2;
-        }
-        
-        let gradeEffect = 0;
-        if (student.gradeLevel === '9th') gradeEffect = -5;
-        else if (student.gradeLevel === '10th') gradeEffect = 0;
-        else if (student.gradeLevel === '11th') gradeEffect = 3;
-        else gradeEffect = 5;
-        
-        let perfEffect = 0;
-        if (student.prevPerformance === 'Low') perfEffect = -15;
-        else if (student.prevPerformance === 'Medium') perfEffect = 0;
-        else perfEffect = 15;
-        
-        // Make sure SHAP values sum to difference from base value
-        const shapSum = treatmentEffect + gradeEffect + perfEffect;
-        const diff = student.mathScore - baseValue - shapSum;
-        
-        // Adjust treatmentEffect to make everything balance
-        treatmentEffect += diff;
-        
-        return {
-          id: student.id,
-          mathScore: student.mathScore,
-          baseValue: Math.round(baseValue),
-          features: {
-            treatment: student.treatment === 1 ? 'Yes' : 'No',
-            gradeLevel: student.gradeLevel,
-            prevPerformance: student.prevPerformance
-          },
-          shapValues: {
-            treatment: treatmentEffect,
-            gradeLevel: gradeEffect,
-            prevPerformance: perfEffect
-          }
-        };
-      });
-    };
-    
-    const shapData = generateShapData();
-    
-    // Populate student selector
-    const studentSelector = document.getElementById('studentSelector');
-    shapData.slice(0, 10).forEach(student => {
-      const option = document.createElement('option');
-      option.value = student.id;
-      option.textContent = `Student ${student.id} (${student.features.gradeLevel} grade, ${student.features.prevPerformance} performer, Tutoring: ${student.features.treatment})`;
-      studentSelector.appendChild(option);
-    });
-    
-    // Visualize SHAP values
-    const visualizeShap = (studentId) => {
-      const container = document.getElementById('shapVisualization');
-      container.innerHTML = '<div class="shap-baseline"></div>';
-      
-      const student = shapData.find(s => s.id === parseInt(studentId));
-      if (!student) return;
-      
-      // Add title with prediction
-      const title = document.createElement('h3');
-      title.textContent = `Explaining Student ${student.id}'s Math Score: ${student.mathScore}`;
-      title.style.textAlign = 'center';
-      title.style.marginTop = '0';
-      container.appendChild(title);
-      
-      // Add base value
-      const baseValue = document.createElement('div');
-      baseValue.textContent = `Base value: ${student.baseValue} (average score)`;
-      baseValue.style.textAlign = 'center';
-      baseValue.style.marginBottom = '20px';
-      container.appendChild(baseValue);
-      
-      // Create SHAP visualization
-      const shapViz = document.createElement('div');
-      shapViz.style.position = 'relative';
-      shapViz.style.height = '200px';
-      shapViz.style.width = '100%';
-      
-      // Add features
-      const features = [
-        { name: 'Tutoring', key: 'treatment', value: student.features.treatment },
-        { name: 'Grade Level', key: 'gradeLevel', value: student.features.gradeLevel },
-        { name: 'Previous Performance', key: 'prevPerformance', value: student.features.prevPerformance }
-      ];
-      
-      features.forEach((feature, index) => {
-        const featureDiv = document.createElement('div');
-        featureDiv.className = 'shap-feature';
-        
-        // Feature name and value
-        const featureName = document.createElement('div');
-        featureName.className = 'shap-feature-name';
-        featureName.textContent = `${feature.name}: ${feature.value}`;
-        
-        // SHAP value
-        const shapValue = document.createElement('div');
-        shapValue.className = 'shap-value';
-        const value = student.shapValues[feature.key];
-        shapValue.textContent = value > 0 ? `+${Math.round(value)}` : Math.round(value);
-        
-        // SHAP bar
-        const shapBar = document.createElement('div');
-        shapBar.className = `shap-bar ${value >= 0 ? 'positive' : 'negative'}`;
-        
-        if (value >= 0) {
-          shapBar.style.width = '0%';
-          setTimeout(() => {
-            shapBar.style.width = `${Math.abs(value) * 2}%`;
-          }, 100 + index * 200);
-        } else {
-          shapBar.style.width = '0%';
-          setTimeout(() => {
-            shapBar.style.width = `${Math.abs(value) * 2}%`;
-          }, 100 + index * 200);
-        }
-        
-        featureDiv.appendChild(featureName);
-        featureDiv.appendChild(shapValue);
-        featureDiv.appendChild(shapBar);
-        shapViz.appendChild(featureDiv);
-      });
-      
-      container.appendChild(shapViz);
-      
-      // Add final prediction
-      const finalPrediction = document.createElement('div');
-      finalPrediction.style.textAlign = 'center';
-      finalPrediction.style.marginTop = '20px';
-      finalPrediction.innerHTML = `<strong>Final score = ${student.baseValue} (base) + ${Math.round(student.shapValues.treatment)} (tutoring) + ${Math.round(student.shapValues.gradeLevel)} (grade) + ${Math.round(student.shapValues.prevPerformance)} (previous performance) = ${student.mathScore}</strong>`;
-      container.appendChild(finalPrediction);
-      
-      // Add explanation
-      const explanation = document.createElement('div');
-      explanation.className = 'explanation';
-      explanation.innerHTML = `
-        <p><strong>SHAP values</strong> show how much each feature contributes to pushing the prediction away from the base value (average).</p>
-        <p>For Student ${student.id}:</p>
-        <ul>
-          <li>Tutoring contributed <strong>${Math.round(student.shapValues.treatment)} points</strong> ${student.shapValues.treatment >= 0 ? 'increase' : 'decrease'}</li>
-          <li>Being in ${student.features.gradeLevel} grade contributed <strong>${Math.abs(Math.round(student.shapValues.gradeLevel))} points</strong> ${student.shapValues.gradeLevel >= 0 ? 'increase' : 'decrease'}</li>
-          <li>Having ${student.features.prevPerformance.toLowerCase()} previous performance contributed <strong>${Math.abs(Math.round(student.shapValues.prevPerformance))} points</strong> ${student.shapValues.prevPerformance >= 0 ? 'increase' : 'decrease'}</li>
-        </ul>
-        <p>SHAP values help us understand which factors were most important for this specific student's outcome.</p>
-      `;
-      
-      container.appendChild(explanation);
-    };
-    
-    // Handle student selection change
-    studentSelector.addEventListener('change', function() {
-      visualizeShap(this.value);
-    });
-    
-    // Initialize visualizations
-    document.getElementById('visualizeATE').click();
-    document.getElementById('visualizeCATEGrade').click();
-    document.getElementById('visualizeHTE').click();
-    document.getElementById('visualizeLATE').click();
-    visualizeShap(studentSelector.value);
-  </script>
+        showSlide(0);
+    </script>
 </body>
 </html>
