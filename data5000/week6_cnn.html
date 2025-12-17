@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 6: CNNs for Image and Video Processing - DATA5000</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: white;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 80px;
+            position: relative;
+        }
+
+        h1 {
+            color: #dc143c;
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        h2 {
+            color: #dc143c;
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        h3 {
+            color: #dc143c;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        p {
+            font-size: 1.3em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .content-box {
+            background: white;
+            border: 2px solid #dc143c;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px 0;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .process-step {
+            background: #f8f9fa;
+            border-left: 4px solid #dc143c;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .process-step h4 {
+            color: #dc143c;
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        .process-step p {
+            font-size: 1.1em;
+            text-align: left;
+            margin: 0;
+        }
+
+        /* Quiz Styles */
+        .quiz-container {
+            background: white;
+            border: 3px solid #dc143c;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .quiz-question {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .quiz-option {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2em;
+            text-align: left;
+        }
+
+        .quiz-option:hover {
+            border-color: #dc143c;
+            background: #fff5f5;
+            transform: translateX(5px);
+        }
+
+        .quiz-option.selected {
+            border-color: #dc143c;
+            background: #fff5f5;
+        }
+
+        .quiz-option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .quiz-feedback {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            display: none;
+        }
+
+        .quiz-feedback.show {
+            display: block;
+        }
+
+        .quiz-feedback.correct {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+
+        .quiz-feedback.incorrect {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+
+        /* Navigation */
+        .nav-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: #dc143c;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        .nav-btn:hover {
+            background: #a00f2e;
+            transform: translateY(-2px);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            font-size: 1.1em;
+            color: #666;
+            z-index: 1000;
+        }
+
+        /* Visualization Styles */
+        .viz-container {
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .cnn-flow {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .cnn-layer {
+            background: #f8f9fa;
+            border: 2px solid #dc143c;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            min-width: 180px;
+        }
+
+        .cnn-layer h4 {
+            color: #dc143c;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .arrow {
+            font-size: 2.5em;
+            color: #dc143c;
+            font-weight: bold;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            border-left: 4px solid #dc143c;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #dc143c;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        ul {
+            text-align: left;
+            font-size: 1.2em;
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        li {
+            margin: 15px 0;
+        }
+
+        .highlight-box {
+            background: #fff5f5;
+            border: 2px solid #dc143c;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            font-size: 1.3em;
+            font-weight: 500;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            max-width: 900px;
+        }
+
+        .grid-item {
+            aspect-ratio: 1;
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            color: #666;
+            padding: 10px;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-counter" id="slideCounter">Slide 1 of 23</div>
+    
+    <div class="slide-container" id="slideContainer">
+        
+        <!-- Slide 1: Title -->
+        <div class="slide">
+            <h1>Advanced Machine Learning</h1>
+            <h2>CNNs for Video and Image Processing</h2>
+            <p style="font-size: 1.8em; margin-top: 40px;">Workshop #6</p>
+            <p style="font-size: 1.5em; color: #666;">DATA5000 - Artificial Intelligence Programming in Business Analytics</p>
+        </div>
+
+        <!-- Slide 2: Copyright -->
+        <div class="slide">
+            <div class="content-box" style="max-width: 800px;">
+                <h3 style="text-align: center; margin-bottom: 30px;">Copyright Warning</h3>
+                <p><strong>COMMONWEALTH OF AUSTRALIA</strong><br>Copyright Regulations 1969</p>
+                <p style="margin-top: 20px;">This material has been reproduced and communicated to you by or on behalf of Kaplan Business School pursuant to Part VB of the Copyright Act 1968 (the Act).</p>
+                <p>The material in this communication may be subject to copyright under the Act. Any further reproduction or communication of this material by you may be the subject of copyright protection under the Act.</p>
+                <p style="color: #dc143c; font-weight: bold; margin-top: 20px;">Do not remove this notice.</p>
+            </div>
+        </div>
+
+        <!-- Slide 3: Course Roadmap -->
+        <div class="slide">
+            <h2>DATA5000 Course Roadmap</h2>
+            <div class="image-grid">
+                <div class="grid-item">Week 1<br>AI with Python</div>
+                <div class="grid-item">Week 2<br>Predictive Models</div>
+                <div class="grid-item">Week 3<br>Deep Learning</div>
+                <div class="grid-item">Week 4<br>Causal AI</div>
+                <div class="grid-item">Week 5<br>A1 (25%)</div>
+                <div class="grid-item" style="background: #dc143c; color: white; font-weight: bold;">Week 6<br>CNN for Images</div>
+                <div class="grid-item">Week 7<br>Generative AI</div>
+                <div class="grid-item">Week 8<br>Prompt Engineering</div>
+                <div class="grid-item">Week 9<br>A2 (35%)</div>
+                <div class="grid-item">Week 10<br>Intro to LLM</div>
+                <div class="grid-item">Week 11<br>LLM Apps</div>
+                <div class="grid-item">Week 12<br>LLM Apps 2</div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Learning Objectives -->
+        <div class="slide">
+            <h2>Today's Learning Journey</h2>
+            <div class="content-box">
+                <h3>What You'll Learn</h3>
+                <ul>
+                    <li>Understand how Convolutional Neural Networks (CNNs) process images and videos</li>
+                    <li>Use pre-trained models (YOLOv8) for real-world business applications</li>
+                    <li>Detect and count objects in traffic videos using Supervision API</li>
+                    <li>Classify medical images using Roboflow platform</li>
+                    <li>Connect CNN applications to business decision-making</li>
+                </ul>
+                <div class="highlight-box" style="margin-top: 30px;">
+                    Focus: Using AI tools to solve business problems, not building neural networks from scratch
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: CNN Introduction -->
+        <div class="slide">
+            <h2>What Are Convolutional Neural Networks?</h2>
+            <p style="font-size: 1.5em; max-width: 1000px; margin: 30px auto;">CNNs are specialized AI systems that scan images in small patches to detect patterns—like edges, shapes, and objects.</p>
+            
+            <div class="two-column">
+                <div class="column">
+                    <h3>How Humans See Images</h3>
+                    <div class="stat-box">
+                        <span class="stat-label">We instantly recognize entire objects</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Our brain processes holistically</span>
+                    </div>
+                </div>
+                <div class="column">
+                    <h3>How CNNs See Images</h3>
+                    <div class="stat-box">
+                        <span class="stat-label">They scan patch by patch</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Build understanding from simple to complex features</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Think of a CNN as a sliding magnifying glass that examines every part of an image to find specific patterns
+            </div>
+        </div>
+
+        <!-- Slide 6: CNN Business Applications -->
+        <div class="slide">
+            <h2>Real Business Applications of CNNs</h2>
+            <div class="two-column">
+                <div class="column">
+                    <div class="process-step">
+                        <h4>Traffic Management</h4>
+                        <p>Cities use CNNs to count vehicles in real-time, optimize traffic lights, and plan infrastructure.</p>
+                        <div class="stat-box" style="margin-top: 15px;">
+                            <span class="stat-number">95%</span>
+                            <span class="stat-label">Accuracy in vehicle counting</span>
+                        </div>
+                    </div>
+                    
+                    <div class="process-step">
+                        <h4>Medical Diagnostics</h4>
+                        <p>Healthcare providers use CNNs to pre-screen medical images, helping radiologists prioritize critical cases.</p>
+                        <div class="stat-box" style="margin-top: 15px;">
+                            <span class="stat-number">40%</span>
+                            <span class="stat-label">Reduction in diagnosis time</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <div class="process-step">
+                        <h4>Retail Analytics</h4>
+                        <p>Stores analyze customer behavior, detect out-of-stock items, and optimize product placement.</p>
+                        <div class="stat-box" style="margin-top: 15px;">
+                            <span class="stat-number">25%</span>
+                            <span class="stat-label">Increase in operational efficiency</span>
+                        </div>
+                    </div>
+                    
+                    <div class="process-step">
+                        <h4>Content Creation</h4>
+                        <p>Marketing teams use CNNs to generate custom imagery, classify brand mentions, and moderate content.</p>
+                        <div class="stat-box" style="margin-top: 15px;">
+                            <span class="stat-number">80%</span>
+                            <span class="stat-label">Faster content production</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz 1 -->
+        <div class="slide">
+            <h2>Quick Check #1: Understanding CNNs</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">What is the main advantage of CNNs over traditional image analysis methods?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+                        A) They process images faster than humans
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 1)">
+                        B) They automatically learn to detect patterns without manual feature engineering
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+                        C) They only work with color images
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+                        D) They require less training data than other methods
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback1"></div>
+            </div>
+        </div>
+
+        <!-- Slide 7: CNN Architecture Simplified -->
+        <div class="slide">
+            <h2>How CNNs Work: Three Essential Steps</h2>
+            <div class="viz-container">
+                <div class="cnn-flow">
+                    <div class="cnn-layer">
+                        <h4>1. DETECT</h4>
+                        <p>Convolutional Layer</p>
+                        <div class="stat-box" style="margin-top: 10px;">
+                            <span class="stat-label">Finds edges, textures, and basic patterns</span>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="cnn-layer">
+                        <h4>2. SIMPLIFY</h4>
+                        <p>Pooling Layer</p>
+                        <div class="stat-box" style="margin-top: 10px;">
+                            <span class="stat-label">Keeps important features, reduces noise</span>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="cnn-layer">
+                        <h4>3. DECIDE</h4>
+                        <p>Fully-Connected Layer</p>
+                        <div class="stat-box" style="margin-top: 10px;">
+                            <span class="stat-label">Combines features to make final classification</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="two-column" style="margin-top: 40px;">
+                <div class="column">
+                    <div class="process-step">
+                        <h4>Detective Analogy</h4>
+                        <p><strong>Step 1:</strong> Collect evidence (finding patterns)<br>
+                        <strong>Step 2:</strong> Focus on key clues (reducing noise)<br>
+                        <strong>Step 3:</strong> Make the verdict (classification)</p>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="stat-box">
+                        <span class="stat-number">Multiple Layers</span>
+                        <span class="stat-label">Deep CNNs stack these steps 10-100+ times to detect increasingly complex patterns</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Why Pre-trained Models -->
+        <div class="slide">
+            <h2>Why Use Pre-Trained Models?</h2>
+            <div class="two-column">
+                <div class="column">
+                    <h3>Building From Scratch Requires:</h3>
+                    <div class="stat-box">
+                        <span class="stat-number">Weeks</span>
+                        <span class="stat-label">Training time on powerful GPUs</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">$10,000+</span>
+                        <span class="stat-label">GPU hardware costs</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Millions</span>
+                        <span class="stat-label">Labeled training images</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Advanced</span>
+                        <span class="stat-label">Deep learning expertise</span>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>Using Pre-Trained Models:</h3>
+                    <div class="stat-box">
+                        <span class="stat-number">Minutes</span>
+                        <span class="stat-label">Setup time with Python libraries</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Free</span>
+                        <span class="stat-label">Open-source models available</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Ready</span>
+                        <span class="stat-label">Already trained on diverse datasets</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Business Focus</span>
+                        <span class="stat-label">Concentrate on applications, not technical details</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Today we use YOLOv8 (You Only Look Once) and Roboflow—industry-standard tools that handle the complex CNN architecture for us
+            </div>
+        </div>
+
+        <!-- Slide 9: YOLO Introduction -->
+        <div class="slide">
+            <h2>YOLOv8: State-of-the-Art Object Detection</h2>
+            <p style="font-size: 1.4em;">"You Only Look Once" - A single pass through the image detects all objects</p>
+            
+            <div class="two-column" style="margin-top: 30px;">
+                <div class="column">
+                    <h3>Traditional Methods</h3>
+                    <div class="process-step">
+                        <p>1. Propose regions of interest</p>
+                        <p>2. Classify each region separately</p>
+                        <p>3. Refine bounding boxes</p>
+                        <div class="stat-box" style="margin-top: 15px;">
+                            <span class="stat-number">5-10 FPS</span>
+                            <span class="stat-label">Processing speed</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>YOLO Approach</h3>
+                    <div class="process-step">
+                        <p>1. Divide image into grid</p>
+                        <p>2. Predict all objects simultaneously</p>
+                        <p>3. Filter and refine predictions</p>
+                        <div class="stat-box" style="margin-top: 15px;">
+                            <span class="stat-number">60+ FPS</span>
+                            <span class="stat-label">Real-time processing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-box" style="margin-top: 30px;">
+                <h3>YOLOv8 Capabilities</h3>
+                <ul>
+                    <li><strong>Detection:</strong> Locate and classify objects in images</li>
+                    <li><strong>Segmentation:</strong> Identify exact pixel-level object boundaries</li>
+                    <li><strong>Tracking:</strong> Follow objects across video frames</li>
+                    <li><strong>Classification:</strong> Categorize entire images</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quiz 2 -->
+        <div class="slide">
+            <h2>Quick Check #2: Understanding YOLO</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">Why is YOLO faster than traditional object detection methods?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+                        A) It uses a smaller neural network
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 2)">
+                        B) It processes the entire image in a single pass rather than analyzing multiple regions separately
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+                        C) It only detects one object at a time
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+                        D) It works exclusively with grayscale images
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback2"></div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Traffic Monitoring Introduction -->
+        <div class="slide">
+            <h2>Application 1: Traffic Monitoring</h2>
+            <div class="two-column">
+                <div class="column">
+                    <h3>Business Problem</h3>
+                    <div class="process-step">
+                        <h4>Manual Counting Issues:</h4>
+                        <p>• Labor-intensive and expensive<br>
+                        • Limited to small time windows<br>
+                        • Prone to human error<br>
+                        • Cannot operate 24/7</p>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">$500-1000</span>
+                        <span class="stat-label">Cost per day for manual traffic surveys</span>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>CNN Solution</h3>
+                    <div class="process-step">
+                        <h4>Automated Video Analysis:</h4>
+                        <p>• Continuous 24/7 monitoring<br>
+                        • Multiple locations simultaneously<br>
+                        • 95%+ accuracy in vehicle counting<br>
+                        • Real-time data for decisions</p>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">$50-100</span>
+                        <span class="stat-label">Cost per day with AI automation</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Today's Practical: Use YOLOv8 + Supervision API to detect and count vehicles in traffic video footage
+            </div>
+        </div>
+
+        <!-- Slide 11: Traffic Monitoring Workflow -->
+        <div class="slide">
+            <h2>Traffic Analysis Workflow</h2>
+            <div class="content-box">
+                <h3>What We'll Do in the Notebook</h3>
+                <div class="cnn-flow" style="flex-direction: column; align-items: stretch;">
+                    <div class="process-step">
+                        <h4>Step 1: Setup Environment</h4>
+                        <p>Install YOLOv8, ByteTrack (for tracking), and Supervision API</p>
+                    </div>
+                    
+                    <div class="process-step">
+                        <h4>Step 2: Download Video Dataset</h4>
+                        <p>Use free traffic videos from Pexels</p>
+                    </div>
+                    
+                    <div class="process-step">
+                        <h4>Step 3: Load Pre-Trained Model</h4>
+                        <p>YOLOv8 already knows how to detect vehicles—no training needed</p>
+                    </div>
+                    
+                    <div class="process-step">
+                        <h4>Step 4: Process Single Frame</h4>
+                        <p>Test detection on one frame to verify accuracy</p>
+                    </div>
+                    
+                    <div class="process-step">
+                        <h4>Step 5: Process Full Video</h4>
+                        <p>Apply detection frame-by-frame and track objects across time</p>
+                    </div>
+                    
+                    <div class="process-step">
+                        <h4>Step 6: Generate Insights</h4>
+                        <p>Export vehicle counts, speeds, and patterns for business decisions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Business Decisions -->
+        <div class="slide">
+            <h2>From Data to Decisions</h2>
+            <div class="content-box">
+                <h3>Sample Output: Vehicle Count Analysis</h3>
+                <div class="two-column" style="margin-top: 20px;">
+                    <div class="stat-box">
+                        <span class="stat-number">127</span>
+                        <span class="stat-label">Vehicles per hour (Off-Peak: 2-3 PM)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">380</span>
+                        <span class="stat-label">Vehicles per hour (Peak: 5-6 PM)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-box" style="margin-top: 30px;">
+                <h3>Business Questions This Data Answers</h3>
+                <ul>
+                    <li><strong>Infrastructure Planning:</strong> Does this intersection need traffic lights or a roundabout?</li>
+                    <li><strong>Maintenance Scheduling:</strong> When can road work occur with minimal disruption? (2-3 PM window)</li>
+                    <li><strong>Public Transport:</strong> Is there demand for additional bus routes during peak times?</li>
+                    <li><strong>Environmental Impact:</strong> What's the carbon footprint of vehicles at this location?</li>
+                    <li><strong>Smart City Integration:</strong> Can we dynamically adjust traffic light timing based on real-time counts?</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quiz 3 -->
+        <div class="slide">
+            <h2>Quick Check #3: Traffic Application</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">A city council wants to minimize traffic disruption during road repairs. Based on the vehicle count data (127 vehicles/hour at 2-3 PM vs 380 vehicles/hour at 5-6 PM), what's the best recommendation?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+                        A) Schedule repairs during peak hours (5-6 PM) for maximum visibility
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 3)">
+                        B) Schedule repairs during off-peak hours (2-3 PM) to minimize disruption
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+                        C) Close the road entirely regardless of traffic patterns
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+                        D) The data is insufficient to make a recommendation
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback3"></div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Medical Imaging Context -->
+        <div class="slide">
+            <h2>Application 2: Medical Image Classification</h2>
+            <div class="two-column">
+                <div class="column">
+                    <h3>Healthcare Challenge</h3>
+                    <div class="stat-box">
+                        <span class="stat-number">50+</span>
+                        <span class="stat-label">Brain MRI scans a radiologist reviews daily</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">15-30 min</span>
+                        <span class="stat-label">Average time per comprehensive MRI analysis</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Critical</span>
+                        <span class="stat-label">Radiologist fatigue affects diagnostic accuracy</span>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>AI-Assisted Solution</h3>
+                    <div class="stat-box">
+                        <span class="stat-number">40%</span>
+                        <span class="stat-label">Reduction in initial screening time</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">93-97%</span>
+                        <span class="stat-label">Accuracy in tumor classification (research studies)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Priority</span>
+                        <span class="stat-label">AI flags urgent cases for immediate review</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Important: AI assists doctors, it doesn't replace them. Final diagnosis always requires human expert validation
+            </div>
+        </div>
+
+        <!-- Slide 14: Brain MRI Dataset -->
+        <div class="slide">
+            <h2>Brain Tumor MRI Classification</h2>
+            <div class="content-box">
+                <h3>Dataset Overview</h3>
+                <p>Brain Tumor MRI Images: 44 different tumor types and imaging modalities</p>
+                
+                <div class="two-column" style="margin-top: 20px;">
+                    <div class="column">
+                        <div class="process-step">
+                            <h4>Imaging Modalities</h4>
+                            <p>• T1-weighted imaging<br>
+                            • T2-weighted imaging<br>
+                            • T1C+ (contrast-enhanced)</p>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-number">5,000+</span>
+                            <span class="stat-label">Total MRI images in dataset</span>
+                        </div>
+                    </div>
+                    
+                    <div class="column">
+                        <div class="process-step">
+                            <h4>Tumor Types Include</h4>
+                            <p>• Meningioma (most common)<br>
+                            • Glioblastoma<br>
+                            • Astrocytoma<br>
+                            • Normal brain tissue (control)</p>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-number">44</span>
+                            <span class="stat-label">Different classification categories</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Challenge: Class imbalance—some tumor types have 300+ images, others have only 20-50. This affects model training and requires careful dataset balancing.
+            </div>
+        </div>
+
+        <!-- Slide 15: Roboflow Workflow -->
+        <div class="slide">
+            <h2>Using Roboflow for Medical Classification</h2>
+            <div class="content-box">
+                <h3>Platform Overview</h3>
+                <p>Roboflow handles the complex CNN infrastructure so you can focus on the business application</p>
+            </div>
+
+            <div class="cnn-flow" style="flex-direction: column; align-items: stretch; margin-top: 30px;">
+                <div class="process-step">
+                    <h4>Step 1: Dataset Preparation</h4>
+                    <p>Organize MRI images by tumor type on your computer. Balance classes by selecting equal numbers of images per category.</p>
+                    <div class="stat-box" style="margin-top: 10px;">
+                        <span class="stat-label">Tip: Use 80% of smallest class for training (e.g., if smallest class has 50 images, use 40 per class)</span>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <h4>Step 2: Upload to Roboflow</h4>
+                    <p>Create project → Upload organized folders → Roboflow automatically labels images based on folder names</p>
+                    <div class="stat-box" style="margin-top: 10px;">
+                        <span class="stat-number">1,600</span>
+                        <span class="stat-label">Image limit for free community accounts</span>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <h4>Step 3: Train Model</h4>
+                    <p>Roboflow applies data augmentation (rotation, brightness adjustment) and trains YOLOv8 on your dataset—no coding required</p>
+                </div>
+                
+                <div class="process-step">
+                    <h4>Step 4: Evaluate Performance</h4>
+                    <p>Review accuracy metrics, confusion matrix, and misclassified examples to understand model strengths and limitations</p>
+                </div>
+                
+                <div class="process-step">
+                    <h4>Step 5: Deploy and Test</h4>
+                    <p>Upload new MRI images to get instant classification predictions with confidence scores</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz 4 -->
+        <div class="slide">
+            <h2>Quick Check #4: Medical AI Ethics</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">Your AI model correctly classifies 95% of brain tumor images in testing. A hospital wants to deploy it for autonomous diagnosis without radiologist review. What's the most appropriate response?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+                        A) Approve deployment—95% accuracy exceeds most human benchmarks
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 4)">
+                        B) Recommend AI-assisted workflow where AI flags cases for priority review by radiologists, but humans make final diagnosis
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+                        C) Refuse deployment until model reaches 100% accuracy
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+                        D) Deploy only for non-critical cases like routine checkups
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback4"></div>
+            </div>
+        </div>
+
+        <!-- Slide 16: Dataset Balancing -->
+        <div class="slide">
+            <h2>Critical Step: Dataset Balancing</h2>
+            <div class="content-box">
+                <h3>Why Balance Matters</h3>
+                <p>Imbalanced datasets cause AI to favor common classes and ignore rare ones</p>
+            </div>
+
+            <div class="two-column" style="margin-top: 30px;">
+                <div class="column">
+                    <h3>Imbalanced Dataset Problem</h3>
+                    <div class="stat-box">
+                        <span class="stat-number">369</span>
+                        <span class="stat-label">Meningioma T1C+ images</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">18</span>
+                        <span class="stat-label">Ganglioglioma T1C+ images</span>
+                    </div>
+                    <div class="highlight-box" style="margin-top: 20px; background: #f8d7da;">
+                        Result: Model predicts "Meningioma" for everything to maximize accuracy, missing rare tumors entirely
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>Balanced Dataset Solution</h3>
+                    <div class="stat-box">
+                        <span class="stat-number">18</span>
+                        <span class="stat-label">Images per class (use smallest class)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">80%</span>
+                        <span class="stat-label">For training (14 images)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">20%</span>
+                        <span class="stat-label">For validation/testing (4 images)</span>
+                    </div>
+                    <div class="highlight-box" style="margin-top: 20px; background: #d4edda;">
+                        Result: Model learns all classes equally, improving rare tumor detection
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 17: Transition to Generative AI -->
+        <div class="slide">
+            <h2>From Classification to Creation</h2>
+            <div class="two-column">
+                <div class="column">
+                    <h3>What We've Learned</h3>
+                    <div class="process-step">
+                        <h4>CNNs for Analysis</h4>
+                        <p>• Detect objects in videos<br>
+                        • Count and track vehicles<br>
+                        • Classify medical images<br>
+                        • Extract patterns from visual data</p>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Input: Existing images → Output: Classifications/Detections</span>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>Next Evolution</h3>
+                    <div class="process-step">
+                        <h4>CNNs for Generation</h4>
+                        <p>• Create new images from text<br>
+                        • Generate marketing visuals<br>
+                        • Produce custom content<br>
+                        • Synthesize realistic imagery</p>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Input: Text descriptions → Output: New images</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Same core technology (neural networks with convolutional layers), different application direction: analysis vs creation
+            </div>
+        </div>
+
+        <!-- Slide 18: Assessment 2 Preview -->
+        <div class="slide">
+            <h2>Assessment 2 Preview: Generative AI</h2>
+            <div class="content-box">
+                <h3>Scenario: Sports Marketing Campaign</h3>
+                <p style="font-size: 1.3em;">Manchester United has just won the 2024 FA Cup final against Manchester City. You are tasked with preparing media content for the victory campaign.</p>
+            </div>
+
+            <div class="content-box" style="margin-top: 30px;">
+                <h3>Your Task (Practice Activity)</h3>
+                <div class="process-step">
+                    <h4>Step 1: Research with AI</h4>
+                    <p>Use generative AI (ChatGPT, Claude) to gather information:<br>
+                    • "Tell me everything about Manchester United"<br>
+                    • "Who are the star players?"<br>
+                    • "Who scored in the 2024 FA Cup Final?"</p>
+                </div>
+                
+                <div class="process-step">
+                    <h4>Step 2: Evaluate AI Responses</h4>
+                    <p>Critical thinking questions:<br>
+                    • Is the information accurate?<br>
+                    • What's missing or outdated?<br>
+                    • How can you improve the prompts?</p>
+                </div>
+                
+                <div class="process-step">
+                    <h4>Step 3: Generate Visual Content</h4>
+                    <p>Use image generation AI to create one advertising campaign image based on your research</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 19: Assessment Activity -->
+        <div class="slide">
+            <h2>Hands-On: Generative AI Experience</h2>
+            <div class="content-box">
+                <h3>Try This Now (10 minutes)</h3>
+                <ul style="font-size: 1.2em;">
+                    <li>Open ChatGPT, Claude, or another AI assistant</li>
+                    <li>Ask: "Who scored in the 2024 FA Cup Final between Manchester United and Manchester City?"</li>
+                    <li>Analyze the response quality and accuracy</li>
+                    <li>Refine your prompt with more specific details</li>
+                    <li>Use an image generator (DALL-E, Midjourney, Leonardo.ai) to create a victory celebration image</li>
+                </ul>
+            </div>
+
+            <div class="two-column" style="margin-top: 30px;">
+                <div class="column">
+                    <div class="stat-box">
+                        <span class="stat-label"><strong>Reflection Question 1:</strong> What surprised you about the AI's knowledge (or lack thereof)?</span>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="stat-box">
+                        <span class="stat-label"><strong>Reflection Question 2:</strong> How would you verify the AI-generated information before using it professionally?</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Key Lesson: AI is a powerful tool, but it requires critical evaluation and human oversight—especially for factual claims and professional content
+            </div>
+        </div>
+
+        <!-- Quiz 5 -->
+        <div class="slide">
+            <h2>Quick Check #5: Synthesis and Application</h2>
+            <div class="quiz-container">
+                <div class="quiz-question">You're a business analyst recommending CNN adoption for a retail company. Which application would provide the FASTEST return on investment (ROI)?</div>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+                        A) Building a custom CNN from scratch for product recognition
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 5)">
+                        B) Using pre-trained YOLOv8 to detect out-of-stock items on store shelves via existing security cameras
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+                        C) Hiring a team of data scientists to label 1 million product images
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+                        D) Waiting for more advanced AI models to be released before implementation
+                    </div>
+                </div>
+                <div class="quiz-feedback" id="feedback5"></div>
+            </div>
+        </div>
+
+        <!-- Slide 20: Key Takeaways -->
+        <div class="slide">
+            <h2>Key Takeaways from Week 6</h2>
+            <div class="content-box">
+                <h3>Technical Understanding</h3>
+                <ul>
+                    <li>CNNs detect patterns in images through three layers: Detect, Simplify, Decide</li>
+                    <li>Pre-trained models (YOLOv8) eliminate the need to build CNNs from scratch</li>
+                    <li>Real-time object detection is possible with modern hardware (60+ FPS)</li>
+                    <li>Dataset balancing is critical for accurate multi-class classification</li>
+                </ul>
+            </div>
+
+            <div class="content-box" style="margin-top: 30px;">
+                <h3>Business Applications</h3>
+                <ul>
+                    <li>Traffic management: 90%+ cost reduction vs manual surveys, enabling data-driven infrastructure decisions</li>
+                    <li>Medical diagnostics: 40% faster initial screening, allowing radiologists to focus on complex cases</li>
+                    <li>Generative AI: Transform text research into visual content for marketing campaigns</li>
+                    <li>All applications require human oversight for ethical, accurate implementation</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Remember: The goal is not to become AI engineers, but to understand how to apply AI tools effectively in business contexts
+            </div>
+        </div>
+
+        <!-- Slide 21: Next Steps -->
+        <div class="slide">
+            <h2>What's Next?</h2>
+            <div class="two-column">
+                <div class="column">
+                    <h3>Today's Practical Work</h3>
+                    <div class="process-step">
+                        <h4>Notebook 1: Traffic Detection</h4>
+                        <p>Complete the Google Colab notebook:<br>
+                        • Run vehicle detection<br>
+                        • Count traffic patterns<br>
+                        • Generate business insights</p>
+                    </div>
+                    <div class="process-step">
+                        <h4>Notebook 2: Medical Imaging</h4>
+                        <p>Use Roboflow for brain tumor classification:<br>
+                        • Upload balanced dataset<br>
+                        • Train YOLOv8 model<br>
+                        • Test on new images</p>
+                    </div>
+                </div>
+                
+                <div class="column">
+                    <h3>Coming in Week 7</h3>
+                    <div class="stat-box">
+                        <span class="stat-number">Week 7</span>
+                        <span class="stat-label">Generative AI deep dive—creating images, text, and multimodal content</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Week 8</span>
+                        <span class="stat-label">Prompt Engineering—maximizing AI output quality through better inputs</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">Assessment 2</span>
+                        <span class="stat-label">Due Week 9 (35%)—Generative AI Startup Presentation</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                Questions? Use the discussion forum or attend consultation hours
+            </div>
+        </div>
+
+        <!-- Slide 22: Resources -->
+        <div class="slide">
+            <h2>Resources and Links</h2>
+            <div class="content-box">
+                <h3>Today's Notebooks</h3>
+                <div class="stat-box">
+                    <span class="stat-label"><strong>Traffic Detection Notebook:</strong><br>
+                    <a href="https://colab.research.google.com/drive/1c-dFRCJQ3Ie8xRRnaHOKic2Wldsfig8e?usp=sharing" target="_blank" style="color: #dc143c;">Google Colab Link</a></span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label"><strong>Brain MRI Dataset:</strong><br>
+                    <a href="https://www.kaggle.com/datasets/fernando2rad/brain-tumor-mri-images44c" target="_blank" style="color: #dc143c;">Kaggle Dataset</a></span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label"><strong>Roboflow Platform:</strong><br>
+                    <a href="https://roboflow.com/" target="_blank" style="color: #dc143c;">roboflow.com</a></span>
+                </div>
+            </div>
+
+            <div class="content-box" style="margin-top: 30px;">
+                <h3>Additional Learning</h3>
+                <div class="stat-box">
+                    <span class="stat-label"><strong>YOLOv8 Documentation:</strong> docs.ultralytics.com</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label"><strong>PyTorch CNN Guide:</strong> pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label"><strong>Traffic Video Source:</strong> pexels.com/search/videos/traffic/</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 23: End -->
+        <div class="slide">
+            <h1>Thank You</h1>
+            <h2 style="color: #666; font-weight: 300;">Questions?</h2>
+            <div class="content-box" style="margin-top: 50px;">
+                <p style="font-size: 1.5em;">Ready to explore CNNs in practice?</p>
+                <p style="font-size: 1.3em; color: #666;">Open the Google Colab notebooks and start experimenting!</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-buttons">
+        <button class="nav-btn" onclick="previousSlide()">← Previous</button>
+        <button class="nav-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function updateSlideCounter() {
+            document.getElementById('slideCounter').textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                document.getElementById('slideContainer').scrollTo({
+                    left: currentSlide * window.innerWidth,
+                    behavior: 'smooth'
+                });
+                updateSlideCounter();
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                document.getElementById('slideContainer').scrollTo({
+                    left: currentSlide * window.innerWidth,
+                    behavior: 'smooth'
+                });
+                updateSlideCounter();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+
+        // Quiz functionality
+        function checkAnswer(element, isCorrect, quizNumber) {
+            const options = element.parentElement.children;
+            const feedback = document.getElementById(`feedback${quizNumber}`);
+            
+            // Disable all options
+            for (let option of options) {
+                option.style.pointerEvents = 'none';
+            }
+            
+            // Mark selected answer
+            element.classList.add('selected');
+            
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '<strong>✓ Correct!</strong> ' + getCorrectFeedback(quizNumber);
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '<strong>✗ Not quite.</strong> ' + getIncorrectFeedback(quizNumber);
+                
+                // Show correct answer
+                for (let option of options) {
+                    if (option.onclick.toString().includes('true')) {
+                        setTimeout(() => {
+                            option.classList.add('correct');
+                        }, 1000);
+                    }
+                }
+            }
+        }
+
+        function getCorrectFeedback(quizNumber) {
+            const feedback = {
+                1: 'CNNs automatically learn features from training data, eliminating the need for manual feature engineering that traditional methods require.',
+                2: 'YOLO processes the entire image in one forward pass through the network, detecting all objects simultaneously rather than analyzing multiple proposed regions separately.',
+                3: 'Scheduling during off-peak hours (2-3 PM with 127 vehicles/hour) causes 66% less disruption compared to peak hours (380 vehicles/hour). This is data-driven decision-making in action.',
+                4: 'AI should augment human expertise, not replace it. The 5% error rate could include life-critical misdiagnoses. AI-assisted workflows combine AI efficiency with human judgment and accountability.',
+                5: 'Using existing infrastructure (security cameras) and pre-trained models provides immediate value with minimal investment. Custom development would take months and cost significantly more.'
+            };
+            return feedback[quizNumber];
+        }
+
+        function getIncorrectFeedback(quizNumber) {
+            const feedback = {
+                1: 'Traditional methods require humans to manually define features (edges, corners, textures). CNNs learn these features automatically from data.',
+                2: 'Speed comes from architecture efficiency, not network size. YOLO\'s single-pass approach is the key innovation.',
+                3: 'Consider the business impact: fewer vehicles = less disruption. Always connect data insights to business outcomes.',
+                4: 'Even high accuracy isn\'t sufficient for autonomous medical decisions. Consider the consequences of the 5% error rate in healthcare contexts.',
+                5: 'Think about speed-to-value: what provides immediate ROI with existing resources versus long-term development projects?'
+            };
+            return feedback[quizNumber];
+        }
+
+        // Track scroll position
+        document.getElementById('slideContainer').addEventListener('scroll', () => {
+            currentSlide = Math.round(document.getElementById('slideContainer').scrollLeft / window.innerWidth);
+            updateSlideCounter();
+        });
+
+        // Initialize
+        updateSlideCounter();
+    </script>
+</body>
+</html>
