@@ -3,1232 +3,1561 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAR & Granger Causality Explained</title>
+    <title>Week 8: Vector Autoregression (VAR) and Multivariate Methods</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
+            font-family: Helvetica, Arial, sans-serif;
+            background: white;
             color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
+            overflow: hidden;
         }
-        
-        h1, h2, h3 {
-            color: #2c3e50;
+
+        .slide {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            padding: 60px 80px;
+            background: white;
         }
-        
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+        }
+
         h1 {
-            text-align: center;
+            color: #DC143C;
+            font-size: 48px;
             margin-bottom: 30px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #3498db;
+            font-weight: bold;
         }
-        
-        .section {
-            background-color: white;
-            padding: 25px;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+        h2 {
+            color: #DC143C;
+            font-size: 36px;
+            margin-bottom: 25px;
+            font-weight: bold;
         }
-        
-        .highlight {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-left: 4px solid #3498db;
-            margin: 15px 0;
+
+        h3 {
+            color: #DC143C;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: bold;
         }
-        
-        code {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #f5f5f5;
-            padding: 2px 5px;
-            border-radius: 3px;
+
+        p {
+            font-size: 22px;
+            line-height: 1.6;
+            margin-bottom: 20px;
         }
-        
-        .canvas-container {
-            width: 100%;
-            margin: 20px 0;
-            text-align: center;
+
+        ul, ol {
+            margin-left: 40px;
+            font-size: 22px;
+            line-height: 1.8;
         }
-        
-        canvas {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: white;
+
+        .subtitle {
+            font-size: 28px;
+            color: #555;
+            margin-bottom: 40px;
         }
-        
-        .controls {
-            margin: 20px 0;
-            text-align: center;
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
         }
-        
+
         button {
-            background-color: #3498db;
+            padding: 12px 24px;
+            font-size: 18px;
+            background: #DC143C;
             color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            margin: 0 5px;
-            transition: background-color 0.2s;
+            font-family: Helvetica, Arial, sans-serif;
         }
-        
+
         button:hover {
-            background-color: #2980b9;
+            background: #B01030;
         }
-        
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .slide-number {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            margin: 30px auto;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .box {
+            border: 2px solid #DC143C;
+            padding: 20px;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .highlight {
+            background: #FFF5F5;
+            padding: 20px;
+            border-left: 4px solid #DC143C;
+            margin: 20px 0;
+        }
+
+        .quiz {
+            background: #F8F8F8;
+            padding: 30px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+
+        .quiz-option {
+            display: block;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quiz-option:hover {
+            border-color: #DC143C;
+            background: #FFF5F5;
+        }
+
+        .quiz-option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #28a745;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #dc3545;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            font-size: 20px;
         }
-        
+
         th, td {
-            padding: 12px 15px;
+            padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border: 1px solid #ddd;
         }
-        
+
         th {
-            background-color: #3498db;
+            background: #DC143C;
             color: white;
         }
-        
+
         tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        
-        .model-icon {
-            text-align: center;
-            font-size: 30px;
-            color: #3498db;
-        }
-        
-        .time-series-container {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin: 20px 0;
-        }
-        
-        .time-series {
-            margin: 10px;
-            text-align: center;
-        }
-        
-        .animation-container {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            overflow: hidden;
-            margin: 30px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: white;
-        }
-        
-        .series {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
-        }
-        
-        .var-explanation {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            margin: 20px 0;
-        }
-        
-        .var-col {
-            flex: 1;
-            min-width: 300px;
-            margin: 10px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
+            background: #f9f9f9;
         }
 
         .equation {
-            font-family: 'Cambria Math', 'Times New Roman', serif;
-            font-size: 18px;
-            text-align: center;
-            margin: 15px 0;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-        }
-        
-        .grid-line {
-            stroke: #e6e6e6;
-            stroke-width: 1;
-        }
-        
-        .axis-line {
-            stroke: #999;
-            stroke-width: 2;
-        }
-        
-        .data-point {
-            fill: #3498db;
-            r: 3;
-        }
-        
-        .forecast-point {
-            fill: #e74c3c;
-            r: 3;
-        }
-        
-        .line {
-            fill: none;
-            stroke-width: 2;
-        }
-        
-        .granger-diagram {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px 0;
-        }
-        
-        .variable-box {
-            width: 120px;
-            height: 60px;
-            background-color: #3498db;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 8px;
-            font-weight: bold;
-            margin: 0 40px;
-        }
-        
-        .arrow {
-            width: 100px;
-            height: 20px;
-            position: relative;
-        }
-        
-        .arrow::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: #333;
-            transform: translateY(-50%);
-        }
-        
-        .arrow::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            right: 0;
-            width: 10px;
-            height: 10px;
-            border-top: 2px solid #333;
-            border-right: 2px solid #333;
-            transform: translateY(-50%) rotate(45deg);
-        }
-
-        .model-comparison {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            margin: 20px 0;
-        }
-        
-        .model-card {
-            width: 48%;
-            margin-bottom: 20px;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            background: #f8f8f8;
             padding: 15px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .model-title {
-            font-weight: bold;
-            color: #3498db;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
         }
 
-        .model-vis {
-            height: 150px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 15px 0;
-            background-color: #f8f9fa;
-            border-radius: 4px;
+        .logo {
+            position: fixed;
+            bottom: 30px;
+            right: 150px;
+            font-weight: bold;
+            color: #DC143C;
+            font-size: 16px;
+        }
+
+        .activity-box {
+            background: #FFF9E6;
+            border: 2px solid #FFC107;
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .example-box {
+            background: #E8F4F8;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        strong {
+            color: #DC143C;
+        }
+
+        .visual-diagram {
+            width: 100%;
+            max-width: 700px;
+            margin: 30px auto;
         }
     </style>
 </head>
 <body>
-    <h1>Understanding VAR & Granger Causality in Time Series Forecasting</h1>
-    
-    <div class="section">
-        <h2>Vector Autoregression (VAR) Model</h2>
-        
-        <div class="highlight">
-            <p>Vector Autoregression (VAR) is a multivariate time series model that captures the linear interdependencies among multiple time series. Unlike univariate models like AR or ARIMA that focus on a single time series, VAR analyzes how multiple variables affect each other over time.</p>
-        </div>
-        
-        <div class="var-explanation">
-            <div class="var-col">
-                <h3>Key Characteristics</h3>
-                <ul>
-                    <li>Models multiple time series simultaneously</li>
-                    <li>Captures interdependencies between variables</li>
-                    <li>Each variable is influenced by its own past values and past values of other variables</li>
-                    <li>Treats all variables as potentially endogenous</li>
-                    <li>Requires stationary time series (often achieved by differencing)</li>
-                </ul>
-            </div>
-            
-            <div class="var-col">
-                <h3>Mathematical Representation</h3>
-                <p>A VAR(p) model with p lags and k variables can be written as:</p>
-                <div class="equation">
-                    Y<sub>t</sub> = c + A<sub>1</sub>Y<sub>t-1</sub> + A<sub>2</sub>Y<sub>t-2</sub> + ... + A<sub>p</sub>Y<sub>t-p</sub> + ε<sub>t</sub>
-                </div>
-                <p>Where:</p>
-                <ul>
-                    <li>Y<sub>t</sub> is a k×1 vector of variables at time t</li>
-                    <li>c is a k×1 vector of constants</li>
-                    <li>A<sub>i</sub> are k×k matrices of coefficients</li>
-                    <li>ε<sub>t</sub> is a k×1 vector of error terms</li>
-                </ul>
-            </div>
-        </div>
-        
-        <h3>Example: A VAR(1) Model with Two Variables</h3>
-        <p>Consider a VAR(1) model with two variables (stock prices and trading volume):</p>
-        
-        <div class="equation">
-            <div>Stock<sub>t</sub> = c<sub>1</sub> + a<sub>11</sub>Stock<sub>t-1</sub> + a<sub>12</sub>Volume<sub>t-1</sub> + ε<sub>1t</sub></div>
-            <div>Volume<sub>t</sub> = c<sub>2</sub> + a<sub>21</sub>Stock<sub>t-1</sub> + a<sub>22</sub>Volume<sub>t-1</sub> + ε<sub>2t</sub></div>
-        </div>
-        
-        <p>This model shows how current stock prices and trading volumes are influenced by their previous values as well as each other's previous values.</p>
+
+<!-- Slide 1: Title -->
+<div class="slide active">
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center;">
+        <h1 style="font-size: 56px; margin-bottom: 20px;">DATA4400</h1>
+        <h2 style="color: #555; font-weight: normal; margin-bottom: 40px;">Data-Driven Forecasting</h2>
+        <h1 style="font-size: 52px; margin-bottom: 30px;">Week 8</h1>
+        <div class="subtitle" style="font-size: 32px;">Vector Autoregression (VAR) and Multivariate Methods</div>
     </div>
-    
-    <div class="section">
-        <h2>Granger Causality</h2>
-        
-        <div class="highlight">
-            <p>Granger causality is a statistical concept that helps determine whether one time series is useful in forecasting another. If variable X "Granger-causes" variable Y, then past values of X contain information that helps predict Y beyond the information contained in past values of Y alone.</p>
+</div>
+
+<!-- Slide 2: Course Roadmap -->
+<div class="slide">
+    <h2>DATA4400 Course Roadmap</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 30px;">
+        <div class="box" style="opacity: 0.5;">
+            <strong>Week 1-4</strong><br>Foundations
         </div>
-        
-        <p>It's important to note that Granger causality is not the same as true causality - it only measures predictive causality. The concept was developed by Nobel Prize-winning economist Clive Granger.</p>
-        
-        <h3>Key Points about Granger Causality</h3>
-        <ul>
-            <li>Tests whether including past values of X in a model improves predictions of Y</li>
-            <li>Based on VAR models and F-tests</li>
-            <li>Requires stationary time series</li>
-            <li>Can detect bidirectional relationships</li>
-            <li>Does not establish true causality, only "predictive causality"</li>
-        </ul>
-        
-        <div class="granger-diagram">
-            <div class="variable-box">Variable X</div>
-            <div class="arrow"></div>
-            <div class="variable-box">Variable Y</div>
+        <div class="box" style="opacity: 0.5;">
+            <strong>Week 5-6</strong><br>Prophet & Assessment 1
         </div>
-        
-        <h3>Testing for Granger Causality</h3>
-        <p>The process involves:</p>
-        <ol>
-            <li>Estimate a VAR model for variables X and Y</li>
-            <li>Test the null hypothesis that coefficients on lagged values of X in the Y equation are jointly zero</li>
-            <li>If we reject the null hypothesis, X "Granger-causes" Y</li>
-        </ol>
-        
-        <div class="highlight">
-            <p>Example: Testing if stock prices Granger-cause trading volume would involve determining if past stock prices help predict current trading volume beyond what past trading volume alone could predict.</p>
+        <div class="box" style="opacity: 0.5;">
+            <strong>Week 7</strong><br>ARIMA & SARIMA
+        </div>
+        <div class="box" style="background: #FFF5F5;">
+            <strong>Week 8</strong><br>VAR & Multivariate Methods
         </div>
     </div>
-    
-    <div class="section">
-        <h2>Sample Dataset Visualization</h2>
-        <p>Let's visualize a sample dataset of two time series variables to demonstrate VAR modeling and Granger causality.</p>
-        
-        <div class="canvas-container">
-            <canvas id="datasetCanvas" width="900" height="400"></canvas>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 15px;">
+        <div class="box" style="opacity: 0.5;">
+            <strong>Week 9</strong><br>Assessment 2
         </div>
-        
-        <div class="controls">
-            <button id="generateBtn">Generate New Data</button>
-            <button id="fitVARBtn">Fit VAR Model</button>
-            <button id="forecastBtn">Show Forecasts</button>
+        <div class="box" style="opacity: 0.5;">
+            <strong>Week 10</strong><br>End-to-End Solutions
         </div>
-        
-        <div id="grangerResults" class="highlight" style="display: none;">
-            <h3>Granger Causality Test Results</h3>
-            <p id="grangerText"></p>
+        <div class="box" style="opacity: 0.5;">
+            <strong>Week 11</strong><br>Adaptive Forecasting
+        </div>
+        <div class="box" style="opacity: 0.5;">
+            <strong>Week 12</strong><br>Assessment 3
         </div>
     </div>
-    
-    <div class="section">
-        <h2>VAR Model Animation</h2>
-        <p>The animation below demonstrates how a VAR model captures the relationships between multiple time series variables:</p>
-        
-        <div class="animation-container">
-            <svg id="varAnimation" width="100%" height="100%" viewBox="0 0 1000 400">
-                <!-- Animation will be rendered here -->
-            </svg>
-        </div>
-        
-        <div class="controls">
-            <button id="animateBtn">Run Animation</button>
-            <button id="resetAnimBtn">Reset</button>
-        </div>
+    <div class="highlight" style="margin-top: 40px;">
+        <strong>Today's Focus:</strong> Moving from single variable forecasting to systems where multiple variables influence each other
     </div>
-    
-    <div class="section">
-        <h2>Comparison of Time Series Forecasting Models</h2>
-        
-        <table id="modelComparison">
-            <thead>
-                <tr>
-                    <th>Model</th>
-                    <th>Description</th>
-                    <th>Key Features</th>
-                    <th>When to Use</th>
-                    <th>Limitations</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>AR</strong><br>Autoregressive</td>
-                    <td>Models a variable as a linear combination of its past values</td>
-                    <td>
-                        <ul>
-                            <li>Univariate</li>
-                            <li>Captures linear relationships</li>
-                            <li>Requires stationarity</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Simple time series with clear autocorrelation</li>
-                            <li>When current values depend mainly on recent past values</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Cannot capture seasonal patterns</li>
-                            <li>Doesn't account for external variables</li>
-                            <li>Limited to linear relationships</li>
-                        </ul>
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>ARIMA</strong><br>Autoregressive Integrated Moving Average</td>
-                    <td>Combines autoregressive and moving average components with differencing for non-stationary data</td>
-                    <td>
-                        <ul>
-                            <li>Univariate</li>
-                            <li>Handles non-stationarity through differencing</li>
-                            <li>Includes moving average terms for error modeling</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Non-stationary time series</li>
-                            <li>When both trends and noise patterns are present</li>
-                            <li>Medium-term forecasting</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Cannot capture seasonality</li>
-                            <li>Struggles with complex patterns</li>
-                            <li>Doesn't account for external variables</li>
-                        </ul>
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>VAR</strong><br>Vector Autoregression</td>
-                    <td>Multivariate extension of AR models that captures interdependencies between multiple time series</td>
-                    <td>
-                        <ul>
-                            <li>Multivariate</li>
-                            <li>Captures interdependencies</li>
-                            <li>Treats all variables as endogenous</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Analyzing relationships between variables</li>
-                            <li>Testing for Granger causality</li>
-                            <li>When variables influence each other</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Requires stationarity</li>
-                            <li>Parameter explosion with many variables</li>
-                            <li>Cannot directly handle seasonality</li>
-                        </ul>
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>SARIMA</strong><br>Seasonal ARIMA</td>
-                    <td>Extension of ARIMA that incorporates seasonal components for periodic patterns</td>
-                    <td>
-                        <ul>
-                            <li>Univariate</li>
-                            <li>Handles seasonality explicitly</li>
-                            <li>Combines non-seasonal and seasonal components</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Seasonal time series (monthly, quarterly)</li>
-                            <li>When data shows repeating patterns</li>
-                            <li>Retail sales, tourism, energy consumption</li>
-                        </ul>
-                    </td>
-                    <td>
-                        <ul>
-                            <li>Complex parameterization</li>
-                            <li>Doesn't account for external variables</li>
-                            <li>Struggles with changing seasonality</li>
-                        </ul>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+</div>
+
+<!-- Slide 3: Learning Outcomes -->
+<div class="slide">
+    <h2>Learning Outcomes</h2>
+    <p style="margin-top: 30px;">By the end of this lesson, you will be able to:</p>
+    <ol style="margin-top: 30px; font-size: 24px;">
+        <li style="margin-bottom: 25px;"><strong>Distinguish</strong> between correlation and causation in business contexts, recognizing when relationships are merely coincidental versus potentially causal</li>
+        <li style="margin-bottom: 25px;"><strong>Apply</strong> Granger causality tests to identify whether past values of one variable help predict another variable</li>
+        <li style="margin-bottom: 25px;"><strong>Build</strong> Vector Autoregression (VAR) models to forecast multiple related business variables simultaneously</li>
+        <li style="margin-bottom: 25px;"><strong>Interpret</strong> VAR model outputs and make evidence-based business recommendations</li>
+    </ol>
+</div>
+
+<!-- Slide 4: The Business Problem -->
+<div class="slide">
+    <h2>The Business Problem: A Costly Mistake</h2>
+    <div class="example-box" style="font-size: 20px;">
+        <strong>Case Study: RetailCo's Marketing Disaster</strong>
+        <p>In 2018, RetailCo noticed that sales increased whenever they saw higher social media engagement. Their analysis showed a strong correlation of 0.85 between social media mentions and weekly sales.</p>
+        <p><strong>Their decision:</strong> Invest $2 million in a social media campaign to boost mentions.</p>
+        <p><strong>The result:</strong> Social media mentions increased by 300%, but sales remained flat.</p>
+        <p><strong>What went wrong?</strong></p>
     </div>
-    
-    <div class="section">
-        <h2>Visual Comparison of Models</h2>
-        
-        <div class="model-comparison">
-            <div class="model-card">
-                <div class="model-title">AR (Autoregressive)</div>
-                <div class="model-vis">
-                    <svg width="100%" height="100%" viewBox="0 0 300 100">
-                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
-                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
-                        <text x="20" y="20" text-anchor="end">Y</text>
-                        <text x="270" y="95" text-anchor="end">t</text>
-                        
-                        <!-- AR Pattern -->
-                        <path d="M30,50 Q65,30 100,60 Q135,85 170,50 Q205,20 240,40 Q275,60 310,45" stroke="#3498db" stroke-width="2" fill="none"/>
-                        
-                        <!-- AR Effect Visualization -->
-                        <line x1="170" y1="50" x2="120" y2="60" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="3,3"/>
-                        <circle cx="170" cy="50" r="4" fill="#3498db"/>
-                        <circle cx="120" cy="60" r="4" fill="#9b59b6"/>
-                    </svg>
-                </div>
-                <p>AR models predict future values based on past values of the same variable. The current value (blue) is influenced by previous values (purple).</p>
-            </div>
-            
-            <div class="model-card">
-                <div class="model-title">ARIMA (Autoregressive Integrated Moving Average)</div>
-                <div class="model-vis">
-                    <svg width="100%" height="100%" viewBox="0 0 300 100">
-                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
-                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
-                        <text x="20" y="20" text-anchor="end">Y</text>
-                        <text x="270" y="95" text-anchor="end">t</text>
-                        
-                        <!-- ARIMA Pattern -->
-                        <path d="M30,60 Q50,50 70,40 Q90,30 110,35 Q130,40 150,30 Q170,20 190,30 Q210,40 230,35 Q250,30 270,20" stroke="#3498db" stroke-width="2" fill="none"/>
-                        
-                        <!-- Differencing -->
-                        <path d="M30,70 Q50,65 70,60 Q90,55 110,60 Q130,65 150,55 Q170,45 190,55 Q210,65 230,60 Q250,55 270,45" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="2,2"/>
-                        
-                        <!-- Error component -->
-                        <line x1="190" y1="30" x2="190" y2="40" stroke="#e74c3c" stroke-width="1.5"/>
-                        <line x1="210" y1="40" x2="210" y2="30" stroke="#e74c3c" stroke-width="1.5"/>
-                        <line x1="230" y1="35" x2="230" y2="45" stroke="#e74c3c" stroke-width="1.5"/>
-                    </svg>
-                </div>
-                <p>ARIMA extends AR by adding differencing (green dashed line) to handle non-stationarity and moving average components to model error terms (red vertical lines).</p>
-            </div>
-            
-            <div class="model-card">
-                <div class="model-title">VAR (Vector Autoregression)</div>
-                <div class="model-vis">
-                    <svg width="100%" height="100%" viewBox="0 0 300 100">
-                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
-                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
-                        <text x="20" y="20" text-anchor="end">Y</text>
-                        <text x="270" y="95" text-anchor="end">t</text>
-                        
-                        <!-- First series -->
-                        <path d="M30,60 Q65,40 100,50 Q135,60 170,40 Q205,20 240,30 Q275,40 310,30" stroke="#3498db" stroke-width="2" fill="none"/>
-                        
-                        <!-- Second series -->
-                        <path d="M30,40 Q65,60 100,30 Q135,20 170,60 Q205,70 240,50 Q275,30 310,50" stroke="#e74c3c" stroke-width="2" fill="none"/>
-                        
-                        <!-- Interdependence arrows -->
-                        <line x1="135" y1="20" x2="170" y2="40" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
-                        <line x1="135" y1="60" x2="170" y2="60" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
-                    </svg>
-                </div>
-                <p>VAR models multiple time series simultaneously, capturing interdependencies between variables. Each series (blue and red) influences both its own future values and the values of other series.</p>
-            </div>
-            
-            <div class="model-card">
-                <div class="model-title">SARIMA (Seasonal ARIMA)</div>
-                <div class="model-vis">
-                    <svg width="100%" height="100%" viewBox="0 0 300 100">
-                        <line x1="30" y1="80" x2="270" y2="80" stroke="#999" stroke-width="2"/>
-                        <line x1="30" y1="20" x2="30" y2="80" stroke="#999" stroke-width="2"/>
-                        <text x="20" y="20" text-anchor="end">Y</text>
-                        <text x="270" y="95" text-anchor="end">t</text>
-                        
-                        <!-- SARIMA Pattern -->
-                        <path d="M30,70 Q40,60 50,50 Q60,40 70,50 Q80,60 90,70 Q100,80 110,70 Q120,60 130,50 Q140,40 150,50 Q160,60 170,70 Q180,80 190,70 Q200,60 210,50 Q220,40 230,50 Q240,60 250,70 Q260,80 270,70" stroke="#3498db" stroke-width="2" fill="none"/>
-                        
-                        <!-- Seasonal Component -->
-                        <path d="M30,50 Q70,30 110,50 Q150,70 190,50 Q230,30 270,50" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="5,2"/>
-                        
-                        <!-- Trend Component -->
-                        <path d="M30,60 Q90,55 150,50 Q210,45 270,40" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="2,2"/>
-                    </svg>
-                </div>
-                <p>SARIMA extends ARIMA to handle seasonal patterns. It separates the time series into seasonal (red dashed), trend (green dashed), and irregular components for more accurate modeling of periodic data.</p>
-            </div>
+    <div class="highlight">
+        <p><strong>The Real Story:</strong> Both social media mentions AND sales were driven by seasonal shopping periods (holidays, back-to-school). Social media didn't cause sales—they both responded to the same underlying factor.</p>
+        <p style="margin-top: 15px;"><strong>Cost of confusion:</strong> $2 million + opportunity cost</p>
+    </div>
+    <p style="margin-top: 30px; font-size: 24px; color: #DC143C;"><strong>Key Question:</strong> How can we determine if one variable actually influences another, or if they just happen to move together?</p>
+</div>
+
+<!-- Slide 5: Correlation Examples -->
+<div class="slide">
+    <h2>When Correlations Mislead</h2>
+    <canvas id="correlationChart" style="max-height: 400px;"></canvas>
+    <p style="text-align: center; margin-top: 20px; font-style: italic;">Maine divorce rate vs. per capita margarine consumption (r = 0.99)</p>
+    <div class="highlight" style="margin-top: 30px;">
+        <strong>The Danger:</strong> High correlation does not imply causation. With enough data, you can find spurious (meaningless) correlations between any two trending variables.
+    </div>
+</div>
+
+<!-- Slide 6: Quiz 1 - Correlation vs Causation -->
+<div class="slide">
+    <h2>Quiz 1: Correlation or Causation?</h2>
+    <div class="quiz">
+        <p style="font-size: 24px; margin-bottom: 20px;"><strong>Scenario:</strong> A retail company observes that stores with more parking spaces have higher sales. They conclude that building more parking spaces will increase sales.</p>
+        <p style="font-size: 22px; margin-bottom: 25px;">What is the most likely explanation?</p>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+            A) More parking spaces directly cause higher sales
         </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+            B) Higher sales cause the company to build more parking spaces
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, true, 1)">
+            C) Both are correlated with store size and location—larger stores in busier areas have both more parking and higher sales
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 1)">
+            D) This is a spurious correlation with no relationship
+        </div>
+        <div class="feedback" id="feedback1"></div>
     </div>
-    
-    <div class="section">
-        <h2>Application in Finance and Economics</h2>
-        <p>VAR models and Granger causality are particularly useful in financial and economic analyses:</p>
-        
-        <div class="highlight">
-            <h3>Common Applications:</h3>
+</div>
+
+<!-- Slide 7: Understanding Causation -->
+<div class="slide">
+    <h2>What is Causation?</h2>
+    <div class="two-column">
+        <div>
+            <h3>Correlation</h3>
             <ul>
-                <li><strong>Stock market analysis:</strong> Examining relationships between stock prices, trading volumes, and market indices</li>
-                <li><strong>Macroeconomic forecasting:</strong> Analyzing interdependencies between GDP, inflation, unemployment, and interest rates</li>
-                <li><strong>Supply chain optimization:</strong> Modeling relationships between inventory levels, production rates, and demand</li>
-                <li><strong>Policy impact assessment:</strong> Evaluating how monetary policy changes affect various economic indicators</li>
+                <li>Two variables move together</li>
+                <li>Statistical relationship</li>
+                <li>Can be measured with correlation coefficient (-1 to +1)</li>
+                <li>Says nothing about direction or mechanism</li>
             </ul>
         </div>
-        
-        <p>The VAR approach is especially valuable when dealing with Plan C from your assignment, which involves analyzing share prices and their relationships with economic indicators.</p>
+        <div>
+            <h3>Causation</h3>
+            <ul>
+                <li>One variable causes changes in another</li>
+                <li>Directional relationship</li>
+                <li>Implies mechanism of influence</li>
+                <li>Requires evidence beyond correlation</li>
+            </ul>
+        </div>
     </div>
+    <div class="highlight" style="margin-top: 40px;">
+        <strong>Definition:</strong> Causation implies that the existence or change in one variable (the cause) produces or influences the occurrence or change in another variable (the effect). This relationship must occur before or simultaneously with the effect.
+    </div>
+</div>
+
+<!-- Slide 8: Classic Example -->
+<div class="slide">
+    <h2>The Ice Cream and Sunburn Example</h2>
+    <div class="visual-diagram">
+        <svg viewBox="0 0 600 300" style="width: 100%;">
+            <!-- Hot Weather -->
+            <circle cx="300" cy="50" r="40" fill="#FFC107" stroke="#DC143C" stroke-width="3"/>
+            <text x="300" y="58" text-anchor="middle" font-size="18" font-weight="bold">Hot Weather</text>
+            
+            <!-- Arrows down -->
+            <line x1="250" y1="90" x2="150" y2="180" stroke="#DC143C" stroke-width="3" marker-end="url(#arrowred)"/>
+            <line x1="350" y1="90" x2="450" y2="180" stroke="#DC143C" stroke-width="3" marker-end="url(#arrowred)"/>
+            
+            <!-- Ice Cream -->
+            <rect x="80" y="200" width="140" height="80" fill="#E8F4F8" stroke="#2196F3" stroke-width="3" rx="10"/>
+            <text x="150" y="245" text-anchor="middle" font-size="18" font-weight="bold">Ice Cream</text>
+            <text x="150" y="265" text-anchor="middle" font-size="16">Consumption</text>
+            
+            <!-- Sunburn -->
+            <rect x="380" y="200" width="140" height="80" fill="#FFE8E8" stroke="#DC143C" stroke-width="3" rx="10"/>
+            <text x="450" y="245" text-anchor="middle" font-size="18" font-weight="bold">Sunburn</text>
+            <text x="450" y="265" text-anchor="middle" font-size="16">Cases</text>
+            
+            <!-- Correlation line (dashed) -->
+            <line x1="220" y1="240" x2="380" y2="240" stroke="#999" stroke-width="2" stroke-dasharray="5,5"/>
+            <text x="300" y="230" text-anchor="middle" font-size="14" fill="#666">Correlated</text>
+            
+            <!-- Arrow marker definition -->
+            <defs>
+                <marker id="arrowred" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#DC143C" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+    <div class="two-column" style="margin-top: 40px;">
+        <div class="box">
+            <strong>The Correlation:</strong>
+            <p>Ice cream consumption and sunburn rates are highly correlated</p>
+        </div>
+        <div class="box">
+            <strong>The Reality:</strong>
+            <p>Hot weather causes both—ice cream doesn't cause sunburn</p>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 9: Activity - Hospital Mortality -->
+<div class="slide">
+    <h2>Activity 1: The Hospital Paradox</h2>
+    <div class="activity-box">
+        <p style="font-size: 24px; margin-bottom: 20px;"><strong>Statement:</strong> "There is a higher mortality rate in hospitals compared to the general population."</p>
+        <p style="font-size: 22px; margin-bottom: 30px;">Discuss in groups:</p>
+        <ol style="font-size: 22px;">
+            <li style="margin-bottom: 15px;">Based on this statement, should people avoid hospitals?</li>
+            <li style="margin-bottom: 15px;">Do hospitals cause mortality?</li>
+            <li style="margin-bottom: 15px;">How would you design an experiment to test the causal relationship?</li>
+        </ol>
+    </div>
+    <div class="highlight" style="margin-top: 30px;">
+        <strong>Think about:</strong> What is the confounding variable here? What makes hospital populations different from the general population?
+    </div>
+</div>
+
+<!-- Slide 10: Establishing Causation -->
+<div class="slide">
+    <h2>How Do We Establish Causation?</h2>
+    <div class="grid-3">
+        <div class="box">
+            <h3 style="font-size: 22px;">1. Temporal Order</h3>
+            <p>The cause must occur before the effect</p>
+        </div>
+        <div class="box">
+            <h3 style="font-size: 22px;">2. Covariation</h3>
+            <p>Changes in the cause relate to changes in the effect</p>
+        </div>
+        <div class="box">
+            <h3 style="font-size: 22px;">3. No Confounders</h3>
+            <p>No third variable explains the relationship</p>
+        </div>
+    </div>
+    <div style="margin-top: 40px;">
+        <h3>Methods to Establish Causation:</h3>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Strength</th>
+                <th>Limitation</th>
+            </tr>
+            <tr>
+                <td><strong>Randomized Controlled Trials (RCT)</strong></td>
+                <td>Gold standard—controls for confounders</td>
+                <td>Expensive, often unethical or impractical</td>
+            </tr>
+            <tr>
+                <td><strong>Natural Experiments</strong></td>
+                <td>Uses real-world variations</td>
+                <td>Hard to find suitable scenarios</td>
+            </tr>
+            <tr>
+                <td><strong>Statistical Tests (Granger)</strong></td>
+                <td>Practical, uses existing data</td>
+                <td>Tests prediction, not true causation</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- Slide 11: Quiz 2 - Causation Methods -->
+<div class="slide">
+    <h2>Quiz 2: Testing Causation</h2>
+    <div class="quiz">
+        <p style="font-size: 24px; margin-bottom: 20px;"><strong>Scenario:</strong> A coffee company wants to know if their TV advertising causes sales increases.</p>
+        <p style="font-size: 22px; margin-bottom: 25px;">Which approach would provide the strongest evidence of causation?</p>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+            A) Calculate the correlation between advertising spend and sales
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, true, 2)">
+            B) Run ads in randomly selected cities while keeping others as control groups, then compare sales
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+            C) Survey customers about whether they saw the ads
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 2)">
+            D) Wait and see if sales increase after the campaign
+        </div>
+        <div class="feedback" id="feedback2"></div>
+    </div>
+</div>
+
+<!-- Slide 12: Introduction to Granger Causality -->
+<div class="slide">
+    <h2>Enter Granger Causality: A Practical Tool</h2>
+    <div class="highlight">
+        <p style="font-size: 26px;"><strong>The Core Idea:</strong> If past values of variable X help predict future values of variable Y (beyond what Y's own history tells us), then X "Granger-causes" Y.</p>
+    </div>
+    <div class="visual-diagram" style="margin-top: 40px;">
+        <svg viewBox="0 0 700 200" style="width: 100%;">
+            <!-- Timeline -->
+            <line x1="50" y1="100" x2="650" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- Time points -->
+            <circle cx="150" cy="100" r="8" fill="#DC143C"/>
+            <text x="150" y="130" text-anchor="middle" font-size="16">X(t-2)</text>
+            
+            <circle cx="250" cy="100" r="8" fill="#DC143C"/>
+            <text x="250" y="130" text-anchor="middle" font-size="16">X(t-1)</text>
+            
+            <circle cx="350" cy="100" r="8" fill="#2196F3"/>
+            <text x="350" y="70" text-anchor="middle" font-size="16">Now</text>
+            
+            <circle cx="450" cy="100" r="8" fill="#4CAF50"/>
+            <text x="450" y="130" text-anchor="middle" font-size="16">Y(t+1)</text>
+            
+            <circle cx="550" cy="100" r="8" fill="#4CAF50"/>
+            <text x="550" y="130" text-anchor="middle" font-size="16">Y(t+2)</text>
+            
+            <!-- Arrow to prediction -->
+            <path d="M 250 95 Q 350 50 450 95" stroke="#DC143C" stroke-width="2" fill="none" stroke-dasharray="5,5" marker-end="url(#arrowred2)"/>
+            <text x="350" y="40" text-anchor="middle" font-size="14" fill="#DC143C">Does past X help predict future Y?</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+                </marker>
+                <marker id="arrowred2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#DC143C" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+    <div class="two-column" style="margin-top: 40px;">
+        <div class="box">
+            <strong>Question 1:</strong><br>Does including X's past improve our forecast of Y?
+        </div>
+        <div class="box">
+            <strong>Question 2:</strong><br>Is this improvement statistically significant?
+        </div>
+    </div>
+</div>
+
+<!-- Slide 13: Granger Causality Definition -->
+<div class="slide">
+    <h2>Granger Causality: Formal Definition</h2>
+    <div class="example-box">
+        <p style="font-size: 24px;"><strong>Granger Causality Principle:</strong></p>
+        <p style="font-size: 22px; margin-top: 15px;">Variable X₁ "Granger-causes" variable X₂ if:</p>
+        <ol style="font-size: 22px; margin-top: 15px;">
+            <li>X₁ occurs before X₂</li>
+            <li>Past values of X₁ contain information that helps predict X₂ beyond the information contained in past values of X₂ alone</li>
+            <li>Including X₁ in the forecasting model reduces prediction error</li>
+        </ol>
+    </div>
+    <div class="highlight" style="margin-top: 30px; background: #FFE8E8;">
+        <p style="font-size: 24px;"><strong>⚠️ Critical Warning:</strong></p>
+        <p style="font-size: 22px; margin-top: 10px;">Granger causality tests <strong>forecasting ability</strong>, not true causation. It identifies predictive relationships but cannot prove that X actually causes Y.</p>
+    </div>
+    <div style="margin-top: 30px;">
+        <h3>Why Use Granger Causality?</h3>
+        <ul style="font-size: 22px;">
+            <li>Practical—uses historical data you already have</li>
+            <li>No need for experiments or interventions</li>
+            <li>Helps identify which variables are useful predictors</li>
+            <li>Guides business decisions about where to focus resources</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Slide 14: Granger Causality Example -->
+<div class="slide">
+    <h2>Example: Social Media and Sales</h2>
+    <canvas id="grangerChart" style="max-height: 400px;"></canvas>
+    <div class="two-column" style="margin-top: 30px;">
+        <div class="example-box">
+            <strong>Test 1: Does social media Granger-cause sales?</strong>
+            <p style="margin-top: 10px;">Compare two models:</p>
+            <ul style="font-size: 20px;">
+                <li>Model A: Predict sales using only past sales</li>
+                <li>Model B: Predict sales using past sales + past social media</li>
+            </ul>
+            <p style="margin-top: 10px; color: #DC143C;"><strong>Result:</strong> Model B performs significantly better → Social media Granger-causes sales</p>
+        </div>
+        <div class="example-box">
+            <strong>Test 2: Do sales Granger-cause social media?</strong>
+            <p style="margin-top: 10px;">Compare two models:</p>
+            <ul style="font-size: 20px;">
+                <li>Model C: Predict social media using only past social media</li>
+                <li>Model D: Predict social media using past social media + past sales</li>
+            </ul>
+            <p style="margin-top: 10px; color: #DC143C;"><strong>Result:</strong> No significant improvement → Sales do not Granger-cause social media</p>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 15: When to Use Granger Causality -->
+<div class="slide">
+    <h2>Business Applications of Granger Causality</h2>
+    <table style="margin-top: 30px;">
+        <tr>
+            <th>Business Question</th>
+            <th>Variables to Test</th>
+            <th>Business Value</th>
+        </tr>
+        <tr>
+            <td>Does advertising drive sales?</td>
+            <td>Ad spending → Sales revenue</td>
+            <td>Optimize marketing budget allocation</td>
+        </tr>
+        <tr>
+            <td>Do price changes affect demand?</td>
+            <td>Price → Units sold</td>
+            <td>Inform pricing strategy</td>
+        </tr>
+        <tr>
+            <td>Does customer sentiment predict churn?</td>
+            <td>Sentiment scores → Churn rate</td>
+            <td>Early warning system for retention</td>
+        </tr>
+        <tr>
+            <td>Do economic indicators predict our sales?</td>
+            <td>GDP/Unemployment → Company sales</td>
+            <td>Better demand forecasting</td>
+        </tr>
+    </table>
+    <div class="highlight" style="margin-top: 30px;">
+        <strong>Key Requirement:</strong> Data must be stationary (or made stationary through differencing) before conducting Granger causality tests.
+    </div>
+</div>
+
+<!-- Slide 16: Quiz 3 - Granger Causality -->
+<div class="slide">
+    <h2>Quiz 3: Understanding Granger Causality</h2>
+    <div class="quiz">
+        <p style="font-size: 24px; margin-bottom: 20px;">A Granger causality test shows that Bitcoin tweet volume Granger-causes Bitcoin prices (p-value = 0.001).</p>
+        <p style="font-size: 22px; margin-bottom: 25px;">What can we conclude?</p>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+            A) Twitter activity causes Bitcoin price changes
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, true, 3)">
+            B) Past Twitter activity helps predict future Bitcoin prices better than using past prices alone
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+            C) Bitcoin prices cause changes in Twitter activity
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 3)">
+            D) Twitter and Bitcoin prices are uncorrelated
+        </div>
+        <div class="feedback" id="feedback3"></div>
+    </div>
+</div>
+
+<!-- Slide 17: Introduction to VAR -->
+<div class="slide">
+    <h2>The Limitation of Single-Variable Models</h2>
+    <div class="two-column">
+        <div>
+            <h3>ARIMA Models (Week 7)</h3>
+            <ul style="font-size: 20px;">
+                <li>Model one variable at a time</li>
+                <li>Y(t) depends only on past Y values</li>
+                <li>Cannot capture interactions between variables</li>
+                <li>Assumes other variables are external/fixed</li>
+            </ul>
+            <div class="equation" style="margin-top: 20px;">
+                Y<sub>t</sub> = c + φ₁Y<sub>t-1</sub> + φ₂Y<sub>t-2</sub> + ε<sub>t</sub>
+            </div>
+        </div>
+        <div>
+            <h3>Real Business Reality</h3>
+            <ul style="font-size: 20px;">
+                <li>Variables influence each other</li>
+                <li>Sales affect inventory, which affects pricing, which affects sales</li>
+                <li>Feedback loops are common</li>
+                <li>Need a system of equations</li>
+            </ul>
+            <div class="box" style="margin-top: 20px; background: #FFF5F5;">
+                <strong>Solution:</strong> Vector Autoregression (VAR) models multiple variables simultaneously
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 18: VAR Visual Explanation -->
+<div class="slide">
+    <h2>How VAR Works: A Visual Explanation</h2>
+    <div class="visual-diagram">
+        <svg viewBox="0 0 700 400" style="width: 100%;">
+            <!-- Time t-1 -->
+            <text x="50" y="30" font-size="20" font-weight="bold" fill="#DC143C">Time (t-1)</text>
+            <rect x="50" y="50" width="120" height="60" fill="#E8F4F8" stroke="#2196F3" stroke-width="2" rx="5"/>
+            <text x="110" y="85" text-anchor="middle" font-size="16" font-weight="bold">Sales(t-1)</text>
+            
+            <rect x="50" y="150" width="120" height="60" fill="#FFE8E8" stroke="#DC143C" stroke-width="2" rx="5"/>
+            <text x="110" y="185" text-anchor="middle" font-size="16" font-weight="bold">Advertising(t-1)</text>
+            
+            <!-- Time t -->
+            <text x="350" y="30" font-size="20" font-weight="bold" fill="#DC143C">Time (t)</text>
+            <rect x="300" y="50" width="120" height="60" fill="#E8F4F8" stroke="#2196F3" stroke-width="2" rx="5"/>
+            <text x="360" y="85" text-anchor="middle" font-size="16" font-weight="bold">Sales(t)</text>
+            
+            <rect x="300" y="150" width="120" height="60" fill="#FFE8E8" stroke="#DC143C" stroke-width="2" rx="5"/>
+            <text x="360" y="185" text-anchor="middle" font-size="16" font-weight="bold">Advertising(t)</text>
+            
+            <!-- Arrows showing relationships -->
+            <!-- Sales(t-1) to Sales(t) -->
+            <line x1="170" y1="80" x2="300" y2="80" stroke="#2196F3" stroke-width="2" marker-end="url(#arrowblue)"/>
+            <text x="235" y="75" text-anchor="middle" font-size="12" fill="#2196F3">β₁₁</text>
+            
+            <!-- Advertising(t-1) to Sales(t) -->
+            <line x1="170" y1="180" x2="300" y2="100" stroke="#DC143C" stroke-width="2" marker-end="url(#arrowred3)"/>
+            <text x="210" y="140" font-size="12" fill="#DC143C">β₁₂</text>
+            
+            <!-- Sales(t-1) to Advertising(t) -->
+            <line x1="170" y1="100" x2="300" y2="160" stroke="#2196F3" stroke-width="2" marker-end="url(#arrowblue)"/>
+            <text x="210" y="135" font-size="12" fill="#2196F3">β₂₁</text>
+            
+            <!-- Advertising(t-1) to Advertising(t) -->
+            <line x1="170" y1="180" x2="300" y2="180" stroke="#DC143C" stroke-width="2" marker-end="url(#arrowred3)"/>
+            <text x="235" y="175" text-anchor="middle" font-size="12" fill="#DC143C">β₂₂</text>
+            
+            <!-- Feedback loop indicator -->
+            <path d="M 420 80 Q 480 120 420 160" stroke="#4CAF50" stroke-width="3" fill="none" marker-end="url(#arrowgreen)"/>
+            <text x="500" y="120" font-size="16" fill="#4CAF50" font-weight="bold">Feedback</text>
+            
+            <defs>
+                <marker id="arrowblue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#2196F3" />
+                </marker>
+                <marker id="arrowred3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#DC143C" />
+                </marker>
+                <marker id="arrowgreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#4CAF50" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+    <div class="highlight">
+        <strong>Key Insight:</strong> Each variable is predicted using the past values of ALL variables in the system, allowing for complex interactions and feedback loops.
+    </div>
+</div>
+
+<!-- Slide 19: VAR Equations -->
+<div class="slide">
+    <h2>VAR Model: Mathematical Form</h2>
+    <p>A VAR(1) model with two variables looks like this:</p>
+    <div class="equation" style="font-size: 20px; text-align: left; padding: 25px;">
+        <strong>Equation 1 (Sales):</strong><br>
+        Sales<sub>t</sub> = c₁ + β₁₁ × Sales<sub>t-1</sub> + β₁₂ × Advertising<sub>t-1</sub> + ε₁<sub>t</sub>
+        <br><br>
+        <strong>Equation 2 (Advertising):</strong><br>
+        Advertising<sub>t</sub> = c₂ + β₂₁ × Sales<sub>t-1</sub> + β₂₂ × Advertising<sub>t-1</sub> + ε₂<sub>t</sub>
+    </div>
+    <div class="two-column" style="margin-top: 30px;">
+        <div class="box">
+            <strong>β₁₁:</strong> Effect of past sales on current sales<br>
+            <strong>β₁₂:</strong> Effect of past advertising on current sales
+        </div>
+        <div class="box">
+            <strong>β₂₁:</strong> Effect of past sales on current advertising<br>
+            <strong>β₂₂:</strong> Effect of past advertising on current advertising
+        </div>
+    </div>
+    <div class="highlight" style="margin-top: 30px;">
+        <strong>General Form:</strong> VAR(p) includes p lags of each variable. We use information criteria (BIC/AIC) to select the optimal number of lags.
+    </div>
+</div>
+
+<!-- Slide 20: VAR Characteristics -->
+<div class="slide">
+    <h2>Key Characteristics of VAR Models</h2>
+    <table style="margin-top: 30px; font-size: 20px;">
+        <tr>
+            <th>Characteristic</th>
+            <th>Description</th>
+            <th>Implication</th>
+        </tr>
+        <tr>
+            <td><strong>Endogenous Variables</strong></td>
+            <td>All variables influence each other equally</td>
+            <td>No predetermined causal structure—the data reveals relationships</td>
+        </tr>
+        <tr>
+            <td><strong>System of Equations</strong></td>
+            <td>One equation per variable</td>
+            <td>Each variable has its own forecasting equation</td>
+        </tr>
+        <tr>
+            <td><strong>Symmetric Treatment</strong></td>
+            <td>Same lag structure for all variables</td>
+            <td>If we use 2 lags, we use 2 lags of every variable in every equation</td>
+        </tr>
+        <tr>
+            <td><strong>Requires Stationarity</strong></td>
+            <td>Variables must be stationary or differenced</td>
+            <td>May need to transform data before modeling</td>
+        </tr>
+    </table>
+    <div class="example-box" style="margin-top: 30px;">
+        <strong>Example:</strong> A VAR(2) model with 3 variables (Sales, Advertising, Price) creates 3 equations, each with 6 lagged terms (2 lags × 3 variables) plus a constant.
+    </div>
+</div>
+
+<!-- Slide 21: Why Use VAR -->
+<div class="slide">
+    <h2>Advantages of VAR Models</h2>
+    <div class="grid-3">
+        <div class="box">
+            <h3 style="font-size: 20px;">1. Captures Interactions</h3>
+            <p style="font-size: 18px;">Models how variables influence each other, not just how they move together</p>
+        </div>
+        <div class="box">
+            <h3 style="font-size: 20px;">2. Better Forecasts</h3>
+            <p style="font-size: 18px;">Often outperforms univariate models by leveraging cross-variable information</p>
+        </div>
+        <div class="box">
+            <h3 style="font-size: 20px;">3. System Dynamics</h3>
+            <p style="font-size: 18px;">Reveals how shocks propagate through the system over time</p>
+        </div>
+    </div>
+    <div style="margin-top: 40px;">
+        <h3>When to Use VAR Models</h3>
+        <table>
+            <tr>
+                <th style="width: 40%;">Scenario</th>
+                <th>Best Approach</th>
+            </tr>
+            <tr>
+                <td>Single time series, no external variables</td>
+                <td>ARIMA/SARIMA (Week 7)</td>
+            </tr>
+            <tr>
+                <td>Y depends on X, but X doesn't depend on Y</td>
+                <td>Regression with lagged predictors (Week 9)</td>
+            </tr>
+            <tr>
+                <td style="background: #FFF5F5;"><strong>Multiple variables influencing each other</strong></td>
+                <td style="background: #FFF5F5;"><strong>VAR Models (Week 8)</strong></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- Slide 22: Building a VAR Model -->
+<div class="slide">
+    <h2>Building a VAR Model: Step-by-Step</h2>
+    <ol style="font-size: 22px; margin-top: 30px;">
+        <li style="margin-bottom: 25px;">
+            <strong>Check Stationarity</strong>
+            <ul style="margin-top: 10px;">
+                <li>Use ADF test for each variable</li>
+                <li>If non-stationary, difference the data</li>
+            </ul>
+        </li>
+        <li style="margin-bottom: 25px;">
+            <strong>Determine Lag Order</strong>
+            <ul style="margin-top: 10px;">
+                <li>Use information criteria (BIC preferred for VAR)</li>
+                <li>Balance model fit with complexity</li>
+            </ul>
+        </li>
+        <li style="margin-bottom: 25px;">
+            <strong>Estimate the Model</strong>
+            <ul style="margin-top: 10px;">
+                <li>Fit VAR(p) using selected lag order</li>
+                <li>Obtain coefficients for each equation</li>
+            </ul>
+        </li>
+        <li style="margin-bottom: 25px;">
+            <strong>Diagnostic Checking</strong>
+            <ul style="margin-top: 10px;">
+                <li>Check residuals for autocorrelation</li>
+                <li>Verify model stability</li>
+            </ul>
+        </li>
+        <li style="margin-bottom: 25px;">
+            <strong>Forecast</strong>
+            <ul style="margin-top: 10px;">
+                <li>Generate multi-step ahead forecasts</li>
+                <li>Compute prediction intervals</li>
+            </ul>
+        </li>
+    </ol>
+</div>
+
+<!-- Slide 23: Interpreting VAR Output -->
+<div class="slide">
+    <h2>Interpreting VAR Model Output</h2>
+    <div class="example-box">
+        <strong>Example Results: Retail Sales and Advertising VAR(1)</strong>
+    </div>
+    <table style="margin-top: 20px; font-size: 18px;">
+        <tr>
+            <th>Equation</th>
+            <th>Variable</th>
+            <th>Coefficient</th>
+            <th>P-value</th>
+            <th>Interpretation</th>
+        </tr>
+        <tr>
+            <td rowspan="2"><strong>Sales</strong></td>
+            <td>Sales<sub>t-1</sub></td>
+            <td>0.85</td>
+            <td>&lt;0.001</td>
+            <td>Strong persistence: 85% of last period's sales carry over</td>
+        </tr>
+        <tr>
+            <td>Advertising<sub>t-1</sub></td>
+            <td>0.42</td>
+            <td>0.003</td>
+            <td>Advertising has significant positive effect on sales</td>
+        </tr>
+        <tr>
+            <td rowspan="2"><strong>Advertising</strong></td>
+            <td>Sales<sub>t-1</sub></td>
+            <td>0.15</td>
+            <td>0.089</td>
+            <td>Weak feedback: higher sales lead to slightly more advertising</td>
+        </tr>
+        <tr>
+            <td>Advertising<sub>t-1</sub></td>
+            <td>0.68</td>
+            <td>&lt;0.001</td>
+            <td>Advertising spending is fairly persistent</td>
+        </tr>
+    </table>
+    <div class="highlight" style="margin-top: 30px;">
+        <strong>Business Insight:</strong> Advertising Granger-causes sales (0.42 coefficient, p=0.003), but sales do not significantly Granger-cause advertising (0.15 coefficient, p=0.089). This suggests advertising drives sales, not the other way around.
+    </div>
+</div>
+
+<!-- Slide 24: Forecasting with VAR -->
+<div class="slide">
+    <h2>Forecasting with VAR Models</h2>
+    <canvas id="varForecastChart" style="max-height: 400px;"></canvas>
+    <div class="two-column" style="margin-top: 30px;">
+        <div class="box">
+            <strong>One-Step Ahead:</strong>
+            <p style="font-size: 18px; margin-top: 10px;">Use most recent actual values of all variables</p>
+            <div class="equation" style="font-size: 16px;">
+                Ŷ<sub>t+1</sub> = f(Y<sub>t</sub>, X<sub>t</sub>, ...)
+            </div>
+        </div>
+        <div class="box">
+            <strong>Multi-Step Ahead:</strong>
+            <p style="font-size: 18px; margin-top: 10px;">Use forecasted values as inputs for subsequent forecasts</p>
+            <div class="equation" style="font-size: 16px;">
+                Ŷ<sub>t+2</sub> = f(Ŷ<sub>t+1</sub>, X̂<sub>t+1</sub>, ...)
+            </div>
+        </div>
+    </div>
+    <div class="highlight" style="margin-top: 30px;">
+        <strong>Important:</strong> Forecast uncertainty increases with the forecast horizon. Multi-step forecasts depend on earlier forecasts, so errors compound.
+    </div>
+</div>
+
+<!-- Slide 25: Quiz 4 - VAR Models -->
+<div class="slide">
+    <h2>Quiz 4: VAR Model Understanding</h2>
+    <div class="quiz">
+        <p style="font-size: 24px; margin-bottom: 20px;">You're modeling the relationship between three variables: Sales, Price, and Customer Traffic. You want to build a VAR(2) model.</p>
+        <p style="font-size: 22px; margin-bottom: 25px;">How many total coefficients (excluding constants) will your model have?</p>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+            A) 6 coefficients (2 lags × 3 variables)
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+            B) 9 coefficients (3 equations × 3 variables)
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, true, 4)">
+            C) 18 coefficients (3 equations × 3 variables × 2 lags)
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 4)">
+            D) 12 coefficients (3 equations × 4 lags)
+        </div>
+        <div class="feedback" id="feedback4"></div>
+    </div>
+</div>
+
+<!-- Slide 26: Activity - Python VAR -->
+<div class="slide">
+    <h2>Activity 2: Building Your First VAR Model</h2>
+    <div class="activity-box">
+        <p style="font-size: 24px; margin-bottom: 20px;"><strong>Hands-On Exercise: Retail Sales Forecasting</strong></p>
+        <p style="font-size: 20px; margin-bottom: 20px;">We'll build a VAR model using a retail dataset with two variables:</p>
+        <ul style="font-size: 20px; margin-bottom: 25px;">
+            <li><strong>Sales:</strong> Monthly sales revenue ($1000s)</li>
+            <li><strong>Advertising:</strong> Monthly advertising spend ($1000s)</li>
+        </ul>
+        <p style="font-size: 20px; margin-bottom: 15px;"><strong>Tasks:</strong></p>
+        <ol style="font-size: 20px;">
+            <li>Test for stationarity and difference if needed</li>
+            <li>Determine optimal lag order using BIC</li>
+            <li>Fit the VAR model</li>
+            <li>Test for Granger causality</li>
+            <li>Generate 12-month forecasts</li>
+            <li>Interpret the business implications</li>
+        </ol>
+    </div>
+    <p style="font-size: 20px; margin-top: 25px; color: #DC143C;"><strong>Open:</strong> DATA4400_W8_VAR_RetailSales.ipynb</p>
+</div>
+
+<!-- Slide 27: Activity - Orange Data Mining -->
+<div class="slide">
+    <h2>Activity 3: VAR in Orange Data Mining</h2>
+    <div class="activity-box">
+        <p style="font-size: 24px; margin-bottom: 20px;"><strong>Visual Exploration with Orange</strong></p>
+        <p style="font-size: 20px; margin-bottom: 20px;">We'll use Orange's visual workflow to:</p>
+        <ol style="font-size: 20px; margin-bottom: 25px;">
+            <li>Load multivariate time series data</li>
+            <li>Apply VAR model widget</li>
+            <li>Compare VAR performance against ARIMA</li>
+            <li>Run Granger causality tests</li>
+            <li>Visualize forecast results</li>
+        </ol>
+        <div class="box" style="margin-top: 20px; background: #E8F4F8;">
+            <strong>Workflow:</strong><br>
+            CSV File Import → As Timeseries → Select Columns → VAR Model → Model Evaluation → Granger Causality → Line Chart
+        </div>
+    </div>
+    <p style="font-size: 20px; margin-top: 25px;">Try different datasets: ApplesPears.xlsx, TelecomEHW.xlsx</p>
+</div>
+
+<!-- Slide 28: Decision Framework -->
+<div class="slide">
+    <h2>Choosing the Right Forecasting Method</h2>
+    <table style="margin-top: 30px; font-size: 19px;">
+        <tr>
+            <th>Your Situation</th>
+            <th>Recommended Method</th>
+            <th>Example</th>
+        </tr>
+        <tr>
+            <td>Single time series, no external factors</td>
+            <td><strong>ARIMA/SARIMA</strong> (Week 7)</td>
+            <td>Monthly sales with seasonal pattern</td>
+        </tr>
+        <tr>
+            <td>Y depends on X, but X is external/given</td>
+            <td><strong>Regression with lags</strong> (Week 9)</td>
+            <td>Sales depend on GDP (which we don't control)</td>
+        </tr>
+        <tr>
+            <td style="background: #FFF5F5;">Multiple variables influencing each other</td>
+            <td style="background: #FFF5F5;"><strong>VAR</strong> (Week 8)</td>
+            <td style="background: #FFF5F5;">Sales ↔ Inventory ↔ Price all interact</td>
+        </tr>
+        <tr>
+            <td>Need to forecast thousands of series</td>
+            <td><strong>Simple methods</strong> (ETS, Prophet)</td>
+            <td>Forecast every product SKU in retail chain</td>
+        </tr>
+        <tr>
+            <td>Trend changes frequently</td>
+            <td><strong>Prophet</strong> (Week 6)</td>
+            <td>Website traffic with changing growth rates</td>
+        </tr>
+    </table>
+    <div class="highlight" style="margin-top: 30px;">
+        <strong>Key Principle:</strong> Start simple (ARIMA), then add complexity (VAR) only if it improves forecast accuracy significantly.
+    </div>
+</div>
+
+<!-- Slide 29: Common Mistakes -->
+<div class="slide">
+    <h2>Common Mistakes to Avoid</h2>
+    <div class="grid-3" style="margin-top: 30px;">
+        <div class="box" style="background: #FFE8E8;">
+            <h3 style="font-size: 20px; color: #DC143C;">❌ Mistake 1</h3>
+            <p style="font-size: 18px;"><strong>Treating Granger causality as proof of real causation</strong></p>
+            <p style="font-size: 16px; margin-top: 10px;">Remember: It only tests predictive power, not true causal mechanisms</p>
+        </div>
+        <div class="box" style="background: #FFE8E8;">
+            <h3 style="font-size: 20px; color: #DC143C;">❌ Mistake 2</h3>
+            <p style="font-size: 18px;"><strong>Using too many variables in VAR</strong></p>
+            <p style="font-size: 16px; margin-top: 10px;">More variables = many more parameters to estimate. Stick to 2-5 key variables</p>
+        </div>
+        <div class="box" style="background: #FFE8E8;">
+            <h3 style="font-size: 20px; color: #DC143C;">❌ Mistake 3</h3>
+            <p style="font-size: 18px;"><strong>Forgetting to check stationarity</strong></p>
+            <p style="font-size: 16px; margin-top: 10px;">VAR requires stationary data. Always test and difference if needed</p>
+        </div>
+    </div>
+    <div class="grid-3" style="margin-top: 20px;">
+        <div class="box" style="background: #FFE8E8;">
+            <h3 style="font-size: 20px; color: #DC143C;">❌ Mistake 4</h3>
+            <p style="font-size: 18px;"><strong>Using VAR when relationships are one-way</strong></p>
+            <p style="font-size: 16px; margin-top: 10px;">If X → Y but not Y → X, regression is simpler and better</p>
+        </div>
+        <div class="box" style="background: #FFE8E8;">
+            <h3 style="font-size: 20px; color: #DC143C;">❌ Mistake 5</h3>
+            <p style="font-size: 18px;"><strong>Ignoring forecast uncertainty</strong></p>
+            <p style="font-size: 16px; margin-top: 10px;">Always report prediction intervals, not just point forecasts</p>
+        </div>
+        <div class="box" style="background: #FFE8E8;">
+            <h3 style="font-size: 20px; color: #DC143C;">❌ Mistake 6</h3>
+            <p style="font-size: 18px;"><strong>Not validating on holdout data</strong></p>
+            <p style="font-size: 16px; margin-top: 10px;">Test your model on data it hasn't seen during training</p>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 30: Best Practices -->
+<div class="slide">
+    <h2>Best Practices for VAR Modeling</h2>
+    <div class="two-column" style="margin-top: 30px;">
+        <div>
+            <h3>Data Preparation</h3>
+            <ul style="font-size: 20px;">
+                <li>Ensure adequate sample size (at least 40-50 observations)</li>
+                <li>Handle missing values carefully</li>
+                <li>Check for and address outliers</li>
+                <li>Align all series to same frequency</li>
+            </ul>
+            <h3 style="margin-top: 30px;">Model Selection</h3>
+            <ul style="font-size: 20px;">
+                <li>Use BIC for lag order selection</li>
+                <li>Start with small number of variables</li>
+                <li>Consider economic/business theory</li>
+                <li>Test model stability</li>
+            </ul>
+        </div>
+        <div>
+            <h3>Interpretation</h3>
+            <ul style="font-size: 20px;">
+                <li>Focus on statistically significant coefficients</li>
+                <li>Use Granger causality to understand relationships</li>
+                <li>Communicate results in business terms</li>
+                <li>Don't overstate causal claims</li>
+            </ul>
+            <h3 style="margin-top: 30px;">Validation</h3>
+            <ul style="font-size: 20px;">
+                <li>Split data: train on 80%, test on 20%</li>
+                <li>Compare forecast accuracy metrics (RMSE, MAE)</li>
+                <li>Benchmark against simpler models</li>
+                <li>Monitor forecast performance over time</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 31: Real-World Applications -->
+<div class="slide">
+    <h2>Real-World Business Applications</h2>
+    <div style="margin-top: 30px;">
+        <div class="example-box">
+            <h3 style="font-size: 22px;">Finance: Portfolio Risk Management</h3>
+            <p style="font-size: 19px;">Model interactions between stock returns, interest rates, and volatility indices to understand how shocks propagate through financial markets.</p>
+        </div>
+        <div class="example-box">
+            <h3 style="font-size: 22px;">Retail: Inventory Optimization</h3>
+            <p style="font-size: 19px;">Forecast sales, inventory levels, and order quantities simultaneously, accounting for how inventory availability affects sales and sales drive reordering.</p>
+        </div>
+        <div class="example-box">
+            <h3 style="font-size: 22px;">Marketing: Campaign Attribution</h3>
+            <p style="font-size: 19px;">Understand which marketing channels (email, social, paid search) Granger-cause conversions and how channels interact with each other.</p>
+        </div>
+        <div class="example-box">
+            <h3 style="font-size: 22px;">Economics: Policy Analysis</h3>
+            <p style="font-size: 19px;">Model relationships between GDP, unemployment, inflation, and interest rates to simulate effects of policy changes.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 32: Quiz 5 - Comprehensive -->
+<div class="slide">
+    <h2>Quiz 5: Bringing It All Together</h2>
+    <div class="quiz">
+        <p style="font-size: 24px; margin-bottom: 20px;">You're analyzing a restaurant chain's data. You have monthly observations of:</p>
+        <ul style="font-size: 20px; margin-bottom: 20px;">
+            <li>Revenue</li>
+            <li>Customer visits</li>
+            <li>Marketing spend</li>
+            <li>Average meal price</li>
+        </ul>
+        <p style="font-size: 22px; margin-bottom: 25px;">What is the BEST first step in your analysis?</p>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+            A) Immediately build a VAR(4) model with all four variables
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+            B) Calculate correlations between all pairs of variables
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, true, 5)">
+            C) Test each variable for stationarity and visualize the time series
+        </div>
+        <div class="quiz-option" onclick="checkAnswer(this, false, 5)">
+            D) Run Granger causality tests on all variable pairs
+        </div>
+        <div class="feedback" id="feedback5"></div>
+    </div>
+</div>
+
+<!-- Slide 33: Summary -->
+<div class="slide">
+    <h2>Week 8 Summary</h2>
+    <div style="margin-top: 30px;">
+        <div class="box" style="background: #FFF5F5; margin-bottom: 20px;">
+            <h3 style="font-size: 24px; color: #DC143C;">Key Concepts Learned</h3>
+            <ol style="font-size: 20px; margin-top: 15px;">
+                <li><strong>Correlation ≠ Causation:</strong> High correlation doesn't imply that one variable causes another</li>
+                <li><strong>Granger Causality:</strong> Tests whether past values of X help predict Y (forecasting ability, not true causation)</li>
+                <li><strong>VAR Models:</strong> System of equations for forecasting multiple related variables simultaneously</li>
+                <li><strong>Feedback Loops:</strong> VAR captures how variables influence each other over time</li>
+            </ol>
+        </div>
+        <div class="two-column">
+            <div class="box">
+                <h3 style="font-size: 20px;">When to Use VAR</h3>
+                <ul style="font-size: 18px;">
+                    <li>Multiple variables influence each other</li>
+                    <li>Feedback relationships exist</li>
+                    <li>Need system-wide forecasts</li>
+                    <li>Want to test Granger causality</li>
+                </ul>
+            </div>
+            <div class="box">
+                <h3 style="font-size: 20px;">Key Requirements</h3>
+                <ul style="font-size: 18px;">
+                    <li>Data must be stationary</li>
+                    <li>Adequate sample size (40+ obs)</li>
+                    <li>Limited number of variables (2-5)</li>
+                    <li>Same frequency for all series</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 34: Next Steps -->
+<div class="slide">
+    <h2>Looking Ahead: Week 9</h2>
+    <div class="highlight" style="margin-top: 30px; font-size: 22px;">
+        <strong>Next Week: Regression Models for Forecasting</strong>
+        <p style="margin-top: 15px;">We'll explore how to use regression when the relationship is one-directional (X → Y but not Y → X), including:</p>
+    </div>
+    <div style="margin-top: 40px;">
+        <ul style="font-size: 22px;">
+            <li>Linear regression with time series data</li>
+            <li>Including lagged predictors</li>
+            <li>Handling trends and seasonality in regression</li>
+            <li>When regression outperforms VAR</li>
+            <li>Dynamic regression models</li>
+        </ul>
+    </div>
+    <div class="box" style="margin-top: 50px; background: #FFF9E6; border-color: #FFC107;">
+        <h3 style="font-size: 24px;">Prepare for Next Week:</h3>
+        <p style="font-size: 20px; margin-top: 10px;">Review your linear regression concepts from previous statistics courses. We'll build on that foundation to create powerful forecasting models.</p>
+    </div>
+    <div style="text-align: center; margin-top: 60px;">
+        <p style="font-size: 28px; color: #DC143C;"><strong>Questions?</strong></p>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="navigation">
+    <button id="prevBtn" onclick="changeSlide(-1)">Previous</button>
+    <button id="nextBtn" onclick="changeSlide(1)">Next</button>
+</div>
+
+<div class="slide-number" id="slideNumber"></div>
+<div class="logo">DATA4400 | Kaplan Business School</div>
+
+<script>
+let currentSlide = 0;
+const slides = document.querySelectorAll('.slide');
+const totalSlides = slides.length;
+
+function showSlide(n) {
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (n + totalSlides) % totalSlides;
+    slides[currentSlide].classList.add('active');
     
-    <script>
-        // JavaScript for interactive visualizations
-        document.addEventListener('DOMContentLoaded', function() {
-            // Sample data generation
-            function generateData(n = 100, hasRelationship = true) {
-                const series1 = [];
-                const series2 = [];
-                
-                // Initial values
-                series1.push(Math.random() * 10);
-                series2.push(Math.random() * 10);
-                
-                // Generate time series with potential Granger causality
-                for (let i = 1; i < n; i++) {
-                    // Series 1 follows an AR(1) process
-                    const newVal1 = 2 + 0.8 * series1[i-1] + (Math.random() - 0.5) * 2;
-                    series1.push(newVal1);
-                    
-                    // Series 2 is influenced by Series 1 (if hasRelationship is true)
-                    const influence = hasRelationship ? 0.4 * series1[i-1] : 0;
-                    const newVal2 = 5 + 0.6 * series2[i-1] + influence + (Math.random() - 0.5) * 2;
-                    series2.push(newVal2);
+    document.getElementById('slideNumber').textContent = `Slide ${currentSlide + 1} / ${totalSlides}`;
+    document.getElementById('prevBtn').disabled = currentSlide === 0;
+    document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+    
+    // Initialize charts when reaching specific slides
+    if (currentSlide === 4) initCorrelationChart();
+    if (currentSlide === 13) initGrangerChart();
+    if (currentSlide === 23) initVarForecastChart();
+}
+
+function changeSlide(direction) {
+    showSlide(currentSlide + direction);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'ArrowLeft') changeSlide(-1);
+    if (event.key === 'ArrowRight') changeSlide(1);
+});
+
+// Quiz functionality
+function checkAnswer(element, isCorrect, quizNumber) {
+    const options = element.parentElement.querySelectorAll('.quiz-option');
+    const feedback = document.getElementById(`feedback${quizNumber}`);
+    
+    // Disable all options after selection
+    options.forEach(opt => {
+        opt.style.pointerEvents = 'none';
+    });
+    
+    if (isCorrect) {
+        element.classList.add('correct');
+        feedback.className = 'feedback correct show';
+        if (quizNumber === 1) {
+            feedback.innerHTML = '<strong>✓ Correct!</strong> Both parking and sales are likely driven by a third factor: store size and location. Larger stores in busier areas naturally have more parking AND higher sales. Building more parking at a small store won\'t increase sales.';
+        } else if (quizNumber === 2) {
+            feedback.innerHTML = '<strong>✓ Correct!</strong> Random assignment to treatment and control groups is the gold standard for establishing causation. By randomly selecting cities for ads, you control for confounding factors and can isolate the effect of advertising on sales.';
+        } else if (quizNumber === 3) {
+            feedback.innerHTML = '<strong>✓ Correct!</strong> Granger causality tests predictive relationships, not true causation. The low p-value indicates that including past Twitter activity significantly improves our Bitcoin price forecasts, but this doesn\'t prove Twitter activity causes price changes.';
+        } else if (quizNumber === 4) {
+            feedback.innerHTML = '<strong>✓ Correct!</strong> With 3 variables and 2 lags, you have 3 equations (one per variable). Each equation includes 3 variables × 2 lags = 6 lagged terms. Total: 3 equations × 6 terms = 18 coefficients (plus 3 constants).';
+        } else if (quizNumber === 5) {
+            feedback.innerHTML = '<strong>✓ Correct!</strong> Before any modeling, you must understand your data. Testing stationarity and visualizing the series helps you identify trends, seasonality, structural breaks, and whether differencing is needed. This guides all subsequent analysis.';
+        }
+    } else {
+        element.classList.add('incorrect');
+        feedback.className = 'feedback incorrect show';
+        if (quizNumber === 1) {
+            feedback.innerHTML = '<strong>✗ Not quite.</strong> Consider: what factors determine both parking availability and sales volume? Think about confounding variables like store size and location.';
+        } else if (quizNumber === 2) {
+            feedback.innerHTML = '<strong>✗ Not quite.</strong> While these methods provide some information, they don\'t control for confounding factors. Random assignment is key to establishing causation.';
+        } else if (quizNumber === 3) {
+            feedback.innerHTML = '<strong>✗ Not quite.</strong> Remember: Granger causality measures predictive power, not true causation. A significant test means X helps forecast Y, not that X causes Y.';
+        } else if (quizNumber === 4) {
+            feedback.innerHTML = '<strong>✗ Not quite.</strong> Count carefully: 3 equations × 3 variables × 2 lags. Each equation predicts one variable using lagged values of all three variables.';
+        } else if (quizNumber === 5) {
+            feedback.innerHTML = '<strong>✗ Not quite.</strong> Before building models or running tests, you need to understand your data\'s properties. Stationarity testing and visualization are essential first steps.';
+        }
+    }
+}
+
+// Chart for spurious correlation
+function initCorrelationChart() {
+    const ctx = document.getElementById('correlationChart');
+    if (!ctx || ctx.chart) return;
+    
+    const years = [];
+    for (let i = 2000; i <= 2009; i++) years.push(i);
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Divorce Rate (per 1000)',
+                data: [5.0, 4.7, 4.6, 4.4, 4.3, 4.1, 4.2, 4.2, 4.1, 3.9],
+                borderColor: '#DC143C',
+                backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                tension: 0.4,
+                yAxisID: 'y'
+            }, {
+                label: 'Margarine Consumption (lbs)',
+                data: [8.2, 7.0, 6.5, 5.3, 5.2, 4.0, 4.6, 4.5, 4.2, 3.7],
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    labels: { font: { size: 14 } }
                 }
-                
-                return { series1, series2 };
-            }
-            
-            // Initialize canvas
-            const canvas = document.getElementById('datasetCanvas');
-            const ctx = canvas.getContext('2d');
-            let data = generateData();
-            let forecasts = null;
-            
-            // Draw time series
-            function drawTimeSeries() {
-                const width = canvas.width;
-                const height = canvas.height;
-                
-                // Clear canvas
-                ctx.clearRect(0, 0, width, height);
-                
-                // Draw grid
-                ctx.strokeStyle = '#e6e6e6';
-                ctx.lineWidth = 1;
-                
-                // Vertical grid lines
-                for (let i = 0; i <= 10; i++) {
-                    const x = 50 + (width - 100) * i / 10;
-                    ctx.beginPath();
-                    ctx.moveTo(x, 20);
-                    ctx.lineTo(x, height - 30);
-                    ctx.stroke();
-                }
-                
-                // Horizontal grid lines
-                for (let i = 0; i <= 5; i++) {
-                    const y = 20 + (height - 50) * i / 5;
-                    ctx.beginPath();
-                    ctx.moveTo(50, y);
-                    ctx.lineTo(width - 50, y);
-                    ctx.stroke();
-                }
-                
-                // Draw axes
-                ctx.strokeStyle = '#666';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(50, height - 30);
-                ctx.lineTo(width - 50, height - 30); // x-axis
-                ctx.moveTo(50, height - 30);
-                ctx.lineTo(50, 20); // y-axis
-                ctx.stroke();
-                
-                // Find min/max values for scaling
-                const allValues = [...data.series1, ...data.series2];
-                const minVal = Math.min(...allValues);
-                const maxVal = Math.max(...allValues);
-                const valueRange = maxVal - minVal;
-                
-                // Draw data series 1
-                ctx.strokeStyle = '#3498db';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                
-                for (let i = 0; i < data.series1.length; i++) {
-                    const x = 50 + (width - 100) * i / data.series1.length;
-                    const y = height - 30 - ((data.series1[i] - minVal) / valueRange) * (height - 50);
-                    
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Divorce Rate',
+                        font: { size: 14 }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Margarine (lbs)',
+                        font: { size: 14 }
+                    },
+                    grid: {
+                        drawOnChartArea: false,
                     }
                 }
-                ctx.stroke();
-                
-                // Draw data series 2
-                ctx.strokeStyle = '#e74c3c';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                
-                for (let i = 0; i < data.series2.length; i++) {
-                    const x = 50 + (width - 100) * i / data.series2.length;
-                    const y = height - 30 - ((data.series2[i] - minVal) / valueRange) * (height - 50);
-                    
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
+            }
+        }
+    });
+}
+
+// Chart for Granger causality example
+function initGrangerChart() {
+    const ctx = document.getElementById('grangerChart');
+    if (!ctx || ctx.chart) return;
+    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Social Media Mentions',
+                data: [100, 120, 115, 140, 160, 155, 180, 175, 190, 185, 200, 210],
+                borderColor: '#DC143C',
+                backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                tension: 0.4,
+                yAxisID: 'y'
+            }, {
+                label: 'Sales Revenue ($1000s)',
+                data: [50, 55, 54, 62, 68, 66, 75, 73, 78, 76, 82, 85],
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    labels: { font: { size: 14 } }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Social Media Mentions',
+                        font: { size: 14 }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Sales Revenue ($1000s)',
+                        font: { size: 14 }
+                    },
+                    grid: {
+                        drawOnChartArea: false,
                     }
                 }
-                ctx.stroke();
-                
-                // Draw forecasts if available
-                if (forecasts) {
-                    const n = data.series1.length;
-                    
-                    // Draw forecast for series 1
-                    ctx.strokeStyle = '#3498db';
-                    ctx.setLineDash([5, 3]);
-                    ctx.beginPath();
-                    
-                    const lastX1 = 50 + (width - 100) * (n - 1) / n;
-                    const lastY1 = height - 30 - ((data.series1[n - 1] - minVal) / valueRange) * (height - 50);
-                    ctx.moveTo(lastX1, lastY1);
-                    
-                    for (let i = 0; i < forecasts.series1.length; i++) {
-                        const x = 50 + (width - 100) * (n + i) / n;
-                        const y = height - 30 - ((forecasts.series1[i] - minVal) / valueRange) * (height - 50);
-                        ctx.lineTo(x, y);
+            }
+        }
+    });
+}
+
+// Chart for VAR forecasting
+function initVarForecastChart() {
+    const ctx = document.getElementById('varForecastChart');
+    if (!ctx || ctx.chart) return;
+    
+    const periods = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: periods,
+            datasets: [{
+                label: 'Actual Sales',
+                data: [100, 105, 102, 108, 112, 110, null, null, null, null, null, null],
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Forecasted Sales',
+                data: [null, null, null, null, null, 110, 114, 116, 119, 122, 125, 128],
+                borderColor: '#DC143C',
+                backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                borderDash: [5, 5],
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { font: { size: 14 } }
+                }
+            },
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Sales ($1000s)',
+                        font: { size: 14 }
                     }
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    
-                    // Draw forecast for series 2
-                    ctx.strokeStyle = '#e74c3c';
-                    ctx.setLineDash([5, 3]);
-                    ctx.beginPath();
-                    
-                    const lastX2 = 50 + (width - 100) * (n - 1) / n;
-                    const lastY2 = height - 30 - ((data.series2[n - 1] - minVal) / valueRange) * (height - 50);
-                    ctx.moveTo(lastX2, lastY2);
-                    
-                    for (let i = 0; i < forecasts.series2.length; i++) {
-                        const x = 50 + (width - 100) * (n + i) / n;
-                        const y = height - 30 - ((forecasts.series2[i] - minVal) / valueRange) * (height - 50);
-                        ctx.lineTo(x, y);
-                    }
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                }
-                
-                // Add labels
-                ctx.fillStyle = '#333';
-                ctx.font = '14px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Time', width / 2, height - 5);
-                
-                ctx.save();
-                ctx.translate(15, height / 2);
-                ctx.rotate(-Math.PI / 2);
-                ctx.textAlign = 'center';
-                ctx.fillText('Value', 0, 0);
-                ctx.restore();
-                
-                // Add legend
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(width - 140, 20, 15, 15);
-                ctx.fillStyle = '#333';
-                ctx.textAlign = 'left';
-                ctx.fillText('Series 1', width - 120, 33);
-                
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(width - 140, 45, 15, 15);
-                ctx.fillStyle = '#333';
-                ctx.fillText('Series 2', width - 120, 58);
-                
-                if (forecasts) {
-                    ctx.strokeStyle = '#333';
-                    ctx.setLineDash([5, 3]);
-                    ctx.beginPath();
-                    ctx.moveTo(width - 140, 70);
-                    ctx.lineTo(width - 125, 70);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    ctx.fillText('Forecast', width - 120, 73);
                 }
             }
-            
-            // Generate new data
-            document.getElementById('generateBtn').addEventListener('click', function() {
-                data = generateData(100, Math.random() > 0.3); // 70% chance of relationship
-                forecasts = null;
-                document.getElementById('grangerResults').style.display = 'none';
-                drawTimeSeries();
-            });
-            
-            // Fit VAR model (simulation)
-            document.getElementById('fitVARBtn').addEventListener('click', function() {
-                // Simulate VAR model fitting
-                const hasRelationship = Math.random() > 0.3; // 70% chance of relationship
-                
-                const grangerResults = document.getElementById('grangerResults');
-                grangerResults.style.display = 'block';
-                
-                const grangerText = document.getElementById('grangerText');
-                
-                if (hasRelationship) {
-                    const direction = Math.random() > 0.5 ? 
-                        "Series 1 Granger-causes Series 2 (p-value: 0.023)" : 
-                        "Series 2 Granger-causes Series 1 (p-value: 0.041)";
-                    grangerText.innerHTML = `<strong>Result:</strong> ${direction}<br><br>This indicates a statistically significant relationship where past values of one series help predict the other series.`;
-                } else {
-                    grangerText.innerHTML = `<strong>Result:</strong> No Granger causality detected between Series 1 and Series 2 (p-values > 0.05)<br><br>This suggests that neither series significantly helps predict the other beyond what can be predicted using each series' own past values.`;
-                }
-            });
-            
-            // Generate forecasts
-            document.getElementById('forecastBtn').addEventListener('click', function() {
-                // Simple forecast generation
-                const lastVal1 = data.series1[data.series1.length - 1];
-                const lastVal2 = data.series2[data.series2.length - 1];
-                
-                const forecast1 = [];
-                const forecast2 = [];
-                
-                let prev1 = lastVal1;
-                let prev2 = lastVal2;
-                
-                // Generate 10 forecast points
-                for (let i = 0; i < 10; i++) {
-                    // Simple AR(1) forecast with noise
-                    const next1 = 2 + 0.8 * prev1 + (Math.random() - 0.5);
-                    forecast1.push(next1);
-                    
-                    // VAR effect where series 2 is influenced by series 1
-                    const next2 = 5 + 0.6 * prev2 + 0.4 * prev1 + (Math.random() - 0.5);
-                    forecast2.push(next2);
-                    
-                    prev1 = next1;
-                    prev2 = next2;
-                }
-                
-                forecasts = { series1: forecast1, series2: forecast2 };
-                drawTimeSeries();
-            });
-            
-            // VAR Animation
-            const svg = document.getElementById('varAnimation');
-            let animationData = null;
-            
-            function setupVARAnimation() {
-                // Clear SVG
-                while (svg.firstChild) {
-                    svg.removeChild(svg.firstChild);
-                }
-                
-                // Define arrow marker
-                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-                marker.setAttribute('id', 'arrowhead');
-                marker.setAttribute('markerWidth', '10');
-                marker.setAttribute('markerHeight', '7');
-                marker.setAttribute('refX', '10');
-                marker.setAttribute('refY', '3.5');
-                marker.setAttribute('orient', 'auto');
-                
-                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
-                polygon.setAttribute('fill', '#333');
-                
-                marker.appendChild(polygon);
-                defs.appendChild(marker);
-                svg.appendChild(defs);
-                
-                // Grid lines
-                for (let i = 0; i <= 10; i++) {
-                    const x = 50 + (900) * i / 10;
-                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    line.setAttribute('x1', x);
-                    line.setAttribute('y1', 50);
-                    line.setAttribute('x2', x);
-                    line.setAttribute('y2', 350);
-                    line.setAttribute('class', 'grid-line');
-                    svg.appendChild(line);
-                }
-                
-                for (let i = 0; i <= 6; i++) {
-                    const y = 50 + 300 * i / 6;
-                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    line.setAttribute('x1', 50);
-                    line.setAttribute('y1', y);
-                    line.setAttribute('x2', 950);
-                    line.setAttribute('y2', y);
-                    line.setAttribute('class', 'grid-line');
-                    svg.appendChild(line);
-                }
-                
-                // Axes
-                const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                xAxis.setAttribute('x1', 50);
-                xAxis.setAttribute('y1', 350);
-                xAxis.setAttribute('x2', 950);
-                xAxis.setAttribute('y2', 350);
-                xAxis.setAttribute('class', 'axis-line');
-                svg.appendChild(xAxis);
-                
-                const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                yAxis.setAttribute('x1', 50);
-                yAxis.setAttribute('y1', 350);
-                yAxis.setAttribute('x2', 50);
-                yAxis.setAttribute('y2', 50);
-                yAxis.setAttribute('class', 'axis-line');
-                svg.appendChild(yAxis);
-                
-                // Labels
-                const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                xLabel.setAttribute('x', 500);
-                xLabel.setAttribute('y', 390);
-                xLabel.setAttribute('text-anchor', 'middle');
-                xLabel.textContent = 'Time';
-                svg.appendChild(xLabel);
-                
-                const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                yLabel.setAttribute('x', 20);
-                yLabel.setAttribute('y', 200);
-                yLabel.setAttribute('text-anchor', 'middle');
-                yLabel.setAttribute('transform', 'rotate(-90, 20, 200)');
-                yLabel.textContent = 'Value';
-                svg.appendChild(yLabel);
-                
-                // Legend
-                const legend1Rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                legend1Rect.setAttribute('x', 800);
-                legend1Rect.setAttribute('y', 70);
-                legend1Rect.setAttribute('width', 15);
-                legend1Rect.setAttribute('height', 15);
-                legend1Rect.setAttribute('fill', '#3498db');
-                svg.appendChild(legend1Rect);
-                
-                const legend1Text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                legend1Text.setAttribute('x', 825);
-                legend1Text.setAttribute('y', 83);
-                legend1Text.textContent = 'Series 1';
-                svg.appendChild(legend1Text);
-                
-                const legend2Rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                legend2Rect.setAttribute('x', 800);
-                legend2Rect.setAttribute('y', 100);
-                legend2Rect.setAttribute('width', 15);
-                legend2Rect.setAttribute('height', 15);
-                legend2Rect.setAttribute('fill', '#e74c3c');
-                svg.appendChild(legend2Rect);
-                
-                const legend2Text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                legend2Text.setAttribute('x', 825);
-                legend2Text.setAttribute('y', 113);
-                legend2Text.textContent = 'Series 2';
-                svg.appendChild(legend2Text);
-                
-                // Generate animation data
-                const n = 20; // Number of points
-                animationData = generateData(n);
-                
-                // Create path elements for each series
-                const pathData1 = [];
-                const pathData2 = [];
-                
-                for (let i = 0; i < n; i++) {
-                    const x = 50 + 850 * i / (n - 1);
-                    
-                    // Scale values to fit in the SVG
-                    const y1 = 350 - 250 * (animationData.series1[i] / 15);
-                    const y2 = 350 - 250 * (animationData.series2[i] / 15);
-                    
-                    pathData1.push(i === 0 ? `M${x},${y1}` : `L${x},${y1}`);
-                    pathData2.push(i === 0 ? `M${x},${y2}` : `L${x},${y2}`);
-                }
-                
-                const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path1.setAttribute('d', pathData1.join(' '));
-                path1.setAttribute('class', 'line');
-                path1.setAttribute('stroke', '#3498db');
-                svg.appendChild(path1);
-                
-                const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path2.setAttribute('d', pathData2.join(' '));
-                path2.setAttribute('class', 'line');
-                path2.setAttribute('stroke', '#e74c3c');
-                svg.appendChild(path2);
-                
-                // Add points
-                for (let i = 0; i < n; i++) {
-                    const x = 50 + 850 * i / (n - 1);
-                    const y1 = 350 - 250 * (animationData.series1[i] / 15);
-                    const y2 = 350 - 250 * (animationData.series2[i] / 15);
-                    
-                    const point1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    point1.setAttribute('cx', x);
-                    point1.setAttribute('cy', y1);
-                    point1.setAttribute('class', 'data-point');
-                    point1.setAttribute('fill', '#3498db');
-                    point1.setAttribute('r', '4');
-                    svg.appendChild(point1);
-                    
-                    const point2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    point2.setAttribute('cx', x);
-                    point2.setAttribute('cy', y2);
-                    point2.setAttribute('class', 'data-point');
-                    point2.setAttribute('fill', '#e74c3c');
-                    point2.setAttribute('r', '4');
-                    svg.appendChild(point2);
-                }
-            }
-            
-            function runVARAnimation() {
-                // Remove existing influences
-                const influences = svg.querySelectorAll('.influence');
-                influences.forEach(influence => svg.removeChild(influence));
-                
-                // Create VAR influences
-                const n = animationData.series1.length;
-                
-                // Animate the VAR relationships
-                for (let i = n - 5; i < n - 1; i++) {
-                    const x1 = 50 + 850 * i / (n - 1);
-                    const y1_1 = 350 - 250 * (animationData.series1[i] / 15);
-                    const y1_2 = 350 - 250 * (animationData.series2[i] / 15);
-                    
-                    const x2 = 50 + 850 * (i + 1) / (n - 1);
-                    const y2_1 = 350 - 250 * (animationData.series1[i + 1] / 15);
-                    const y2_2 = 350 - 250 * (animationData.series2[i + 1] / 15);
-                    
-                    // Series 1 -> Series 1
-                    setTimeout(() => {
-                        const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line1.setAttribute('x1', x1);
-                        line1.setAttribute('y1', y1_1);
-                        line1.setAttribute('x2', x2);
-                        line1.setAttribute('y2', y2_1);
-                        line1.setAttribute('stroke', '#3498db');
-                        line1.setAttribute('stroke-width', '2');
-                        line1.setAttribute('stroke-dasharray', '5,3');
-                        line1.setAttribute('marker-end', 'url(#arrowhead)');
-                        line1.setAttribute('class', 'influence');
-                        svg.appendChild(line1);
-                        
-                        // Add coefficient
-                        const midX1 = (x1 + x2) / 2;
-                        const midY1 = (y1_1 + y2_1) / 2 - 10;
-                        
-                        const coef1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        coef1.setAttribute('x', midX1);
-                        coef1.setAttribute('y', midY1);
-                        coef1.setAttribute('text-anchor', 'middle');
-                        coef1.setAttribute('class', 'influence');
-                        coef1.textContent = 'β₁₁';
-                        svg.appendChild(coef1);
-                    }, 500 * (i - (n - 5)));
-                    
-                    // Series 2 -> Series 2
-                    setTimeout(() => {
-                        const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line2.setAttribute('x1', x1);
-                        line2.setAttribute('y1', y1_2);
-                        line2.setAttribute('x2', x2);
-                        line2.setAttribute('y2', y2_2);
-                        line2.setAttribute('stroke', '#e74c3c');
-                        line2.setAttribute('stroke-width', '2');
-                        line2.setAttribute('stroke-dasharray', '5,3');
-                        line2.setAttribute('marker-end', 'url(#arrowhead)');
-                        line2.setAttribute('class', 'influence');
-                        svg.appendChild(line2);
-                        
-                        // Add coefficient
-                        const midX2 = (x1 + x2) / 2;
-                        const midY2 = (y1_2 + y2_2) / 2 - 10;
-                        
-                        const coef2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        coef2.setAttribute('x', midX2);
-                        coef2.setAttribute('y', midY2);
-                        coef2.setAttribute('text-anchor', 'middle');
-                        coef2.setAttribute('class', 'influence');
-                        coef2.textContent = 'β₂₂';
-                        svg.appendChild(coef2);
-                    }, 500 * (i - (n - 5)) + 250);
-                    
-                    // Series 1 -> Series 2 (Granger causality)
-                    setTimeout(() => {
-                        const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line3.setAttribute('x1', x1);
-                        line3.setAttribute('y1', y1_1);
-                        line3.setAttribute('x2', x2);
-                        line3.setAttribute('y2', y2_2);
-                        line3.setAttribute('stroke', '#9b59b6');
-                        line3.setAttribute('stroke-width', '2');
-                        line3.setAttribute('stroke-dasharray', '5,3');
-                        line3.setAttribute('marker-end', 'url(#arrowhead)');
-                        line3.setAttribute('class', 'influence');
-                        svg.appendChild(line3);
-                        
-                        // Add coefficient
-                        const midX3 = (x1 + x2) / 2 + 10;
-                        const midY3 = (y1_1 + y2_2) / 2;
-                        
-                        const coef3 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        coef3.setAttribute('x', midX3);
-                        coef3.setAttribute('y', midY3);
-                        coef3.setAttribute('text-anchor', 'middle');
-                        coef3.setAttribute('class', 'influence');
-                        coef3.textContent = 'β₂₁';
-                        svg.appendChild(coef3);
-                    }, 500 * (i - (n - 5)) + 375);
-                }
-                
-                // Generate and show forecast
-                setTimeout(() => {
-                    // Create forecast points
-                    const lastX = 50 + 850;
-                    const lastY1 = 350 - 250 * (animationData.series1[n - 1] / 15);
-                    const lastY2 = 350 - 250 * (animationData.series2[n - 1] / 15);
-                    
-                    // VAR forecasts
-                    const forecastX = lastX + 50;
-                    
-                    // Use VAR equations
-                    const forecastY1 = 350 - 250 * ((2 + 0.7 * animationData.series1[n - 1] + 0.2 * animationData.series2[n - 1]) / 15);
-                    const forecastY2 = 350 - 250 * ((5 + 0.4 * animationData.series1[n - 1] + 0.5 * animationData.series2[n - 1]) / 15);
-                    
-                    // Forecast lines
-                    const forecastLine1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    forecastLine1.setAttribute('x1', lastX);
-                    forecastLine1.setAttribute('y1', lastY1);
-                    forecastLine1.setAttribute('x2', forecastX);
-                    forecastLine1.setAttribute('y2', forecastY1);
-                    forecastLine1.setAttribute('stroke', '#3498db');
-                    forecastLine1.setAttribute('stroke-width', '2');
-                    forecastLine1.setAttribute('stroke-dasharray', '5,3');
-                    forecastLine1.setAttribute('class', 'influence');
-                    svg.appendChild(forecastLine1);
-                    
-                    const forecastLine2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    forecastLine2.setAttribute('x1', lastX);
-                    forecastLine2.setAttribute('y1', lastY2);
-                    forecastLine2.setAttribute('x2', forecastX);
-                    forecastLine2.setAttribute('y2', forecastY2);
-                    forecastLine2.setAttribute('stroke', '#e74c3c');
-                    forecastLine2.setAttribute('stroke-width', '2');
-                    forecastLine2.setAttribute('stroke-dasharray', '5,3');
-                    forecastLine2.setAttribute('class', 'influence');
-                    svg.appendChild(forecastLine2);
-                    
-                    // Forecast points
-                    const forecastPoint1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    forecastPoint1.setAttribute('cx', forecastX);
-                    forecastPoint1.setAttribute('cy', forecastY1);
-                    forecastPoint1.setAttribute('class', 'forecast-point influence');
-                    forecastPoint1.setAttribute('fill', '#3498db');
-                    forecastPoint1.setAttribute('r', '4');
-                    svg.appendChild(forecastPoint1);
-                    
-                    const forecastPoint2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    forecastPoint2.setAttribute('cx', forecastX);
-                    forecastPoint2.setAttribute('cy', forecastY2);
-                    forecastPoint2.setAttribute('class', 'forecast-point influence');
-                    forecastPoint2.setAttribute('fill', '#e74c3c');
-                    forecastPoint2.setAttribute('r', '4');
-                    svg.appendChild(forecastPoint2);
-                    
-                    // Forecast label
-                    const forecastLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    forecastLabel.setAttribute('x', forecastX);
-                    forecastLabel.setAttribute('y', 30);
-                    forecastLabel.setAttribute('text-anchor', 'middle');
-                    forecastLabel.setAttribute('class', 'influence');
-                    forecastLabel.setAttribute('font-weight', 'bold');
-                    forecastLabel.textContent = 'VAR Forecast';
-                    svg.appendChild(forecastLabel);
-                    
-                    // VAR equation
-                    const equation = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    equation.setAttribute('x', 500);
-                    equation.setAttribute('y', 430);
-                    equation.setAttribute('text-anchor', 'middle');
-                    equation.setAttribute('class', 'influence');
-                    equation.innerHTML = 'Y<tspan dy="-5" font-size="80%">t</tspan><tspan dy="5"> = c + A</tspan><tspan dy="-5" font-size="80%">1</tspan><tspan dy="5">Y</tspan><tspan dy="-5" font-size="80%">t-1</tspan><tspan dy="5"> + ε</tspan><tspan dy="-5" font-size="80%">t</tspan>';
-                    svg.appendChild(equation);
-                }, 2500);
-            }
-            
-            // Set up animation
-            document.getElementById('animateBtn').addEventListener('click', function() {
-                runVARAnimation();
-            });
-            
-            document.getElementById('resetAnimBtn').addEventListener('click', function() {
-                setupVARAnimation();
-            });
-            
-            // Initialize visualizations
-            drawTimeSeries();
-            setupVARAnimation();
-        });
-    </script>
+        }
+    });
+}
+
+// Initialize
+showSlide(0);
+</script>
+
 </body>
 </html>
