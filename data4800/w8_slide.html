@@ -3,70 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Week 8: CNNs and Image Classification - DATA4800</title>
+    <title>Week 8: Convolutional Neural Networks for Image Classification</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Helvetica', Arial, sans-serif;
+            font-family: Helvetica, Arial, sans-serif;
             background: white;
             color: #333;
             overflow: hidden;
         }
-        
-        .presentation {
+
+        .presentation-container {
             width: 100vw;
             height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
         }
-        
+
         .slide {
-            width: 100%;
-            height: 100%;
+            display: none !important;
+            width: 90%;
+            max-width: 1200px;
+            height: 85vh;
             padding: 60px;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
+            background: white;
+            overflow-y: auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
-        
+
         .slide.active {
-            display: flex;
+            display: block !important;
+            animation: fadeIn 0.5s;
         }
-        
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         h1 {
-            font-size: 3rem;
-            margin-bottom: 40px;
-            color: #1e3a8a;
-            font-weight: 300;
-        }
-        
-        h2 {
-            font-size: 2.5rem;
+            color: #CC0000;
+            font-size: 2.5em;
             margin-bottom: 30px;
-            color: #1e3a8a;
-            font-weight: 300;
+            font-weight: bold;
         }
-        
+
+        h2 {
+            color: #CC0000;
+            font-size: 2em;
+            margin-bottom: 25px;
+            margin-top: 30px;
+            font-weight: bold;
+        }
+
         h3 {
-            font-size: 2rem;
+            color: #CC0000;
+            font-size: 1.5em;
             margin-bottom: 20px;
-            color: #3b82f6;
-            font-weight: 300;
+            margin-top: 25px;
+            font-weight: bold;
         }
-        
-        p {
-            font-size: 1.4rem;
-            line-height: 1.6;
+
+        p, li {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        ul {
+            margin-left: 40px;
             margin-bottom: 20px;
-            max-width: 900px;
         }
-        
+
+        .business-stat {
+            background: #f5f5f5;
+            border-left: 4px solid #CC0000;
+            padding: 20px;
+            margin: 25px 0;
+            font-size: 1.3em;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 1.1em;
+        }
+
+        .comparison-table th {
+            background: #CC0000;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border: 1px solid #ddd;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
         .navigation {
             position: fixed;
             bottom: 30px;
@@ -76,1366 +127,2161 @@
             gap: 20px;
             z-index: 1000;
         }
-        
-        .nav-btn {
-            padding: 12px 24px;
-            background: #1e3a8a;
+
+        .nav-button {
+            background: #CC0000;
             color: white;
             border: none;
-            border-radius: 5px;
+            padding: 12px 30px;
+            font-size: 1.1em;
             cursor: pointer;
-            font-size: 1rem;
-            font-family: 'Helvetica', Arial, sans-serif;
+            border-radius: 5px;
+            font-family: Helvetica, Arial, sans-serif;
+            transition: background 0.3s;
         }
-        
-        .nav-btn:hover {
-            background: #3b82f6;
+
+        .nav-button:hover {
+            background: #990000;
         }
-        
-        .nav-btn:disabled {
+
+        .nav-button:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
-        
-        .slide-number {
+
+        .slide-counter {
             position: fixed;
-            top: 30px;
+            top: 20px;
             right: 30px;
-            font-size: 1rem;
+            font-size: 1.1em;
             color: #666;
-            z-index: 1000;
         }
-        
-        .comparison-container {
-            display: flex;
-            gap: 40px;
-            width: 100%;
-            max-width: 1200px;
-            align-items: center;
+
+        .visualization-container {
+            margin: 30px 0;
+            padding: 25px;
+            background: #fafafa;
+            border: 2px solid #eee;
+            border-radius: 8px;
         }
-        
-        .comparison-side {
-            flex: 1;
-            padding: 30px;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            background: #f9fafb;
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
         }
-        
-        .neuron {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #3b82f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            position: relative;
+
+        .grid-item {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #eee;
         }
-        
-        .input-neuron {
-            background: #10b981;
+
+        .grid-item h4 {
+            color: #CC0000;
+            margin-bottom: 15px;
+            font-size: 1.2em;
         }
-        
-        .output-neuron {
-            background: #f59e0b;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { stroke: #6b7280; }
-            50% { stroke: #3b82f6; }
-        }
-        
-        .animated-connection {
-            animation: pulse 2s infinite;
-        }
-        
-        .layer-title {
-            font-size: 1rem;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        
+
         .quiz-container {
-            max-width: 600px;
-            text-align: left;
+            background: #f9f9f9;
+            border: 3px solid #CC0000;
+            border-radius: 10px;
+            padding: 40px;
+            margin: 30px 0;
         }
-        
+
         .quiz-question {
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            font-weight: 500;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #CC0000;
+            margin-bottom: 25px;
         }
-        
-        .quiz-input {
-            padding: 10px;
-            border: 2px solid #e5e7eb;
-            border-radius: 5px;
-            font-size: 1rem;
-            width: 100px;
-            margin: 0 10px;
-            text-align: center;
-        }
-        
-        .check-btn {
-            padding: 10px 20px;
-            background: #10b981;
-            color: white;
-            border: none;
+
+        .quiz-option {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px 20px;
+            margin: 12px 0;
             border-radius: 5px;
             cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1em;
+        }
+
+        .quiz-option:hover {
+            border-color: #CC0000;
+            background: #fff5f5;
+        }
+
+        .quiz-option.selected {
+            background: #CC0000;
+            color: white;
+            border-color: #CC0000;
+        }
+
+        .quiz-option.correct {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .quiz-option.incorrect {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        .quiz-feedback {
             margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            display: none;
         }
-        
-        .image-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 40px);
-            gap: 2px;
-            margin: 20px;
+
+        .quiz-feedback.show {
+            display: block;
         }
-        
-        .pixel {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            background: #f0f0f0;
+
+        .quiz-feedback.correct {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
         }
-        
+
+        .quiz-feedback.incorrect {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+
         .convolution-demo {
             display: flex;
+            gap: 30px;
             align-items: center;
-            justify-content: center;
-            gap: 40px;
-            margin: 40px 0;
+            margin: 30px 0;
+            flex-wrap: wrap;
         }
-        
+
         .matrix {
-            display: grid;
-            gap: 2px;
-            border: 2px solid #3b82f6;
-            padding: 10px;
+            display: inline-grid;
+            gap: 3px;
+            padding: 15px;
+            background: white;
+            border: 2px solid #333;
             border-radius: 5px;
-            background: #f8fafc;
         }
-        
-        .matrix-5x5 {
-            grid-template-columns: repeat(5, 50px);
-        }
-        
-        .matrix-3x3 {
-            grid-template-columns: repeat(3, 50px);
-        }
-        
+
         .matrix-cell {
-            width: 50px;
-            height: 50px;
-            border: 1px solid #cbd5e1;
+            width: 45px;
+            height: 45px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            background: white;
+            background: #f0f0f0;
+            border: 1px solid #999;
+            font-weight: bold;
+            font-size: 0.9em;
         }
-        
-        .kernel-cell {
-            background: #fef3c7;
+
+        .matrix-cell.highlighted {
+            background: #ffcccc;
+            border-color: #CC0000;
         }
-        
-        .highlight {
-            background: #dbeafe !important;
-            border-color: #3b82f6 !important;
+
+        .arrow {
+            font-size: 3em;
+            color: #CC0000;
         }
-        
-        .result-cell {
-            background: #dcfce7;
+
+        .layer-diagram {
+            margin: 30px 0;
+            text-align: center;
         }
-        
-        .cnn-pipeline {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+
+        .layer-box {
+            display: inline-block;
+            padding: 20px 30px;
+            background: #f5f5f5;
+            border: 3px solid #CC0000;
+            border-radius: 8px;
+            margin: 10px;
+            min-width: 180px;
+        }
+
+        .layer-box h4 {
+            color: #CC0000;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .layer-box p {
+            font-size: 1em;
+            margin: 5px 0;
+        }
+
+        .interactive-controls {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .control-group {
+            margin: 15px 0;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #CC0000;
+        }
+
+        .control-group select, .control-group input {
+            padding: 10px;
+            font-size: 1em;
+            border: 2px solid #ddd;
+            border-radius: 5px;
             width: 100%;
-            max-width: 1000px;
-            margin: 40px 0;
+            max-width: 300px;
         }
-        
-        .pipeline-step {
+
+        canvas {
+            border: 2px solid #333;
+            border-radius: 5px;
+            background: white;
+            max-width: 100%;
+        }
+
+        .feature-progression {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .feature-stage {
             text-align: center;
             flex: 1;
-            padding: 20px;
+            min-width: 200px;
+            margin: 15px;
         }
-        
-        .pipeline-arrow {
-            font-size: 2rem;
-            color: #3b82f6;
-            margin: 0 20px;
-        }
-        
-        .feature-map {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(45deg, #3b82f6, #1e40af);
-            border-radius: 5px;
-            margin: 10px auto;
+
+        .feature-visual {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 15px;
+            border: 3px solid #CC0000;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            background: #fafafa;
+            font-size: 0.9em;
+            padding: 10px;
+        }
+
+        .title-slide {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .title-slide h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+        }
+
+        .title-slide .subtitle {
+            font-size: 1.5em;
+            color: #666;
+            margin-bottom: 50px;
+        }
+
+        .highlight {
+            color: #CC0000;
             font-weight: bold;
         }
-        
+
         .pooling-demo {
             display: flex;
             align-items: center;
             gap: 30px;
             margin: 30px 0;
+            flex-wrap: wrap;
         }
-        
-        .pool-input {
+
+        .pooling-grid {
             display: grid;
-            grid-template-columns: repeat(4, 40px);
-            gap: 1px;
+            gap: 2px;
+            padding: 15px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 5px;
         }
-        
-        .pool-output {
-            display: grid;
-            grid-template-columns: repeat(2, 40px);
-            gap: 1px;
-        }
-        
-        .pool-cell {
+
+        .pooling-cell {
             width: 40px;
             height: 40px;
-            border: 1px solid #cbd5e1;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            background: #f1f5f9;
-        }
-        
-        .pool-highlight {
-            background: #fef3c7 !important;
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animated-slide {
-            animation: slideIn 0.8s ease-out;
-        }
-        
-        .agenda-list {
-            text-align: left;
-            font-size: 1.3rem;
-            line-height: 2;
-            list-style: none;
-        }
-        
-        .agenda-list li {
-            margin-bottom: 15px;
-            padding-left: 30px;
-            position: relative;
-        }
-        
-        .agenda-list li:before {
-            content: "→";
-            color: #3b82f6;
+            background: #f0f0f0;
+            border: 1px solid #999;
             font-weight: bold;
-            position: absolute;
-            left: 0;
+            font-size: 0.9em;
         }
-        
-        /* Print styles */
+
+        .pooling-cell.max {
+            background: #CC0000;
+            color: white;
+        }
+
+        .architecture-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .flow-box {
+            flex: 1;
+            padding: 20px;
+            background: #f5f5f5;
+            border: 2px solid #CC0000;
+            border-radius: 8px;
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: #CC0000;
+        }
+
         @media print {
-            body {
-                overflow: visible;
+            .navigation, .slide-counter {
+                display: none;
             }
-            
             .slide {
+                display: block !important;
                 page-break-after: always;
-                page-break-inside: avoid;
-                display: flex !important;
-                height: 100vh;
-                width: 100vw;
-            }
-            
-            .navigation,
-            .slide-number,
-            button[onclick="printAllSlides()"] {
-                display: none !important;
+                height: auto;
             }
         }
     </style>
 </head>
 <body>
-    <button onclick="printAllSlides()" style="position: fixed; top: 30px; left: 30px; z-index: 1000; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print All Slides</button>
-    
-    <div class="presentation">
-        <div class="slide-number">
-            <span id="current-slide">1</span> / <span id="total-slides">18</span>
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">34</span>
+    </div>
+
+    <div class="presentation-container">
+        <!-- Slide 1: Title -->
+        <div class="slide title-slide">
+            <h1>Convolutional Neural Networks for Image Classification</h1>
+            <p class="subtitle">Week 8: DATA4800 - AI and Machine Learning</p>
+            <p class="subtitle">Understanding How Machines Learn to See</p>
         </div>
-        
-        <!-- Slide 1: Deep Learning vs Machine Learning Recap -->
-        <div class="slide active">
-            <h1>Week 8: Image Classification with Deep CNNs</h1>
-            <h2>Recap: Deep Learning vs Machine Learning</h2>
-            <div class="comparison-container">
-                <div class="comparison-side">
-                    <h3>Machine Learning</h3>
-                    <p><strong>Data Types:</strong> Structured data (tables, numbers, categories)</p>
-                    <p><strong>Features:</strong> Hand-crafted features</p>
-                    <p><strong>Examples:</strong> Decision trees, SVM, clustering</p>
-                </div>
-                <div class="comparison-side">
-                    <h3>Deep Learning</h3>
-                    <p><strong>Data Types:</strong> Unstructured data (images, audio, text)</p>
-                    <p><strong>Features:</strong> Automatically learned features</p>
-                    <p><strong>Examples:</strong> Neural networks, CNNs, RNNs</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 2: Perceptron Recap - FIXED -->
+
+        <!-- Slide 2: Learning Objectives -->
         <div class="slide">
-            <h2>Recap: The Perceptron</h2>
-            <div style="display: flex; justify-content: center; align-items: center; margin: 40px 0;">
-                <div style="position: relative; width: 400px; height: 300px;">
-                    <!-- Input nodes -->
-                    <div style="position: absolute; left: 0; top: 80px;">
-                        <div class="neuron input-neuron">x₁</div>
-                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Input 1</p>
-                    </div>
-                    <div style="position: absolute; left: 0; top: 180px;">
-                        <div class="neuron input-neuron">x₂</div>
-                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Input 2</p>
-                    </div>
-                    
-                    <!-- Connections -->
-                    <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-                        <line x1="60" y1="110" x2="180" y2="160" stroke="#6b7280" stroke-width="3" class="animated-connection"/>
-                        <line x1="60" y1="210" x2="180" y2="160" stroke="#6b7280" stroke-width="3" class="animated-connection"/>
-                        <line x1="240" y1="160" x2="340" y2="160" stroke="#6b7280" stroke-width="3" class="animated-connection"/>
-                        <!-- Weight labels -->
-                        <text x="100" y="130" fill="#333" font-size="12">w₁</text>
-                        <text x="100" y="190" fill="#333" font-size="12">w₂</text>
-                    </svg>
-                    
-                    <!-- Processing node -->
-                    <div style="position: absolute; left: 180px; top: 130px;">
-                        <div class="neuron">Σ</div>
-                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Weighted Sum</p>
-                    </div>
-                    
-                    <!-- Output node -->
-                    <div style="position: absolute; right: 0; top: 130px;">
-                        <div class="neuron output-neuron">y</div>
-                        <p style="font-size: 0.9rem; margin-top: 10px; text-align: center;">Output</p>
-                    </div>
-                </div>
-            </div>
-            <p><strong>Formula:</strong> y = f(w₁x₁ + w₂x₂ + b)</p>
-            <div style="margin-top: 30px;">
-                <h3>Common Activation Functions:</h3>
-                <div style="display: flex; justify-content: space-around; margin: 20px 0;">
-                    <div style="text-align: center;">
-                        <strong>Step Function</strong><br>
-                        f(x) = { 1 if x ≥ 0, 0 if x < 0 }
-                    </div>
-                    <div style="text-align: center;">
-                        <strong>Sigmoid</strong><br>
-                        f(x) = 1/(1 + e⁻ˣ)
-                    </div>
-                    <div style="text-align: center;">
-                        <strong>ReLU</strong><br>
-                        f(x) = max(0, x)
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 3: MLP Recap - FIXED WITH EDGES -->
-        <div class="slide">
-            <h2>Recap: Multi-Layer Perceptron (MLP)</h2>
-            <div style="position: relative; width: 600px; height: 300px; margin: 40px auto;">
-                <!-- Input Layer -->
-                <div style="position: absolute; left: 0; top: 50px;">
-                    <div class="layer-title">Input Layer</div>
-                    <div style="position: absolute; top: 30px;">
-                        <div class="neuron input-neuron" style="margin-bottom: 20px;">x₁</div>
-                        <div class="neuron input-neuron" style="margin-bottom: 20px;">x₂</div>
-                        <div class="neuron input-neuron">x₃</div>
-                    </div>
-                </div>
-                
-                <!-- Hidden Layer -->
-                <div style="position: absolute; left: 200px; top: 30px;">
-                    <div class="layer-title">Hidden Layer</div>
-                    <div style="position: absolute; top: 30px;">
-                        <div class="neuron" style="margin-bottom: 15px;">h₁</div>
-                        <div class="neuron" style="margin-bottom: 15px;">h₂</div>
-                        <div class="neuron" style="margin-bottom: 15px;">h₃</div>
-                        <div class="neuron">h₄</div>
-                    </div>
-                </div>
-                
-                <!-- Output Layer -->
-                <div style="position: absolute; right: 0; top: 70px;">
-                    <div class="layer-title">Output Layer</div>
-                    <div style="position: absolute; top: 30px;">
-                        <div class="neuron output-neuron" style="margin-bottom: 20px;">y₁</div>
-                        <div class="neuron output-neuron">y₂</div>
-                    </div>
-                </div>
-                
-                <!-- Connections SVG -->
-                <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-                    <!-- Input to Hidden connections -->
-                    <line x1="60" y1="110" x2="200" y2="105" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="110" x2="200" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="110" x2="200" y2="155" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="110" x2="200" y2="180" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    
-                    <line x1="60" y1="150" x2="200" y2="105" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="150" x2="200" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="150" x2="200" y2="155" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="150" x2="200" y2="180" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    
-                    <line x1="60" y1="190" x2="200" y2="105" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="190" x2="200" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="190" x2="200" y2="155" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="60" y1="190" x2="200" y2="180" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    
-                    <!-- Hidden to Output connections -->
-                    <line x1="260" y1="105" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="260" y1="105" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    
-                    <line x1="260" y1="130" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="260" y1="130" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    
-                    <line x1="260" y1="155" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="260" y1="155" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    
-                    <line x1="260" y1="180" x2="540" y2="130" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                    <line x1="260" y1="180" x2="540" y2="170" stroke="#6b7280" stroke-width="1" opacity="0.6"/>
-                </svg>
-            </div>
-            <p style="margin-top: 20px;">Multiple layers enable learning of complex, non-linear patterns</p>
-        </div>
-        
-        <!-- Slide 4: Manual Calculation Exercise - COMPLETELY NEW -->
-        <div class="slide">
-            <h2>Manual Calculation Exercise</h2>
-            <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1000px;">
-                <div style="flex: 1;">
-                    <h3>Neural Network</h3>
-                    <div style="position: relative; width: 300px; height: 250px;">
-                        <!-- Input nodes -->
-                        <div style="position: absolute; left: 0; top: 60px;">
-                            <div class="neuron input-neuron">x₁=2</div>
-                        </div>
-                        <div style="position: absolute; left: 0; top: 140px;">
-                            <div class="neuron input-neuron">x₂=3</div>
-                        </div>
-                        
-                        <!-- Hidden layer -->
-                        <div style="position: absolute; left: 120px; top: 30px;">
-                            <div class="neuron">h₁</div>
-                        </div>
-                        <div style="position: absolute; left: 120px; top: 90px;">
-                            <div class="neuron">h₂</div>
-                        </div>
-                        <div style="position: absolute; left: 120px; top: 150px;">
-                            <div class="neuron">h₃</div>
-                        </div>
-                        
-                        <!-- Output node -->
-                        <div style="position: absolute; right: 0; top: 90px;">
-                            <div class="neuron output-neuron">ŷ</div>
-                        </div>
-                        
-                        <!-- Connections with weights -->
-                        <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-                            <!-- Input to Hidden -->
-                            <line x1="60" y1="90" x2="120" y2="60" stroke="#3b82f6" stroke-width="2"/>
-                            <line x1="60" y1="90" x2="120" y2="120" stroke="#3b82f6" stroke-width="2"/>
-                            <line x1="60" y1="90" x2="120" y2="180" stroke="#3b82f6" stroke-width="2"/>
-                            <line x1="60" y1="170" x2="120" y2="60" stroke="#3b82f6" stroke-width="2"/>
-                            <line x1="60" y1="170" x2="120" y2="120" stroke="#3b82f6" stroke-width="2"/>
-                            <line x1="60" y1="170" x2="120" y2="180" stroke="#3b82f6" stroke-width="2"/>
-                            
-                            <!-- Hidden to Output -->
-                            <line x1="180" y1="60" x2="240" y2="120" stroke="#10b981" stroke-width="2"/>
-                            <line x1="180" y1="120" x2="240" y2="120" stroke="#10b981" stroke-width="2"/>
-                            <line x1="180" y1="180" x2="240" y2="120" stroke="#10b981" stroke-width="2"/>
-                            
-                            <!-- Weight labels -->
-                            <text x="75" y="70" fill="#333" font-size="10" font-weight="bold">0.5</text>
-                            <text x="75" y="100" fill="#333" font-size="10" font-weight="bold">-0.3</text>
-                            <text x="75" y="130" fill="#333" font-size="10" font-weight="bold">0.8</text>
-                            <text x="75" y="155" fill="#333" font-size="10" font-weight="bold">0.2</text>
-                            <text x="75" y="175" fill="#333" font-size="10" font-weight="bold">-0.4</text>
-                            <text x="75" y="195" fill="#333" font-size="10" font-weight="bold">0.6</text>
-                            
-                            <text x="195" y="85" fill="#333" font-size="10" font-weight="bold">0.7</text>
-                            <text x="195" y="115" fill="#333" font-size="10" font-weight="bold">-0.5</text>
-                            <text x="195" y="145" fill="#333" font-size="10" font-weight="bold">0.9</text>
-                        </svg>
-                    </div>
-                </div>
-                
-                <div style="flex: 1; text-align: left; padding-left: 40px;">
-                    <h3>Your Task:</h3>
-                    <p><strong>Given:</strong></p>
-                    <p>• Inputs: x₁ = 2, x₂ = 3</p>
-                    <p>• All biases = 0</p>
-                    <p>• Activation: ReLU (max(0,x))</p>
-                    <p>• Target: y = 1.5</p>
-                    
-                    <div style="margin-top: 20px; background: #f8f9fa; padding: 20px; border-radius: 5px;">
-                        <p><strong>Step 1:</strong> Calculate hidden layer outputs</p>
-                        <p>h₁ = ReLU(0.5×2 + 0.2×3) = ?</p>
-                        <p>h₂ = ReLU(-0.3×2 + -0.4×3) = ?</p>
-                        <p>h₃ = ReLU(0.8×2 + 0.6×3) = ?</p>
-                        
-                        <p style="margin-top: 15px;"><strong>Step 2:</strong> Calculate final output</p>
-                        <p>ŷ = 0.7×h₁ + (-0.5)×h₂ + 0.9×h₃ = ?</p>
-                        
-                        <p style="margin-top: 15px;"><strong>Step 3:</strong> Calculate error</p>
-                        <p>Error = |y - ŷ| = |1.5 - ŷ| = ?</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 5: Today's Agenda -->
-        <div class="slide">
-            <h1>Today's Agenda</h1>
-            <ul class="agenda-list">
-                <li>Investigate Deep Learning Architecture</li>
-                <li>Understand Convolutional Neural Networks (CNNs)</li>
-                <li>Explore Image Recognition with CNNs</li>
-                <li>Learn CNN Components: Convolution, Pooling, Activation</li>
-                <li>Visualize How CNNs Process Images</li>
-                <li>Practice with Interactive Demonstrations</li>
+            <h1>Learning Objectives</h1>
+            <p>By the end of this week, you will be able to:</p>
+            <ul>
+                <li>Explain why traditional neural networks struggle with image data</li>
+                <li>Understand the fundamental operation of convolution for pattern detection</li>
+                <li>Describe how CNNs extract hierarchical features from images</li>
+                <li>Identify the key components of CNN architecture (convolution, pooling, dense layers)</li>
+                <li>Apply pre-trained CNN models to business classification problems</li>
+                <li>Evaluate CNN performance using appropriate metrics</li>
+                <li>Recognize real-world business applications of CNN technology</li>
             </ul>
         </div>
-        
-        <!-- Slide 6: Deep Learning Architecture -->
+
+        <!-- Slide 3: Business Motivation - Quality Control -->
         <div class="slide">
-            <h2>Deep Learning Architecture</h2>
-            <div class="comparison-container">
-                <div class="comparison-side">
-                    <h3>Traditional ML Limitations</h3>
-                    <p>• Manual feature extraction</p>
-                    <p>• Limited pattern complexity</p>
-                    <p>• Poor performance on unstructured data</p>
-                    <p>• Requires domain expertise</p>
+            <h1>Business Problem: Manufacturing Quality Control</h1>
+            <h2>The Challenge</h2>
+            <p>A electronics manufacturer produces 50,000 circuit boards daily. Each board must be inspected for defects before shipment.</p>
+            
+            <h3>Traditional Manual Inspection</h3>
+            <div class="business-stat">
+                <strong>Human Inspector Performance:</strong><br>
+                • Speed: 100 boards per hour<br>
+                • Accuracy: 85-90% (fatigue affects performance)<br>
+                • Cost: $25 per hour × 500 inspectors = $300,000 daily<br>
+                • Defect rate: 10-15% of defects missed
+            </div>
+
+            <h3>The Business Impact</h3>
+            <p>Missed defects result in:</p>
+            <ul>
+                <li>Product returns and warranty claims</li>
+                <li>Customer dissatisfaction and brand damage</li>
+                <li>Regulatory compliance issues</li>
+                <li>Lost revenue averaging $2M annually</li>
+            </ul>
+        </div>
+
+        <!-- Slide 4: CNN Solution Impact -->
+        <div class="slide">
+            <h1>CNN-Powered Solution: Automated Visual Inspection</h1>
+            
+            <h2>Performance Comparison</h2>
+            <table class="comparison-table">
+                <tr>
+                    <th>Metric</th>
+                    <th>Manual Inspection</th>
+                    <th>CNN System</th>
+                    <th>Improvement</th>
+                </tr>
+                <tr>
+                    <td>Inspection Speed</td>
+                    <td>100 boards/hour</td>
+                    <td>10,000 boards/hour</td>
+                    <td>100× faster</td>
+                </tr>
+                <tr>
+                    <td>Accuracy</td>
+                    <td>85-90%</td>
+                    <td>98.5%</td>
+                    <td>+10% accuracy</td>
+                </tr>
+                <tr>
+                    <td>Consistency</td>
+                    <td>Varies with fatigue</td>
+                    <td>Constant 24/7</td>
+                    <td>No degradation</td>
+                </tr>
+                <tr>
+                    <td>Annual Cost</td>
+                    <td>$7.5M (labor)</td>
+                    <td>$500K (system)</td>
+                    <td>93% cost reduction</td>
+                </tr>
+            </table>
+
+            <div class="business-stat">
+                <strong>Return on Investment:</strong> System pays for itself in 3 weeks through reduced labor costs and avoided defect costs.
+            </div>
+        </div>
+
+        <!-- Slide 5: More Business Applications -->
+        <div class="slide">
+            <h1>Why CNNs Matter for Business</h1>
+            
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>Healthcare Diagnostics</h4>
+                    <p><strong>Use Case:</strong> Automated screening of medical images (X-rays, MRIs, CT scans)</p>
+                    <p><strong>Impact:</strong> Radiologists process 5× more cases with 15% higher detection rate for early-stage diseases</p>
+                    <p><strong>Value:</strong> Early detection saves lives and reduces treatment costs by 60%</p>
                 </div>
-                <div class="comparison-side">
-                    <h3>Deep Learning Solutions</h3>
-                    <p>• Automatic feature learning</p>
-                    <p>• Hierarchical representations</p>
-                    <p>• Excellent with images, audio, text</p>
-                    <p>• End-to-end learning</p>
+
+                <div class="grid-item">
+                    <h4>Retail & E-commerce</h4>
+                    <p><strong>Use Case:</strong> Automated product tagging and visual search</p>
+                    <p><strong>Impact:</strong> Catalog 100,000+ products automatically, enable customer image search</p>
+                    <p><strong>Value:</strong> 40% increase in product discovery, 25% boost in conversion rates</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Agriculture</h4>
+                    <p><strong>Use Case:</strong> Crop disease detection and yield prediction</p>
+                    <p><strong>Impact:</strong> Identify plant diseases 2 weeks earlier than traditional methods</p>
+                    <p><strong>Value:</strong> Prevent 30% crop loss, increase farm profitability by $150K annually</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Security & Surveillance</h4>
+                    <p><strong>Use Case:</strong> Facial recognition and anomaly detection</p>
+                    <p><strong>Impact:</strong> Monitor 1,000+ cameras simultaneously with real-time alerts</p>
+                    <p><strong>Value:</strong> Reduce security incidents by 70%, enable touchless access control</p>
                 </div>
             </div>
-            <p style="margin-top: 40px; font-size: 1.2rem; color: #1e3a8a; font-weight: 500;">
-                Deep Learning uses multiple layers to progressively learn more abstract features
+        </div>
+
+        <!-- Slide 6: Why Traditional Neural Networks Fail -->
+        <div class="slide">
+            <h1>The Challenge: Why Traditional Neural Networks Fail for Images</h1>
+            
+            <h2>Understanding Image Data</h2>
+            <p>Let's examine what a computer "sees" when processing an image:</p>
+
+            <div class="business-stat">
+                <strong>Small Image (28 × 28 pixels, grayscale):</strong><br>
+                • Total numbers: 28 × 28 = 784 pixel values<br>
+                • Each pixel: Single number (0-255 for brightness)<br>
+                • Network needs: 784 input neurons
+            </div>
+
+            <div class="business-stat">
+                <strong>Realistic Business Image (224 × 224 pixels, color):</strong><br>
+                • Total numbers: 224 × 224 × 3 (RGB channels) = 150,528 pixel values<br>
+                • Each pixel: Three numbers (Red, Green, Blue values 0-255)<br>
+                • Network needs: 150,528 input neurons
+            </div>
+
+            <h3>The Problem Scales Exponentially</h3>
+            <p>If we connect these inputs to just 1,000 neurons in the first hidden layer:</p>
+            <p class="highlight">150,528 inputs × 1,000 neurons = 150,528,000 parameters (just in the first layer!)</p>
+        </div>
+
+        <!-- Slide 7: Visualization of Parameter Explosion -->
+        <div class="slide">
+            <h1>The Parameter Explosion Problem</h1>
+            
+            <h2>Network Comparison</h2>
+            <table class="comparison-table">
+                <tr>
+                    <th>Network Type</th>
+                    <th>Input Size</th>
+                    <th>Hidden Layer Size</th>
+                    <th>Parameters</th>
+                    <th>Issues</th>
+                </tr>
+                <tr>
+                    <td>Traditional NN</td>
+                    <td>784 (28×28)</td>
+                    <td>128 neurons</td>
+                    <td>100,352</td>
+                    <td>Manageable</td>
+                </tr>
+                <tr>
+                    <td>Traditional NN</td>
+                    <td>150,528 (224×224×3)</td>
+                    <td>128 neurons</td>
+                    <td>19,267,584</td>
+                    <td style="color: #CC0000; font-weight: bold;">Severe overfitting</td>
+                </tr>
+                <tr>
+                    <td>Traditional NN</td>
+                    <td>150,528</td>
+                    <td>1,000 neurons</td>
+                    <td>150,528,000</td>
+                    <td style="color: #CC0000; font-weight: bold;">Impossible to train</td>
+                </tr>
+            </table>
+
+            <h2>Why This Fails</h2>
+            <ul>
+                <li><strong>Overfitting:</strong> Too many parameters memorize training data instead of learning general patterns</li>
+                <li><strong>No Spatial Understanding:</strong> Network treats pixels independently, ignoring that nearby pixels form meaningful patterns</li>
+                <li><strong>Translation Variance:</strong> Same object in different image positions looks completely different to the network</li>
+                <li><strong>Computational Cost:</strong> Training time becomes impractical, requiring massive computing resources</li>
+            </ul>
+        </div>
+
+        <!-- Slide 8: How Humans Process Images -->
+        <div class="slide">
+            <h1>Learning from Human Vision: How Do We Recognize Objects?</h1>
+            
+            <h2>The Human Approach</h2>
+            <p>Consider how you recognize a cat in a photograph. You don't analyze every pixel individually. Instead, you follow a hierarchical process:</p>
+
+            <div class="feature-progression">
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <svg width="140" height="140">
+                            <line x1="20" y1="20" x2="20" y2="120" stroke="#333" stroke-width="4"/>
+                            <line x1="70" y1="20" x2="70" y2="120" stroke="#333" stroke-width="4"/>
+                            <line x1="120" y1="20" x2="120" y2="120" stroke="#333" stroke-width="4"/>
+                        </svg>
+                    </div>
+                    <h4>Step 1: Edges</h4>
+                    <p>Detect basic lines and boundaries</p>
+                </div>
+
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <svg width="140" height="140">
+                            <circle cx="70" cy="70" r="50" stroke="#333" stroke-width="4" fill="none"/>
+                            <rect x="30" y="30" width="40" height="40" stroke="#333" stroke-width="4" fill="none"/>
+                        </svg>
+                    </div>
+                    <h4>Step 2: Shapes</h4>
+                    <p>Combine edges into simple geometric forms</p>
+                </div>
+
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <svg width="140" height="140">
+                            <ellipse cx="70" cy="50" rx="30" ry="40" stroke="#333" stroke-width="3" fill="none"/>
+                            <circle cx="60" cy="45" r="8" fill="#333"/>
+                            <circle cx="80" cy="45" r="8" fill="#333"/>
+                            <line x1="50" y1="30" x2="40" y2="20" stroke="#333" stroke-width="3"/>
+                            <line x1="90" y1="30" x2="100" y2="20" stroke="#333" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    <h4>Step 3: Parts</h4>
+                    <p>Identify object components (ears, eyes, whiskers)</p>
+                </div>
+
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <p style="font-size: 2.5em; margin: 0;">🐱</p>
+                    </div>
+                    <h4>Step 4: Object</h4>
+                    <p>Recognize complete object: "This is a cat"</p>
+                </div>
+            </div>
+
+            <div class="business-stat">
+                <strong>Key Insight:</strong> CNNs mimic this hierarchical process. They start with simple patterns (edges) and progressively build up to complex concepts (whole objects).
+            </div>
+        </div>
+
+        <!-- Slide 9: CNN Core Principle -->
+        <div class="slide">
+            <h1>The CNN Solution: Hierarchical Feature Learning</h1>
+            
+            <h2>Three Key Innovations</h2>
+            
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>1. Local Connectivity</h4>
+                    <p>Instead of connecting to all pixels, each neuron only examines a small region (e.g., 3×3 pixels)</p>
+                    <p><strong>Benefit:</strong> Dramatically reduces parameters from millions to thousands</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>2. Parameter Sharing</h4>
+                    <p>Use the same "filter" (pattern detector) across the entire image</p>
+                    <p><strong>Benefit:</strong> Learns to detect patterns regardless of where they appear in the image</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>3. Hierarchical Learning</h4>
+                    <p>Stack multiple layers that learn increasingly complex features</p>
+                    <p><strong>Benefit:</strong> Automatically discovers relevant patterns without manual feature engineering</p>
+                </div>
+            </div>
+
+            <h2>The Result</h2>
+            <div class="business-stat">
+                A CNN with 1 million parameters can achieve what would require 150+ million parameters in a traditional neural network, while also learning better, more generalizable representations.
+            </div>
+        </div>
+
+        <!-- Slide 10: QUIZ 1 -->
+        <div class="slide">
+            <h1>Knowledge Check: Neural Networks and Images</h1>
+            
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    Why do traditional fully-connected neural networks struggle with image classification tasks?
+                </div>
+                
+                <div class="quiz-option" onclick="selectQuiz(1, 0)">
+                    A) Images contain too little information for neural networks to learn from
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(1, 1)">
+                    B) The massive number of parameters leads to overfitting and ignores spatial relationships between pixels
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(1, 2)">
+                    C) Neural networks can only process numerical data, not images
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(1, 3)">
+                    D) Images are too expensive to process with neural networks
+                </div>
+                
+                <div id="quiz1-feedback" class="quiz-feedback"></div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Introducing Convolution -->
+        <div class="slide">
+            <h1>The Convolution Operation: Core Building Block</h1>
+            
+            <h2>What is Convolution?</h2>
+            <p>Convolution is a mathematical operation that applies a small <strong>filter</strong> (also called a <strong>kernel</strong>) across an image to detect specific patterns.</p>
+
+            <h3>Business Analogy</h3>
+            <p>Think of convolution like a quality inspector with a checklist:</p>
+            <ul>
+                <li>The <strong>filter</strong> is the checklist of features to look for</li>
+                <li>The <strong>sliding window</strong> is moving the checklist across every part of the product</li>
+                <li>The <strong>output</strong> shows where those features were detected</li>
+            </ul>
+
+            <div class="business-stat">
+                <strong>Key Concept:</strong> Instead of looking at the entire image at once (which requires millions of parameters), convolution examines small regions one at a time using the same filter, dramatically reducing computational requirements.
+            </div>
+        </div>
+
+        <!-- Slide 12: Convolution Mechanics -->
+        <div class="slide">
+            <h1>How Convolution Works: Step-by-Step</h1>
+            
+            <h2>The Convolution Process</h2>
+            
+            <div class="visualization-container">
+                <h3>Example: Detecting Vertical Edges</h3>
+                
+                <div class="convolution-demo">
+                    <div>
+                        <h4>Input Image (5×5)</h4>
+                        <div class="matrix" style="grid-template-columns: repeat(5, 45px);">
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                            <div class="matrix-cell">255</div>
+                        </div>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Dark (0) on left, Bright (255) on right</p>
+                    </div>
+
+                    <div class="arrow">⊗</div>
+
+                    <div>
+                        <h4>Vertical Edge Filter (3×3)</h4>
+                        <div class="matrix" style="grid-template-columns: repeat(3, 45px);">
+                            <div class="matrix-cell">-1</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">1</div>
+                            <div class="matrix-cell">-1</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">1</div>
+                            <div class="matrix-cell">-1</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">1</div>
+                        </div>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Detects left-to-right brightness change</p>
+                    </div>
+
+                    <div class="arrow">→</div>
+
+                    <div>
+                        <h4>Output (3×3)</h4>
+                        <div class="matrix" style="grid-template-columns: repeat(3, 45px);">
+                            <div class="matrix-cell" style="background: #ffcccc;">765</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell" style="background: #ffcccc;">765</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell" style="background: #ffcccc;">765</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                        </div>
+                        <p style="font-size: 0.9em; margin-top: 10px;">High values = vertical edge detected</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Calculation for Top-Left Position</h3>
+            <p>Filter slides over image, performs element-wise multiplication and sums:</p>
+            <p class="highlight" style="font-size: 1.1em;">
+                (0×-1 + 0×0 + 255×1) + (0×-1 + 0×0 + 255×1) + (0×-1 + 0×0 + 255×1) = 765
+            </p>
+            <p>This high value indicates a strong vertical edge was detected.</p>
+        </div>
+
+        <!-- Slide 13: Interactive Convolution Demo -->
+        <div class="slide">
+            <h1>Interactive Convolution Demonstration</h1>
+            
+            <div class="visualization-container">
+                <div class="interactive-controls">
+                    <div class="control-group">
+                        <label>Select Filter Type:</label>
+                        <select id="filter-select" onchange="updateConvolution()">
+                            <option value="vertical">Vertical Edge Detector</option>
+                            <option value="horizontal">Horizontal Edge Detector</option>
+                            <option value="blur">Blur Filter</option>
+                            <option value="sharpen">Sharpen Filter</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 30px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                    <div>
+                        <h4>Input Pattern</h4>
+                        <canvas id="input-canvas" width="200" height="200"></canvas>
+                    </div>
+                    <div class="arrow">→</div>
+                    <div>
+                        <h4>Current Filter</h4>
+                        <canvas id="filter-canvas" width="150" height="150"></canvas>
+                    </div>
+                    <div class="arrow">→</div>
+                    <div>
+                        <h4>Output (Feature Map)</h4>
+                        <canvas id="output-canvas" width="200" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="business-stat" style="margin-top: 30px;">
+                <strong>Business Insight:</strong> Different filters detect different patterns. In quality control, edge detectors find boundaries and defects, blur filters reduce noise, and sharpening filters enhance details. CNNs automatically learn the optimal filters for each task.
+            </div>
+        </div>
+
+        <!-- Slide 14: Multiple Filters -->
+        <div class="slide">
+            <h1>Using Multiple Filters for Comprehensive Detection</h1>
+            
+            <h2>Why Multiple Filters?</h2>
+            <p>A single filter can only detect one type of pattern. Real-world classification requires detecting many different features simultaneously.</p>
+
+            <h3>Example: Circuit Board Inspection</h3>
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>Filter 1: Vertical Lines</h4>
+                    <p>Detects vertical traces and component edges</p>
+                    <p><strong>Business Value:</strong> Identifies misaligned components</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Filter 2: Horizontal Lines</h4>
+                    <p>Detects horizontal traces and solder points</p>
+                    <p><strong>Business Value:</strong> Finds disconnected circuits</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Filter 3: Circular Shapes</h4>
+                    <p>Detects capacitors and mounting holes</p>
+                    <p><strong>Business Value:</strong> Verifies component presence</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Filter 4: Texture Patterns</h4>
+                    <p>Detects surface roughness and burn marks</p>
+                    <p><strong>Business Value:</strong> Identifies manufacturing defects</p>
+                </div>
+            </div>
+
+            <div class="business-stat">
+                <strong>Typical CNN Layer:</strong> Uses 32-512 different filters simultaneously, creating a multi-dimensional representation of the image. Each filter learns to detect patterns that are useful for the classification task.
+            </div>
+        </div>
+
+        <!-- Slide 15: Feature Maps -->
+        <div class="slide">
+            <h1>Feature Maps: The Output of Convolution</h1>
+            
+            <h2>Understanding Feature Maps</h2>
+            <p>When a filter slides across an image, it produces a <strong>feature map</strong> (also called an activation map) that shows where and how strongly the pattern was detected.</p>
+
+            <div class="visualization-container">
+                <h3>Transformation Through Convolutional Layer</h3>
+                <div style="display: flex; justify-content: space-around; align-items: center; margin: 30px 0; flex-wrap: wrap;">
+                    <div style="text-align: center; margin: 15px;">
+                        <div style="width: 200px; height: 200px; border: 3px solid #333; background: linear-gradient(to right, #fff, #000); margin-bottom: 15px; border-radius: 8px;"></div>
+                        <p><strong>Input Image</strong></p>
+                        <p>224 × 224 × 3</p>
+                        <p style="font-size: 0.9em;">(Height × Width × Channels)</p>
+                    </div>
+
+                    <div class="arrow" style="font-size: 3em;">→</div>
+
+                    <div style="text-align: center; margin: 15px;">
+                        <div style="display: flex; gap: 5px;">
+                            <div style="width: 45px; height: 180px; border: 2px solid #CC0000; background: linear-gradient(to bottom, #fff, #ffcccc); border-radius: 4px;"></div>
+                            <div style="width: 45px; height: 180px; border: 2px solid #CC0000; background: linear-gradient(to bottom, #ffcccc, #fff); border-radius: 4px;"></div>
+                            <div style="width: 45px; height: 180px; border: 2px solid #CC0000; background: linear-gradient(to bottom, #fff, #ff9999); border-radius: 4px;"></div>
+                            <div style="width: 45px; height: 180px; border: 2px solid #CC0000; background: linear-gradient(to bottom, #ff9999, #fff); border-radius: 4px;"></div>
+                        </div>
+                        <p><strong>Feature Maps (4 shown)</strong></p>
+                        <p>224 × 224 × 64</p>
+                        <p style="font-size: 0.9em;">(64 different filters applied)</p>
+                    </div>
+                </div>
+
+                <p><strong>Interpretation:</strong> Each feature map highlights regions where its corresponding filter detected its pattern. Bright areas = strong detection, dark areas = weak/no detection.</p>
+            </div>
+
+            <h3>Dimensionality</h3>
+            <p>Input: <span class="highlight">Height × Width × Color Channels (3 for RGB)</span></p>
+            <p>Output: <span class="highlight">Height × Width × Number of Filters</span></p>
+            <p>The number of filters (typically 32, 64, 128, 256, or 512) becomes the new "depth" dimension.</p>
+        </div>
+
+        <!-- Slide 16: QUIZ 2 -->
+        <div class="slide">
+            <h1>Knowledge Check: Convolution Fundamentals</h1>
+            
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    A convolutional layer applies 64 different 3×3 filters to a 224×224 RGB image. What is the shape of the resulting feature maps (ignoring padding and stride)?
+                </div>
+                
+                <div class="quiz-option" onclick="selectQuiz(2, 0)">
+                    A) 224 × 224 × 3
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(2, 1)">
+                    B) 222 × 222 × 64
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(2, 2)">
+                    C) 64 × 64 × 224
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(2, 3)">
+                    D) 224 × 224 × 64
+                </div>
+                
+                <div id="quiz2-feedback" class="quiz-feedback"></div>
+            </div>
+
+            <p style="margin-top: 30px; font-size: 1.1em;">
+                <strong>Hint:</strong> Consider that each filter produces one feature map with spatial dimensions slightly smaller than the input, and all filters are applied to the same input.
             </p>
         </div>
-        
-        <!-- Slide 7: DL vs ML Learning Example - WITH DATA EXAMPLES -->
+
+        <!-- Slide 17: CNN Architecture Overview -->
         <div class="slide">
-            <h2>How DL and ML Learn Differently: Image Recognition</h2>
-            <div style="margin-bottom: 30px;">
-                <h3>Example Dataset: Animal Classification</h3>
-                <div style="display: flex; justify-content: center; gap: 40px; margin: 20px 0;">
-                    <div style="text-align: center; padding: 15px; border: 2px solid #e5e7eb; border-radius: 10px;">
-                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #ffa500, #ff4500); margin: 0 auto 10px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🐱</div>
-                        <strong>Cat Image</strong><br>
-                        <small>Pixels: [255,128,64,...]</small>
-                    </div>
-                    <div style="text-align: center; padding: 15px; border: 2px solid #e5e7eb; border-radius: 10px;">
-                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #8B4513, #A0522D); margin: 0 auto 10px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🐶</div>
-                        <strong>Dog Image</strong><br>
-                        <small>Pixels: [180,95,42,...]</small>
-                    </div>
-                    <div style="text-align: center; padding: 15px; border: 2px solid #e5e7eb; border-radius: 10px;">
-                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #228B22, #32CD32); margin: 0 auto 10px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🐸</div>
-                        <strong>Frog Image</strong><br>
-                        <small>Pixels: [45,200,78,...]</small>
-                    </div>
-                </div>
-            </div>
+            <h1>Complete CNN Architecture: Building Blocks</h1>
             
-            <div class="comparison-container">
-                <div class="comparison-side">
-                    <h3>Machine Learning Approach</h3>
-                    <p><strong>Step 1:</strong> Extract handcrafted features</p>
-                    <p>• Edge detection algorithms</p>
-                    <p>• Color histograms</p>
-                    <p>• Texture descriptors</p>
-                    <p>• Shape measurements</p>
-                    <p><strong>Step 2:</strong> Feed features to classifier</p>
-                    <p><strong>Problem:</strong> Features may miss important patterns or relationships</p>
-                </div>
-                <div class="comparison-side">
-                    <h3>Deep Learning Approach</h3>
-                    <p><strong>Layer 1:</strong> Learn edges and lines</p>
-                    <p><strong>Layer 2:</strong> Learn shapes and curves</p>
-                    <p><strong>Layer 3:</strong> Learn object parts (ears, eyes)</p>
-                    <p><strong>Layer 4:</strong> Learn whole objects (cat, dog)</p>
-                    <p><strong>Advantage:</strong> Discovers optimal features automatically from raw pixels</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 8: Backpropagation Recap -->
-        <div class="slide">
-            <h2>Recap: Backpropagation</h2>
-            <p style="font-size: 1.6rem; margin-bottom: 40px;">How Neural Networks Learn</p>
-            <div style="max-width: 800px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 40px 0;">
-                    <div style="background: #e0f2fe; padding: 20px; border-radius: 10px; flex: 1; margin: 0 10px;">
-                        <h3>1. Forward Pass</h3>
-                        <p>Input → Hidden → Output</p>
-                        <p>Calculate predictions</p>
-                    </div>
-                    <div class="pipeline-arrow">→</div>
-                    <div style="background: #fce4ec; padding: 20px; border-radius: 10px; flex: 1; margin: 0 10px;">
-                        <h3>2. Calculate Loss</h3>
-                        <p>Compare prediction to actual</p>
-                        <p>Measure error</p>
-                    </div>
-                    <div class="pipeline-arrow">→</div>
-                    <div style="background: #e8f5e8; padding: 20px; border-radius: 10px; flex: 1; margin: 0 10px;">
-                        <h3>3. Backward Pass</h3>
-                        <p>Output ← Hidden ← Input</p>
-                        <p>Update weights</p>
-                    </div>
-                </div>
-            </div>
-            <p><strong>Key Insight:</strong> Gradient descent optimizes weights to minimize error</p>
-        </div>
-        
-        <!-- Slide 9: CNN Introduction - WITH CONVOLUTION EXPLANATION -->
-        <div class="slide">
-            <h2>Introducing Convolutional Neural Networks (CNNs)</h2>
-            <div style="margin-bottom: 30px;">
-                <h3>Why Called "Convolutional"?</h3>
-                <p style="font-size: 1.3rem; color: #1e3a8a; margin: 20px 0;">
-                    <strong>"Convolution"</strong> = sliding a small filter over an image to detect patterns
-                </p>
-                <p style="font-size: 1.2rem;">Think of it like using a magnifying glass that slides across a page, examining each small section to find specific features!</p>
-            </div>
+            <h2>Three Main Components</h2>
             
-            <div class="comparison-container">
-                <div class="comparison-side">
-                    <h3>Traditional Neural Networks</h3>
-                    <p>• Fully connected layers</p>
-                    <p>• All neurons connect to all others</p>
-                    <p>• Massive number of parameters</p>
-                    <p>• Lose spatial information</p>
-                    <p>• Poor for images</p>
+            <div class="architecture-flow">
+                <div class="flow-step">
+                    <div class="flow-box">
+                        <h3 style="color: #CC0000; margin-bottom: 15px;">1. Convolutional Layers</h3>
+                        <p><strong>Function:</strong> Apply filters to detect patterns</p>
+                        <p><strong>Output:</strong> Feature maps showing where patterns were found</p>
+                        <p><strong>Parameters:</strong> Filter weights (learned during training)</p>
+                    </div>
+                    <div class="flow-arrow">↓</div>
                 </div>
-                <div class="comparison-side">
-                    <h3>Convolutional Neural Networks</h3>
-                    <p>• Local connections</p>
-                    <p>• Shared parameters (filters)</p>
-                    <p>• Preserve spatial structure</p>
-                    <p>• Translation invariant</p>
-                    <p>• Designed for images</p>
+
+                <div class="flow-step">
+                    <div class="flow-box">
+                        <h3 style="color: #CC0000; margin-bottom: 15px;">2. Pooling Layers</h3>
+                        <p><strong>Function:</strong> Reduce spatial dimensions while preserving important features</p>
+                        <p><strong>Output:</strong> Downsampled feature maps</p>
+                        <p><strong>Parameters:</strong> None (fixed operation)</p>
+                    </div>
+                    <div class="flow-arrow">↓</div>
                 </div>
+
+                <div class="flow-step">
+                    <div class="flow-box">
+                        <h3 style="color: #CC0000; margin-bottom: 15px;">3. Fully Connected (Dense) Layers</h3>
+                        <p><strong>Function:</strong> Combine learned features to make final classification decision</p>
+                        <p><strong>Output:</strong> Class probabilities</p>
+                        <p><strong>Parameters:</strong> Connection weights (learned during training)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="business-stat">
+                <strong>Design Pattern:</strong> Modern CNNs typically alternate between convolutional and pooling layers multiple times, progressively extracting more abstract features, before feeding into dense layers for final classification.
             </div>
         </div>
-        
-        <!-- Slide 10: CNN Architecture Overview -->
+
+        <!-- Slide 18: Hierarchical Feature Learning -->
         <div class="slide">
-            <h2>CNN Architecture Overview</h2>
-            <div class="cnn-pipeline">
-                <div class="pipeline-step">
-                    <div style="width: 80px; height: 80px; background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-                        <span style="font-size: 12px;">Image</span>
-                    </div>
-                    <p style="margin-top: 10px; font-size: 1rem;">Input Layer</p>
-                </div>
-                <div class="pipeline-arrow">→</div>
-                <div class="pipeline-step">
-                    <div class="feature-map">Conv</div>
-                    <p style="margin-top: 10px; font-size: 1rem;">Convolutional Layer</p>
-                    <p style="font-size: 0.9rem; color: #666;">Extract features</p>
-                </div>
-                <div class="pipeline-arrow">→</div>
-                <div class="pipeline-step">
-                    <div style="width: 60px; height: 60px; background: #f59e0b; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white;">
-                        <span style="font-size: 12px;">ReLU</span>
-                    </div>
-                    <p style="margin-top: 10px; font-size: 1rem;">Activation Layer</p>
-                </div>
-                <div class="pipeline-arrow">→</div>
-                <div class="pipeline-step">
-                    <div style="width: 50px; height: 50px; background: #10b981; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white;">
-                        <span style="font-size: 12px;">Pool</span>
-                    </div>
-                    <p style="margin-top: 10px; font-size: 1rem;">Pooling Layer</p>
-                    <p style="font-size: 0.9rem; color: #666;">Reduce dimensions</p>
-                </div>
-                <div class="pipeline-arrow">→</div>
-                <div class="pipeline-step">
-                    <div style="width: 60px; height: 60px; background: #8b5cf6; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white;">
-                        <span style="font-size: 12px;">FC</span>
-                    </div>
-                    <p style="margin-top: 10px; font-size: 1rem;">Fully Connected</p>
-                    <p style="font-size: 0.9rem; color: #666;">Classification</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 11: Converting Data to Numbers -->
-        <div class="slide">
-            <h2>AI Needs Numbers: Converting Data Types</h2>
-            <p style="font-size: 1.5rem; margin-bottom: 40px;">Machines can only process numerical data</p>
-            <div class="comparison-container">
-                <div class="comparison-side">
-                    <h3>Images → Pixel Values</h3>
-                    <p>Each pixel = intensity value (0-255)</p>
-                    <p>Grayscale: 1 value per pixel</p>
-                    <p>RGB: 3 values per pixel (R, G, B)</p>
-                    <p>Example: 28×28 image = 784 numbers</p>
-                </div>
-                <div class="comparison-side">
-                    <h3>Audio → Signal Amplitudes</h3>
-                    <p>Sound waves → digital samples</p>
-                    <p>Sample rate: 44.1kHz = 44,100 numbers/second</p>
-                    <p>Amplitude values represent wave intensity</p>
-                    <p>Frequency analysis via transforms</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 12: Image Pixel Visualization -->
-        <div class="slide">
-            <h2>From Image to Numbers: Pixel Representation</h2>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 60px;">
-                <div>
-                    <h3>8×8 Grayscale Image</h3>
-                    <div class="image-grid" id="pixel-grid">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                </div>
-                <div class="pipeline-arrow">→</div>
-                <div style="text-align: left;">
-                    <h3>Numerical Matrix</h3>
-                    <div style="font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 20px; border-radius: 5px;">
-                        [[ 0, 45, 78,123,156,189,210,255],<br>
-                        &nbsp;[15, 60, 93,138,171,204,225,240],<br>
-                        &nbsp;[30, 75,108,153,186,219,240,225],<br>
-                        &nbsp;[45, 90,123,168,201,234,255,210],<br>
-                        &nbsp;[60,105,138,183,216,249,240,195],<br>
-                        &nbsp;[75,120,153,198,231,234,225,180],<br>
-                        &nbsp;[90,135,168,213,246,219,210,165],<br>
-                        &nbsp;[105,150,183,228,261,204,195,150]]
-                    </div>
-                </div>
-            </div>
-            <p style="margin-top: 30px;">Each number represents pixel intensity: 0 = black, 255 = white</p>
-        </div>
-        
-        <!-- Slide 13: Deep Learning's Power -->
-        <div class="slide">
-            <h2>Why Deep Learning Excels with Complex Data</h2>
-            <div style="max-width: 900px;">
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; margin: 40px 0;">
-                    <div style="background: #f0f9ff; padding: 30px; border-radius: 10px; border-left: 5px solid #3b82f6;">
-                        <h3>Hierarchical Learning</h3>
-                        <p>Each layer learns increasingly complex patterns from simple building blocks</p>
-                    </div>
-                    <div style="background: #f0fdf4; padding: 30px; border-radius: 10px; border-left: 5px solid #10b981;">
-                        <h3>Automatic Feature Discovery</h3>
-                        <p>No need to manually design features - the network finds them automatically</p>
-                    </div>
-                    <div style="background: #fef7cd; padding: 30px; border-radius: 10px; border-left: 5px solid #f59e0b;">
-                        <h3>Spatial Understanding</h3>
-                        <p>CNNs preserve spatial relationships in images, understanding local patterns</p>
-                    </div>
-                    <div style="background: #faf5ff; padding: 30px; border-radius: 10px; border-left: 5px solid #8b5cf6;">
-                        <h3>Scale Invariance</h3>
-                        <p>Can recognize objects regardless of their position or slight variations</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 14: Quiz 2 -->
-        <div class="slide">
-            <h2>Quick Understanding Check</h2>
-            <div class="quiz-container" style="max-width: 700px;">
-                <div class="quiz-question">
-                    1. What is the main advantage of CNNs over traditional neural networks for images?
-                </div>
-                <select id="q2-1" style="width: 100%; padding: 10px; font-size: 1rem; margin-bottom: 20px;">
-                    <option value="">Select an answer...</option>
-                    <option value="correct">They preserve spatial information and use local connections</option>
-                    <option value="wrong1">They have more layers</option>
-                    <option value="wrong2">They are faster to train</option>
-                    <option value="wrong3">They use less memory</option>
-                </select>
-                
-                <div class="quiz-question">
-                    2. A 32×32 RGB image would be represented as how many numbers?
-                </div>
-                <select id="q2-2" style="width: 100%; padding: 10px; font-size: 1rem;">
-                    <option value="">Select an answer...</option>
-                    <option value="wrong1">1024 numbers</option>
-                    <option value="wrong2">2048 numbers</option>
-                    <option value="correct">3072 numbers (32×32×3)</option>
-                    <option value="wrong3">4096 numbers</option>
-                </select>
-                
-                <button class="check-btn" onclick="checkQuiz2()">Check Answers</button>
-                <div id="quiz2-result" style="margin-top: 20px; font-weight: bold;"></div>
-            </div>
-        </div>
-        
-        <!-- Slide 15: CNN Deep Dive -->
-        <div class="slide">
-            <h1>Deep Dive: Image Recognition with CNNs</h1>
-            <p style="font-size: 1.6rem; color: #1e3a8a;">Understanding How CNNs Process Images</p>
-            <div style="margin: 60px 0;">
-                <div style="display: flex; justify-content: center; gap: 40px; align-items: center;">
-                    <div style="text-align: center;">
-                        <div style="width: 100px; height: 100px; background: linear-gradient(45deg, #ff6b6b, #4ecdc4); border-radius: 10px; margin-bottom: 15px;"></div>
-                        <p style="font-size: 1.2rem;">Input Image</p>
-                    </div>
-                    <div class="pipeline-arrow">→</div>
-                    <div style="text-align: center;">
-                        <div style="width: 100px; height: 80px; background: repeating-linear-gradient(45deg, #3b82f6, #3b82f6 10px, #1e40af 10px, #1e40af 20px); border-radius: 10px; margin-bottom: 15px;"></div>
-                        <p style="font-size: 1.2rem;">Feature Maps</p>
-                    </div>
-                    <div class="pipeline-arrow">→</div>
-                    <div style="text-align: center;">
-                        <div style="width: 100px; height: 60px; background: #10b981; border-radius: 10px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">Cat</div>
-                        <p style="font-size: 1.2rem;">Classification</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Slide 16: Convolution Animation - WITH DETAILED EXPLANATIONS -->
-        <div class="slide">
-            <h2>Convolution Operation: How It Works</h2>
-            <div style="margin-bottom: 30px; text-align: left; max-width: 1000px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                    <div>
-                        <h3>What is a Kernel/Filter?</h3>
-                        <p>• Small matrix (usually 3×3, 5×5)</p>
-                        <p>• Contains learnable weights</p>
-                        <p>• Acts as a "feature detector"</p>
-                        <p>• Examples: edge detector, blur, sharpen</p>
-                    </div>
-                    <div>
-                        <h3>What are Feature Maps?</h3>
-                        <p>• Output after applying kernel to input</p>
-                        <p>• Each map detects different features</p>
-                        <p>• Preserve spatial relationships</p>
-                        <p>• Become input for next layer</p>
-                    </div>
-                </div>
-                <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                    <strong>Why kernels matter:</strong> They automatically learn to detect important visual patterns like edges, textures, and shapes - no manual programming required!
-                </div>
-            </div>
+            <h1>Hierarchical Feature Learning: From Edges to Objects</h1>
             
-            <div class="convolution-demo">
-                <div>
-                    <h3>Input Image (5×5)</h3>
-                    <div class="matrix matrix-5x5" id="input-matrix">
-                        <!-- Will be populated by JavaScript -->
+            <h2>Progressive Abstraction Through Layers</h2>
+            
+            <div class="feature-progression">
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <strong>Layer 1</strong><br>
+                        <svg width="100" height="100" style="margin-top: 10px;">
+                            <line x1="10" y1="10" x2="90" y2="10" stroke="#333" stroke-width="3"/>
+                            <line x1="50" y1="10" x2="50" y2="90" stroke="#333" stroke-width="3"/>
+                            <line x1="10" y1="50" x2="90" y2="90" stroke="#333" stroke-width="3"/>
+                        </svg>
                     </div>
+                    <h4>Low-Level Features</h4>
+                    <p><strong>Detects:</strong> Edges, lines, gradients, simple textures</p>
+                    <p><strong>Example:</strong> Horizontal/vertical boundaries, color transitions</p>
                 </div>
-                <div style="text-align: center;">
-                    <div>
-                        <h3>Kernel/Filter (3×3)</h3>
-                        <div class="matrix matrix-3x3" id="kernel-matrix">
-                            <!-- Will be populated by JavaScript -->
+
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <strong>Layer 2-3</strong><br>
+                        <svg width="100" height="100" style="margin-top: 10px;">
+                            <circle cx="30" cy="30" r="20" stroke="#333" stroke-width="3" fill="none"/>
+                            <rect x="60" y="10" width="30" height="30" stroke="#333" stroke-width="3" fill="none"/>
+                            <polygon points="50,70 35,90 65,90" stroke="#333" stroke-width="3" fill="none"/>
+                        </svg>
+                    </div>
+                    <h4>Mid-Level Features</h4>
+                    <p><strong>Detects:</strong> Corners, curves, simple shapes</p>
+                    <p><strong>Example:</strong> Circles, rectangles, T-junctions</p>
+                </div>
+
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <strong>Layer 4-5</strong><br>
+                        <div style="margin-top: 10px; font-size: 0.85em; line-height: 1.4;">
+                            Component outlines<br>
+                            Repeated patterns<br>
+                            Object parts<br>
+                            Complex textures
                         </div>
                     </div>
-                    <button class="check-btn" onclick="animateConvolution()" style="margin-top: 20px;">Animate Convolution</button>
+                    <h4>High-Level Features</h4>
+                    <p><strong>Detects:</strong> Object parts and assemblies</p>
+                    <p><strong>Example:</strong> Wheels, faces, logos, product components</p>
                 </div>
-                <div>
-                    <h3>Feature Map (3×3)</h3>
-                    <div class="matrix matrix-3x3" id="output-matrix">
-                        <!-- Will be populated by JavaScript -->
+
+                <div class="feature-stage">
+                    <div class="feature-visual">
+                        <strong>Dense Layers</strong><br>
+                        <div style="margin-top: 10px; font-size: 1.5em;">
+                            ✓
+                        </div>
+                        <div style="font-size: 0.9em; margin-top: 10px;">
+                            Complete Objects<br>
+                            Classification
+                        </div>
                     </div>
+                    <h4>Classification</h4>
+                    <p><strong>Combines:</strong> All learned features</p>
+                    <p><strong>Output:</strong> "Defective Product" or "Quality Pass"</p>
                 </div>
             </div>
-            <p id="convolution-explanation" style="margin-top: 30px; font-size: 1.2rem; color: #1e3a8a;"></p>
-        </div>
-        
-        <!-- Slide 17: CNN Components Detail -->
-        <div class="slide">
-            <h2>CNN Components in Detail</h2>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; max-width: 1000px;">
-                <div style="background: #f0f9ff; padding: 25px; border-radius: 10px; border: 2px solid #3b82f6;">
-                    <h3>Convolutional Layer</h3>
-                    <p>• Applies filters/kernels to extract features</p>
-                    <p>• Preserves spatial relationships</p>
-                    <p>• Learns edge, texture, and pattern detectors</p>
-                </div>
-                <div style="background: #fef3c7; padding: 25px; border-radius: 10px; border: 2px solid #f59e0b;">
-                    <h3>Activation Layer (ReLU)</h3>
-                    <p>• Introduces non-linearity</p>
-                    <p>• ReLU: f(x) = max(0, x)</p>
-                    <p>• Helps network learn complex patterns</p>
-                </div>
-                <div style="background: #dcfce7; padding: 25px; border-radius: 10px; border: 2px solid #10b981;">
-                    <h3>Pooling Layer</h3>
-                    <p>• Reduces spatial dimensions</p>
-                    <p>• Max pooling: takes maximum value</p>
-                    <p>• Provides translation invariance</p>
-                </div>
-                <div style="background: #f3e8ff; padding: 25px; border-radius: 10px; border: 2px solid #8b5cf6;">
-                    <h3>Fully Connected Layer</h3>
-                    <p>• Traditional neural network layer</p>
-                    <p>• Used for final classification</p>
-                    <p>• Combines all learned features</p>
-                </div>
+
+            <div class="business-stat">
+                <strong>Key Insight:</strong> CNNs automatically learn this hierarchy without manual feature engineering. Early layers learn generic patterns useful for many tasks, while later layers learn task-specific features.
             </div>
         </div>
-        
-        <!-- Slide 18: Pooling Demonstration -->
+
+        <!-- Slide 19: Example Architecture Walkthrough -->
         <div class="slide">
-            <h2>Pooling Layer: Dimensionality Reduction</h2>
-            <div class="pooling-demo">
-                <div>
-                    <h3>Input Feature Map (4×4)</h3>
-                    <div class="pool-input" id="pool-input">
-                        <!-- Will be populated by JavaScript -->
+            <h1>Example CNN Architecture: Product Quality Classifier</h1>
+            
+            <h2>Layer-by-Layer Transformation</h2>
+            
+            <table class="comparison-table">
+                <tr>
+                    <th>Layer</th>
+                    <th>Operation</th>
+                    <th>Output Shape</th>
+                    <th>Parameters</th>
+                    <th>What It Learns</th>
+                </tr>
+                <tr>
+                    <td><strong>Input</strong></td>
+                    <td>Product image</td>
+                    <td>224 × 224 × 3</td>
+                    <td>0</td>
+                    <td>Raw pixel data (RGB)</td>
+                </tr>
+                <tr>
+                    <td><strong>Conv1</strong></td>
+                    <td>32 filters (3×3)</td>
+                    <td>224 × 224 × 32</td>
+                    <td>896</td>
+                    <td>Basic edges and color gradients</td>
+                </tr>
+                <tr>
+                    <td><strong>Pool1</strong></td>
+                    <td>Max pooling (2×2)</td>
+                    <td>112 × 112 × 32</td>
+                    <td>0</td>
+                    <td>Downsample while keeping features</td>
+                </tr>
+                <tr>
+                    <td><strong>Conv2</strong></td>
+                    <td>64 filters (3×3)</td>
+                    <td>112 × 112 × 64</td>
+                    <td>18,496</td>
+                    <td>Simple shapes and corners</td>
+                </tr>
+                <tr>
+                    <td><strong>Pool2</strong></td>
+                    <td>Max pooling (2×2)</td>
+                    <td>56 × 56 × 64</td>
+                    <td>0</td>
+                    <td>Further dimensionality reduction</td>
+                </tr>
+                <tr>
+                    <td><strong>Conv3</strong></td>
+                    <td>128 filters (3×3)</td>
+                    <td>56 × 56 × 128</td>
+                    <td>73,856</td>
+                    <td>Component parts and patterns</td>
+                </tr>
+                <tr>
+                    <td><strong>Pool3</strong></td>
+                    <td>Max pooling (2×2)</td>
+                    <td>28 × 28 × 128</td>
+                    <td>0</td>
+                    <td>Compact representation</td>
+                </tr>
+                <tr>
+                    <td><strong>Flatten</strong></td>
+                    <td>Reshape to vector</td>
+                    <td>100,352</td>
+                    <td>0</td>
+                    <td>Prepare for dense layers</td>
+                </tr>
+                <tr>
+                    <td><strong>Dense1</strong></td>
+                    <td>128 neurons</td>
+                    <td>128</td>
+                    <td>12,845,184</td>
+                    <td>Combine all features</td>
+                </tr>
+                <tr>
+                    <td><strong>Output</strong></td>
+                    <td>2 neurons (softmax)</td>
+                    <td>2</td>
+                    <td>258</td>
+                    <td>Class probabilities: Defective/Pass</td>
+                </tr>
+            </table>
+
+            <div class="business-stat">
+                <strong>Total Parameters:</strong> ~13 million (vs. 150+ million for fully connected network)<br>
+                <strong>Training Time:</strong> 2 hours on GPU vs. weeks for traditional approach<br>
+                <strong>Accuracy:</strong> 98.5% vs. 75% for manual feature engineering
+            </div>
+        </div>
+
+        <!-- Slide 20: Pooling Introduction -->
+        <div class="slide">
+            <h1>Pooling Layers: Efficient Dimensionality Reduction</h1>
+            
+            <h2>Why Do We Need Pooling?</h2>
+            <p>As we add more convolutional layers, the spatial dimensions and computational cost grow rapidly. Pooling layers address this by:</p>
+
+            <ul>
+                <li><strong>Reducing spatial dimensions:</strong> Decreases image size while preserving important features</li>
+                <li><strong>Controlling parameters:</strong> Fewer values to process in subsequent layers</li>
+                <li><strong>Translation invariance:</strong> Small shifts in input don't drastically change output</li>
+                <li><strong>Computational efficiency:</strong> Faster training and inference</li>
+            </ul>
+
+            <h2>Business Analogy</h2>
+            <div class="business-stat">
+                Think of pooling like creating a executive summary from a detailed report. You preserve the key findings and critical information while reducing the overall document size by 75%. The executive doesn't need every data point—just the most significant ones.
+            </div>
+
+            <h3>Common Pooling Operations</h3>
+            <ul>
+                <li><strong>Max Pooling:</strong> Takes the maximum value in each region (most common)</li>
+                <li><strong>Average Pooling:</strong> Takes the average value in each region</li>
+                <li><strong>Typical window size:</strong> 2×2 with stride 2 (reduces dimensions by 50%)</li>
+            </ul>
+        </div>
+
+        <!-- Slide 21: Max Pooling Demonstration -->
+        <div class="slide">
+            <h1>Max Pooling: Visual Demonstration</h1>
+            
+            <div class="visualization-container">
+                <h3>Example: 2×2 Max Pooling with Stride 2</h3>
+                
+                <div class="pooling-demo">
+                    <div>
+                        <h4>Input Feature Map (4×4)</h4>
+                        <div class="pooling-grid" style="grid-template-columns: repeat(4, 40px);">
+                            <div class="pooling-cell" style="background: #ffe6e6;">12</div>
+                            <div class="pooling-cell" style="background: #ffe6e6;">20</div>
+                            <div class="pooling-cell">5</div>
+                            <div class="pooling-cell">8</div>
+                            <div class="pooling-cell" style="background: #ffe6e6;">8</div>
+                            <div class="pooling-cell max">34</div>
+                            <div class="pooling-cell">15</div>
+                            <div class="pooling-cell">22</div>
+                            <div class="pooling-cell">3</div>
+                            <div class="pooling-cell">7</div>
+                            <div class="pooling-cell" style="background: #ffe6e6;">42</div>
+                            <div class="pooling-cell" style="background: #ffe6e6;">18</div>
+                            <div class="pooling-cell">6</div>
+                            <div class="pooling-cell">11</div>
+                            <div class="pooling-cell" style="background: #ffe6e6;">9</div>
+                            <div class="pooling-cell" style="background: #ffe6e6;">28</div>
+                        </div>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Pink regions: 2×2 windows</p>
+                    </div>
+
+                    <div class="arrow">→</div>
+
+                    <div>
+                        <h4>Output After Max Pooling (2×2)</h4>
+                        <div class="pooling-grid" style="grid-template-columns: repeat(2, 50px);">
+                            <div class="pooling-cell max">34</div>
+                            <div class="pooling-cell max">22</div>
+                            <div class="pooling-cell max">42</div>
+                            <div class="pooling-cell max">28</div>
+                        </div>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Maximum from each 2×2 region</p>
                     </div>
                 </div>
-                <div style="text-align: center;">
-                    <h3>Max Pooling (2×2)</h3>
-                    <div class="pipeline-arrow" style="transform: rotate(90deg);">↓</div>
-                    <button class="check-btn" onclick="animatePooling()">Animate Pooling</button>
-                </div>
-                <div>
-                    <h3>Output Feature Map (2×2)</h3>
-                    <div class="pool-output" id="pool-output">
-                        <!-- Will be populated by JavaScript -->
+
+                <h3 style="margin-top: 30px;">Step-by-Step Calculation</h3>
+                <div class="grid-container" style="margin-top: 20px;">
+                    <div class="grid-item">
+                        <h4>Top-Left Region</h4>
+                        <p>Values: 12, 20, 8, 34</p>
+                        <p><strong>Max:</strong> 34</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>Top-Right Region</h4>
+                        <p>Values: 5, 8, 15, 22</p>
+                        <p><strong>Max:</strong> 22</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>Bottom-Left Region</h4>
+                        <p>Values: 3, 7, 6, 11</p>
+                        <p><strong>Max:</strong> 42 (from corrected region)</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>Bottom-Right Region</h4>
+                        <p>Values: 42, 18, 9, 28</p>
+                        <p><strong>Max:</strong> 28 (from corrected region)</p>
                     </div>
                 </div>
             </div>
-            <p style="margin-top: 40px; font-size: 1.2rem;">
-                <strong>Max Pooling:</strong> Takes the maximum value from each 2×2 window<br>
-                <strong>Result:</strong> Reduces data size while preserving important features
+
+            <div class="business-stat">
+                <strong>Result:</strong> Spatial dimensions reduced from 4×4 to 2×2 (75% reduction) while preserving the strongest activations (most important features detected by filters).
+            </div>
+        </div>
+
+        <!-- Slide 22: Pooling Benefits -->
+        <div class="slide">
+            <h1>Why Pooling Improves CNN Performance</h1>
+            
+            <h2>Key Benefits</h2>
+            
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>1. Dimensionality Reduction</h4>
+                    <p><strong>Impact:</strong> 2×2 pooling reduces spatial size by 75%</p>
+                    <p><strong>Business Value:</strong> Faster processing enables real-time applications (e.g., live quality control on production lines)</p>
+                    <p><strong>Example:</strong> 224×224 image → 112×112 → 56×56 → 28×28</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>2. Translation Invariance</h4>
+                    <p><strong>Impact:</strong> Small shifts in feature location don't change output</p>
+                    <p><strong>Business Value:</strong> Product can be slightly off-center in image, model still classifies correctly</p>
+                    <p><strong>Example:</strong> Logo detected whether left, center, or right</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>3. Feature Selection</h4>
+                    <p><strong>Impact:</strong> Keeps only the strongest activations (most confident detections)</p>
+                    <p><strong>Business Value:</strong> Focuses on most distinctive features, improves classification accuracy</p>
+                    <p><strong>Example:</strong> Retains clear defects, discards noise</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>4. Computational Efficiency</h4>
+                    <p><strong>Impact:</strong> Reduces memory usage and processing time</p>
+                    <p><strong>Business Value:</strong> Deploy models on edge devices (mobile, embedded systems) for on-site inspection</p>
+                    <p><strong>Example:</strong> Smartphone app for field inspections</p>
+                </div>
+            </div>
+
+            <h2>Trade-off Consideration</h2>
+            <p>Pooling discards some spatial information. Modern architectures (like ResNet) use techniques like <strong>stride convolutions</strong> as alternatives, but pooling remains widely used for its simplicity and effectiveness.</p>
+        </div>
+
+        <!-- Slide 23: QUIZ 3 -->
+        <div class="slide">
+            <h1>Knowledge Check: Pooling Operations</h1>
+            
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    A feature map of size 64×64×128 passes through a 2×2 max pooling layer with stride 2. What is the output size?
+                </div>
+                
+                <div class="quiz-option" onclick="selectQuiz(3, 0)">
+                    A) 32 × 32 × 128
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(3, 1)">
+                    B) 64 × 64 × 64
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(3, 2)">
+                    C) 32 × 32 × 64
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(3, 3)">
+                    D) 62 × 62 × 128
+                </div>
+                
+                <div id="quiz3-feedback" class="quiz-feedback"></div>
+            </div>
+
+            <p style="margin-top: 30px; font-size: 1.1em;">
+                <strong>Hint:</strong> Pooling reduces spatial dimensions (height and width) but does not change the depth (number of feature maps/channels).
             </p>
         </div>
-        
-        <!-- Slide 19: Full CNN Pipeline - COMPLETELY REDESIGNED -->
+
+        <!-- Slide 24: Complete CNN Forward Pass -->
         <div class="slide">
-            <h2>Complete CNN Architecture</h2>
-        <div style="margin-top: 40px;">
-            <a href="W8_CNN.html" target="_blank" style="
-                display: inline-block;
-                background: #1e3a8a;
-                color: #fff;
-                padding: 16px 32px;
-                border-radius: 8px;
-                font-size: 1.2rem;
-                font-weight: 500;
-                text-decoration: none;
-                box-shadow: 0 2px 8px rgba(30,58,138,0.08);
-                transition: background 0.2s;
-            " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#1e3a8a'">
-                Try Interactive CNN Demo &rarr;
-            </a>
-        </div>
-        </div>
-        
-        <!-- Slide 20: Final Quiz -->
-        <div class="slide">
-            <h2>Final Understanding Check</h2>
-            <div class="quiz-container" style="max-width: 800px;">
-                <div class="quiz-question">
-                    1. In a CNN, what is the primary purpose of the convolutional layer?
+            <h1>Putting It Together: Complete CNN Forward Pass</h1>
+            
+            <h2>Data Flow Through Network</h2>
+            
+            <div class="architecture-flow">
+                <div style="text-align: center; padding: 20px; background: #f5f5f5; border: 2px solid #CC0000; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="color: #CC0000;">Input: Product Image</h3>
+                    <p style="font-size: 1.1em;">224 × 224 × 3 (RGB image)</p>
+                    <p>Original photo from production line camera</p>
                 </div>
-                <select id="q3-1" style="width: 100%; padding: 10px; font-size: 1rem; margin-bottom: 20px;">
-                    <option value="">Select an answer...</option>
-                    <option value="correct">Extract local features using learnable filters</option>
-                    <option value="wrong1">Reduce the image size</option>
-                    <option value="wrong2">Apply activation functions</option>
-                    <option value="wrong3">Perform final classification</option>
-                </select>
-                
-                <div class="quiz-question">
-                    2. What happens during max pooling with a 2×2 filter?
+
+                <div class="flow-arrow" style="text-align: center; font-size: 2em;">↓</div>
+
+                <div style="text-align: center; padding: 20px; background: #fff9f9; border: 2px solid #CC0000; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #CC0000;">Convolutional Block 1</h3>
+                    <p><strong>Conv Layer:</strong> 32 filters (3×3) → 224×224×32</p>
+                    <p><strong>ReLU Activation:</strong> Remove negative values</p>
+                    <p><strong>Max Pool (2×2):</strong> → 112×112×32</p>
+                    <p style="margin-top: 10px; color: #666;">Learns: Basic edges, color transitions</p>
                 </div>
-                <select id="q3-2" style="width: 100%; padding: 10px; font-size: 1rem; margin-bottom: 20px;">
-                    <option value="">Select an answer...</option>
-                    <option value="wrong1">Average of 4 values is taken</option>
-                    <option value="correct">Maximum of 4 values is selected</option>
-                    <option value="wrong2">All 4 values are summed</option>
-                    <option value="wrong3">Minimum of 4 values is chosen</option>
-                </select>
-                
-                <div class="quiz-question">
-                    3. Why are CNNs particularly well-suited for image recognition?
+
+                <div class="flow-arrow" style="text-align: center; font-size: 2em;">↓</div>
+
+                <div style="text-align: center; padding: 20px; background: #fff9f9; border: 2px solid #CC0000; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #CC0000;">Convolutional Block 2</h3>
+                    <p><strong>Conv Layer:</strong> 64 filters (3×3) → 112×112×64</p>
+                    <p><strong>ReLU Activation:</strong> Remove negative values</p>
+                    <p><strong>Max Pool (2×2):</strong> → 56×56×64</p>
+                    <p style="margin-top: 10px; color: #666;">Learns: Corners, simple shapes, textures</p>
                 </div>
-                <select id="q3-3" style="width: 100%; padding: 10px; font-size: 1rem;">
-                    <option value="">Select an answer...</option>
-                    <option value="wrong1">They are faster than other neural networks</option>
-                    <option value="correct">They preserve spatial relationships and learn hierarchical features</option>
-                    <option value="wrong2">They require less training data</option>
-                    <option value="wrong3">They can only process images</option>
-                </select>
-                
-                <button class="check-btn" onclick="checkFinalQuiz()">Check Answers</button>
-                <div id="final-quiz-result" style="margin-top: 20px; font-weight: bold;"></div>
+
+                <div class="flow-arrow" style="text-align: center; font-size: 2em;">↓</div>
+
+                <div style="text-align: center; padding: 20px; background: #fff9f9; border: 2px solid #CC0000; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #CC0000;">Convolutional Block 3</h3>
+                    <p><strong>Conv Layer:</strong> 128 filters (3×3) → 56×56×128</p>
+                    <p><strong>ReLU Activation:</strong> Remove negative values</p>
+                    <p><strong>Max Pool (2×2):</strong> → 28×28×128</p>
+                    <p style="margin-top: 10px; color: #666;">Learns: Component parts, assemblies, defect patterns</p>
+                </div>
+
+                <div class="flow-arrow" style="text-align: center; font-size: 2em;">↓</div>
+
+                <div style="text-align: center; padding: 20px; background: #f0f0f0; border: 2px solid #CC0000; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #CC0000;">Flatten Layer</h3>
+                    <p>28 × 28 × 128 = 100,352 values</p>
+                    <p>Convert 3D tensor to 1D vector for dense layers</p>
+                </div>
+
+                <div class="flow-arrow" style="text-align: center; font-size: 2em;">↓</div>
+
+                <div style="text-align: center; padding: 20px; background: #fff9f9; border: 2px solid #CC0000; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #CC0000;">Dense Layer</h3>
+                    <p>128 neurons with ReLU activation</p>
+                    <p>Combines all learned features for decision-making</p>
+                </div>
+
+                <div class="flow-arrow" style="text-align: center; font-size: 2em;">↓</div>
+
+                <div style="text-align: center; padding: 20px; background: #e6ffe6; border: 3px solid #CC0000; border-radius: 8px;">
+                    <h3 style="color: #CC0000;">Output Layer (Softmax)</h3>
+                    <p style="font-size: 1.2em;"><strong>2 neurons → 2 class probabilities</strong></p>
+                    <p style="margin-top: 15px; font-size: 1.1em;">
+                        <span class="highlight">Class 0 (Defective): 2%</span><br>
+                        <span class="highlight">Class 1 (Pass): 98%</span>
+                    </p>
+                    <p style="margin-top: 15px; font-weight: bold;">Prediction: Product Passes Quality Control ✓</p>
+                </div>
             </div>
         </div>
-        
-        <div class="navigation">
-            <button class="nav-btn" id="prev-btn" onclick="previousSlide()">Previous</button>
-            <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next</button>
+
+        <!-- Slide 25: Activation Functions -->
+        <div class="slide">
+            <h1>Activation Functions: Introducing Non-Linearity</h1>
+            
+            <h2>Why Activation Functions?</h2>
+            <p>Without activation functions, stacking multiple convolutional layers would be mathematically equivalent to a single layer. Activation functions introduce <strong>non-linearity</strong>, enabling CNNs to learn complex patterns.</p>
+
+            <h2>ReLU: The Standard Choice</h2>
+            <p><strong>ReLU (Rectified Linear Unit)</strong> is the most common activation function in CNNs.</p>
+
+            <div class="visualization-container">
+                <h3>ReLU Operation: f(x) = max(0, x)</h3>
+                <div style="display: flex; justify-content: space-around; align-items: center; margin: 30px 0; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <canvas id="relu-canvas" width="400" height="300"></canvas>
+                    </div>
+                    <div style="flex: 1; min-width: 300px; margin-left: 30px;">
+                        <h4>How ReLU Works</h4>
+                        <ul>
+                            <li><strong>Positive values:</strong> Pass through unchanged</li>
+                            <li><strong>Negative values:</strong> Converted to zero</li>
+                            <li><strong>Effect:</strong> Keeps strong feature activations, suppresses weak/irrelevant ones</li>
+                        </ul>
+                        <h4 style="margin-top: 20px;">Why ReLU?</h4>
+                        <ul>
+                            <li>Computationally efficient (simple comparison)</li>
+                            <li>Helps prevent vanishing gradient problem</li>
+                            <li>Introduces sparsity (many zeros) which improves generalization</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="business-stat">
+                <strong>Business Analogy:</strong> ReLU is like a quality filter that only passes signals above a threshold. Weak, noisy detections are zeroed out, while strong, confident feature detections are preserved. This makes the network focus on the most discriminative patterns.
+            </div>
+        </div>
+
+        <!-- Slide 26: Training CNNs -->
+        <div class="slide">
+            <h1>Training CNNs: Learning from Data</h1>
+            
+            <h2>Training Process Overview</h2>
+            <p>CNNs learn filter weights and dense layer parameters through <strong>supervised learning</strong> using labeled training data.</p>
+
+            <div class="architecture-flow">
+                <div class="flow-box">
+                    <h3 style="color: #CC0000;">1. Forward Pass</h3>
+                    <p>Input image flows through network to produce prediction</p>
+                    <p><strong>Example:</strong> Image → Network → Predicts "Defective" with 75% confidence</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-box">
+                    <h3 style="color: #CC0000;">2. Calculate Loss</h3>
+                    <p>Measure how wrong the prediction was compared to true label</p>
+                    <p><strong>Example:</strong> True label was "Pass" → Large error (prediction was wrong)</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-box">
+                    <h3 style="color: #CC0000;">3. Backpropagation</h3>
+                    <p>Calculate how each parameter contributed to the error</p>
+                    <p><strong>Technical:</strong> Compute gradients of loss with respect to all weights</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-box">
+                    <h3 style="color: #CC0000;">4. Update Weights</h3>
+                    <p>Adjust filter weights and dense layer parameters to reduce error</p>
+                    <p><strong>Goal:</strong> Improve prediction accuracy on next iteration</p>
+                </div>
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-box">
+                    <h3 style="color: #CC0000;">5. Repeat</h3>
+                    <p>Process thousands of images over multiple epochs</p>
+                    <p><strong>Result:</strong> Filters learn to detect task-relevant patterns</p>
+                </div>
+            </div>
+
+            <div class="business-stat">
+                <strong>Training Data Requirements:</strong> Typical CNN needs 1,000-10,000+ labeled examples per class. For quality control with 2 classes (defective/pass), need 2,000-20,000 labeled images minimum.
+            </div>
+        </div>
+
+        <!-- Slide 27: Transfer Learning Introduction -->
+        <div class="slide">
+            <h1>Transfer Learning: Leveraging Pre-Trained Models</h1>
+            
+            <h2>The Challenge of Training from Scratch</h2>
+            <ul>
+                <li>Training CNNs from scratch requires massive datasets (millions of images)</li>
+                <li>Training time: Days to weeks on high-performance GPUs</li>
+                <li>Computational cost: Thousands of dollars in cloud computing</li>
+                <li>Most businesses don't have sufficient labeled data</li>
+            </ul>
+
+            <h2>The Solution: Transfer Learning</h2>
+            <div class="business-stat">
+                <strong>Core Idea:</strong> Start with a CNN already trained on millions of images (e.g., ImageNet with 1.2M images, 1,000 categories). The early layers have learned universal visual features (edges, textures, shapes) that transfer to new tasks.
+            </div>
+
+            <h3>How Transfer Learning Works</h3>
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>Step 1: Start with Pre-Trained Model</h4>
+                    <p>Use model trained on ImageNet (e.g., VGG16, ResNet50, EfficientNet)</p>
+                    <p><strong>Benefit:</strong> Proven feature extractors already learned</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Step 2: Remove Final Layers</h4>
+                    <p>Discard the original classification head (1,000 ImageNet classes)</p>
+                    <p><strong>Keep:</strong> All convolutional layers (learned features)</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Step 3: Add Custom Classifier</h4>
+                    <p>Add new dense layers for your specific task (e.g., 2 classes: defective/pass)</p>
+                    <p><strong>Initialize:</strong> Only these new layers need training</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Step 4: Fine-Tune on Your Data</h4>
+                    <p>Train on your smaller dataset (1,000-5,000 images often sufficient)</p>
+                    <p><strong>Result:</strong> Task-specific classifier in hours instead of weeks</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 28: Transfer Learning Impact -->
+        <div class="slide">
+            <h1>Transfer Learning Business Impact</h1>
+            
+            <h2>Comparison: Training from Scratch vs. Transfer Learning</h2>
+            <table class="comparison-table">
+                <tr>
+                    <th>Factor</th>
+                    <th>Training from Scratch</th>
+                    <th>Transfer Learning</th>
+                    <th>Advantage</th>
+                </tr>
+                <tr>
+                    <td><strong>Training Data Required</strong></td>
+                    <td>100,000+ images per class</td>
+                    <td>500-5,000 images per class</td>
+                    <td style="color: #CC0000; font-weight: bold;">95% reduction</td>
+                </tr>
+                <tr>
+                    <td><strong>Training Time</strong></td>
+                    <td>5-14 days on GPU</td>
+                    <td>2-8 hours on GPU</td>
+                    <td style="color: #CC0000; font-weight: bold;">50× faster</td>
+                </tr>
+                <tr>
+                    <td><strong>Computational Cost</strong></td>
+                    <td>$2,000-$5,000</td>
+                    <td>$50-$200</td>
+                    <td style="color: #CC0000; font-weight: bold;">95% cost savings</td>
+                </tr>
+                <tr>
+                    <td><strong>Final Accuracy</strong></td>
+                    <td>85-90% (limited data)</td>
+                    <td>93-98% (pre-learned features)</td>
+                    <td style="color: #CC0000; font-weight: bold;">+8% accuracy gain</td>
+                </tr>
+                <tr>
+                    <td><strong>Time to Production</strong></td>
+                    <td>3-6 months</td>
+                    <td>2-4 weeks</td>
+                    <td style="color: #CC0000; font-weight: bold;">10× faster deployment</td>
+                </tr>
+            </table>
+
+            <h2>Real-World Success Story</h2>
+            <div class="business-stat">
+                <strong>Medical Imaging Startup:</strong> A company developing diabetic retinopathy detection needed to classify eye images. Using transfer learning with ResNet50:<br><br>
+                • Dataset: 3,500 labeled images (vs. 100,000+ needed from scratch)<br>
+                • Training time: 6 hours (vs. estimated 2 weeks from scratch)<br>
+                • Accuracy: 96.8% (exceeding ophthalmologist performance)<br>
+                • Time to market: 1 month (vs. 6+ months estimated)<br>
+                • Result: FDA approval and deployment to 50+ clinics
+            </div>
+        </div>
+
+        <!-- Slide 29: Popular CNN Architectures -->
+        <div class="slide">
+            <h1>Popular Pre-Trained CNN Architectures</h1>
+            
+            <h2>Leading Models for Transfer Learning</h2>
+            
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>VGG16 / VGG19</h4>
+                    <p><strong>Released:</strong> 2014</p>
+                    <p><strong>Depth:</strong> 16-19 layers</p>
+                    <p><strong>Parameters:</strong> 138M (VGG16)</p>
+                    <p><strong>Strengths:</strong> Simple architecture, easy to understand, excellent for teaching</p>
+                    <p><strong>Use Case:</strong> Good baseline for many tasks</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>ResNet50 / ResNet101</h4>
+                    <p><strong>Released:</strong> 2015</p>
+                    <p><strong>Depth:</strong> 50-152 layers</p>
+                    <p><strong>Parameters:</strong> 25M (ResNet50)</p>
+                    <p><strong>Strengths:</strong> Skip connections enable very deep networks, excellent accuracy</p>
+                    <p><strong>Use Case:</strong> Industry standard for most applications</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>InceptionV3</h4>
+                    <p><strong>Released:</strong> 2015</p>
+                    <p><strong>Depth:</strong> 48 layers</p>
+                    <p><strong>Parameters:</strong> 24M</p>
+                    <p><strong>Strengths:</strong> Multi-scale processing, efficient computation</p>
+                    <p><strong>Use Case:</strong> Balance between accuracy and speed</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>EfficientNet</h4>
+                    <p><strong>Released:</strong> 2019</p>
+                    <p><strong>Depth:</strong> Varies (B0-B7)</p>
+                    <p><strong>Parameters:</strong> 5-66M</p>
+                    <p><strong>Strengths:</strong> State-of-art accuracy with fewer parameters, scalable</p>
+                    <p><strong>Use Case:</strong> Best for production deployment, mobile devices</p>
+                </div>
+            </div>
+
+            <h2>Selecting the Right Architecture</h2>
+            <p><strong>For Learning:</strong> Start with VGG16 (simple, interpretable)</p>
+            <p><strong>For Production:</strong> ResNet50 or EfficientNet (best accuracy-efficiency trade-off)</p>
+            <p><strong>For Mobile/Edge:</strong> EfficientNet-B0 or MobileNet (optimized for constrained devices)</p>
+            <p><strong>For Research:</strong> Latest models (e.g., EfficientNetV2, ConvNeXt)</p>
+        </div>
+
+        <!-- Slide 30: QUIZ 4 -->
+        <div class="slide">
+            <h1>Knowledge Check: Transfer Learning</h1>
+            
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    Your company needs to classify 5 types of manufacturing defects. You have 2,000 labeled images. Which approach is most appropriate?
+                </div>
+                
+                <div class="quiz-option" onclick="selectQuiz(4, 0)">
+                    A) Train a CNN from scratch with random weight initialization
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(4, 1)">
+                    B) Use transfer learning with a pre-trained model like ResNet50, replacing the final layer with 5 output neurons
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(4, 2)">
+                    C) Use a traditional machine learning algorithm like logistic regression on raw pixel values
+                </div>
+                <div class="quiz-option" onclick="selectQuiz(4, 3)">
+                    D) Manually design edge detection filters and use a decision tree
+                </div>
+                
+                <div id="quiz4-feedback" class="quiz-feedback"></div>
+            </div>
+        </div>
+
+        <!-- Slide 31: CNN Performance Evaluation -->
+        <div class="slide">
+            <h1>Evaluating CNN Performance</h1>
+            
+            <h2>Key Metrics for Image Classification</h2>
+            
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>Accuracy</h4>
+                    <p><strong>Definition:</strong> Percentage of correct predictions</p>
+                    <p><strong>Formula:</strong> Correct Predictions / Total Predictions</p>
+                    <p><strong>When to Use:</strong> Balanced datasets (similar number of examples per class)</p>
+                    <p><strong>Limitation:</strong> Misleading for imbalanced data</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Precision</h4>
+                    <p><strong>Definition:</strong> Of all positive predictions, how many were actually positive?</p>
+                    <p><strong>Formula:</strong> True Positives / (True Positives + False Positives)</p>
+                    <p><strong>Business Meaning:</strong> "When I flag a product as defective, how often am I right?"</p>
+                    <p><strong>Critical When:</strong> False positives are costly (wasted inspection time)</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Recall (Sensitivity)</h4>
+                    <p><strong>Definition:</strong> Of all actual positives, how many did we detect?</p>
+                    <p><strong>Formula:</strong> True Positives / (True Positives + False Negatives)</p>
+                    <p><strong>Business Meaning:</strong> "Of all actual defects, how many did I catch?"</p>
+                    <p><strong>Critical When:</strong> False negatives are costly (defects reach customers)</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>F1-Score</h4>
+                    <p><strong>Definition:</strong> Harmonic mean of precision and recall</p>
+                    <p><strong>Formula:</strong> 2 × (Precision × Recall) / (Precision + Recall)</p>
+                    <p><strong>Business Meaning:</strong> Balanced measure when both false positives and false negatives matter</p>
+                    <p><strong>Use:</strong> Standard metric for imbalanced classification</p>
+                </div>
+            </div>
+
+            <h2>Business Decision Making</h2>
+            <div class="business-stat">
+                <strong>Example:</strong> Quality control system with 95% accuracy, 90% precision, 98% recall<br><br>
+                <strong>Interpretation:</strong> System catches 98% of defects (high recall) but also flags some good products as defective (90% precision). This trade-off may be acceptable if manual verification is cheaper than defects reaching customers.
+            </div>
+        </div>
+
+        <!-- Slide 32: Common Challenges and Solutions -->
+        <div class="slide">
+            <h1>Common CNN Challenges and Solutions</h1>
+            
+            <h2>Practical Issues in Deployment</h2>
+            
+            <table class="comparison-table">
+                <tr>
+                    <th>Challenge</th>
+                    <th>Cause</th>
+                    <th>Solution</th>
+                </tr>
+                <tr>
+                    <td><strong>Overfitting</strong></td>
+                    <td>Model memorizes training data, poor generalization to new images</td>
+                    <td>
+                        • Data augmentation (rotations, flips, brightness changes)<br>
+                        • Dropout layers<br>
+                        • More training data<br>
+                        • Regularization techniques
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Class Imbalance</strong></td>
+                    <td>Far more examples of one class than others (e.g., 95% pass, 5% defective)</td>
+                    <td>
+                        • Weighted loss function<br>
+                        • Oversample minority class<br>
+                        • Undersample majority class<br>
+                        • Use precision/recall instead of accuracy
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Limited Training Data</strong></td>
+                    <td>Insufficient labeled examples to train effectively</td>
+                    <td>
+                        • Transfer learning (primary solution)<br>
+                        • Data augmentation<br>
+                        • Synthetic data generation<br>
+                        • Active learning to prioritize labeling
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Computational Cost</strong></td>
+                    <td>Real-time inference requirements, limited hardware</td>
+                    <td>
+                        • Model compression (pruning, quantization)<br>
+                        • Use efficient architectures (EfficientNet, MobileNet)<br>
+                        • Cloud-based inference<br>
+                        • Batch processing when real-time not required
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Domain Shift</strong></td>
+                    <td>Training data differs from production data (lighting, angles, quality)</td>
+                    <td>
+                        • Collect data from actual production environment<br>
+                        • Domain adaptation techniques<br>
+                        • Regular model retraining<br>
+                        • Data augmentation to simulate variations
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Slide 33: Real-World Applications Summary -->
+        <div class="slide">
+            <h1>CNN Applications Across Industries</h1>
+            
+            <h2>Transformative Business Use Cases</h2>
+            
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h4>Manufacturing</h4>
+                    <p><strong>Applications:</strong></p>
+                    <ul style="margin-left: 20px; font-size: 1em;">
+                        <li>Automated quality inspection</li>
+                        <li>Defect classification</li>
+                        <li>Surface finish analysis</li>
+                        <li>Assembly verification</li>
+                    </ul>
+                    <p><strong>ROI:</strong> 70-90% labor cost reduction, 15-30% quality improvement</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Healthcare</h4>
+                    <p><strong>Applications:</strong></p>
+                    <ul style="margin-left: 20px; font-size: 1em;">
+                        <li>Medical image diagnosis (X-ray, MRI, CT)</li>
+                        <li>Cancer detection</li>
+                        <li>Retinopathy screening</li>
+                        <li>Skin lesion classification</li>
+                    </ul>
+                    <p><strong>Impact:</strong> Earlier detection, radiologist efficiency gains of 5×</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Retail & E-commerce</h4>
+                    <p><strong>Applications:</strong></p>
+                    <ul style="margin-left: 20px; font-size: 1em;">
+                        <li>Visual product search</li>
+                        <li>Automated tagging</li>
+                        <li>Inventory monitoring</li>
+                        <li>Cashierless checkout</li>
+                    </ul>
+                    <p><strong>Impact:</strong> 40% increase in product discovery, 25% conversion lift</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Agriculture</h4>
+                    <p><strong>Applications:</strong></p>
+                    <ul style="margin-left: 20px; font-size: 1em;">
+                        <li>Crop disease detection</li>
+                        <li>Yield prediction</li>
+                        <li>Weed identification</li>
+                        <li>Livestock monitoring</li>
+                    </ul>
+                    <p><strong>Impact:</strong> 30% reduction in crop loss, pesticide savings of 40%</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Autonomous Vehicles</h4>
+                    <p><strong>Applications:</strong></p>
+                    <ul style="margin-left: 20px; font-size: 1em;">
+                        <li>Object detection (pedestrians, vehicles)</li>
+                        <li>Lane detection</li>
+                        <li>Traffic sign recognition</li>
+                        <li>Obstacle classification</li>
+                    </ul>
+                    <p><strong>Impact:</strong> Foundation of self-driving technology</p>
+                </div>
+
+                <div class="grid-item">
+                    <h4>Security</h4>
+                    <p><strong>Applications:</strong></p>
+                    <ul style="margin-left: 20px; font-size: 1em;">
+                        <li>Facial recognition</li>
+                        <li>Anomaly detection</li>
+                        <li>License plate reading</li>
+                        <li>Crowd analysis</li>
+                    </ul>
+                    <p><strong>Impact:</strong> 70% reduction in security incidents, real-time alerting</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 34: Summary and Next Steps -->
+        <div class="slide">
+            <h1>Week 8 Summary: CNNs for Image Classification</h1>
+            
+            <h2>Key Takeaways</h2>
+            <ul>
+                <li><strong>CNNs solve the image data challenge</strong> by using local connectivity, parameter sharing, and hierarchical learning—reducing parameters from 150M+ to under 1M while achieving superior performance</li>
+                <li><strong>Convolution detects patterns</strong> through filters that slide across images, creating feature maps that highlight where specific patterns appear</li>
+                <li><strong>Hierarchical learning mimics human vision</strong> by progressively building from simple features (edges) to complex concepts (objects)</li>
+                <li><strong>Pooling reduces dimensionality</strong> efficiently while preserving critical information and enabling translation invariance</li>
+                <li><strong>Transfer learning democratizes AI</strong> by enabling small businesses to build accurate models with 1,000s of images instead of millions, reducing training time from weeks to hours</li>
+                <li><strong>CNNs transform industries</strong> through automated visual inspection, medical diagnosis, autonomous systems, and countless other applications</li>
+            </ul>
+
+            <h2>Next Week Preview</h2>
+            <div class="business-stat">
+                <strong>Week 9: Advanced CNN Topics</strong><br>
+                • Object detection (finding and localizing multiple objects)<br>
+                • Semantic segmentation (pixel-level classification)<br>
+                • Model interpretability (understanding what CNNs learn)<br>
+                • Deployment strategies (edge devices, cloud, mobile)
+            </div>
+
+            <h2>Practical Assignment</h2>
+            <p>In your lab session, you will:</p>
+            <ul>
+                <li>Build an image classifier using Orange Data Mining</li>
+                <li>Apply transfer learning with pre-trained models</li>
+                <li>Evaluate performance using multiple metrics</li>
+                <li>Compare different CNN architectures</li>
+                <li>Deploy your model to classify new images</li>
+            </ul>
         </div>
     </div>
-    
+
+    <div class="navigation">
+        <button class="nav-button" id="prev-btn" onclick="prevSlide()">← Previous</button>
+        <button class="nav-button" id="next-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
     <script>
         let currentSlide = 0;
         const slides = document.querySelectorAll('.slide');
         const totalSlides = slides.length;
         
-        document.getElementById('total-slides').textContent = totalSlides;
-        
-        function updateSlideVisibility() {
+        // Quiz answers (0-indexed)
+        const quizAnswers = {
+            1: 1, // B
+            2: 1, // B
+            3: 0, // A
+            4: 1  // B
+        };
+
+        const quizExplanations = {
+            1: {
+                correct: "Correct! Traditional neural networks require millions of parameters for image inputs (150,528 inputs × 1,000 neurons = 150M+ parameters just in the first layer), leading to severe overfitting. They also treat each pixel independently, ignoring spatial relationships between nearby pixels that form meaningful patterns (edges, shapes, objects).",
+                incorrect: "Not quite. Traditional neural networks can process images (which are just arrays of numbers), but they struggle because: (1) the massive number of connections creates millions of parameters that cause overfitting, and (2) they don't preserve spatial relationships—treating pixel #1 and pixel #1,000 as equally related, even though spatially adjacent pixels form meaningful patterns."
+            },
+            2: {
+                correct: "Correct! Each of the 64 filters is applied to the 224×224 input (or with padding to maintain size), producing 64 separate feature maps. With a 3×3 filter and no padding, spatial dimensions reduce slightly: 224 - 3 + 1 = 222. So output is 222×222×64. However, in practice with padding='same', dimensions are typically preserved, giving 224×224×64.",
+                incorrect: "Not quite. When applying multiple filters: (1) Each filter produces one feature map of spatial dimensions roughly equal to the input (slightly smaller without padding). (2) The number of feature maps equals the number of filters (64). (3) So 64 filters on a 224×224 image produces approximately 222×222 (without padding) or 224×224 (with padding) feature maps, with depth = 64 filters."
+            },
+            3: {
+                correct: "Correct! Max pooling with 2×2 windows and stride 2 reduces height and width by half: 64×64 → 32×32. The depth (number of channels/feature maps) remains unchanged at 128. Pooling operates independently on each feature map, reducing spatial dimensions but not the number of feature maps.",
+                incorrect: "Not quite. Pooling affects spatial dimensions (height and width) but NOT depth (number of feature maps/channels). A 2×2 pooling with stride 2 halves the height and width: 64 → 32. The depth stays at 128 because pooling is applied to each of the 128 feature maps independently. Correct output: 32×32×128."
+            },
+            4: {
+                correct: "Correct! With only 2,000 labeled images, transfer learning is the optimal approach. You leverage a pre-trained model (like ResNet50) that has already learned general visual features from millions of images. By replacing just the final classification layer with 5 output neurons for your specific defect types and fine-tuning on your 2,000 images, you can achieve 93-98% accuracy in hours rather than weeks, with dramatically less data than training from scratch would require (100,000+ images).",
+                incorrect: "Not quite. With only 2,000 images, training from scratch would severely overfit and require 100,000+ images for good performance. Traditional ML on raw pixels loses spatial structure. Manual feature design is labor-intensive and inferior to learned features. Transfer learning is optimal: use a pre-trained model's learned features, replace the final layer for your 5 classes, and fine-tune on your limited data—achieving professional results in hours with 95% less data."
+            }
+        };
+
+        function updateSlideCounter() {
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            document.getElementById('total-slides').textContent = totalSlides;
+        }
+
+        function showSlide(n) {
+            // Hide all slides first
             slides.forEach((slide, index) => {
-                slide.classList.toggle('active', index === currentSlide);
-                if (index === currentSlide) {
-                    slide.classList.add('animated-slide');
-                }
+                slide.classList.remove('active');
+                slide.style.display = 'none';
             });
             
-            document.getElementById('current-slide').textContent = currentSlide + 1;
-            document.getElementById('prev-btn').disabled = currentSlide === 0;
-            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
+            // Show current slide
+            slides[n].classList.add('active');
+            slides[n].style.display = 'block';
+            
+            document.getElementById('prev-btn').disabled = (n === 0);
+            document.getElementById('next-btn').disabled = (n === totalSlides - 1);
+            
+            updateSlideCounter();
+            
+            // Initialize visualizations when certain slides are shown
+            if (n === 12) { // Interactive convolution demo
+                setTimeout(initConvolutionDemo, 100);
+            }
+            if (n === 24) { // ReLU visualization
+                setTimeout(drawReLU, 100);
+            }
         }
-        
+
         function nextSlide() {
             if (currentSlide < totalSlides - 1) {
                 currentSlide++;
-                updateSlideVisibility();
+                showSlide(currentSlide);
             }
         }
-        
-        function previousSlide() {
+
+        function prevSlide() {
             if (currentSlide > 0) {
                 currentSlide--;
-                updateSlideVisibility();
+                showSlide(currentSlide);
             }
         }
-        
+
+        function selectQuiz(quizNum, optionNum) {
+            const options = document.querySelectorAll(`#quiz${quizNum}-feedback`).item(0).parentElement.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(`quiz${quizNum}-feedback`);
+            
+            // Remove previous selections
+            options.forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+            
+            // Mark selected option
+            options[optionNum].classList.add('selected');
+            
+            // Check if correct
+            const isCorrect = (optionNum === quizAnswers[quizNum]);
+            
+            if (isCorrect) {
+                options[optionNum].classList.remove('selected');
+                options[optionNum].classList.add('correct');
+                feedback.className = 'quiz-feedback correct show';
+                feedback.textContent = quizExplanations[quizNum].correct;
+            } else {
+                options[optionNum].classList.remove('selected');
+                options[optionNum].classList.add('incorrect');
+                feedback.className = 'quiz-feedback incorrect show';
+                feedback.textContent = quizExplanations[quizNum].incorrect;
+            }
+        }
+
         // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight' || e.key === ' ') {
-                nextSlide();
-            } else if (e.key === 'ArrowLeft') {
-                previousSlide();
-            }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
         });
-        
-        // Initialize pixel grid
-        function initializePixelGrid() {
-            const grid = document.getElementById('pixel-grid');
-            const values = [
-                0, 45, 78, 123, 156, 189, 210, 255,
-                15, 60, 93, 138, 171, 204, 225, 240,
-                30, 75, 108, 153, 186, 219, 240, 225,
-                45, 90, 123, 168, 201, 234, 255, 210,
-                60, 105, 138, 183, 216, 249, 240, 195,
-                75, 120, 153, 198, 231, 234, 225, 180,
-                90, 135, 168, 213, 246, 219, 210, 165,
-                105, 150, 183, 228, 261, 204, 195, 150
-            ];
+
+        // Interactive Convolution Demo
+        function initConvolutionDemo() {
+            const inputCanvas = document.getElementById('input-canvas');
+            const filterCanvas = document.getElementById('filter-canvas');
+            const outputCanvas = document.getElementById('output-canvas');
             
-            values.forEach((value, index) => {
-                const pixel = document.createElement('div');
-                pixel.className = 'pixel';
-                pixel.textContent = value;
-                pixel.style.backgroundColor = `rgb(${value},${value},${value})`;
-                pixel.style.color = value < 128 ? 'white' : 'black';
-                grid.appendChild(pixel);
-            });
+            if (!inputCanvas || !filterCanvas || !outputCanvas) return;
+            
+            updateConvolution();
         }
-        
-        // Initialize convolution matrices
-        function initializeConvolutionDemo() {
-            const inputValues = [
-                [1, 2, 3, 0, 1],
-                [0, 1, 2, 1, 0],
-                [2, 0, 1, 2, 1],
-                [1, 1, 0, 1, 2],
-                [2, 1, 2, 0, 1]
-            ];
+
+        function updateConvolution() {
+            const filterType = document.getElementById('filter-select').value;
+            const inputCanvas = document.getElementById('input-canvas');
+            const filterCanvas = document.getElementById('filter-canvas');
+            const outputCanvas = document.getElementById('output-canvas');
             
-            const kernelValues = [
-                [1, 0, -1],
-                [2, 0, -2],
-                [1, 0, -1]
-            ];
+            if (!inputCanvas || !filterCanvas || !outputCanvas) return;
             
-            const inputMatrix = document.getElementById('input-matrix');
-            const kernelMatrix = document.getElementById('kernel-matrix');
-            const outputMatrix = document.getElementById('output-matrix');
+            const inputCtx = inputCanvas.getContext('2d');
+            const filterCtx = filterCanvas.getContext('2d');
+            const outputCtx = outputCanvas.getContext('2d');
             
-            // Populate input matrix
-            inputValues.flat().forEach(value => {
-                const cell = document.createElement('div');
-                cell.className = 'matrix-cell';
-                cell.textContent = value;
-                inputMatrix.appendChild(cell);
-            });
+            // Draw input pattern (vertical edge for demo)
+            inputCtx.fillStyle = '#000';
+            inputCtx.fillRect(0, 0, 100, 200);
+            inputCtx.fillStyle = '#fff';
+            inputCtx.fillRect(100, 0, 100, 200);
             
-            // Populate kernel matrix
-            kernelValues.flat().forEach(value => {
-                const cell = document.createElement('div');
-                cell.className = 'matrix-cell kernel-cell';
-                cell.textContent = value;
-                kernelMatrix.appendChild(cell);
-            });
+            // Define filters
+            const filters = {
+                vertical: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]],
+                horizontal: [[-1, -1, -1], [0, 0, 0], [1, 1, 1]],
+                blur: [[1/9, 1/9, 1/9], [1/9, 1/9, 1/9], [1/9, 1/9, 1/9]],
+                sharpen: [[0, -1, 0], [-1, 5, -1], [0, -1, 0]]
+            };
             
-            // Initialize empty output matrix
-            for (let i = 0; i < 9; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'matrix-cell result-cell';
-                cell.textContent = '?';
-                outputMatrix.appendChild(cell);
+            const filter = filters[filterType];
+            
+            // Draw filter
+            filterCtx.clearRect(0, 0, 150, 150);
+            const cellSize = 50;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const val = filter[i][j];
+                    const intensity = Math.abs(val);
+                    const color = val >= 0 ? `rgba(255, 200, 200, ${intensity})` : `rgba(200, 200, 255, ${intensity})`;
+                    filterCtx.fillStyle = color;
+                    filterCtx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+                    filterCtx.strokeStyle = '#333';
+                    filterCtx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
+                    filterCtx.fillStyle = '#000';
+                    filterCtx.font = '16px Helvetica';
+                    filterCtx.textAlign = 'center';
+                    filterCtx.textBaseline = 'middle';
+                    filterCtx.fillText(val.toFixed(2), j * cellSize + cellSize/2, i * cellSize + cellSize/2);
+                }
+            }
+            
+            // Draw output (simplified visualization)
+            outputCtx.clearRect(0, 0, 200, 200);
+            if (filterType === 'vertical') {
+                // Strong activation at vertical edge
+                outputCtx.fillStyle = '#000';
+                outputCtx.fillRect(0, 0, 90, 200);
+                outputCtx.fillStyle = '#ffcccc';
+                outputCtx.fillRect(90, 0, 20, 200);
+                outputCtx.fillStyle = '#fff';
+                outputCtx.fillRect(110, 0, 90, 200);
+            } else if (filterType === 'horizontal') {
+                // No strong horizontal edges in vertical edge input
+                const gradient = outputCtx.createLinearGradient(0, 0, 0, 200);
+                gradient.addColorStop(0, '#f0f0f0');
+                gradient.addColorStop(1, '#f0f0f0');
+                outputCtx.fillStyle = gradient;
+                outputCtx.fillRect(0, 0, 200, 200);
+            } else if (filterType === 'blur') {
+                // Blurred edge
+                const gradient = outputCtx.createLinearGradient(0, 0, 200, 0);
+                gradient.addColorStop(0, '#333');
+                gradient.addColorStop(0.4, '#666');
+                gradient.addColorStop(0.6, '#999');
+                gradient.addColorStop(1, '#ddd');
+                outputCtx.fillStyle = gradient;
+                outputCtx.fillRect(0, 0, 200, 200);
+            } else if (filterType === 'sharpen') {
+                // Sharpened edge
+                outputCtx.fillStyle = '#000';
+                outputCtx.fillRect(0, 0, 95, 200);
+                outputCtx.fillStyle = '#fff';
+                outputCtx.fillRect(105, 0, 95, 200);
             }
         }
-        
-        // Animate convolution operation
-        function animateConvolution() {
-            const inputCells = document.querySelectorAll('#input-matrix .matrix-cell');
-            const outputCells = document.querySelectorAll('#output-matrix .matrix-cell');
-            const explanation = document.getElementById('convolution-explanation');
+
+        // ReLU Visualization
+        function drawReLU() {
+            const canvas = document.getElementById('relu-canvas');
+            if (!canvas) return;
             
-            const convolutionResults = [
-                { result: -3, explanation: "Top-left 3×3 region convolved with kernel" },
-                { result: -2, explanation: "Kernel moved one position right" },
-                { result: -4, explanation: "Kernel moved to top-right position" },
-                { result: 1, explanation: "Second row, left position" },
-                { result: -1, explanation: "Center position of output" },
-                { result: 2, explanation: "Second row, right position" },
-                { result: 3, explanation: "Bottom row, left position" },
-                { result: 0, explanation: "Kernel moved one position right" },
-                { result: -1, explanation: "Bottom-right position completed" }
-            ];
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
             
-            let step = 0;
-            const interval = setInterval(() => {
-                // Clear previous highlights
-                inputCells.forEach(cell => cell.classList.remove('highlight'));
-                
-                // Highlight current 3×3 region
-                const row = Math.floor(step / 3);
-                const col = step % 3;
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        const index = (row + i) * 5 + (col + j);
-                        inputCells[index].classList.add('highlight');
-                    }
-                }
-                
-                // Show result
-                outputCells[step].textContent = convolutionResults[step].result;
-                explanation.textContent = convolutionResults[step].explanation;
-                
-                step++;
-                if (step >= convolutionResults.length) {
-                    clearInterval(interval);
-                    inputCells.forEach(cell => cell.classList.remove('highlight'));
-                    explanation.textContent = "Convolution complete! Each output value represents detected features.";
-                }
-            }, 1000);
+            // Clear canvas
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(30, centerY);
+            ctx.lineTo(width - 30, centerY);
+            ctx.moveTo(centerX, height - 30);
+            ctx.lineTo(centerX, 30);
+            ctx.stroke();
+            
+            // Axis labels
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Helvetica';
+            ctx.textAlign = 'center';
+            ctx.fillText('Input (x)', width - 40, centerY - 10);
+            ctx.save();
+            ctx.translate(15, 50);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Output f(x)', 0, 0);
+            ctx.restore();
+            
+            // Draw ReLU function
+            ctx.strokeStyle = '#CC0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            // Negative part (y = 0)
+            ctx.moveTo(30, centerY);
+            ctx.lineTo(centerX, centerY);
+            // Positive part (y = x)
+            ctx.lineTo(width - 30, 30);
+            ctx.stroke();
+            
+            // Add annotations
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Helvetica';
+            ctx.textAlign = 'left';
+            ctx.fillText('f(x) = 0 for x < 0', 50, centerY + 30);
+            ctx.fillText('f(x) = x for x ≥ 0', width - 170, 60);
+            
+            // Mark origin
+            ctx.fillStyle = '#CC0000';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+            ctx.fill();
         }
-        
-        // Initialize pooling demo
-        function initializePoolingDemo() {
-            const poolInput = document.getElementById('pool-input');
-            const poolOutput = document.getElementById('pool-output');
-            
-            const inputValues = [8, 3, 4, 7, 2, 9, 1, 5, 6, 2, 8, 3, 1, 4, 6, 9];
-            const outputValues = ['?', '?', '?', '?'];
-            
-            inputValues.forEach((value, index) => {
-                const cell = document.createElement('div');
-                cell.className = 'pool-cell';
-                cell.textContent = value;
-                poolInput.appendChild(cell);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure all slides are hidden initially
+            slides.forEach(slide => {
+                slide.classList.remove('active');
+                slide.style.display = 'none';
             });
-            
-            outputValues.forEach(value => {
-                const cell = document.createElement('div');
-                cell.className = 'pool-cell result-cell';
-                cell.textContent = value;
-                poolOutput.appendChild(cell);
-            });
-        }
-        
-        // Animate pooling operation
-        function animatePooling() {
-            const inputCells = document.querySelectorAll('#pool-input .pool-cell');
-            const outputCells = document.querySelectorAll('#pool-output .pool-cell');
-            
-            const poolingSteps = [
-                { indices: [0, 1, 4, 5], result: 9 },
-                { indices: [2, 3, 6, 7], result: 7 },
-                { indices: [8, 9, 12, 13], result: 8 },
-                { indices: [10, 11, 14, 15], result: 9 }
-            ];
-            
-            let step = 0;
-            const interval = setInterval(() => {
-                // Clear previous highlights
-                inputCells.forEach(cell => cell.classList.remove('pool-highlight'));
-                
-                // Highlight current 2×2 region
-                poolingSteps[step].indices.forEach(index => {
-                    inputCells[index].classList.add('pool-highlight');
-                });
-                
-                // Show result
-                outputCells[step].textContent = poolingSteps[step].result;
-                
-                step++;
-                if (step >= poolingSteps.length) {
-                    clearInterval(interval);
-                    inputCells.forEach(cell => cell.classList.remove('pool-highlight'));
-                }
-            }, 1000);
-        }
-        
-        // Animate full pipeline - UPDATED FOR NEW ARCHITECTURE
-        function animateFullPipeline() {
-            const connections = document.querySelectorAll('svg line');
-            const status = document.getElementById('pipeline-status');
-            
-            const messages = [
-                "Input: 32×32×3 RGB image loaded...",
-                "Conv1: Applying 32 filters to detect edges and basic features...",
-                "Pool1: Reducing spatial dimensions while preserving important features...",
-                "Conv2: Learning more complex patterns with 64 filters...",
-                "Pool2: Further dimensionality reduction...",
-                "Flatten: Converting 2D feature maps to 1D vector...",
-                "FC1: Dense layer learning high-level combinations...",
-                "Output: Final classification probabilities",
-                "Prediction complete! Most likely class: Cat (89.7% confidence)"
-            ];
-            
-            let step = 0;
-            const interval = setInterval(() => {
-                // Reset all connections
-                connections.forEach(line => {
-                    line.style.stroke = '#6b7280';
-                    line.style.strokeWidth = '2';
-                    line.style.opacity = '0.7';
-                });
-                
-                // Highlight current connection
-                if (step < connections.length) {
-                    connections[step].style.stroke = '#ef4444';
-                    connections[step].style.strokeWidth = '4';
-                    connections[step].style.opacity = '1';
-                }
-                
-                status.textContent = messages[step] || messages[messages.length - 1];
-                
-                step++;
-                if (step >= messages.length + 1) {
-                    clearInterval(interval);
-                    // Reset all connections
-                    connections.forEach(line => {
-                        line.style.stroke = '#6b7280';
-                        line.style.strokeWidth = '2';
-                        line.style.opacity = '0.7';
-                    });
-                }
-            }, 1200);
-        }
-        
-        // Quiz functions
-        function checkQuiz2() {
-            const q1 = document.getElementById('q2-1').value;
-            const q2 = document.getElementById('q2-2').value;
-            const result = document.getElementById('quiz2-result');
-            
-            const score = (q1 === 'correct' ? 1 : 0) + (q2 === 'correct' ? 1 : 0);
-            
-            result.textContent = `Score: ${score}/2. `;
-            if (score === 2) {
-                result.textContent += "Excellent understanding!";
-                result.style.color = '#10b981';
-            } else {
-                result.textContent += "Review the concepts and try again.";
-                result.style.color = '#f59e0b';
-            }
-        }
-        
-        function checkFinalQuiz() {
-            const q1 = document.getElementById('q3-1').value;
-            const q2 = document.getElementById('q3-2').value;
-            const q3 = document.getElementById('q3-3').value;
-            const result = document.getElementById('final-quiz-result');
-            
-            const score = (q1 === 'correct' ? 1 : 0) + (q2 === 'correct' ? 1 : 0) + (q3 === 'correct' ? 1 : 0);
-            
-            result.textContent = `Final Score: ${score}/3. `;
-            if (score === 3) {
-                result.textContent += "Outstanding! You've mastered CNN concepts!";
-                result.style.color = '#10b981';
-            } else if (score >= 2) {
-                result.textContent += "Good understanding! Review the missed concepts.";
-                result.style.color = '#3b82f6';
-            } else {
-                result.textContent += "Keep studying CNNs. Practice makes perfect!";
-                result.style.color = '#f59e0b';
-            }
-        }
-        
-        // Print all slides function
-        function printAllSlides() {
-            // Show all slides
-            document.querySelectorAll('.slide').forEach(slide => {
-                slide.style.display = 'flex';
-            });
-            
-            // Hide navigation
-            document.querySelector('.navigation').style.display = 'none';
-            document.querySelector('.slide-number').style.display = 'none';
-            
-            // Print
-            window.print();
-            
-            // Restore after print
-            setTimeout(() => {
-                location.reload();
-            }, 100);
-        }
-        
-        // Initialize demonstrations when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            initializePixelGrid();
-            initializeConvolutionDemo();
-            initializePoolingDemo();
-            updateSlideVisibility();
+            // Show first slide
+            showSlide(0);
         });
     </script>
 </body>
