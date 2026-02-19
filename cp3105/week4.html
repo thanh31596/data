@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CP3501 Week 4: Understanding How Models Learn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: white;
+            color: #333;
+        }
+        
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            padding: 60px 80px;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            page-break-after: always;
+        }
+        
+        .slide.active {
+            display: flex;
+        }
+        
+        h1 {
+            color: #C41E3A;
+            font-size: 48px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        
+        h2 {
+            color: #C41E3A;
+            font-size: 36px;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+        
+        h3 {
+            color: #C41E3A;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            font-size: 24px;
+            line-height: 1.6;
+        }
+        
+        .bullet-list {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .bullet-list li {
+            margin-bottom: 20px;
+            padding-left: 35px;
+            position: relative;
+        }
+        
+        .bullet-list li:before {
+            content: "▸";
+            color: #C41E3A;
+            font-size: 28px;
+            position: absolute;
+            left: 0;
+            top: -2px;
+        }
+        
+        .numbered-list {
+            margin-left: 40px;
+            margin-top: 20px;
+        }
+        
+        .numbered-list li {
+            margin-bottom: 15px;
+        }
+        
+        .code-block {
+            background: #f5f5f5;
+            border-left: 4px solid #C41E3A;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        .diagram {
+            border: 2px solid #C41E3A;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 22px;
+            background: #fafafa;
+        }
+        
+        .box {
+            border: 2px solid #C41E3A;
+            padding: 25px;
+            margin: 20px 0;
+            background: #fff9f9;
+        }
+        
+        .highlight {
+            background: #fff3f3;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 22px;
+        }
+        
+        th, td {
+            border: 2px solid #C41E3A;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        th {
+            background: #C41E3A;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 20px 0;
+        }
+        
+        .quiz {
+            background: #fff9f9;
+            border: 3px solid #C41E3A;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        
+        .quiz-question {
+            font-size: 26px;
+            font-weight: 600;
+            color: #C41E3A;
+            margin-bottom: 20px;
+        }
+        
+        .quiz-options {
+            list-style: none;
+        }
+        
+        .quiz-options li {
+            margin: 15px 0;
+            padding: 12px;
+            background: white;
+            border: 2px solid #ddd;
+            cursor: pointer;
+        }
+        
+        .footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            font-size: 18px;
+            color: #666;
+            text-align: right;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            background: #C41E3A;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        .nav-btn:hover {
+            background: #a01828;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            font-size: 18px;
+            color: #666;
+            z-index: 1000;
+        }
+        
+        .emoji {
+            font-size: 32px;
+            margin-right: 10px;
+        }
+        
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin: 30px 0;
+            font-size: 22px;
+        }
+        
+        .flow-box {
+            border: 2px solid #C41E3A;
+            padding: 20px 30px;
+            background: white;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .flow-arrow {
+            color: #C41E3A;
+            font-size: 40px;
+            font-weight: bold;
+        }
+        
+        .emphasis {
+            color: #C41E3A;
+            font-weight: 600;
+        }
+        
+        @media print {
+            .slide {
+                display: flex !important;
+            }
+            .navigation, .slide-counter {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide active">
+    <h1>CP3501 Deep Learning</h1>
+    <div class="content">
+        <h2>Week 4: Understanding How Models Actually Learn</h2>
+        <div style="margin-top: 40px; font-size: 28px;">
+            <p><strong>Today's Journey:</strong></p>
+            <ul class="bullet-list" style="margin-top: 20px;">
+                <li>Build a neural network in Excel</li>
+                <li>Understand gradient descent from first principles</li>
+                <li>Translate Excel to PyTorch code</li>
+                <li>Apply modern architectures to your projects</li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer">James Cook University | Information Technology</div>
+</div>
+
+<!-- Slide 2: Learning Objectives -->
+<div class="slide">
+    <h1>By End of Today's Class</h1>
+    <div class="content">
+        <div class="box">
+            <h3>You Will Understand:</h3>
+            <ul class="bullet-list">
+                <li>What "training" actually means mathematically</li>
+                <li>How gradient descent finds optimal weights</li>
+                <li>Why deep learning works (universal approximation)</li>
+                <li>How to pick better architectures for your projects</li>
+            </ul>
+        </div>
+        <div style="margin-top: 30px; font-size: 22px; color: #666;">
+            <p><span class="emphasis">Note:</span> First 20 minutes = Quick ML foundations refresher<br>
+            (We need these concepts today!)</p>
+        </div>
+    </div>
+    <div class="footer">Slide 2 of 43</div>
+</div>
+
+<!-- Slide 3: Pop Quiz -->
+<div class="slide">
+    <h1>Knowledge Check: What Do You Remember?</h1>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">Turn to a neighbor and discuss (2 minutes):</div>
+            <ol class="numbered-list" style="font-size: 26px;">
+                <li>What's the difference between <strong>training</strong> and <strong>testing</strong> data?</li>
+                <li>What does "<strong>overfitting</strong>" mean?</li>
+                <li>What's a <strong>loss function</strong>?</li>
+            </ol>
+        </div>
+        <p style="margin-top: 30px; font-size: 22px; color: #666;">
+            Don't worry if you're fuzzy on these - we're about to refresh them!
+        </p>
+    </div>
+    <div class="footer">Slide 3 of 43</div>
+</div>
+
+<!-- Slide 4: ML Recipe Refresher -->
+<div class="slide">
+    <h1>The Machine Learning Recipe (Refresher)</h1>
+    <div class="content">
+        <div class="box">
+            <h3>Every ML Model Has 4 Core Components:</h3>
+        </div>
+        <div class="two-column">
+            <div>
+                <h3 style="font-size: 24px;">1. DATA</h3>
+                <ul class="bullet-list" style="font-size: 22px;">
+                    <li><strong>Training set:</strong> Model learns from this</li>
+                    <li><strong>Validation set:</strong> Check progress</li>
+                    <li><strong>Test set:</strong> Final evaluation</li>
+                </ul>
+                
+                <h3 style="font-size: 24px; margin-top: 25px;">2. MODEL</h3>
+                <ul class="bullet-list" style="font-size: 22px;">
+                    <li>Mathematical function: y = f(x, weights)</li>
+                    <li>Weights = the "knobs" we tune</li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="font-size: 24px;">3. LOSS FUNCTION</h3>
+                <ul class="bullet-list" style="font-size: 22px;">
+                    <li>Measures "how wrong" predictions are</li>
+                    <li>Example: MSE = average of (pred - actual)²</li>
+                </ul>
+                
+                <h3 style="font-size: 24px; margin-top: 25px;">4. OPTIMIZER</h3>
+                <ul class="bullet-list" style="font-size: 22px;">
+                    <li>Adjusts weights to minimize loss</li>
+                    <li><span class="emphasis">Today's focus: Gradient Descent</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Slide 4 of 43</div>
+</div>
+
+<!-- Slide 5: The Training Loop -->
+<div class="slide">
+    <h1>How Models Learn: The Training Loop</h1>
+    <div class="content">
+        <div class="diagram">
+            <div style="font-size: 26px; margin-bottom: 30px;">
+                <div class="flow-box" style="display: inline-block; margin: 10px;">
+                    1. Make predictions on training data
+                </div>
+                <div class="flow-arrow" style="display: block; margin: 10px;">↓</div>
+                <div class="flow-box" style="display: inline-block; margin: 10px;">
+                    2. Calculate loss (how wrong we are)
+                </div>
+                <div class="flow-arrow" style="display: block; margin: 10px;">↓</div>
+                <div class="flow-box" style="display: inline-block; margin: 10px; background: #fff3f3;">
+                    3. Adjust weights to reduce loss ← <strong>The Magic!</strong>
+                </div>
+                <div class="flow-arrow" style="display: block; margin: 10px;">↓</div>
+                <div class="flow-box" style="display: inline-block; margin: 10px;">
+                    4. Repeat until loss stops improving
+                </div>
+            </div>
+        </div>
+        <p style="margin-top: 30px; font-size: 26px; text-align: center;">
+            <span class="emphasis">Today we'll understand step 3:</span><br>
+            HOW do we adjust weights?
+        </p>
+    </div>
+    <div class="footer">Slide 5 of 43</div>
+</div>
+
+<!-- Slide 6: What You Already Know -->
+<div class="slide">
+    <h1>What You Already Know (Weeks 1-3)</h1>
+    <div class="content">
+        <div class="box">
+            <h3>You've Already Done This:</h3>
+            <div class="code-block" style="margin-top: 20px;">
+learn = vision_learner(dls, resnet34, metrics=error_rate)
+learn.fine_tune(3)  # ← What actually happens here?
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <p style="font-size: 26px; margin-bottom: 20px;"><strong>Week 1-2:</strong> Trained image classifiers</p>
+            <p style="font-size: 26px; margin-bottom: 20px;"><strong>Week 3:</strong> Improved with data augmentation</p>
+            <p style="font-size: 26px; margin-top: 40px;"><span class="emphasis">But we never opened the black box...</span></p>
+        </div>
+        
+        <div class="box" style="margin-top: 30px; background: #fff3f3;">
+            <p style="font-size: 26px;"><strong>Answer:</strong> Gradient descent on millions of weights!</p>
+        </div>
+    </div>
+    <div class="footer">Slide 6 of 43</div>
+</div>
+
+<!-- Slide 7: Today's Approach -->
+<div class="slide">
+    <h1>Today's Learning Strategy</h1>
+    <div class="content">
+        <div class="flow-diagram" style="flex-direction: column;">
+            <div class="flow-box" style="width: 80%; background: #fff3f3;">
+                <h3 style="margin: 0;">1. Build in EXCEL</h3>
+                <p style="margin-top: 10px; font-size: 20px;">See every calculation<br>Use Excel Solver as "optimizer"</p>
+            </div>
+            <div class="flow-arrow" style="transform: rotate(90deg); margin: 20px;">→</div>
+            <div class="flow-box" style="width: 80%; background: #fff3f3;">
+                <h3 style="margin: 0;">2. Translate to PyTorch</h3>
+                <p style="margin-top: 10px; font-size: 20px;">Connect Excel formulas to Python code</p>
+            </div>
+            <div class="flow-arrow" style="transform: rotate(90deg); margin: 20px;">→</div>
+            <div class="flow-box" style="width: 80%; background: #fff3f3;">
+                <h3 style="margin: 0;">3. Apply to Real Projects</h3>
+                <p style="margin-top: 10px; font-size: 20px;">Use better architectures (timm models)</p>
+            </div>
+        </div>
+        <p style="margin-top: 40px; text-align: center; font-size: 28px;">
+            <strong>Ready? Let's build! 🛠️</strong>
+        </p>
+    </div>
+    <div class="footer">Slide 7 of 43</div>
+</div>
+
+<!-- Slide 8: BLOCK 2 START - Excel Neural Network -->
+<div class="slide">
+    <h1>Part 1: Neural Networks in Excel</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h2 style="text-align: center;">Our First Neural Network<br>In a Spreadsheet!</h2>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <h3>The Titanic Dataset (Simplified)</h3>
+            <p style="font-size: 24px; margin-top: 20px;"><strong>Task:</strong> Predict survival from Age, Sex, and Class</p>
+            
+            <table style="margin-top: 30px; font-size: 22px;">
+                <tr>
+                    <th>Age</th>
+                    <th>IsMale</th>
+                    <th>Class</th>
+                    <th>Survived?</th>
+                </tr>
+                <tr>
+                    <td>22</td>
+                    <td>1</td>
+                    <td>3</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>38</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>1</td>
+                </tr>
+                <tr>
+                    <td>26</td>
+                    <td>0</td>
+                    <td>3</td>
+                    <td>1</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="footer">Slide 8 of 43</div>
+</div>
+
+<!-- Slide 9: Network Structure -->
+<div class="slide">
+    <h1>The Neural Network Structure</h1>
+    <div class="content">
+        <div class="diagram">
+            <h3 style="margin-bottom: 30px;">Simple Network (1 Hidden Layer)</h3>
+            <div style="font-size: 24px;">
+                <div style="display: flex; justify-content: space-around; align-items: center;">
+                    <div class="flow-box">
+                        <strong>INPUT</strong><br>
+                        3 neurons<br>
+                        <span style="font-size: 18px;">(Age, IsMale, Class)</span>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-box" style="background: #fff3f3;">
+                        <strong>HIDDEN</strong><br>
+                        8 neurons<br>
+                        <span style="font-size: 18px;">(calculated values)</span>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-box">
+                        <strong>OUTPUT</strong><br>
+                        1 neuron<br>
+                        <span style="font-size: 18px;">(survival 0-1)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 40px;">
+            <h3>Weights: Numbers We Need to Learn</h3>
+            <ul class="bullet-list">
+                <li>3 × 8 = 24 weights (input → hidden)</li>
+                <li>8 × 1 = 8 weights (hidden → output)</li>
+                <li><span class="emphasis">Total: 32 parameters to optimize!</span></li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer">Slide 9 of 43</div>
+</div>
+
+<!-- Slide 10: Matrix Multiplication -->
+<div class="slide">
+    <h1>Matrix Multiplication: The Core Operation</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h3>KEY CONCEPT: Neural networks are matrix multiplications!</h3>
+        </div>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <h3>Excel Formula:</h3>
+                <div class="code-block">
+=SUMPRODUCT(inputs, weights)
+                </div>
+                
+                <h3 style="margin-top: 30px;">Example Calculation:</h3>
+                <div style="font-size: 22px; line-height: 1.8;">
+                    <p>Inputs: [22, 1, 3]</p>
+                    <p>Weights: [0.1, -0.5, 0.2]</p>
+                    <p style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #C41E3A;">
+                        Output = 22×0.1 + 1×(-0.5) + 3×0.2<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 2.2 - 0.5 + 0.6<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <strong>2.3</strong>
+                    </p>
+                </div>
+            </div>
+            <div>
+                <h3>In Excel Cell:</h3>
+                <div class="code-block">
+=SUMPRODUCT(
+  A2:C2,
+  $W$1:$W$3
+)
+                </div>
+                
+                <div class="box" style="margin-top: 30px;">
+                    <p style="font-size: 22px;">
+                        <strong>This single formula is the heart of deep learning!</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Slide 10 of 43</div>
+</div>
+
+<!-- Slide 11: Demo Instructions -->
+<div class="slide">
+    <h1>DEMO TIME: Open the Excel File</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h3>Download: titanic_neural_net.xlsx</h3>
+            <p style="font-size: 22px; margin-top: 10px;">(Available on LearnJCU)</p>
+        </div>
+        
+        <h3 style="margin-top: 40px;">Follow Along as We Examine:</h3>
+        <ol class="numbered-list" style="font-size: 24px;">
+            <li>The input data (Age, IsMale, Class, Survived)</li>
+            <li>Weight cells (currently random numbers)</li>
+            <li>Prediction formulas (SUMPRODUCT + MAX)</li>
+            <li>Loss calculation (MSE formula)</li>
+        </ol>
+        
+        <div style="margin-top: 40px; padding: 20px; background: #fff9f9; border: 2px solid #C41E3A;">
+            <p style="font-size: 22px;"><strong>⏱️ 5-minute guided tour</strong></p>
+            <p style="font-size: 20px; margin-top: 10px;">We'll walk through each section together</p>
+        </div>
+    </div>
+    <div class="footer">Slide 11 of 43</div>
+</div>
+
+<!-- Slide 12: Hidden Layer Formula -->
+<div class="slide">
+    <h1>The Hidden Layer Formula (Excel)</h1>
+    <div class="content">
+        <h3>Building the Hidden Layer (for each of 8 neurons):</h3>
+        
+        <div class="box" style="margin-top: 30px;">
+            <h3 style="font-size: 24px;">Step 1: Calculate Weighted Sum</h3>
+            <div class="code-block">
+=SUMPRODUCT($B2:$D2, E$1:G$1)
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 20px;">
+            <h3 style="font-size: 24px;">Step 2: Apply ReLU Activation</h3>
+            <div class="code-block">
+=MAX(0, weighted_sum)
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; background: #fff3f3; padding: 25px;">
+            <h3>ReLU = "Rectified Linear Unit"</h3>
+            <p style="font-size: 24px; margin-top: 15px;">Keep positive numbers, zero out negatives</p>
+            
+            <div style="margin-top: 25px; font-family: monospace; font-size: 22px;">
+                <p>Input: -2.5 → ReLU → <strong>0</strong></p>
+                <p>Input: &nbsp;3.7 → ReLU → <strong>3.7</strong></p>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Slide 12 of 43</div>
+</div>
+
+<!-- Slide 13: Why ReLU -->
+<div class="slide">
+    <h1>Why ReLU? The Nonlinearity Magic</h1>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">Why not just: Output = Inputs × Weights?</div>
+        </div>
+        
+        <div class="box" style="margin-top: 30px;">
+            <h3>Problem: Pure linear transformations can't model curves!</h3>
+            <div style="margin-top: 25px; font-size: 22px;">
+                <p><strong>Linear:</strong> X → X×W → Y &nbsp;&nbsp; (just a straight line)</p>
+                <p style="margin-top: 15px;"><strong>With ReLU:</strong> X → X×W → ReLU(X×W) → Y &nbsp;&nbsp; (can bend!)</p>
+            </div>
+        </div>
+        
+        <div class="diagram" style="margin-top: 30px;">
+            <svg width="600" height="200">
+                <!-- Kinked line visualization -->
+                <line x1="50" y1="150" x2="200" y2="150" stroke="#C41E3A" stroke-width="3"/>
+                <line x1="200" y1="150" x2="400" y2="50" stroke="#C41E3A" stroke-width="3"/>
+                <circle cx="200" cy="150" r="5" fill="#C41E3A"/>
+                <text x="250" y="180" font-size="20" fill="#333">ReLU creates "kinks"</text>
+            </svg>
+        </div>
+        
+        <p style="margin-top: 30px; text-align: center; font-size: 26px;">
+            <span class="emphasis">Multiple ReLUs stacked → Can approximate ANY function!</span>
+        </p>
+    </div>
+    <div class="footer">Slide 13 of 43</div>
+</div>
+
+<!-- Slide 14: Excel Solver Demo -->
+<div class="slide">
+    <h1>LIVE DEMO: Use Excel Solver</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h2 style="text-align: center;">Now for the MAGIC:<br>Let Excel Find Optimal Weights!</h2>
+        </div>
+        
+        <h3 style="margin-top: 40px;">Your Turn (5 minutes):</h3>
+        <ol class="numbered-list" style="font-size: 24px;">
+            <li>Go to <strong>Data → Solver</strong></li>
+            <li>Set Objective: <strong>Loss cell</strong> (minimize)</li>
+            <li>By Changing: <strong>All weight cells</strong></li>
+            <li>Click <strong>"Solve"</strong></li>
+        </ol>
+        
+        <div style="margin-top: 40px; padding: 30px; background: #fff9f9; border: 3px solid #C41E3A; text-align: center;">
+            <p style="font-size: 28px;"><strong>Watch the loss decrease! 📉</strong></p>
+        </div>
+    </div>
+    <div class="footer">Slide 14 of 43</div>
+</div>
+
+<!-- Slide 15: What Happened -->
+<div class="slide">
+    <h1>What Just Happened?</h1>
+    <div class="content">
+        <h3>Excel Solver Results:</h3>
+        <table style="font-size: 24px; margin-top: 20px;">
+            <tr>
+                <th></th>
+                <th>Loss</th>
+                <th>Accuracy</th>
+            </tr>
+            <tr>
+                <td><strong>Before:</strong></td>
+                <td>12.4</td>
+                <td>52%</td>
+            </tr>
+            <tr style="background: #fff3f3;">
+                <td><strong>After:</strong></td>
+                <td><strong>3.1</strong></td>
+                <td><strong>78%</strong></td>
+            </tr>
+        </table>
+        
+        <div class="quiz" style="margin-top: 40px;">
+            <div class="quiz-question">How did Solver know which way to adjust each weight?</div>
+        </div>
+        
+        <div class="box" style="margin-top: 30px; background: #fff3f3;">
+            <h3>Answer Preview:</h3>
+            <p style="font-size: 24px; margin-top: 15px;">
+                It calculated <strong>"gradients"</strong> (slopes):
+            </p>
+            <ul class="bullet-list" style="margin-top: 15px;">
+                <li>If increasing weight → loss goes up: <strong>decrease it</strong></li>
+                <li>If increasing weight → loss goes down: <strong>increase it</strong></li>
+            </ul>
+            <p style="font-size: 28px; margin-top: 25px; text-align: center;">
+                <span class="emphasis">This is GRADIENT DESCENT!</span>
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 15 of 43</div>
+</div>
+
+<!-- Slide 16: Key Parallels -->
+<div class="slide">
+    <h1>Key Parallels: Excel vs Deep Learning</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3; margin-bottom: 30px;">
+            <h3 style="text-align: center;">What We Just Did = Training a Neural Network!</h3>
+        </div>
+        
+        <table style="font-size: 22px;">
+            <tr>
+                <th>Excel</th>
+                <th>Deep Learning Term</th>
+            </tr>
+            <tr>
+                <td>Input columns</td>
+                <td>Input features</td>
+            </tr>
+            <tr>
+                <td>Weight cells</td>
+                <td>Model parameters</td>
+            </tr>
+            <tr>
+                <td>SUMPRODUCT</td>
+                <td>Matrix multiplication</td>
+            </tr>
+            <tr>
+                <td>MAX(0, x)</td>
+                <td>ReLU activation</td>
+            </tr>
+            <tr>
+                <td>Loss cell (MSE)</td>
+                <td>Loss function</td>
+            </tr>
+            <tr style="background: #fff3f3;">
+                <td><strong>Solver "Solve"</strong></td>
+                <td><strong>Optimizer.step()</strong></td>
+            </tr>
+            <tr>
+                <td>Solver iterations</td>
+                <td>Training epochs</td>
+            </tr>
+        </table>
+        
+        <p style="margin-top: 30px; text-align: center; font-size: 28px;">
+            <span class="emphasis">Excel Solver ≈ PyTorch Optimizer!</span>
+        </p>
+    </div>
+    <div class="footer">Slide 16 of 43</div>
+</div>
+
+<!-- Slide 17: Knowledge Check 1 -->
+<div class="slide">
+    <h1>Knowledge Check #1</h1>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">Turn to a neighbor and explain:</div>
+            <ol class="numbered-list" style="font-size: 26px;">
+                <li>What are "weights" in a neural network?</li>
+                <li>What does the loss function measure?</li>
+                <li>How does Solver know how to improve weights?</li>
+            </ol>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 25px; background: #fff9f9; border: 2px solid #C41E3A;">
+            <p style="font-size: 24px;"><strong>⏱️ 2-minute pair discussion</strong></p>
+        </div>
+    </div>
+    <div class="footer">Slide 17 of 43</div>
+</div>
+
+<!-- Slide 18: BLOCK 3 START - PyTorch -->
+<div class="slide">
+    <h1>Part 2: From Excel to PyTorch</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h2 style="text-align: center;">Same Network, Different Tool</h2>
+        </div>
+        
+        <div class="flow-diagram" style="margin-top: 50px;">
+            <div class="flow-box" style="font-size: 24px;">
+                Excel:<br>SUMPRODUCT + Solver
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="font-size: 24px; background: #fff3f3;">
+                PyTorch:<br>Matrix multiplication<br>+ Gradient descent
+            </div>
+        </div>
+        
+        <p style="margin-top: 50px; text-align: center; font-size: 26px;">
+            Side-by-side comparison coming...
+        </p>
+    </div>
+    <div class="footer">Slide 18 of 43</div>
+</div>
+
+<!-- Slide 19: Simple Function Example -->
+<div class="slide">
+    <h1>Let's Start Even Simpler</h1>
+    <div class="content">
+        <div class="box">
+            <h3>Task: Fit a Curve to Noisy Data</h3>
+            <p style="font-size: 24px; margin-top: 15px;">
+                <strong>True function:</strong> y = 3x² + 2x + 1<br>
+                <strong>Our job:</strong> Find coefficients from noisy samples
+            </p>
+        </div>
+        
+        <div class="two-column" style="margin-top: 40px;">
+            <div>
+                <h3>Excel Version:</h3>
+                <ul class="bullet-list" style="font-size: 22px;">
+                    <li>Cells A, B, C hold coefficients</li>
+                    <li>Solver adjusts them to minimize MSE</li>
+                </ul>
+            </div>
+            <div>
+                <h3>PyTorch Version:</h3>
+                <div class="code-block" style="font-size: 18px;">
+params = tensor([a, b, c],
+    requires_grad=True)
+# Use gradient descent
+                </div>
+            </div>
+        </div>
+        
+        <div class="diagram" style="margin-top: 30px;">
+            <svg width="600" height="200">
+                <!-- Parabola with noise points -->
+                <path d="M 50 180 Q 300 20 550 180" stroke="#C41E3A" stroke-width="3" fill="none"/>
+                <circle cx="100" cy="150" r="4" fill="#333"/>
+                <circle cx="150" cy="100" r="4" fill="#333"/>
+                <circle cx="200" cy="70" r="4" fill="#333"/>
+                <circle cx="250" cy="50" r="4" fill="#333"/>
+                <circle cx="300" cy="60" r="4" fill="#333"/>
+                <circle cx="350" cy="80" r="4" fill="#333"/>
+                <circle cx="400" cy="120" r="4" fill="#333"/>
+                <circle cx="450" cy="160" r="4" fill="#333"/>
+                <text x="200" y="195" font-size="18" fill="#333">Noisy data points</text>
+            </svg>
+        </div>
+    </div>
+    <div class="footer">Slide 19 of 43</div>
+</div>
+
+<!-- Slide 20: PyTorch Tensors -->
+<div class="slide">
+    <h1>PyTorch Tensors: Excel Cells with Superpowers</h1>
+    <div class="content">
+        <div class="code-block">
+params = torch.tensor([1.5, 1.5, 1.5], requires_grad=True)
+                                        ↑
+                                "Track changes to this"
+        </div>
+        
+        <div class="box" style="margin-top: 40px;">
+            <h3>Excel Equivalent:</h3>
+            <ul class="bullet-list">
+                <li>Cell A1 = 1.5 (coefficient a)</li>
+                <li>Solver tracks "if I change A1, how does loss change?"</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 40px; background: #fff3f3; padding: 30px;">
+            <p style="font-size: 26px; text-align: center;">
+                <strong>PyTorch does this automatically!</strong>
+            </p>
+            <p style="font-size: 24px; text-align: center; margin-top: 20px;">
+                <span class="highlight">requires_grad = True</span><br>
+                means "I want to optimize this parameter"
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 20 of 43</div>
+</div>
+
+<!-- Slide 21: Loss Function -->
+<div class="slide">
+    <h1>The Loss Function (Same as Excel)</h1>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <h3>PyTorch:</h3>
+                <div class="code-block">
+def mse(predictions, actual):
+    return ((predictions - actual)
+           ** 2).mean()
+
+# Calculate predictions
+preds = (params[0]*x**2 + 
+         params[1]*x + 
+         params[2])
+
+# Calculate loss
+loss = mse(preds, y_actual)
+                </div>
+            </div>
+            <div>
+                <h3>Excel Parallel:</h3>
+                <div class="code-block">
+=AVERAGE(
+  (Predictions - Actual)^2
+)
+                </div>
+                
+                <div class="box" style="margin-top: 40px;">
+                    <p style="font-size: 24px; text-align: center;">
+                        <strong>Same formula,<br>different syntax!</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Slide 21 of 43</div>
+</div>
+
+<!-- Slide 22: The Magic Command -->
+<div class="slide">
+    <h1>The MAGIC Command: loss.backward()</h1>
+    <div class="content">
+        <div class="code-block" style="font-size: 28px;">
+loss.backward()  # ← Excel Solver's "Calculate Gradient" step!
+        </div>
+        
+        <div class="box" style="margin-top: 40px;">
+            <h3>What It Does:</h3>
+            <div style="font-size: 22px; margin-top: 20px;">
+                <p><strong>Before:</strong> &nbsp;params.grad = None</p>
+                <p style="margin-top: 15px;"><strong>After:</strong> &nbsp;&nbsp;params.grad = tensor([-257., -30., -5.])</p>
+                <p style="margin-left: 200px; font-size: 20px; color: #666;">↑ &nbsp;&nbsp;&nbsp;&nbsp;↑ &nbsp;&nbsp;&nbsp;↑</p>
+                <p style="margin-left: 130px; font-size: 20px; color: #666;">"Slopes" for each parameter</p>
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 30px; background: #fff3f3;">
+            <h3>Excel Equivalent:</h3>
+            <p style="font-size: 22px; margin-top: 10px;">
+                Solver calculates: "If I increase A1 by 0.01, loss changes by X"
+            </p>
+        </div>
+        
+        <p style="margin-top: 30px; font-size: 26px; text-align: center;">
+            <span class="emphasis">PyTorch calculus engine calculates this automatically for ALL weights!</span>
+        </p>
+    </div>
+    <div class="footer">Slide 22 of 43</div>
+</div>
+
+<!-- Slide 23: Reading Gradients -->
+<div class="slide">
+    <h1>Reading the Gradient</h1>
+    <div class="content">
+        <div class="code-block" style="font-size: 24px;">
+params.grad = tensor([-257., -30., -5.])
+        </div>
+        
+        <div class="box" style="margin-top: 40px;">
+            <h3>Translation:</h3>
+            <ul class="bullet-list" style="font-size: 22px;">
+                <li><strong>Param 0 gradient = -257</strong><br>
+                    → If we increase param[0], loss decreases rapidly<br>
+                    → We SHOULD increase it!</li>
+                <li style="margin-top: 20px;"><strong>Param 1 gradient = -30</strong><br>
+                    → Smaller effect, but still should increase</li>
+                <li style="margin-top: 20px;"><strong>Param 2 gradient = -5</strong><br>
+                    → Tiny effect</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 40px; background: #fff3f3; padding: 25px;">
+            <p style="font-size: 24px; text-align: center;">
+                <strong>Negative gradient</strong> → move UP<br>
+                <strong>Positive gradient</strong> → move DOWN
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 23 of 43</div>
+</div>
+
+<!-- Slide 24: Gradient Descent Update -->
+<div class="slide">
+    <h1>The Gradient Descent Update</h1>
+    <div class="content">
+        <div class="code-block">
+lr = 0.01  # learning rate = "step size"
+
+with torch.no_grad():  # Don't track these changes
+    params -= lr * params.grad
+    params.grad.zero_()  # Clear gradients for next round
+        </div>
+        
+        <div class="box" style="margin-top: 40px;">
+            <h3>Excel Equivalent:</h3>
+            <div class="code-block">
+New A1 = Old A1 - (step_size × slope)
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 30px; background: #fff3f3;">
+            <h3>Why Zero the Gradients?</h3>
+            <p style="font-size: 22px; margin-top: 15px;">
+                <span class="highlight">.backward()</span> ADDS to existing gradients<br>
+                Without zeroing: gradient = grad_step1 + grad_step2 + ... ❌
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 24 of 43</div>
+</div>
+
+<!-- Slide 25: Complete Training Loop -->
+<div class="slide">
+    <h1>The Complete Training Loop</h1>
+    <div class="content">
+        <div class="code-block" style="font-size: 18px;">
+# Setup
+params = torch.tensor([1.5, 1.5, 1.5], requires_grad=True)
+lr = 0.01
+
+# Training loop (Excel: run Solver for 10 iterations)
+for epoch in range(10):
+    # 1. Forward pass (Excel: calculate predictions)
+    preds = params[0]*x**2 + params[1]*x + params[2]
+    
+    # 2. Calculate loss (Excel: MSE formula)
+    loss = mse(preds, y_actual)
+    
+    # 3. Backward pass (Excel: Solver calculates slopes)
+    loss.backward()
+    
+    # 4. Update weights (Excel: Solver adjusts cells)
+    with torch.no_grad():
+        params -= lr * params.grad
+        params.grad.zero_()
+    
+    print(f"Epoch {epoch}: Loss = {loss:.2f}")
+        </div>
+        
+        <p style="margin-top: 30px; font-size: 24px; text-align: center;">
+            <span class="emphasis">This is the entire training algorithm!</span>
+        </p>
+    </div>
+    <div class="footer">Slide 25 of 43</div>
+</div>
+
+<!-- Slide 26: Demo Results -->
+<div class="slide">
+    <h1>Watch It Work!</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h3>Training Output:</h3>
+            <div class="code-block" style="font-size: 20px;">
+Epoch 0: Loss = 11.50
+Epoch 5: Loss = 8.32
+Epoch 10: Loss = 5.71
+Epoch 20: Loss = 3.42
+Epoch 50: Loss = 2.07
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <h3>After 50 Iterations:</h3>
+            <table style="font-size: 22px; margin-top: 20px;">
+                <tr>
+                    <th></th>
+                    <th>Param 0 (a)</th>
+                    <th>Param 1 (b)</th>
+                    <th>Param 2 (c)</th>
+                </tr>
+                <tr>
+                    <td><strong>Learned:</strong></td>
+                    <td>3.01</td>
+                    <td>1.98</td>
+                    <td>1.02</td>
+                </tr>
+                <tr style="background: #fff3f3;">
+                    <td><strong>True:</strong></td>
+                    <td>3.00</td>
+                    <td>2.00</td>
+                    <td>1.00</td>
+                </tr>
+            </table>
+        </div>
+        
+        <p style="margin-top: 40px; text-align: center; font-size: 28px;">
+            <strong>We recovered the function!</strong> 🎯
+        </p>
+    </div>
+    <div class="footer">Slide 26 of 43</div>
+</div>
+
+<!-- Slide 27: Learning Rate -->
+<div class="slide">
+    <h1>Learning Rate: The Most Important Hyperparameter</h1>
+    <div class="content">
+        <div class="box">
+            <h3>lr = "step size" in gradient descent</h3>
+        </div>
+        
+        <table style="margin-top: 30px; font-size: 20px;">
+            <tr>
+                <th>Learning Rate</th>
+                <th>Behavior</th>
+                <th>Loss Progress</th>
+            </tr>
+            <tr>
+                <td><strong>Too Small</strong></td>
+                <td>Takes forever ⏰</td>
+                <td>10.0 → 9.8 → 9.6 → 9.4 → ... (100 epochs)</td>
+            </tr>
+            <tr style="background: #fff3f3;">
+                <td><strong>Just Right</strong></td>
+                <td>Efficient convergence ✅</td>
+                <td>10.0 → 7.2 → 4.1 → 2.8 → 2.1 (10 epochs)</td>
+            </tr>
+            <tr>
+                <td><strong>Too Big</strong></td>
+                <td>Diverges! 💥</td>
+                <td>10.0 → 15.2 → 23.8 → 41.3 → ...</td>
+            </tr>
+        </table>
+        
+        <div class="diagram" style="margin-top: 30px;">
+            <p style="font-size: 22px; text-align: center;">
+                We use <span class="highlight">lr * grad</span> so step size is proportional to slope AND tunable
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 27 of 43</div>
+</div>
+
+<!-- Slide 28: Scaling Up -->
+<div class="slide">
+    <h1>From Simple Functions to Neural Networks</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h2 style="text-align: center;">Same Algorithm, More Weights!</h2>
+        </div>
+        
+        <div class="flow-diagram" style="flex-direction: column; margin-top: 40px;">
+            <div class="flow-box" style="width: 80%;">
+                <h3 style="margin: 0;">Quadratic Function</h3>
+                <p style="margin-top: 10px;">3 parameters (a, b, c)</p>
+            </div>
+            <div class="flow-arrow" style="transform: rotate(90deg); margin: 15px;">→</div>
+            <div style="font-size: 24px; color: #666;">Same gradient descent</div>
+            <div class="flow-arrow" style="transform: rotate(90deg); margin: 15px;">→</div>
+            <div class="flow-box" style="width: 80%;">
+                <h3 style="margin: 0;">Neural Net (Titanic)</h3>
+                <p style="margin-top: 10px;">32 parameters</p>
+            </div>
+            <div class="flow-arrow" style="transform: rotate(90deg); margin: 15px;">→</div>
+            <div style="font-size: 24px; color: #666;">Same gradient descent</div>
+            <div class="flow-arrow" style="transform: rotate(90deg); margin: 15px;">→</div>
+            <div class="flow-box" style="width: 80%; background: #fff3f3;">
+                <h3 style="margin: 0;">ResNet-34</h3>
+                <p style="margin-top: 10px;"><strong>21 MILLION parameters</strong></p>
+            </div>
+        </div>
+        
+        <p style="margin-top: 40px; text-align: center; font-size: 28px;">
+            <span class="emphasis">The algorithm doesn't change!<br>Only the model complexity scales.</span>
+        </p>
+    </div>
+    <div class="footer">Slide 28 of 43</div>
+</div>
+
+<!-- Slide 29: Universal Approximation -->
+<div class="slide">
+    <h1>Universal Approximation Theorem</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h2 style="text-align: center;">Why Neural Networks Work</h2>
+            <p style="font-size: 26px; text-align: center; margin-top: 15px;">
+                Stack enough ReLUs → Can approximate ANY continuous function!
+            </p>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <h3>Proof by Example:</h3>
+            <ul class="bullet-list" style="font-size: 24px;">
+                <li>One ReLU = one "kinked line"</li>
+                <li>Two ReLUs = two bends</li>
+                <li>100 ReLUs = 100 bends</li>
+                <li>∞ ReLUs = smooth curve</li>
+            </ul>
+        </div>
+        
+        <div class="diagram" style="margin-top: 40px;">
+            <svg width="700" height="180">
+                <text x="10" y="25" font-size="18" fill="#333">1 ReLU:</text>
+                <line x1="100" y1="50" x2="150" y2="50" stroke="#C41E3A" stroke-width="2"/>
+                <line x1="150" y1="50" x2="200" y2="20" stroke="#C41E3A" stroke-width="2"/>
+                
+                <text x="240" y="25" font-size="18" fill="#333">5 ReLUs:</text>
+                <path d="M 330 50 L 350 45 L 370 35 L 390 30 L 410 25 L 430 20" stroke="#C41E3A" stroke-width="2" fill="none"/>
+                
+                <text x="470" y="25" font-size="18" fill="#333">Many ReLUs:</text>
+                <path d="M 560 50 Q 600 20 640 35 Q 670 45 690 25" stroke="#C41E3A" stroke-width="2" fill="none"/>
+            </svg>
+        </div>
+        
+        <p style="margin-top: 40px; text-align: center; font-size: 26px;">
+            <strong>This is why deep learning is so powerful!</strong> 🧠
+        </p>
+    </div>
+    <div class="footer">Slide 29 of 43</div>
+</div>
+
+<!-- Slide 30: Knowledge Check 2 -->
+<div class="slide">
+    <h1>Knowledge Check #2</h1>
+    <div class="content">
+        <div class="quiz">
+            <div class="quiz-question">Test Your Understanding:</div>
+            <ol class="numbered-list" style="font-size: 24px;">
+                <li>What does <span class="highlight">params.grad</span> contain after calling <span class="highlight">loss.backward()</span>?</li>
+                <li>Why do we multiply the gradient by the learning rate?</li>
+                <li>Why must we call <span class="highlight">params.grad.zero_()</span> after each update?</li>
+            </ol>
+        </div>
+        
+        <div class="box" style="margin-top: 40px; background: #fff9f9;">
+            <p style="font-size: 22px;"><strong>Hint:</strong> Think back to the Excel Solver analogy!</p>
+        </div>
+    </div>
+    <div class="footer">Slide 30 of 43</div>
+</div>
+
+<!-- Slide 31: Recap Complete Picture -->
+<div class="slide">
+    <h1>Recap: The Complete Picture</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h2 style="text-align: center;">Deep Learning = 3 Simple Ideas</h2>
+        </div>
+        
+        <div style="margin-top: 50px;">
+            <div class="box">
+                <h3>1. MODEL: Stack ReLUs</h3>
+                <p style="font-size: 22px; margin-top: 10px;">(Universal approximation)</p>
+            </div>
+            
+            <div class="box" style="margin-top: 20px;">
+                <h3>2. LOSS: Measure Prediction Error</h3>
+                <p style="font-size: 22px; margin-top: 10px;">(MSE, cross-entropy, etc.)</p>
+            </div>
+            
+            <div class="box" style="margin-top: 20px;">
+                <h3>3. OPTIMIZER: Gradient Descent</h3>
+                <div class="code-block" style="margin-top: 15px; font-size: 24px;">
+params -= lr * params.grad
+                </div>
+            </div>
+        </div>
+        
+        <p style="margin-top: 50px; text-align: center; font-size: 28px;">
+            <strong>That's it! Everything else is engineering.</strong>
+        </p>
+    </div>
+    <div class="footer">Slide 31 of 43</div>
+</div>
+
+<!-- Slide 32: BLOCK 4 START - Practical Application -->
+<div class="slide">
+    <h1>Part 3: Practical Application</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h2 style="text-align: center;">You Now Understand HOW Models Learn</h2>
+            <p style="font-size: 26px; text-align: center; margin-top: 20px;">
+                Let's apply this to your image classifiers
+            </p>
+        </div>
+        
+        <div style="margin-top: 50px;">
+            <h3>Week 1-2 Code:</h3>
+            <div class="code-block">
+learn = vision_learner(dls, resnet34)
+learn.fine_tune(3)
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 40px;">
+            <h3>Translation to What We Just Learned:</h3>
+            <ul class="bullet-list">
+                <li><strong>resnet34</strong> = architecture (specific ReLU stacking pattern)</li>
+                <li><strong>fine_tune(3)</strong> = run gradient descent for 3 epochs</li>
+                <li><strong>FastAI's optimizer</strong> = fancy version of our params -= lr * grad</li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer">Slide 32 of 43</div>
+</div>
+
+<!-- Slide 33: Can We Do Better -->
+<div class="slide">
+    <h1>Can We Do Better Than ResNet?</h1>
+    <div class="content">
+        <div class="box">
+            <h3>ResNet-34 (2015):</h3>
+            <ul class="bullet-list">
+                <li>21M parameters</li>
+                <li>7% error on Pets dataset</li>
+                <li>Trains in 20 seconds/epoch</li>
+            </ul>
+        </div>
+        
+        <div class="quiz" style="margin-top: 50px;">
+            <div class="quiz-question">Are there better architectures in 2024?</div>
+        </div>
+        
+        <div class="box" style="margin-top: 40px; background: #fff3f3;">
+            <h2 style="text-align: center;">Answer: YES!</h2>
+            <p style="font-size: 28px; text-align: center; margin-top: 20px;">
+                Enter the <span class="emphasis">timm</span> library...
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 33 of 43</div>
+</div>
+
+<!-- Slide 34: The timm Library -->
+<div class="slide">
+    <h1>The timm Library: 500+ Modern Architectures</h1>
+    <div class="content">
+        <div class="code-block">
+from timm import list_models
+
+len(list_models())  # → 500+ architectures!
+
+list_models('convnext*')
+# ['convnext_tiny', 'convnext_small', 'convnext_base', ...]
+
+list_models('efficientnet*')
+# ['efficientnetv2_rw_s', 'efficientnet_b0', ...]
+        </div>
+        
+        <div class="box" style="margin-top: 40px; background: #fff3f3;">
+            <h3 style="text-align: center;">How to Choose?</h3>
+            <p style="font-size: 24px; text-align: center; margin-top: 15px;">
+                Next slides: The benchmark notebook...
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 34 of 43</div>
+</div>
+
+<!-- Slide 35: Benchmark Results -->
+<div class="slide">
+    <h1>Architecture Benchmark Results</h1>
+    <div class="content">
+        <h3>Testing on Pets Dataset (same data as Week 1):</h3>
+        
+        <table style="margin-top: 30px; font-size: 22px;">
+            <tr>
+                <th>Model</th>
+                <th>Params</th>
+                <th>Time/Epoch</th>
+                <th>Error (%)</th>
+            </tr>
+            <tr>
+                <td>ResNet-34</td>
+                <td>21M</td>
+                <td>20s</td>
+                <td>7.2</td>
+            </tr>
+            <tr>
+                <td>EfficientNet-B0</td>
+                <td>5M</td>
+                <td>18s</td>
+                <td>5.2</td>
+            </tr>
+            <tr style="background: #fff3f3;">
+                <td><strong>ConvNeXt-tiny</strong></td>
+                <td><strong>28M</strong></td>
+                <td><strong>27s</strong></td>
+                <td><strong>4.1</strong></td>
+            </tr>
+        </table>
+        
+        <div class="box" style="margin-top: 40px;">
+            <p style="font-size: 26px; text-align: center;">
+                <strong>ConvNeXt wins!</strong><br>
+                30% error reduction for +7 seconds 🏆
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 35 of 43</div>
+</div>
+
+<!-- Slide 36: Trying New Architecture -->
+<div class="slide">
+    <h1>Trying a New Architecture (1 Line of Code!)</h1>
+    <div class="content">
+        <div style="margin-top: 20px;">
+            <h3>Week 1 Code:</h3>
+            <div class="code-block">
+learn = vision_learner(dls, resnet34, metrics=error_rate)
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <h3>Week 4 Improved Code:</h3>
+            <div class="code-block">
+learn = vision_learner(dls, 'convnext_tiny_in22k', metrics=error_rate)
+                            ↑
+                    Just change the model name!
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <div class="code-block">
+learn.fine_tune(3)  # Same gradient descent, better architecture
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 40px; background: #fff3f3;">
+            <p style="font-size: 26px; text-align: center;">
+                <strong>The gradient descent algorithm doesn't change!</strong><br>
+                We just give it a better function to optimize.
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 36 of 43</div>
+</div>
+
+<!-- Slide 37: What's Inside -->
+<div class="slide">
+    <h1>What's Inside These Models?</h1>
+    <div class="content">
+        <div class="box">
+            <h3>All Modern CNNs Have the Same Structure:</h3>
+        </div>
+        
+        <div class="diagram" style="margin-top: 30px;">
+            <div style="border: 3px solid #C41E3A; padding: 25px; font-size: 22px;">
+                <div style="background: #f5f5f5; padding: 20px; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: #C41E3A;">1. Feature Extractor (pre-trained)</h3>
+                    <p style="margin-top: 10px; font-size: 20px; color: #666;">← Frozen initially</p>
+                    <ul style="margin-top: 15px; list-style: none;">
+                        <li>• Convolutional layers</li>
+                        <li>• ReLU activations</li>
+                        <li>• Pooling layers</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #fff3f3; padding: 20px;">
+                    <h3 style="margin: 0; color: #C41E3A;">2. Classification Head (new)</h3>
+                    <p style="margin-top: 10px; font-size: 20px; color: #666;">← We train this</p>
+                    <ul style="margin-top: 15px; list-style: none;">
+                        <li>• Fully connected layers</li>
+                        <li>• Final softmax</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 30px;">
+            <p style="font-size: 22px;">
+                <strong>fine_tune():</strong><br>
+                Epoch 1: Only train head (Excel: adjust last 8 weights)<br>
+                Epochs 2-3: Train whole model (adjust ALL weights)
+            </p>
+        </div>
+    </div>
+    <div class="footer">Slide 37 of 43</div>
+</div>
+
+<!-- Slide 38: Transfer Learning -->
+<div class="slide">
+    <h1>Transfer Learning Revisited</h1>
+    <div class="content">
+        <h3>Why Pre-training Matters:</h3>
+        
+        <div class="two-column" style="margin-top: 30px;">
+            <div>
+                <div class="box">
+                    <h3 style="font-size: 22px;">From-Scratch Training:</h3>
+                    <ul class="bullet-list" style="font-size: 20px;">
+                        <li>Random weights</li>
+                        <li>Learn edges → textures → objects</li>
+                        <li>Needs millions of images</li>
+                        <li>Takes weeks on GPUs</li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <div class="box" style="background: #fff3f3;">
+                    <h3 style="font-size: 22px;">Transfer Learning:</h3>
+                    <ul class="bullet-list" style="font-size: 20px;">
+                        <li>Start with ImageNet weights</li>
+                        <li>Already knows edges/textures</li>
+                        <li>Needs hundreds of images</li>
+                        <li>Takes minutes!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 50px; text-align: center; font-size: 26px;">
+            <p><span class="emphasis">Gradient descent in both cases</span></p>
+            <p style="margin-top: 15px;">Just different starting points!</p>
+        </div>
+    </div>
+    <div class="footer">Slide 38 of 43</div>
+</div>
+
+<!-- Slide 39: Workshop Task -->
+<div class="slide">
+    <h1>Practical Experiment for Your Project</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3;">
+            <h3>Workshop Task (Remaining Time):</h3>
+        </div>
+        
+        <ol class="numbered-list" style="font-size: 24px; margin-top: 30px;">
+            <li>Open your Week 2 pet classifier notebook</li>
+            <li>Try 3 different architectures:
+                <ul style="margin-top: 10px; list-style: disc; margin-left: 40px;">
+                    <li>resnet34 (baseline)</li>
+                    <li>efficientnet_b0</li>
+                    <li>convnext_tiny_in22k</li>
+                </ul>
+            </li>
+            <li style="margin-top: 20px;">Record results:</li>
+        </ol>
+        
+        <table style="margin-top: 30px; font-size: 20px;">
+            <tr>
+                <th>Model</th>
+                <th>Error Rate</th>
+                <th>Training Time</th>
+            </tr>
+            <tr>
+                <td>resnet34</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>efficientnet_b0</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>convnext_tiny_in22k</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+        
+        <p style="margin-top: 30px; font-size: 24px; text-align: center;">
+            <strong>Which is best for YOUR dataset?</strong>
+        </p>
+    </div>
+    <div class="footer">Slide 39 of 43</div>
+</div>
+
+<!-- Slide 40: Training Knobs -->
+<div class="slide">
+    <h1>Training Knobs You Can Tune</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3; margin-bottom: 30px;">
+            <h3 style="text-align: center;">Now That You Understand Gradient Descent</h3>
+        </div>
+        
+        <h3>Knobs You Can Adjust:</h3>
+        <div style="margin-top: 30px;">
+            <div class="box">
+                <h3 style="font-size: 24px;">1. Architecture (resnet vs convnext)</h3>
+                <p style="font-size: 20px; margin-top: 10px; color: #666;">← Today's focus</p>
+            </div>
+            
+            <div class="box" style="margin-top: 20px;">
+                <h3 style="font-size: 24px;">2. Learning Rate (step size)</h3>
+            </div>
+            
+            <div class="box" style="margin-top: 20px;">
+                <h3 style="font-size: 24px;">3. Number of Epochs (training iterations)</h3>
+            </div>
+            
+            <div class="box" style="margin-top: 20px;">
+                <h3 style="font-size: 24px;">4. Data Augmentation (create more training examples)</h3>
+            </div>
+        </div>
+        
+        <p style="margin-top: 40px; font-size: 24px; text-align: center;">
+            <strong>Next week:</strong> We'll dive deeper into #2 and #4!
+        </p>
+    </div>
+    <div class="footer">Slide 40 of 43</div>
+</div>
+
+<!-- Slide 41: What You Learned Today -->
+<div class="slide">
+    <h1>What You Learned Today</h1>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <div class="box">
+                    <h3>Fundamentals:</h3>
+                    <ul style="list-style: none; font-size: 20px;">
+                        <li>✓ Built neural network in Excel (32 weights)</li>
+                        <li>✓ Used Solver to optimize weights</li>
+                        <li>✓ Translated Excel → PyTorch</li>
+                    </ul>
+                </div>
+                
+                <div class="box" style="margin-top: 20px;">
+                    <h3>Practical Skills:</h3>
+                    <ul style="list-style: none; font-size: 20px;">
+                        <li>✓ Understand .fine_tune()</li>
+                        <li>✓ Swap in better architectures</li>
+                        <li>✓ Benchmark models</li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <div class="box" style="background: #fff3f3;">
+                    <h3>Conceptual Breakthroughs:</h3>
+                    <ul style="list-style: none; font-size: 20px;">
+                        <li>✓ All DL = ReLUs + Gradient Descent</li>
+                        <li>✓ Same algorithm: 3 params → 21M params</li>
+                        <li>✓ Universal approximation explains why NNs work</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Slide 41 of 43</div>
+</div>
+
+<!-- Slide 42: Key Equation -->
+<div class="slide">
+    <h1>The ONLY Equation That Matters</h1>
+    <div class="content">
+        <div class="box" style="background: #fff3f3; padding: 50px;">
+            <h2 style="text-align: center; font-size: 48px; margin: 0;">
+                params -= lr × params.grad
+            </h2>
+        </div>
+        
+        <div style="margin-top: 60px;">
+            <h3>Everything Else Is:</h3>
+            <ul class="bullet-list" style="font-size: 24px;">
+                <li>Different ways to calculate grad (backpropagation)</li>
+                <li>Different ways to use grad (optimizers: Adam, SGD, etc.)</li>
+                <li>Different model structures (architectures: ResNet, ConvNeXt, etc.)</li>
+            </ul>
+        </div>
+        
+        <p style="margin-top: 60px; text-align: center; font-size: 32px;">
+            <strong>But this core update rule NEVER changes!</strong> 🎯
+        </p>
+    </div>
+    <div class="footer">Slide 42 of 43</div>
+</div>
+
+<!-- Slide 43: Next Week -->
+<div class="slide">
+    <h1>Homework & Next Week</h1>
+    <div class="content">
+        <div class="box">
+            <h3>Before Next Class:</h3>
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 24px; color: #C41E3A;">Required:</h3>
+                <ol class="numbered-list" style="font-size: 22px;">
+                    <li>Complete the architecture comparison experiment</li>
+                    <li>Review the benchmark notebook (link on LearnJCU)</li>
+                </ol>
+                
+                <h3 style="font-size: 24px; color: #C41E3A; margin-top: 30px;">Optional Deep Dive:</h3>
+                <ol class="numbered-list" style="font-size: 22px;" start="3">
+                    <li>Read: fastbook Chapter 4 (MNIST basics)</li>
+                    <li>Watch: 3Blue1Brown "Gradient Descent" video</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 40px; background: #fff3f3;">
+            <h3>Next Week: Data Augmentation Deep Dive</h3>
+            <ul class="bullet-list" style="font-size: 22px;">
+                <li>Create training data from thin air</li>
+                <li>When to use which transforms</li>
+                <li>Workshop: Build a custom augmentation pipeline</li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer">Slide 43 of 43</div>
+</div>
+
+<!-- Navigation -->
+<div class="navigation">
+    <button class="nav-btn" onclick="previousSlide()">◄ Previous</button>
+    <button class="nav-btn" onclick="nextSlide()">Next ►</button>
+</div>
+
+<div class="slide-counter">
+    <span id="current-slide">1</span> / 43
+</div>
+
+<script>
+let currentSlide = 0;
+const slides = document.querySelectorAll('.slide');
+const totalSlides = slides.length;
+
+function showSlide(n) {
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (n + totalSlides) % totalSlides;
+    slides[currentSlide].classList.add('active');
+    document.getElementById('current-slide').textContent = currentSlide + 1;
+}
+
+function nextSlide() {
+    showSlide(currentSlide + 1);
+}
+
+function previousSlide() {
+    showSlide(currentSlide - 1);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextSlide();
+    } else if (e.key === 'ArrowLeft') {
+        previousSlide();
+    }
+});
+
+// Touch gestures for mobile
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    if (touchStartX - touchEndX > 50) {
+        nextSlide();
+    } else if (touchEndX - touchStartX > 50) {
+        previousSlide();
+    }
+});
+</script>
+
+</body>
+</html>
