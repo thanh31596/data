@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 1 Lab — Jakarta EE Environment &amp; First JPA Project</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #C41E3A;
+    --red-dark: #9B1B30;
+    --red-light: #F2E0E3;
+    --black: #1A1A1A;
+    --grey-dark: #3A3A3A;
+    --grey-mid: #6B6B6B;
+    --grey-light: #E8E8E8;
+    --grey-bg: #F7F7F7;
+    --white: #FFFFFF;
+    --code-bg: #1E1E2E;
+    --code-text: #CDD6F4;
+    --accent-blue: #1E5A8C;
+    --accent-green: #2E7D52;
+    --accent-amber: #B8860B;
+    --warn-bg: #FFF8E1;
+    --warn-border: #F9A825;
+    --success-bg: #E8F5E9;
+    --success-border: #2E7D52;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--black);
+    color: var(--black);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    padding: 52px 80px 80px;
+    background: var(--white);
+    overflow-y: auto;
+  }
+  .slide.active { display: flex; }
+  .slide.dark { background: var(--black); color: var(--white); }
+  .slide.section-divider {
+    background: var(--red);
+    color: var(--white);
+    justify-content: center;
+    align-items: flex-start;
+    padding: 80px 100px;
+  }
+  .slide.quiz-slide { background: var(--grey-bg); }
+
+  h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1.2;
+    margin-bottom: 24px;
+    letter-spacing: -0.5px;
+  }
+  .dark h1, .section-divider h1 { color: var(--white); }
+
+  h2 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--red);
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+  .dark h2 { color: var(--white); }
+
+  h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--grey-mid);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .dark h3 { color: rgba(255,255,255,0.5); }
+
+  p, li {
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--grey-dark);
+  }
+  .dark p, .dark li { color: rgba(255,255,255,0.85); }
+
+  .lead { font-size: 20px; line-height: 1.6; color: var(--grey-mid); max-width: 800px; }
+  .dark .lead { color: rgba(255,255,255,0.7); }
+
+  /* Layout */
+  .flex-row { display: flex; gap: 32px; align-items: flex-start; }
+  .flex-col { display: flex; flex-direction: column; gap: 14px; }
+  .col { flex: 1; }
+  .col-2 { flex: 2; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* Cards */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--grey-light);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .card h4 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--red);
+    margin-bottom: 8px;
+  }
+  .card p { font-size: 15px; color: var(--grey-mid); }
+  .card.red-border { border-left: 4px solid var(--red); }
+
+  /* Step cards */
+  .step-card {
+    background: var(--white);
+    border: 1px solid var(--grey-light);
+    border-radius: 8px;
+    padding: 24px 24px 24px 72px;
+    position: relative;
+  }
+  .step-card .step-num {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 52px;
+    background: var(--red);
+    border-radius: 8px 0 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
+  }
+  .step-card h4 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--black);
+    margin-bottom: 6px;
+  }
+  .step-card p { font-size: 15px; color: var(--grey-mid); }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .tag.red { background: var(--red-light); color: var(--red); }
+  .tag.blue { background: #E0EBF5; color: var(--accent-blue); }
+  .tag.green { background: #E0F0E8; color: var(--accent-green); }
+  .tag.amber { background: #F5EDD6; color: var(--accent-amber); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--red);
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--red);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--grey-light);
+    color: var(--grey-dark);
+  }
+  table tr:last-child td { border-bottom: none; }
+
+  /* Code */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--code-text);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .kw { color: #CBA6F7; }
+  .code-block .type { color: #89B4FA; }
+  .code-block .str { color: #A6E3A1; }
+  .code-block .ann { color: #F9E2AF; }
+  .code-block .cmt { color: #6C7086; font-style: italic; }
+  .code-block .num { color: #FAB387; }
+  .code-block .tag-x { color: #89B4FA; }
+  .code-block .attr { color: #F9E2AF; }
+  .code-block .val { color: #A6E3A1; }
+
+  .code-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--grey-mid);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    background: var(--grey-bg);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--red-dark);
+  }
+
+  /* Callout boxes */
+  .callout {
+    border-left: 4px solid var(--red);
+    background: var(--red-light);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    color: var(--grey-dark);
+  }
+  .callout strong { color: var(--red); }
+
+  .callout-warn {
+    border-left: 4px solid var(--warn-border);
+    background: var(--warn-bg);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    color: var(--grey-dark);
+  }
+  .callout-warn strong { color: var(--accent-amber); }
+
+  .callout-success {
+    border-left: 4px solid var(--success-border);
+    background: var(--success-bg);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    color: var(--grey-dark);
+  }
+  .callout-success strong { color: var(--accent-green); }
+
+  .callout-blue {
+    border-left: 4px solid var(--accent-blue);
+    background: #E0EBF5;
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    color: var(--grey-dark);
+  }
+  .callout-blue strong { color: var(--accent-blue); }
+
+  /* Checklist */
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 8px 0 8px 32px;
+    position: relative;
+    font-size: 16px;
+    border-bottom: 1px solid var(--grey-light);
+  }
+  .checklist li:last-child { border: none; }
+  .checklist li::before {
+    content: '☐';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+    font-size: 18px;
+  }
+
+  /* Section divider */
+  .section-num {
+    font-family: 'Source Serif 4', serif;
+    font-size: 120px;
+    font-weight: 700;
+    opacity: 0.15;
+    line-height: 1;
+    margin-bottom: 16px;
+    color: white;
+  }
+  .section-divider h1 { font-size: 48px; margin-bottom: 14px; }
+  .section-divider .lead { font-size: 20px; color: rgba(255,255,255,0.8); max-width: 600px; }
+
+  /* Title slide */
+  .title-slide {
+    justify-content: center;
+    padding: 80px 100px;
+  }
+  .title-slide .week-label {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--red);
+    margin-bottom: 18px;
+  }
+  .title-slide h1 { font-size: 50px; margin-bottom: 12px; max-width: 700px; }
+  .title-slide .subtitle { font-size: 19px; color: var(--grey-mid); line-height: 1.5; }
+  .title-meta { margin-top: 40px; font-size: 15px; color: var(--grey-mid); }
+  .title-meta strong { color: var(--black); }
+  .dark .title-meta { color: rgba(255,255,255,0.5); }
+  .dark .title-meta strong { color: white; }
+
+  /* Quiz */
+  .quiz-container { flex: 1; display: flex; flex-direction: column; gap: 18px; }
+  .quiz-q {
+    background: var(--white);
+    border: 1px solid var(--grey-light);
+    border-radius: 8px;
+    padding: 22px 24px;
+  }
+  .quiz-q p.q-text { font-size: 16px; font-weight: 600; color: var(--black); margin-bottom: 12px; }
+  .quiz-options { display: flex; flex-direction: column; gap: 7px; }
+  .quiz-opt {
+    display: block; width: 100%; text-align: left;
+    padding: 10px 16px;
+    border: 1px solid var(--grey-light); border-radius: 6px;
+    background: var(--white);
+    font-size: 14px; color: var(--grey-dark);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .quiz-opt:hover { border-color: var(--red); color: var(--red); }
+  .quiz-opt.correct { background: #E8F5E9; border-color: var(--accent-green); color: var(--accent-green); font-weight: 600; }
+  .quiz-opt.wrong { background: #FFEBEE; border-color: var(--red); color: var(--red); opacity: 0.7; }
+  .quiz-opt:disabled { cursor: default; }
+  .quiz-feedback { margin-top: 8px; font-size: 13px; font-weight: 500; display: none; padding: 8px 12px; border-radius: 6px; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: #E8F5E9; color: var(--accent-green); }
+  .quiz-feedback.wrong-fb { background: #FFEBEE; color: var(--red); }
+
+  /* Nav */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 52px;
+    background: var(--white);
+    border-top: 1px solid var(--grey-light);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; z-index: 100;
+  }
+  .nav-bar .slide-counter { font-size: 13px; color: var(--grey-mid); font-weight: 500; min-width: 100px; text-align: center; }
+  .nav-btn {
+    padding: 7px 22px;
+    border: 1px solid var(--grey-light); border-radius: 6px;
+    background: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--grey-dark);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .nav-btn:hover { border-color: var(--red); color: var(--red); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-btn:disabled:hover { border-color: var(--grey-light); color: var(--grey-dark); }
+
+  .progress-bar {
+    position: fixed; top: 0; left: 0;
+    height: 3px; background: var(--red);
+    transition: width 0.3s ease; z-index: 101;
+  }
+
+  /* Spacing */
+  .mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; } .mt-20 { margin-top: 20px; }
+  .mt-24 { margin-top: 24px; } .mt-32 { margin-top: 32px; }
+  .mb-8 { margin-bottom: 8px; } .mb-12 { margin-bottom: 12px; }
+  .mb-16 { margin-bottom: 16px; } .mb-20 { margin-bottom: 20px; }
+  .mb-24 { margin-bottom: 24px; }
+
+  .small { font-size: 14px; color: var(--grey-mid); }
+
+  /* Env var table special */
+  .env-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--red-dark);
+    white-space: nowrap;
+  }
+  .env-table td:last-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--grey-dark);
+  }
+
+  /* Software list */
+  .sw-row {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--grey-light);
+  }
+  .sw-row:last-child { border: none; }
+  .sw-name {
+    min-width: 160px;
+    font-family: 'Source Serif 4', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--red);
+  }
+  .sw-detail { flex: 1; font-size: 15px; color: var(--grey-dark); }
+  .sw-version {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--grey-mid);
+    min-width: 140px;
+    text-align: right;
+  }
+
+  /* File tree */
+  .file-tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 2;
+    color: var(--grey-dark);
+    background: var(--grey-bg);
+    padding: 20px 24px;
+    border-radius: 8px;
+  }
+  .file-tree .folder { color: var(--accent-blue); font-weight: 600; }
+  .file-tree .file { color: var(--grey-dark); }
+  .file-tree .highlight { color: var(--red); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+<div class="deck" id="deck">
+
+<!-- ═══════════════════ SLIDE 1: TITLE ═══════════════════ -->
+<div class="slide dark title-slide active" data-n="1">
+  <div class="week-label" style="color:rgba(255,255,255,0.4);">Week 1 — Lab Projects</div>
+  <h1>Jakarta EE Environment Setup &amp; Your First JPA Project</h1>
+  <p class="subtitle" style="color:rgba(255,255,255,0.55);">
+    Part 1: Install JDK, MySQL, and NetBeans<br>
+    Part 2: Build and run a JPA application that persists a Book entity
+  </p>
+  <div class="title-meta">
+    <strong>Stephen Vu</strong> — Tutor<br>
+    <span style="color:rgba(255,255,255,0.35);">A complete NetBeans sample project is available on the Week 1 block of the unit Moodle site.</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 2: OVERVIEW ═══════════════════ -->
+<div class="slide" data-n="2">
+  <h3>Overview</h3>
+  <h1>What We're Building Today</h1>
+  <p class="mb-24">By the end of this lab, you will have a working development environment and a running Java application that writes data to a MySQL database using JPA — without writing a single line of SQL.</p>
+  <div class="grid-2">
+    <div class="card red-border">
+      <span class="tag red">Part 1</span>
+      <h4>Environment Setup</h4>
+      <p>Install and configure the three tools you'll use for the rest of this unit: JDK 21 (the compiler), MySQL (the database), and NetBeans (the IDE). You'll verify each installation before moving on.</p>
+    </div>
+    <div class="card red-border">
+      <span class="tag red">Part 2</span>
+      <h4>First JPA Project</h4>
+      <p>Create a Java application that defines a Book entity, configures JPA with EclipseLink, connects to MySQL, and persists a book record. You'll see the data appear in your database.</p>
+    </div>
+  </div>
+  <div class="callout-warn mt-24">
+    <strong>Before you start:</strong> This guide is written for Windows. If you're on macOS or Linux, the software is the same but the installation steps differ — search for platform-specific instructions where needed.
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 3: PART 1 DIVIDER ═══════════════════ -->
+<div class="slide section-divider" data-n="3">
+  <div class="section-num">1</div>
+  <h1>Environment Setup</h1>
+  <p class="lead">Installing and configuring JDK, MySQL, and NetBeans — the foundation for every project in this unit.</p>
+</div>
+
+<!-- ═══════════════════ SLIDE 4: SOFTWARE OVERVIEW ═══════════════════ -->
+<div class="slide" data-n="4">
+  <h3>Part 1</h3>
+  <h1>Software You'll Install</h1>
+  <p class="mb-20">Each tool serves a specific role in the Jakarta EE stack. Understanding why you need each one helps when troubleshooting later.</p>
+  <div class="sw-row">
+    <div class="sw-name">JDK 21</div>
+    <div class="sw-detail">The Java compiler and runtime. Every piece of code you write compiles against this. Environment variables tell other tools where to find it.</div>
+    <div class="sw-version">Version 21 (LTS)</div>
+  </div>
+  <div class="sw-row">
+    <div class="sw-name">MySQL</div>
+    <div class="sw-detail">The relational database that stores your application data. You need three components: the <strong>Server</strong> (runs the database), <strong>Workbench</strong> (GUI to inspect data), and <strong>Connector/J</strong> (JDBC driver so Java can talk to MySQL).</div>
+    <div class="sw-version">Version 8.0.29+</div>
+  </div>
+  <div class="sw-row">
+    <div class="sw-name">NetBeans IDE</div>
+    <div class="sw-detail">Your integrated development environment. Provides project management, code editing, debugging, and built-in support for JPA entity creation and database connections.</div>
+    <div class="sw-version">Version 20+</div>
+  </div>
+  <div class="callout-blue mt-20">
+    <strong>GlassFish</strong> (the application server) is not needed until <strong>Week 5</strong>. Don't install it yet — it will be covered in its own lab.
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 5: JDK INSTALL ═══════════════════ -->
+<div class="slide" data-n="5">
+  <h3>Part 1 — Step 1</h3>
+  <h1>Install JDK 21</h1>
+  <div class="flex-row">
+    <div class="col-2">
+      <div class="step-card mb-12">
+        <div class="step-num">A</div>
+        <h4>Download and run the installer</h4>
+        <p>Go to <code style="font-size:12px;">oracle.com/java/technologies/downloads/#jdk21-windows</code> and download the <strong>.exe installer</strong> for JDK 21. Run it with default settings.</p>
+      </div>
+      <div class="step-card mb-12">
+        <div class="step-num">B</div>
+        <h4>Set environment variables</h4>
+        <p>Open <strong>Control Panel → System → Advanced System Settings → Environment Variables</strong>. Create the variables listed in the table to the right.</p>
+      </div>
+      <div class="step-card mb-12">
+        <div class="step-num">C</div>
+        <h4>Verify the installation</h4>
+        <p>Open a <strong>new</strong> Command Prompt (existing ones won't see the new variables) and run the two commands below.</p>
+      </div>
+      <div class="code-block" style="font-size:14px;">
+<span class="cmt">&gt;</span> java -version
+java version "21.0.1" 2023-10-17 LTS
+
+<span class="cmt">&gt;</span> javac -version
+javac 21.0.1</div>
+    </div>
+    <div class="col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>Environment Variables to Set</h4>
+        <table class="env-table" style="font-size:14px;">
+          <thead><tr><th>Variable</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>JAVA_HOME</td><td>C:\Program Files\Java\jdk-21</td></tr>
+            <tr><td>JDK_HOME</td><td>C:\Program Files\Java\jdk-21</td></tr>
+          </tbody>
+        </table>
+        <p class="mt-12 small">Then add to the <strong>PATH</strong> variable:</p>
+        <div class="code-block mt-8" style="font-size:12px; padding:12px 16px;">
+%JAVA_HOME%\bin
+%JDK_HOME%\bin</div>
+      </div>
+      <div class="callout-warn mt-12">
+        <strong>Why environment variables?</strong> Other tools (NetBeans, GlassFish, build scripts) look for <code>JAVA_HOME</code> to locate the JDK. Without it, they can't find the compiler.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 6: MySQL INSTALL ═══════════════════ -->
+<div class="slide" data-n="6">
+  <h3>Part 1 — Step 2</h3>
+  <h1>Install MySQL</h1>
+  <div class="flex-row">
+    <div class="col-2">
+      <div class="step-card mb-12">
+        <div class="step-num">A</div>
+        <h4>Download the MySQL Community Installer</h4>
+        <p>Go to <code style="font-size:12px;">dev.mysql.com/downloads/installer/</code> and download the community installer. Run it.</p>
+      </div>
+      <div class="step-card mb-12">
+        <div class="step-num">B</div>
+        <h4>Select products to install</h4>
+        <p>You need exactly <strong>three components</strong>. In the product selection screen, add all three to "Products To Be Installed" before proceeding.</p>
+      </div>
+      <div class="step-card mb-12">
+        <div class="step-num">C</div>
+        <h4>Configure the server</h4>
+        <p>Install as a <strong>Windows Service</strong> (so it starts automatically). Set the <strong>root password</strong> — remember this, you'll need it in Part 2. Optionally create a user account (e.g., username: <code>APP</code>).</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">D</div>
+        <h4>Verify the installation</h4>
+        <p>Open <strong>MySQL Workbench</strong>, connect to your local instance, and confirm you can see the query editor. Also check <strong>Task Manager → Services</strong> tab to confirm MySQL80 shows "Running".</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>Three Required Components</h4>
+        <table style="font-size:14px;">
+          <tr><td style="font-weight:600; color:var(--red);">MySQL Server</td><td>The database engine</td></tr>
+          <tr><td style="font-weight:600; color:var(--red);">MySQL Workbench</td><td>GUI for managing databases</td></tr>
+          <tr><td style="font-weight:600; color:var(--red);">Connector/J</td><td>JDBC driver for Java apps</td></tr>
+        </table>
+      </div>
+      <div class="callout mt-12">
+        <strong>Connector/J location:</strong> After install, the driver JAR lives at:<br>
+        <code style="font-size:11px;">C:\Program Files (x86)\MySQL\Connector J 8.0\mysql-connector-java-8.0.29.jar</code><br>
+        You'll reference this file when configuring NetBeans database connections.
+      </div>
+      <div class="callout-success mt-12">
+        <strong>No environment variables needed</strong> for MySQL. The server runs as a Windows Service, and NetBeans connects via JDBC URL.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 7: NETBEANS INSTALL ═══════════════════ -->
+<div class="slide" data-n="7">
+  <h3>Part 1 — Step 3</h3>
+  <h1>Install NetBeans IDE</h1>
+  <div class="flex-row">
+    <div class="col-2">
+      <div class="step-card mb-12">
+        <div class="step-num">A</div>
+        <h4>Download and run the installer</h4>
+        <p>Go to <code style="font-size:12px;">netbeans.apache.org/download/index.html</code> and download the <strong>.exe installer</strong> for NetBeans 20 or higher. Run it with default settings.</p>
+      </div>
+      <div class="step-card mb-12">
+        <div class="step-num">B</div>
+        <h4>Verify the installation</h4>
+        <p>Launch NetBeans. You should see the Start Page with no error messages. If NetBeans cannot find the JDK, it will show an error — this means your <code>JAVA_HOME</code> is not set correctly.</p>
+      </div>
+      <div class="callout-success mt-16">
+        <strong>No environment variables needed</strong> for NetBeans. It discovers the JDK via your <code>JAVA_HOME</code> setting from Step 1.
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>Part 1 Completion Checklist</h4>
+        <ul class="checklist">
+          <li><code>java -version</code> shows JDK 21</li>
+          <li><code>javac -version</code> shows 21.0.x</li>
+          <li>MySQL Workbench connects to local server</li>
+          <li>MySQL80 shows "Running" in Task Manager Services</li>
+          <li>NetBeans opens without errors</li>
+        </ul>
+      </div>
+      <div class="callout-warn mt-12">
+        <strong>Do not proceed to Part 2</strong> until all five checks pass. Environment issues compound — fixing them now saves hours of debugging later.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 8: TROUBLESHOOTING ═══════════════════ -->
+<div class="slide" data-n="8">
+  <h3>Part 1</h3>
+  <h1>Common Issues &amp; Fixes</h1>
+  <p class="mb-20">If something isn't working, check here before asking for help.</p>
+  <div class="grid-2">
+    <div class="card red-border">
+      <h4>"java" is not recognised as a command</h4>
+      <p>Your PATH variable doesn't include the JDK bin directory. Re-open Environment Variables and make sure <code>%JAVA_HOME%\bin</code> is in PATH. Then open a <strong>new</strong> terminal — existing terminals don't pick up changes.</p>
+    </div>
+    <div class="card red-border">
+      <h4>MySQL service won't start</h4>
+      <p>Check if another MySQL instance or another program is using port 3306. Open Task Manager → Services and look for conflicting services. You can also try restarting the MySQL80 service manually.</p>
+    </div>
+    <div class="card red-border">
+      <h4>NetBeans can't find JDK</h4>
+      <p>Make sure <code>JAVA_HOME</code> points to the JDK directory (not the JRE). The path should end with <code>\jdk-21</code>, not <code>\jre</code>. You can also configure the JDK path in NetBeans via <strong>Tools → Java Platforms</strong>.</p>
+    </div>
+    <div class="card red-border">
+      <h4>MySQL Workbench can't connect</h4>
+      <p>Verify MySQL service is running. Check that your root password is correct. If you get "Access denied", reset the password through the MySQL Installer's reconfigure option.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 9: QUIZ PART 1 ═══════════════════ -->
+<div class="slide quiz-slide" data-n="9">
+  <h3>Knowledge Checkpoint</h3>
+  <h1>Quiz — Environment Setup</h1>
+  <div class="quiz-container mt-12">
+    <div class="quiz-q" id="q1">
+      <p class="q-text">1. Why do we set the JAVA_HOME environment variable?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,false)">To make Java programs run faster</button>
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,true)">So other tools (NetBeans, build scripts, GlassFish) can locate the JDK</button>
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,false)">To allow Java to access the internet</button>
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,false)">To install MySQL automatically</button>
+      </div>
+      <div class="quiz-feedback" id="q1-fb"></div>
+    </div>
+    <div class="quiz-q" id="q2">
+      <p class="q-text">2. Which MySQL component allows a Java application to connect to the database?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,false)">MySQL Workbench</button>
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,false)">MySQL Server</button>
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,true)">Connector/J (JDBC driver)</button>
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,false)">MySQL Shell</button>
+      </div>
+      <div class="quiz-feedback" id="q2-fb"></div>
+    </div>
+    <div class="quiz-q" id="q3">
+      <p class="q-text">3. After setting PATH, you open a terminal and type <code>java -version</code> but get "not recognised". What's the most likely fix?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,false)">Reinstall the JDK</button>
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,false)">Restart the computer</button>
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,true)">Open a new terminal — the current one doesn't reflect the updated PATH</button>
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,false)">Install NetBeans first</button>
+      </div>
+      <div class="quiz-feedback" id="q3-fb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 10: PART 2 DIVIDER ═══════════════════ -->
+<div class="slide section-divider" data-n="10">
+  <div class="section-num">2</div>
+  <h1>Your First JPA Project</h1>
+  <p class="lead">Building a Java application that persists a Book entity to MySQL using JPA and EclipseLink — no SQL required.</p>
+</div>
+
+<!-- ═══════════════════ SLIDE 11: PART 2 OVERVIEW ═══════════════════ -->
+<div class="slide" data-n="11">
+  <h3>Part 2</h3>
+  <h1>What We're Building</h1>
+  <p class="mb-20">A simple Java SE application that creates a Book object in memory and persists it to a MySQL database table using JPA. Here's the full picture of what's involved:</p>
+  <div class="flex-row">
+    <div class="col">
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:var(--red-light); border-radius:8px; padding:16px 20px; text-align:center;">
+          <strong style="color:var(--red);">Main.java</strong><br>
+          <span class="small">Creates a Book, gets EntityManager, persists it</span>
+        </div>
+        <div style="text-align:center; color:var(--grey-mid); font-size:20px;">↓</div>
+        <div style="background:#E0EBF5; border-radius:8px; padding:16px 20px; text-align:center;">
+          <strong style="color:var(--accent-blue);">Book.java</strong><br>
+          <span class="small">Entity class with @Entity, @Id, @Column annotations</span>
+        </div>
+        <div style="text-align:center; color:var(--grey-mid); font-size:20px;">↓</div>
+        <div style="background:#E0F0E8; border-radius:8px; padding:16px 20px; text-align:center;">
+          <strong style="color:var(--accent-green);">persistence.xml</strong><br>
+          <span class="small">Configures database URL, credentials, provider</span>
+        </div>
+        <div style="text-align:center; color:var(--grey-mid); font-size:20px;">↓</div>
+        <div style="background:var(--grey-bg); border-radius:8px; padding:16px 20px; text-align:center;">
+          <strong style="color:var(--grey-dark);">MySQL — w1p1db database</strong><br>
+          <span class="small">MYFAVOURITEBOOK table with the persisted row</span>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>Pre-requisites Before Starting</h4>
+        <ul class="checklist">
+          <li>JDK 21 installed and verified</li>
+          <li>MySQL server running</li>
+          <li>NetBeans IDE open and working</li>
+          <li>Download <strong>EclipseLink 4.0.2+</strong> from <code style="font-size:11px;">eclipse.dev/eclipselink/#download</code> and extract to a folder</li>
+        </ul>
+      </div>
+      <div class="callout-warn mt-12">
+        <strong>EclipseLink</strong> is the JPA persistence provider — it's the library that actually implements the JPA specification. JPA is just an API; EclipseLink does the work. Download and extract it before proceeding.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 12: PROJECT STRUCTURE ═══════════════════ -->
+<div class="slide" data-n="12">
+  <h3>Part 2</h3>
+  <h1>Project Structure</h1>
+  <p class="mb-20">Here's the final file structure of the project you're building, so you know where everything goes.</p>
+  <div class="flex-row">
+    <div class="col">
+      <div class="file-tree">
+<span class="folder">W1P1/</span>
+├── <span class="folder">src/</span>
+│   ├── <span class="folder">META-INF/</span>
+│   │   └── <span class="highlight">persistence.xml</span>
+│   └── <span class="folder">w1p1/</span>
+│       ├── <span class="highlight">Book.java</span>
+│       └── <span class="highlight">Main.java</span>
+├── <span class="folder">Libraries/</span>
+│   ├── MySQL Connector/J driver
+│   ├── EclipseLink 4.0.2 JARs
+│   └── JDK 21
+└── <span class="folder">build/</span></div>
+    </div>
+    <div class="col flex-col">
+      <div class="card red-border">
+        <h4>Book.java (Entity)</h4>
+        <p>The JPA entity class annotated with <code>@Entity</code>. Maps to a database table. Contains fields for title, price, description, ISBN, page count, and illustrations.</p>
+      </div>
+      <div class="card red-border">
+        <h4>Main.java (Application)</h4>
+        <p>The entry point. Creates a Book object, obtains an EntityManager, opens a transaction, persists the book, and commits.</p>
+      </div>
+      <div class="card red-border">
+        <h4>persistence.xml (Config)</h4>
+        <p>Tells JPA which database to connect to (JDBC URL, username, password), which provider to use (EclipseLink), and which entity classes to manage.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 13: STEP 1 — CREATE PROJECT ═══════════════════ -->
+<div class="slide" data-n="13">
+  <h3>Part 2 — Steps 1-2</h3>
+  <h1>Create the NetBeans Project</h1>
+  <div class="flex-row">
+    <div class="col-2 flex-col" style="gap:12px;">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h4>Create a new Java Application</h4>
+        <p>In NetBeans: <strong>File → New Project → Java with Ant → Java Application</strong>. Click Next.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h4>Set project name and main class</h4>
+        <p>Project Name: <code>W1P1</code>. Tick "Create Main Class" and set it to <code>w1p1.W1P1</code> (or <code>w1p1.Main</code>). Choose a project location you can find later. Click Finish.</p>
+      </div>
+      <div class="callout-blue mt-8">
+        <strong>Why "Java with Ant"?</strong> This unit uses Ant-based projects because they give you direct control over libraries and build configuration. Maven/Gradle are alternatives you may encounter in industry, but Ant keeps things transparent for learning.
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>What This Creates</h4>
+        <p>NetBeans generates a project folder with a <code>src/</code> directory containing your package (<code>w1p1</code>) and a <code>Main.java</code> file with an empty <code>main()</code> method. The Libraries node will initially only contain JDK 21.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 14: STEP 2 — CREATE DATABASE ═══════════════════ -->
+<div class="slide" data-n="14">
+  <h3>Part 2 — Step 3</h3>
+  <h1>Create the MySQL Database</h1>
+  <p class="mb-16">Before JPA can connect, the target database must exist. JPA will create the <em>tables</em> for you, but it cannot create the <em>database</em> itself.</p>
+  <div class="flex-row">
+    <div class="col-2 flex-col" style="gap:12px;">
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h4>Open MySQL Workbench and connect to your local instance</h4>
+        <p>Click the connection tile (e.g., "Local instance MySQL80") and enter your root password.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <h4>Create the database</h4>
+        <p>In the query editor, run the SQL command shown on the right, then click the refresh button in the Schemas panel to confirm <code>w1p1db</code> appears.</p>
+      </div>
+      <div class="callout-warn mt-8">
+        <strong>This must be done before</strong> you configure the database connection in NetBeans (next step). If the database doesn't exist, the connection test will fail.
+      </div>
+    </div>
+    <div class="col flex-col">
+      <div class="code-label">MySQL Workbench — Query Editor</div>
+      <div class="code-block" style="font-size:15px;">
+<span class="kw">CREATE DATABASE</span> w1p1db;
+</div>
+      <div class="card mt-12" style="background:var(--grey-bg); border:none;">
+        <h4>Connection Details to Remember</h4>
+        <table style="font-size:14px;">
+          <tr><td style="font-weight:600; width:100px;">Host</td><td><code>localhost</code></td></tr>
+          <tr><td style="font-weight:600;">Port</td><td><code>3306</code></td></tr>
+          <tr><td style="font-weight:600;">Database</td><td><code>w1p1db</code></td></tr>
+          <tr><td style="font-weight:600;">Username</td><td><code>APP</code> (or <code>root</code>)</td></tr>
+          <tr><td style="font-weight:600;">Password</td><td>Your MySQL password</td></tr>
+          <tr><td style="font-weight:600;">JDBC URL</td><td><code style="font-size:12px;">jdbc:mysql://localhost:3306/w1p1db</code></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 15: STEP 3 — ADD ENTITY ═══════════════════ -->
+<div class="slide" data-n="15">
+  <h3>Part 2 — Steps 5-6</h3>
+  <h1>Add the Book Entity &amp; Configure JPA</h1>
+  <div class="flex-row">
+    <div class="col-2 flex-col" style="gap:12px;">
+      <div class="step-card">
+        <div class="step-num">5</div>
+        <h4>Create the Entity Class</h4>
+        <p>Right-click the <code>w1p1</code> package → <strong>New → Entity Class</strong>. Set Class Name to <code>Book</code>, Package to <code>w1p1</code>, Primary Key Type to <code>Long</code>. <strong>Tick "Create Persistence Unit"</strong>.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">6</div>
+        <h4>Configure the Persistence Unit</h4>
+        <p>On the next screen: Persistence Unit Name: <code>W1P1PU</code>. Persistence Library: <strong>EclipseLink (JPA 3.0)</strong>. Database Connection: select <strong>"New Database Connection..."</strong></p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">7</div>
+        <h4>Set up the Database Connection</h4>
+        <p>Driver: <strong>MySQL (Connector/J driver)</strong>. If the driver file isn't found, click Add and browse to the Connector/J JAR. Then fill in host, port, database (<code>w1p1db</code>), username, and password. Click "Test Connection" to verify.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="callout">
+        <strong>What "Create Persistence Unit" does:</strong> It generates a <code>persistence.xml</code> file under <code>META-INF/</code>. This file is the bridge between your Java code and the database — it tells JPA where the database is and how to connect.
+      </div>
+      <div class="callout-warn mt-12">
+        <strong>EclipseLink libraries:</strong> Make sure all EclipseLink JARs (from the <code>jlib/</code> folder of your extracted EclipseLink download) are added to the project's Libraries. Without them, the project won't compile.
+      </div>
+      <div class="card mt-12" style="background:var(--grey-bg); border:none;">
+        <h4>Required Libraries</h4>
+        <p class="small">Your Libraries node should contain:</p>
+        <p class="mt-8 small">MySQL Connector/J driver<br>All EclipseLink 4.0.2 JARs (eclipselink.jar, jakarta.persistence-api, jakarta.annotation-api, etc.)<br>JDK 21</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 16: BOOK.JAVA CODE ═══════════════════ -->
+<div class="slide" data-n="16">
+  <h3>Part 2 — Source Code</h3>
+  <h1>Book.java — The Entity Class</h1>
+  <p class="mb-12">Replace the generated Book.java content with this code. Each annotation tells JPA how to map this class to the database.</p>
+  <div class="flex-row">
+    <div class="col-2">
+      <div class="code-block" style="font-size:12.5px; line-height:1.7;">
+<span class="kw">package</span> w1p1;
+
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="ann">@Entity</span>
+<span class="ann">@Table</span>(name = <span class="str">"MyFavouriteBook"</span>)
+<span class="kw">public class</span> <span class="type">Book</span> {
+
+    <span class="cmt">// Attributes</span>
+    <span class="ann">@Id</span>
+    <span class="ann">@GeneratedValue</span>(strategy = GenerationType.AUTO)
+    <span class="kw">private</span> <span class="type">Long</span> id;
+
+    <span class="ann">@Column</span>(name = <span class="str">"Book_TiTle"</span>, nullable = <span class="kw">false</span>,
+            updatable = <span class="kw">false</span>)
+    <span class="kw">private</span> <span class="type">String</span> title;
+
+    <span class="kw">private</span> <span class="type">Float</span> price;
+
+    <span class="ann">@Column</span>(length = <span class="num">2000</span>)
+    <span class="kw">private</span> <span class="type">String</span> description;
+
+    <span class="kw">private</span> <span class="type">String</span> isbn;
+
+    <span class="ann">@Column</span>(name = <span class="str">"Number_of_Pages"</span>, nullable = <span class="kw">false</span>)
+    <span class="kw">private</span> <span class="type">Integer</span> nbOfPage;
+
+    <span class="kw">private</span> <span class="type">Boolean</span> illustrations;
+
+    <span class="cmt">// Constructors</span>
+    <span class="kw">public</span> <span class="type">Book</span>() { }
+
+    <span class="kw">public</span> <span class="type">Book</span>(<span class="type">Long</span> id, <span class="type">String</span> title, <span class="type">Float</span> price,
+                <span class="type">String</span> description, <span class="type">String</span> isbn,
+                <span class="type">Integer</span> nbOfPage, <span class="type">Boolean</span> illustrations) {
+        <span class="kw">this</span>.id = id;
+        <span class="kw">this</span>.title = title;
+        <span class="kw">this</span>.price = price;
+        <span class="kw">this</span>.description = description;
+        <span class="kw">this</span>.isbn = isbn;
+        <span class="kw">this</span>.nbOfPage = nbOfPage;
+        <span class="kw">this</span>.illustrations = illustrations;
+    }
+
+    <span class="cmt">// Getters and Setters for all fields</span>
+    <span class="cmt">// ... (generate via NetBeans: right-click → Insert Code → Getter and Setter)</span>
+
+    <span class="ann">@Override</span>
+    <span class="kw">public</span> <span class="type">String</span> toString() {
+        <span class="kw">return</span> <span class="str">"Book{id="</span> + id + <span class="str">", title='"</span> + title +
+               <span class="str">"', price="</span> + price + <span class="str">", isbn='"</span> + isbn +
+               <span class="str">"', nbOfPage="</span> + nbOfPage +
+               <span class="str">", illustrations="</span> + illustrations + <span class="str">"}"</span>;
+    }
+}</div>
+    </div>
+    <div class="col flex-col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>Annotation Breakdown</h4>
+        <table style="font-size:13px;">
+          <tr><td style="font-weight:600; color:var(--red); white-space:nowrap;">@Entity</td><td>Marks this class for JPA management</td></tr>
+          <tr><td style="font-weight:600; color:var(--red); white-space:nowrap;">@Table</td><td>Overrides the default table name</td></tr>
+          <tr><td style="font-weight:600; color:var(--red); white-space:nowrap;">@Id</td><td>Marks the primary key field</td></tr>
+          <tr><td style="font-weight:600; color:var(--red); white-space:nowrap;">@GeneratedValue</td><td>Auto-generates the ID value</td></tr>
+          <tr><td style="font-weight:600; color:var(--red); white-space:nowrap;">@Column</td><td>Customises column name, constraints, length</td></tr>
+        </table>
+      </div>
+      <div class="callout mt-12">
+        <strong>Configuration by exception:</strong> Fields without <code>@Column</code> (like <code>price</code>, <code>isbn</code>) still map — JPA uses the field name as the column name by default. You only annotate when you want to customise.
+      </div>
+      <div class="callout-blue mt-12">
+        <strong>Generate getters/setters:</strong> In NetBeans, right-click inside the class → <strong>Insert Code → Getter and Setter</strong> → select all fields. This saves you writing boilerplate.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 17: MAIN.JAVA CODE ═══════════════════ -->
+<div class="slide" data-n="17">
+  <h3>Part 2 — Source Code</h3>
+  <h1>Main.java — The Application</h1>
+  <p class="mb-12">This is the entry point that creates a Book and persists it to the database.</p>
+  <div class="flex-row">
+    <div class="col-2">
+      <div class="code-block" style="font-size:13px; line-height:1.7;">
+<span class="kw">package</span> w1p1;
+
+<span class="kw">import</span> jakarta.persistence.EntityManager;
+<span class="kw">import</span> jakarta.persistence.EntityManagerFactory;
+<span class="kw">import</span> jakarta.persistence.EntityTransaction;
+<span class="kw">import</span> jakarta.persistence.Persistence;
+
+<span class="kw">public class</span> <span class="type">Main</span> {
+
+    <span class="kw">public static void</span> main(<span class="type">String</span>[] args) {
+
+        <span class="cmt">// 1. Create an instance of Book</span>
+        <span class="type">Book</span> book = <span class="kw">new</span> <span class="type">Book</span>();
+        book.setTitle(<span class="str">"The Hitchhiker's Guide to the Galaxy"</span>);
+        book.setPrice(<span class="num">12.5f</span>);
+        book.setDescription(<span class="str">"Science fiction comedy series "</span>
+                + <span class="str">"created by Douglas Adams."</span>);
+        book.setIsbn(<span class="str">"1-84023-742-2"</span>);
+        book.setNbOfPage(<span class="num">354</span>);
+        book.setIllustrations(<span class="kw">false</span>);
+
+        <span class="cmt">// 2. Get an EntityManager from the factory</span>
+        <span class="type">EntityManagerFactory</span> emf =
+            Persistence.createEntityManagerFactory(<span class="str">"W1P1PU"</span>);
+        <span class="type">EntityManager</span> em = emf.createEntityManager();
+
+        <span class="cmt">// 3. Persist the book inside a transaction</span>
+        <span class="type">EntityTransaction</span> tx = em.getTransaction();
+        tx.begin();
+        em.persist(book);
+        tx.commit();
+
+        System.out.println(<span class="str">"**** Persist the book ****"</span>);
+        System.out.println(book);
+    }
+}</div>
+    </div>
+    <div class="col flex-col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>Line-by-Line Breakdown</h4>
+        <p class="mt-8"><strong style="color:var(--red);">Step 1:</strong> Create a Book POJO and populate its fields. At this point it's just a regular Java object — JPA doesn't know about it (it's in the "New" lifecycle state).</p>
+        <p class="mt-12"><strong style="color:var(--red);">Step 2:</strong> <code>createEntityManagerFactory("W1P1PU")</code> reads <code>persistence.xml</code>, finds the persistence unit named "W1P1PU", and sets up the database connection.</p>
+        <p class="mt-12"><strong style="color:var(--red);">Step 3:</strong> <code>em.persist(book)</code> tells JPA to manage this object. When <code>tx.commit()</code> runs, JPA generates an <code>INSERT</code> SQL statement and executes it against MySQL. The book is now in the database.</p>
+      </div>
+      <div class="callout mt-12">
+        <strong>The string "W1P1PU"</strong> must exactly match the persistence unit name defined in <code>persistence.xml</code>. A mismatch here is one of the most common errors.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 18: PERSISTENCE.XML ═══════════════════ -->
+<div class="slide" data-n="18">
+  <h3>Part 2 — Source Code</h3>
+  <h1>persistence.xml — The Configuration</h1>
+  <p class="mb-12">This file lives in <code>src/META-INF/persistence.xml</code> and tells JPA everything it needs to connect to the database.</p>
+  <div class="flex-row">
+    <div class="col-2">
+      <div class="code-block" style="font-size:12.5px; line-height:1.75;">
+<span class="tag-x">&lt;?xml</span> <span class="attr">version</span>=<span class="val">"1.0"</span> <span class="attr">encoding</span>=<span class="val">"UTF-8"</span><span class="tag-x">?&gt;</span>
+<span class="tag-x">&lt;persistence</span> <span class="attr">version</span>=<span class="val">"2.1"</span>
+  <span class="attr">xmlns</span>=<span class="val">"http://xmlns.jcp.org/xml/ns/persistence"</span><span class="tag-x">&gt;</span>
+
+  <span class="tag-x">&lt;persistence-unit</span> <span class="attr">name</span>=<span class="val">"W1P1PU"</span>
+    <span class="attr">transaction-type</span>=<span class="val">"RESOURCE_LOCAL"</span><span class="tag-x">&gt;</span>
+
+    <span class="tag-x">&lt;provider&gt;</span>
+      org.eclipse.persistence.jpa.PersistenceProvider
+    <span class="tag-x">&lt;/provider&gt;</span>
+
+    <span class="tag-x">&lt;class&gt;</span>w1p1.Book<span class="tag-x">&lt;/class&gt;</span>
+
+    <span class="tag-x">&lt;properties&gt;</span>
+      <span class="tag-x">&lt;property</span> <span class="attr">name</span>=<span class="val">"jakarta.persistence.jdbc.url"</span>
+        <span class="attr">value</span>=<span class="val">"jdbc:mysql://localhost:3306/w1p1db"</span><span class="tag-x">/&gt;</span>
+      <span class="tag-x">&lt;property</span> <span class="attr">name</span>=<span class="val">"jakarta.persistence.jdbc.user"</span>
+        <span class="attr">value</span>=<span class="val">"APP"</span><span class="tag-x">/&gt;</span>
+      <span class="tag-x">&lt;property</span> <span class="attr">name</span>=<span class="val">"jakarta.persistence.jdbc.driver"</span>
+        <span class="attr">value</span>=<span class="val">"com.mysql.cj.jdbc.Driver"</span><span class="tag-x">/&gt;</span>
+      <span class="tag-x">&lt;property</span> <span class="attr">name</span>=<span class="val">"jakarta.persistence.jdbc.password"</span>
+        <span class="attr">value</span>=<span class="val">"APP"</span><span class="tag-x">/&gt;</span>
+      <span class="tag-x">&lt;property</span> <span class="attr">name</span>=<span class="val">"jakarta.persistence.schema-generation.database.action"</span>
+        <span class="attr">value</span>=<span class="val">"create"</span><span class="tag-x">/&gt;</span>
+    <span class="tag-x">&lt;/properties&gt;</span>
+  <span class="tag-x">&lt;/persistence-unit&gt;</span>
+<span class="tag-x">&lt;/persistence&gt;</span></div>
+    </div>
+    <div class="col flex-col">
+      <div class="card" style="background:var(--grey-bg); border:none;">
+        <h4>Property Breakdown</h4>
+        <table style="font-size:12px;">
+          <tr><td style="font-weight:600; color:var(--red);">jdbc.url</td><td>Where the database is (host, port, database name)</td></tr>
+          <tr><td style="font-weight:600; color:var(--red);">jdbc.user</td><td>MySQL username</td></tr>
+          <tr><td style="font-weight:600; color:var(--red);">jdbc.password</td><td>MySQL password</td></tr>
+          <tr><td style="font-weight:600; color:var(--red);">jdbc.driver</td><td>The JDBC driver class (from Connector/J)</td></tr>
+          <tr><td style="font-weight:600; color:var(--red);">schema-generation</td><td><code>create</code> = auto-create tables on first run</td></tr>
+        </table>
+      </div>
+      <div class="callout-warn mt-12">
+        <strong>Update these values</strong> to match your MySQL installation. If your username is <code>root</code> and your password is <code>mypassword</code>, change them here — not in Main.java.
+      </div>
+      <div class="callout mt-12">
+        <strong>RESOURCE_LOCAL</strong> means we manage transactions ourselves in code (<code>tx.begin()</code> / <code>tx.commit()</code>). In Week 5+, we'll use container-managed transactions (JTA) where the server handles this for you.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 19: BUILD AND RUN ═══════════════════ -->
+<div class="slide" data-n="19">
+  <h3>Part 2 — Steps 9-11</h3>
+  <h1>Build, Run, and Verify</h1>
+  <div class="flex-row">
+    <div class="col-2 flex-col" style="gap:12px;">
+      <div class="step-card">
+        <div class="step-num">9</div>
+        <h4>Build the project</h4>
+        <p>Right-click the project → <strong>Clean and Build</strong>. The Output window should show <strong>"BUILD SUCCESSFUL"</strong>. If you get errors, check that all libraries are added and the code compiles cleanly.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">10</div>
+        <h4>Run the application</h4>
+        <p>Right-click the project → <strong>Run</strong>. In the Output window, you should see the EclipseLink banner followed by your Book's <code>toString()</code> output with a generated ID.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">11</div>
+        <h4>Verify in the database</h4>
+        <p>Open MySQL Workbench, select the <code>w1p1db</code> schema, and run the query shown on the right. You should see one row with the book data.</p>
+      </div>
+      <div class="callout-success mt-8">
+        <strong>Expected console output:</strong><br>
+        <code style="font-size:12px; background:transparent; color:var(--accent-green);">**** Persist the book ****<br>Book{id=551, title='The Hitchhiker's Guide to the Galaxy', price=12.5, isbn='1-84023-742-2', nbOfPage=354, illustrations=false}</code>
+      </div>
+    </div>
+    <div class="col flex-col">
+      <div class="code-label">MySQL Workbench — Verify</div>
+      <div class="code-block" style="font-size:15px;">
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> w1p1db.myfavouritebook;</div>
+      <div class="card mt-12" style="background:var(--grey-bg); border:none;">
+        <h4>Expected Table Contents</h4>
+        <table style="font-size:12px;">
+          <thead><tr><th>ID</th><th>BOOK_TITLE</th><th>PRICE</th><th>ISBN</th></tr></thead>
+          <tbody>
+            <tr><td>551</td><td>The Hitchhiker's Guide...</td><td>12.5</td><td>1-84023-742-2</td></tr>
+          </tbody>
+        </table>
+        <p class="small mt-8">The ID value will vary — it's auto-generated.</p>
+      </div>
+      <div class="callout mt-12">
+        <strong>You can also verify</strong> from NetBeans: go to the <strong>Services</strong> tab → Databases → expand your <code>w1p1db</code> connection → Tables → <code>myfavouritebook</code> → right-click → View Data.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 20: TROUBLESHOOTING PART 2 ═══════════════════ -->
+<div class="slide" data-n="20">
+  <h3>Part 2</h3>
+  <h1>Common Issues &amp; Fixes</h1>
+  <p class="mb-16">If the build or run fails, check these common problems first.</p>
+  <div class="grid-2">
+    <div class="card red-border">
+      <h4>"No Persistence provider for EntityManager"</h4>
+      <p>EclipseLink JARs are not in the project Libraries. Add all JARs from the EclipseLink <code>jlib/</code> folder.</p>
+    </div>
+    <div class="card red-border">
+      <h4>"Unknown database 'w1p1db'"</h4>
+      <p>You forgot to create the database in MySQL Workbench. Run <code>CREATE DATABASE w1p1db;</code> first.</p>
+    </div>
+    <div class="card red-border">
+      <h4>"Access denied for user 'APP'@'localhost'"</h4>
+      <p>The username or password in <code>persistence.xml</code> doesn't match your MySQL credentials. Update the <code>jdbc.user</code> and <code>jdbc.password</code> properties.</p>
+    </div>
+    <div class="card red-border">
+      <h4>"Table 'myfavouritebook' already exists" on re-run</h4>
+      <p>The schema-generation action is set to <code>create</code>, which tries to create the table each run. Change it to <code>drop-and-create</code> during development, or <code>none</code> after the first run.</p>
+    </div>
+    <div class="card red-border">
+      <h4>"ClassNotFoundException: com.mysql.cj.jdbc.Driver"</h4>
+      <p>The MySQL Connector/J JAR is not in the project Libraries. Add the <code>mysql-connector-java-8.x.x.jar</code> file from your MySQL Connector installation folder.</p>
+    </div>
+    <div class="card red-border">
+      <h4>Build succeeds but nothing appears in the database</h4>
+      <p>Check that <code>tx.commit()</code> is called after <code>em.persist(book)</code>. Without the commit, the transaction is rolled back and nothing is written.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 21: QUIZ PART 2 ═══════════════════ -->
+<div class="slide quiz-slide" data-n="21">
+  <h3>Knowledge Checkpoint</h3>
+  <h1>Quiz — First JPA Project</h1>
+  <div class="quiz-container mt-12">
+    <div class="quiz-q" id="q4">
+      <p class="q-text">4. What is the purpose of persistence.xml?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,false)">It defines the Java class structure for entities</button>
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,true)">It configures the database connection, persistence provider, and managed entity classes</button>
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,false)">It creates the MySQL database automatically</button>
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,false)">It is a build configuration file like pom.xml</button>
+      </div>
+      <div class="quiz-feedback" id="q4-fb"></div>
+    </div>
+    <div class="quiz-q" id="q5">
+      <p class="q-text">5. What happens if you call <code>em.persist(book)</code> but never call <code>tx.commit()</code>?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="checkQuiz('q5',this,false)">The book is saved to the database immediately</button>
+        <button class="quiz-opt" onclick="checkQuiz('q5',this,false)">A compile error occurs</button>
+        <button class="quiz-opt" onclick="checkQuiz('q5',this,true)">The transaction is rolled back and the book is not saved</button>
+        <button class="quiz-opt" onclick="checkQuiz('q5',this,false)">The book is saved when the program exits</button>
+      </div>
+      <div class="quiz-feedback" id="q5-fb"></div>
+    </div>
+    <div class="quiz-q" id="q6">
+      <p class="q-text">6. In persistence.xml, what does <code>schema-generation.database.action = "create"</code> do?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="checkQuiz('q6',this,false)">Creates the MySQL database (e.g., w1p1db)</button>
+        <button class="quiz-opt" onclick="checkQuiz('q6',this,true)">Auto-creates the database tables based on your entity annotations</button>
+        <button class="quiz-opt" onclick="checkQuiz('q6',this,false)">Generates Java entity classes from existing tables</button>
+        <button class="quiz-opt" onclick="checkQuiz('q6',this,false)">Creates a backup of the database</button>
+      </div>
+      <div class="quiz-feedback" id="q6-fb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 22: EXTENSION ═══════════════════ -->
+<div class="slide" data-n="22">
+  <h3>Extension</h3>
+  <h1>Challenge Tasks (Optional)</h1>
+  <p class="mb-20">Finished early? Try these exercises to deepen your understanding. Each one builds on what you've already done.</p>
+  <div class="flex-col" style="gap:14px;">
+    <div class="card red-border">
+      <span class="tag green">Beginner</span>
+      <h4>Persist multiple books</h4>
+      <p>Modify <code>Main.java</code> to create and persist three different books in a single transaction. Verify all three appear in the database table.</p>
+    </div>
+    <div class="card red-border">
+      <span class="tag blue">Intermediate</span>
+      <h4>Add a query</h4>
+      <p>After persisting the books, use <code>em.find(Book.class, id)</code> to retrieve one by its ID and print it. Then try a JPQL query: <code>em.createQuery("SELECT b FROM Book b", Book.class).getResultList()</code> to retrieve all books.</p>
+    </div>
+    <div class="card red-border">
+      <span class="tag red">Advanced</span>
+      <h4>Add a second entity</h4>
+      <p>Create an <code>Author</code> entity class with fields for name and biography. Add it to <code>persistence.xml</code> as a second <code>&lt;class&gt;</code> entry. Persist an Author and verify the new table appears in MySQL.</p>
+    </div>
+  </div>
+  <div class="callout-blue mt-20">
+    <strong>Looking ahead:</strong> In Week 2, you'll learn about entity relationships — linking Book and Author entities together with <code>@ManyToOne</code> and <code>@OneToMany</code> annotations. The extension tasks here give you a head start.
+  </div>
+</div>
+
+<!-- ═══════════════════ SLIDE 23: END ═══════════════════ -->
+<div class="slide dark title-slide" data-n="23">
+  <div class="week-label" style="color:rgba(255,255,255,0.4);">End of Week 1 Lab</div>
+  <h1>Lab Complete</h1>
+  <p class="subtitle" style="color:rgba(255,255,255,0.55);">
+    You now have a working Jakarta EE development environment and a running JPA application that persists data to MySQL.
+  </p>
+  <div class="title-meta" style="margin-top:40px;">
+    <p style="color:rgba(255,255,255,0.35);">If you had any issues, note them down and bring your questions to the next session.<br>The complete sample project is available on the Week 1 block of the unit Moodle site.</p>
+  </div>
+</div>
+
+</div><!-- end deck -->
+
+<!-- Nav -->
+<div class="nav-bar">
+  <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+  <span class="slide-counter" id="counter">1 / 23</span>
+  <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function showSlide(n) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[n].classList.add('active');
+    counter.textContent = (n + 1) + ' / ' + total;
+    progress.style.width = ((n + 1) / total * 100) + '%';
+    prevBtn.disabled = n === 0;
+    nextBtn.disabled = n === total - 1;
+  }
+
+  function changeSlide(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < total) { current = next; showSlide(current); }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); changeSlide(-1); }
+  });
+
+  const feedbackMap = {
+    q1: { correct: 'Correct. JAVA_HOME is a standard convention that tools use to discover where the JDK is installed on your system.', wrong: 'Not quite. JAVA_HOME doesn\'t affect performance or internet access — it tells other tools where to find the JDK.' },
+    q2: { correct: 'Correct. Connector/J is the JDBC driver — the bridge that lets Java code communicate with MySQL over the JDBC protocol.', wrong: 'Not quite. Workbench is a GUI tool, and Server is the database engine. Connector/J is the JDBC driver that Java applications use.' },
+    q3: { correct: 'Correct. Environment variable changes only take effect in new terminal sessions. Existing terminals still use the old PATH.', wrong: 'Not quite. Reinstalling or restarting are overkill — you just need a fresh terminal that reads the updated PATH.' },
+    q4: { correct: 'Correct. persistence.xml is the central configuration file that tells JPA which database to connect to, which provider to use, and which entity classes to manage.', wrong: 'Not quite. persistence.xml configures the connection and provider — it doesn\'t define class structures or create the database itself.' },
+    q5: { correct: 'Correct. Without commit(), the transaction is never finalised. JPA rolls back the pending changes and nothing reaches the database.', wrong: 'Not quite. persist() stages the change, but commit() is required to actually write it to the database. Without it, the transaction rolls back.' },
+    q6: { correct: 'Correct. The "create" action tells JPA to auto-generate database tables based on your @Entity annotations. It creates tables, not the database itself.', wrong: 'Not quite. Schema generation creates tables from entity annotations — the database (w1p1db) must already exist.' },
+  };
+
+  function checkQuiz(qId, btn, isCorrect) {
+    const q = document.getElementById(qId);
+    const btns = q.querySelectorAll('.quiz-opt');
+    const fb = document.getElementById(qId + '-fb');
+    btns.forEach(b => { b.disabled = true; b.classList.remove('correct', 'wrong'); });
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.textContent = feedbackMap[qId].correct;
+      fb.className = 'quiz-feedback show correct-fb';
+    } else {
+      btn.classList.add('wrong');
+      fb.textContent = feedbackMap[qId].wrong;
+      fb.className = 'quiz-feedback show wrong-fb';
+      btns.forEach(b => {
+        const oc = b.getAttribute('onclick');
+        if (oc && oc.includes('true')) b.classList.add('correct');
+      });
+    }
+  }
+
+  showSlide(0);
+</script>
+</body>
+</html>
