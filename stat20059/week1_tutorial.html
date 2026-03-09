@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 1 Workshop — Data Exercises</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-dark: #f2f2f4;
+  --bg-slide: #ffffff;
+  --bg-card: #f7f7f9;
+  --accent: #C8102E;
+  --accent2: #D4453A;
+  --accent3: #1A7A4C;
+  --accent4: #B8860B;
+  --text: #3a3a42;
+  --text-dim: #7a7a88;
+  --text-bright: #1a1a22;
+  --border: #e0e0e6;
+  --gradient1: linear-gradient(135deg, #C8102E 0%, #E03050 100%);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg-dark); color: var(--text); font-family: 'DM Sans', sans-serif; }
+body { display: flex; flex-direction: column; }
+
+.deck { position: relative; flex: 1; overflow: hidden; }
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 40px 56px; opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateX(40px); background: var(--bg-slide);
+}
+.slide.active { opacity: 1; pointer-events: auto; transform: translateX(0); z-index: 2; }
+.slide.prev { opacity: 0; transform: translateX(-40px); }
+.slide-inner { max-width: 1100px; width: 100%; }
+
+.nav-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 32px; background: var(--bg-dark); border-top: 1px solid var(--border);
+  z-index: 10; flex-shrink: 0;
+}
+.nav-bar button {
+  background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
+  padding: 10px 24px; border-radius: 8px; font-family: inherit; font-size: 14px;
+  cursor: pointer; transition: all 0.2s;
+}
+.nav-bar button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.nav-bar button:disabled { opacity: 0.3; cursor: not-allowed; }
+.nav-bar button:disabled:hover { background: var(--bg-card); color: var(--text); border-color: var(--border); }
+.progress-text { font-size: 13px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.progress-bar-container { width: 200px; height: 4px; background: var(--bg-card); border-radius: 4px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--gradient1); transition: width 0.4s ease; border-radius: 4px; }
+.key-hint { font-size: 11px; color: var(--text-dim); }
+.key-hint kbd { background: var(--bg-card); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+h1.hero { font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 700; line-height: 1.15; color: var(--text-bright); margin-bottom: 16px; }
+h1.hero .accent { background: var(--gradient1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+h2.section-title { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; color: var(--text-bright); margin-bottom: 12px; }
+h2.section-title .accent { background: var(--gradient1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+h3.sub { font-size: 18px; font-weight: 500; color: var(--text-dim); margin-bottom: 28px; }
+p.body { font-size: 17px; line-height: 1.7; color: var(--text); max-width: 800px; }
+.label { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+.label.green { color: var(--accent3); }
+.label.gold { color: var(--accent4); }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; width: 100%; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; width: 100%; }
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 24px; transition: transform 0.2s, border-color 0.2s;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card h4 { font-size: 16px; font-weight: 700; color: var(--text-bright); margin-bottom: 8px; }
+.card p { font-size: 14px; line-height: 1.6; color: var(--text-dim); }
+.card.accent-border { border-left: 3px solid var(--accent); }
+.card.green-border { border-left: 3px solid var(--accent3); }
+.card.gold-border { border-left: 3px solid var(--accent4); }
+.card.pink-border { border-left: 3px solid var(--accent2); }
+
+/* Excel formula display */
+.formula-box {
+  background: #1e1e2e; color: #a6e3a1; border-radius: 8px;
+  padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  margin-top: 10px; letter-spacing: 0.3px;
+}
+.formula-box .fn { color: #89b4fa; }
+.formula-box .str { color: #f9e2af; }
+.formula-box .ref { color: #cba6f7; }
+
+/* Data table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { background: var(--accent); color: #fff; font-weight: 700; text-align: left; padding: 10px 14px; font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; }
+.data-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+.data-table tr:nth-child(even) td { background: #fdf5f6; }
+.data-table .tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.tag-cat { background: rgba(200,16,46,0.1); color: var(--accent); }
+.tag-num { background: rgba(26,122,76,0.1); color: var(--accent3); }
+.tag-nom { background: rgba(200,16,46,0.08); color: var(--accent); }
+.tag-ord { background: rgba(184,134,11,0.12); color: var(--accent4); }
+.tag-dis { background: rgba(26,122,76,0.08); color: var(--accent3); }
+.tag-con { background: rgba(89,130,200,0.12); color: #4A6FA5; }
+
+/* Quiz */
+.quiz-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; width: 100%; max-width: 750px; margin: 0 auto; }
+.quiz-box h3 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-bright); margin-bottom: 6px; }
+.quiz-q { font-size: 16px; color: var(--text); margin-bottom: 20px; line-height: 1.6; }
+.quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.quiz-opt {
+  padding: 12px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-slide);
+  font-size: 14px; color: var(--text); cursor: pointer; transition: all 0.2s; text-align: left; font-family: inherit;
+}
+.quiz-opt:hover { border-color: var(--accent); background: rgba(200,16,46,0.03); }
+.quiz-opt.correct { border-color: var(--accent3); background: rgba(26,122,76,0.08); color: var(--accent3); }
+.quiz-opt.wrong { border-color: var(--accent2); background: rgba(212,69,58,0.06); color: var(--accent2); }
+.quiz-opt.disabled { pointer-events: none; opacity: 0.5; }
+.quiz-opt.disabled.correct { opacity: 1; }
+.quiz-feedback { margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; display: none; }
+.quiz-feedback.show { display: block; }
+.quiz-feedback.correct { background: rgba(26,122,76,0.06); border: 1px solid rgba(26,122,76,0.15); color: var(--accent3); }
+.quiz-feedback.wrong { background: rgba(212,69,58,0.06); border: 1px solid rgba(212,69,58,0.15); color: var(--accent2); }
+
+/* Task box */
+.task-box {
+  background: rgba(200,16,46,0.04); border: 1px solid rgba(200,16,46,0.15); border-radius: 14px;
+  padding: 24px 28px;
+}
+.task-box h4 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.task-box p, .task-box li { font-size: 15px; color: var(--text); line-height: 1.7; }
+.task-box ol { padding-left: 20px; }
+.task-box ol li { margin-bottom: 8px; }
+
+.hint-box {
+  background: rgba(26,122,76,0.04); border: 1px solid rgba(26,122,76,0.15); border-radius: 14px;
+  padding: 20px 24px; margin-top: 16px;
+}
+.hint-box h4 { font-size: 13px; font-weight: 700; color: var(--accent3); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+.hint-box p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+
+.think-box {
+  background: rgba(184,134,11,0.05); border: 1px solid rgba(184,134,11,0.15); border-radius: 14px;
+  padding: 20px 24px; margin-top: 16px;
+}
+.think-box h4 { font-size: 13px; font-weight: 700; color: var(--accent4); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+.think-box p { font-size: 15px; color: var(--accent4); line-height: 1.6; font-style: italic; }
+
+/* Stat cards */
+.stat-card { text-align: center; padding: 20px 16px; }
+.stat-card .stat-val { font-size: 36px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.stat-card .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Animations */
+.slide.active .fade-up { animation: fadeUp 0.6s ease both; }
+.slide.active .fade-up-d1 { animation: fadeUp 0.6s 0.1s ease both; }
+.slide.active .fade-up-d2 { animation: fadeUp 0.6s 0.2s ease both; }
+.slide.active .fade-up-d3 { animation: fadeUp 0.6s 0.3s ease both; }
+.slide.active .fade-up-d4 { animation: fadeUp 0.6s 0.4s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 900px) {
+  .slide { padding: 28px 20px; }
+  h1.hero { font-size: 32px; }
+  h2.section-title { font-size: 26px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ========== SLIDE 1: TITLE ========== -->
+<div class="slide active">
+  <div class="slide-inner" style="text-align:center;">
+    <div class="label fade-up">WEEK 1 WORKSHOP</div>
+    <h1 class="hero fade-up-d1">Data-Driven <span class="accent">Exercises</span></h1>
+    <h3 class="sub fade-up-d2">Exploring statistics concepts with real data in Excel</h3>
+    <div class="grid-3 fade-up-d3" style="max-width:700px;margin:0 auto;">
+      <div class="card" style="text-align:center;"><h4>80</h4><p>Customer records</p></div>
+      <div class="card" style="text-align:center;"><h4>14</h4><p>Variables to classify</p></div>
+      <div class="card" style="text-align:center;"><h4>3</h4><p>Excel sheets</p></div>
+    </div>
+    <p style="margin-top:28px;font-size:14px;color:var(--text-dim);" class="fade-up-d4">Open <a href="https://docs.google.com/spreadsheets/d/1ADzuqmwEn7PbGcugueihG9Ba15oqA9Sq/edit?usp=sharing&ouid=105843334441868453692&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600;text-decoration:underline;">Week1_Coffee_Survey_Data.xlsx</a> and follow along</p>
+  </div>
+</div>
+
+<!-- ========== SLIDE 2: THE SCENARIO ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label fade-up">THE SCENARIO</div>
+    <h2 class="section-title fade-up-d1">Melbourne <span class="accent">Coffee Shop</span> Survey</h2>
+    <div class="grid-2 fade-up-d2" style="margin-top:16px;gap:28px;align-items:start;">
+      <div>
+        <p class="body">A new coffee shop in Melbourne's CBD has surveyed <strong>80 customers</strong> about their habits and preferences. The data has been collected and entered into a spreadsheet.</p>
+        <p class="body" style="margin-top:14px;">Your job today is to <strong>explore the dataset</strong>, classify variables, compute descriptive statistics, and answer questions using Excel.</p>
+        <div class="think-box" style="margin-top:20px;">
+          <h4>Before you start</h4>
+          <p>Is this dataset a population or a sample? What would the population be?</p>
+        </div>
+      </div>
+      <div>
+        <div class="card accent-border" style="margin-bottom:14px;">
+          <h4>Sheet 1: Customer Survey</h4>
+          <p>80 rows of raw survey data with 14 variables</p>
+        </div>
+        <div class="card green-border" style="margin-bottom:14px;">
+          <h4>Sheet 2: Data Dictionary</h4>
+          <p>Variable descriptions with columns for you to fill in data type and scale</p>
+        </div>
+        <div class="card gold-border">
+          <h4>Sheet 3: Analysis Workspace</h4>
+          <p>Pre-built formulas and blank cells for your own analysis</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 3: MEET THE DATA ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label fade-up">DATASET PREVIEW</div>
+    <h2 class="section-title fade-up-d1">The <span class="accent">Variables</span></h2>
+    <h3 class="sub fade-up-d2">14 columns covering demographics, behaviour, and satisfaction</h3>
+    <div class="fade-up-d3" style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Variable</th><th>Example Values</th><th>What It Records</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Customer_ID</strong></td><td>CUST-1001, CUST-1002</td><td>Unique identifier</td></tr>
+          <tr><td><strong>Age</strong></td><td>24, 37, 55</td><td>Customer age in years</td></tr>
+          <tr><td><strong>Gender</strong></td><td>Male, Female, Non-binary</td><td>Self-reported gender</td></tr>
+          <tr><td><strong>Suburb</strong></td><td>CBD, Fitzroy, St Kilda</td><td>Where the customer lives</td></tr>
+          <tr><td><strong>Preferred_Drink</strong></td><td>Flat White, Latte, Mocha</td><td>Most ordered drink</td></tr>
+          <tr><td><strong>Monthly_Visits</strong></td><td>3, 8, 15</td><td>Visits per month</td></tr>
+          <tr><td><strong>Items_Per_Visit</strong></td><td>1, 2, 3</td><td>Items bought each visit</td></tr>
+          <tr><td><strong>Avg_Spend_AUD</strong></td><td>$8.50, $14.20, $22.75</td><td>Average spend per visit</td></tr>
+          <tr><td><strong>Wait_Time_Min</strong></td><td>2.3, 5.1, 8.7</td><td>Average wait in minutes</td></tr>
+          <tr><td><strong>Satisfaction</strong></td><td>Satisfied, Very Satisfied</td><td>Overall satisfaction level</td></tr>
+          <tr><td><strong>Membership</strong></td><td>Yes, No</td><td>Loyalty membership status</td></tr>
+          <tr><td><strong>Distance_KM</strong></td><td>0.5, 2.3, 7.8</td><td>Distance from home (km)</td></tr>
+          <tr><td><strong>Payment_Method</strong></td><td>Cash, Card, Mobile Pay</td><td>Preferred payment type</td></tr>
+          <tr><td><strong>Visit_Time</strong></td><td>Morning, Afternoon, Evening</td><td>Typical visit time of day</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 4: EXERCISE 1 — CLASSIFY VARIABLES ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label fade-up">EXERCISE 1</div>
+    <h2 class="section-title fade-up-d1">Classify Every <span class="accent">Variable</span></h2>
+    <h3 class="sub fade-up-d2">Open the "Data Dictionary" sheet and fill in the ??? columns</h3>
+    <div class="task-box fade-up-d3">
+      <h4>Your Task</h4>
+      <ol>
+        <li>Go to the <strong>Data Dictionary</strong> sheet in the Excel file.</li>
+        <li>For each of the 14 variables, replace the <strong>???</strong> with the correct classification.</li>
+        <li><strong>Data Type</strong> column: Is it Categorical or Numerical?</li>
+        <li><strong>Scale</strong> column: Is it Nominal, Ordinal, Discrete, or Continuous?</li>
+        <li>Pay attention to the <strong>Notes</strong> column for hints on tricky variables.</li>
+      </ol>
+    </div>
+    <div class="hint-box fade-up-d4">
+      <h4>Hint</h4>
+      <p>Customer_ID looks numerical, but ask yourself: does it make sense to calculate the average Customer_ID? If the answer is no, it's probably not numerical data.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 5: QUIZ — VARIABLE CLASSIFICATION ========== -->
+<div class="slide">
+  <div class="slide-inner" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="label green fade-up">CHECK YOUR WORK</div>
+    <div class="quiz-box fade-up-d1">
+      <h3>Classification Check</h3>
+      <div class="quiz-q">What type of data is <strong>Avg_Spend_AUD</strong> ($8.50, $14.20, $22.75)?</div>
+      <div class="quiz-options" id="q1">
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,false)">A) Categorical, Nominal</button>
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,false)">B) Numerical, Discrete (Ratio)</button>
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,true)">C) Numerical, Continuous (Ratio)</button>
+        <button class="quiz-opt" onclick="checkQuiz('q1',this,false)">D) Numerical, Continuous (Interval)</button>
+      </div>
+      <div class="quiz-feedback correct" id="q1-correct">Correct! Spending is measured (not counted), making it continuous. It has a true zero point ($0 means no spending), so it's ratio scale. While currency is technically discrete at the cent level, in practice we treat dollar amounts as continuous.</div>
+      <div class="quiz-feedback wrong" id="q1-wrong">Not quite. Spending is a measured value (continuous) with a true zero point (ratio). While you could argue currency is discrete at the cent level, it is commonly treated as continuous data in statistics.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 6: QUIZ 2 ========== -->
+<div class="slide">
+  <div class="slide-inner" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="label green fade-up">CHECK YOUR WORK</div>
+    <div class="quiz-box fade-up-d1">
+      <h3>Classification Check</h3>
+      <div class="quiz-q"><strong>Satisfaction</strong> has values: Very Dissatisfied, Dissatisfied, Neutral, Satisfied, Very Satisfied. What is the correct classification?</div>
+      <div class="quiz-options" id="q2">
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,false)">A) Numerical, Discrete</button>
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,false)">B) Categorical, Nominal</button>
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,true)">C) Categorical, Ordinal</button>
+        <button class="quiz-opt" onclick="checkQuiz('q2',this,false)">D) Numerical, Continuous</button>
+      </div>
+      <div class="quiz-feedback correct" id="q2-correct">Correct! The responses are categories (not numbers), so it's categorical. There is a clear natural order from Very Dissatisfied to Very Satisfied, making it ordinal.</div>
+      <div class="quiz-feedback wrong" id="q2-wrong">These are text categories with a natural ranking. That makes them categorical and ordinal. Just because something can be ranked doesn't make it numerical.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 7: ANSWER KEY — CLASSIFICATIONS ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label fade-up">ANSWER KEY</div>
+    <h2 class="section-title fade-up-d1">Variable <span class="accent">Classifications</span></h2>
+    <div class="fade-up-d2" style="overflow-x:auto;">
+      <table class="data-table" style="font-size:12px;">
+        <thead><tr><th>Variable</th><th>Type</th><th>Sub-type</th><th>Scale</th><th>Key Reasoning</th></tr></thead>
+        <tbody>
+          <tr><td>Customer_ID</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-nom">Nominal</span></td><td>An identifier, not a meaningful number</td></tr>
+          <tr><td>Age</td><td><span class="tag tag-num">Numerical</span></td><td>Discrete</td><td><span class="tag tag-dis">Ratio</span></td><td>Whole years, true zero exists</td></tr>
+          <tr><td>Gender</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-nom">Nominal</span></td><td>Labels with no natural order</td></tr>
+          <tr><td>Suburb</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-nom">Nominal</span></td><td>Location names, no order</td></tr>
+          <tr><td>Preferred_Drink</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-nom">Nominal</span></td><td>Drink names, no natural ranking</td></tr>
+          <tr><td>Monthly_Visits</td><td><span class="tag tag-num">Numerical</span></td><td>Discrete</td><td><span class="tag tag-dis">Ratio</span></td><td>Counted whole visits, true zero</td></tr>
+          <tr><td>Items_Per_Visit</td><td><span class="tag tag-num">Numerical</span></td><td>Discrete</td><td><span class="tag tag-dis">Ratio</span></td><td>Counted whole items</td></tr>
+          <tr><td>Avg_Spend_AUD</td><td><span class="tag tag-num">Numerical</span></td><td>Continuous</td><td><span class="tag tag-con">Ratio</span></td><td>Measured, $0 is meaningful zero</td></tr>
+          <tr><td>Wait_Time_Min</td><td><span class="tag tag-num">Numerical</span></td><td>Continuous</td><td><span class="tag tag-con">Ratio</span></td><td>Measured time, true zero</td></tr>
+          <tr><td>Satisfaction</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-ord">Ordinal</span></td><td>Ordered categories</td></tr>
+          <tr><td>Membership</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-nom">Nominal</span></td><td>Yes/No, no ranking</td></tr>
+          <tr><td>Distance_KM</td><td><span class="tag tag-num">Numerical</span></td><td>Continuous</td><td><span class="tag tag-con">Ratio</span></td><td>Measured distance, true zero</td></tr>
+          <tr><td>Payment_Method</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-nom">Nominal</span></td><td>Payment types, no natural order</td></tr>
+          <tr><td>Visit_Time</td><td><span class="tag tag-cat">Categorical</span></td><td>--</td><td><span class="tag tag-ord">Ordinal</span></td><td>Morning &rarr; Afternoon &rarr; Evening has a natural order</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 8: EXERCISE 2 — DESCRIPTIVE STATS ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label fade-up">EXERCISE 2</div>
+    <h2 class="section-title fade-up-d1">Descriptive <span class="accent">Statistics</span> in Excel</h2>
+    <h3 class="sub fade-up-d2">Open the "Analysis Workspace" sheet — Part 1 has formulas ready</h3>
+    <div class="grid-2 fade-up-d3" style="gap:24px;">
+      <div>
+        <div class="task-box">
+          <h4>Your Task</h4>
+          <ol>
+            <li>Go to the <strong>Analysis Workspace</strong> sheet.</li>
+            <li>Look at Part 1 — the formulas are already written.</li>
+            <li>Study each formula and understand what it calculates.</li>
+            <li>Verify the results make sense.</li>
+            <li>Then try writing your <strong>own formulas</strong> in Part 3.</li>
+          </ol>
+        </div>
+        <div class="hint-box">
+          <h4>Key Excel Functions</h4>
+          <p><strong>COUNTA</strong> — counts non-empty cells<br>
+          <strong>AVERAGE</strong> — calculates mean<br>
+          <strong>MIN / MAX</strong> — smallest / largest value<br>
+          <strong>COUNTIF</strong> — counts cells matching a condition<br>
+          <strong>AVERAGEIF</strong> — averages cells matching a condition</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4>Example: Counting customers</h4>
+          <div class="formula-box"><span class="fn">=COUNTA</span>(<span class="ref">'Customer Survey'!A2:A81</span>)</div>
+          <p style="margin-top:8px;">Result: <strong>80</strong> customers</p>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4>Example: Average age</h4>
+          <div class="formula-box"><span class="fn">=AVERAGE</span>(<span class="ref">'Customer Survey'!B2:B81</span>)</div>
+          <p style="margin-top:8px;">Result: <strong>36.70</strong> years</p>
+        </div>
+        <div class="card">
+          <h4>Example: Count by category</h4>
+          <div class="formula-box"><span class="fn">=COUNTIF</span>(<span class="ref">'Customer Survey'!C2:C81</span>,<span class="str">"Male"</span>)</div>
+          <p style="margin-top:8px;">Result: <strong>35</strong> male customers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 9: DATASET SNAPSHOT ========== -->
+<div class="slide">
+  <div class="slide-inner" style="text-align:center;">
+    <div class="label fade-up">WHAT THE DATA TELLS US</div>
+    <h2 class="section-title fade-up-d1">Dataset <span class="accent">Snapshot</span></h2>
+    <h3 class="sub fade-up-d2">These are the results you should see in the Analysis Workspace</h3>
+    <div class="grid-4 fade-up-d3">
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent);">80</div><div class="stat-label">Customers Surveyed</div></div>
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent3);">36.7</div><div class="stat-label">Average Age</div></div>
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent4);">$13.03</div><div class="stat-label">Average Spend</div></div>
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent2);">4.6 min</div><div class="stat-label">Average Wait</div></div>
+    </div>
+    <div class="grid-4 fade-up-d4" style="margin-top:14px;">
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent);">7.4</div><div class="stat-label">Avg Monthly Visits</div></div>
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent3);">31</div><div class="stat-label">Members</div></div>
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent4);">24</div><div class="stat-label">Very Satisfied</div></div>
+      <div class="card stat-card"><div class="stat-val" style="color:var(--accent2);">19–63</div><div class="stat-label">Age Range</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 10: EXERCISE 3 — WRITE YOUR OWN ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label fade-up">EXERCISE 3</div>
+    <h2 class="section-title fade-up-d1">Write Your Own <span class="accent">Formulas</span></h2>
+    <h3 class="sub fade-up-d2">Part 3 of the Analysis Workspace — write formulas in the yellow cells</h3>
+    <div class="grid-2 fade-up-d3" style="gap:24px;">
+      <div>
+        <div class="task-box">
+          <h4>Questions to Answer</h4>
+          <ol>
+            <li>What is the average spend of <strong>members</strong> only?</li>
+            <li>What is the average spend of <strong>non-members</strong>?</li>
+            <li>How many customers visit in the <strong>morning</strong>?</li>
+            <li>What is the average wait time for <strong>CBD</strong> customers?</li>
+            <li>How many customers are <strong>under 25</strong> years old?</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4>New function: AVERAGEIF</h4>
+          <p style="margin-bottom:8px;">Averages cells where a condition is met</p>
+          <div class="formula-box"><span class="fn">=AVERAGEIF</span>(<span class="ref">range</span>, <span class="str">"criteria"</span>, <span class="ref">average_range</span>)</div>
+          <p style="margin-top:10px;font-size:13px;color:var(--text-dim);">Example: Average spend where Membership = "Yes"</p>
+          <div class="formula-box" style="margin-top:6px;"><span class="fn">=AVERAGEIF</span>(<span class="ref">K2:K81</span>,<span class="str">"Yes"</span>,<span class="ref">H2:H81</span>)</div>
+        </div>
+        <div class="card">
+          <h4>New function: COUNTIF with operators</h4>
+          <p style="margin-bottom:8px;">Count cells matching a comparison</p>
+          <div class="formula-box"><span class="fn">=COUNTIF</span>(<span class="ref">B2:B81</span>,<span class="str">"&lt;25"</span>)</div>
+          <p style="margin-top:10px;font-size:13px;color:var(--text-dim);">Counts all customers aged under 25</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 11: QUIZ 3 — FORMULA ========== -->
+<div class="slide">
+  <div class="slide-inner" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="label green fade-up">KNOWLEDGE CHECK</div>
+    <div class="quiz-box fade-up-d1">
+      <h3>Excel Formula Check</h3>
+      <div class="quiz-q">Which formula correctly counts the number of customers who are <strong>"Satisfied"</strong> or <strong>"Very Satisfied"</strong>?</div>
+      <div class="quiz-options" id="q3">
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,false)">A) =COUNTIF(J2:J81,"Satisfied"+"Very Satisfied")</button>
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,true)">B) =COUNTIF(J2:J81,"Satisfied")+COUNTIF(J2:J81,"Very Satisfied")</button>
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,false)">C) =COUNTIF(J2:J81,">Neutral")</button>
+        <button class="quiz-opt" onclick="checkQuiz('q3',this,false)">D) =COUNT(J2:J81,"Satisfied","Very Satisfied")</button>
+      </div>
+      <div class="quiz-feedback correct" id="q3-correct">Correct! COUNTIF only accepts one criterion at a time. To count multiple categories, add separate COUNTIF calls together. The result is 34 + 24 = 58 customers.</div>
+      <div class="quiz-feedback wrong" id="q3-wrong">COUNTIF only takes a single criterion. To count multiple categories, you need to add two separate COUNTIF results together: =COUNTIF(...,"Satisfied") + COUNTIF(...,"Very Satisfied").</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 12: EXERCISE 4 — CONCEPTUAL QUESTIONS ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label gold fade-up">EXERCISE 4</div>
+    <h2 class="section-title fade-up-d1">Think <span class="accent">Critically</span></h2>
+    <h3 class="sub fade-up-d2">These questions don't need formulas — use the data and your thinking</h3>
+    <div class="grid-2 fade-up-d3" style="gap:20px;">
+      <div class="card accent-border">
+        <h4>Q1: Population vs Sample</h4>
+        <p>The shop serves approximately 2,000 unique customers per month. We surveyed 80. What is the population? What is the sample? What is a parameter we don't know? What statistic did we calculate?</p>
+      </div>
+      <div class="card pink-border">
+        <h4>Q2: Sampling Method</h4>
+        <p>The 80 customers were surveyed by approaching people in the shop on a Tuesday afternoon. What sampling method is this? What potential bias exists?</p>
+      </div>
+      <div class="card green-border">
+        <h4>Q3: Coverage Error</h4>
+        <p>This survey only captures people who physically visit the shop. The shop also does Uber Eats deliveries. Is there a coverage error? How would you fix it?</p>
+      </div>
+      <div class="card gold-border">
+        <h4>Q4: Measurement Error</h4>
+        <p>The Satisfaction variable was collected by a barista asking customers face-to-face: "How happy are you with us today?" Could this introduce measurement error? What type?</p>
+      </div>
+    </div>
+    <div class="think-box fade-up-d4">
+      <h4>Discussion</h4>
+      <p>If you could redesign this survey, what sampling method would you use and what would you change about how satisfaction is collected?</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 13: EXERCISE 5 — DATA INVESTIGATION ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label fade-up">EXERCISE 5</div>
+    <h2 class="section-title fade-up-d1">Data <span class="accent">Investigation</span></h2>
+    <h3 class="sub fade-up-d2">Use Excel to answer these business questions</h3>
+    <div class="grid-2 fade-up-d3" style="gap:20px;">
+      <div class="task-box">
+        <h4>Questions</h4>
+        <ol>
+          <li>Do <strong>members</strong> spend more on average than non-members? By how much?</li>
+          <li>Which <strong>suburb</strong> has the most customers? (Try using COUNTIF for each suburb, or use a PivotTable.)</li>
+          <li>Is the average wait time different for <strong>morning</strong> vs <strong>evening</strong> visitors?</li>
+          <li>What percentage of all customers are <strong>"Very Satisfied"</strong>?</li>
+          <li>What is the most common <strong>payment method</strong> among customers aged <strong>under 30</strong>? (This is a challenge — look at the data manually or try filtering.)</li>
+        </ol>
+      </div>
+      <div>
+        <div class="hint-box">
+          <h4>Helpful Formulas</h4>
+          <p><strong>Percentage:</strong></p>
+          <div class="formula-box" style="margin:6px 0;"><span class="fn">=COUNTIF</span>(<span class="ref">J2:J81</span>,<span class="str">"Very Satisfied"</span>)/<span class="fn">COUNTA</span>(<span class="ref">J2:J81</span>)</div>
+          <p style="margin-top:12px;"><strong>Try using Filters:</strong><br>Click a column header, then Data &rarr; Filter. This lets you view subsets of the data without formulas.</p>
+          <p style="margin-top:12px;"><strong>Try a PivotTable:</strong><br>Select the data, Insert &rarr; PivotTable. Drag Suburb to Rows and Customer_ID to Values to count.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 14: QUIZ 4 — CONCEPTUAL ========== -->
+<div class="slide">
+  <div class="slide-inner" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="label green fade-up">KNOWLEDGE CHECK</div>
+    <div class="quiz-box fade-up-d1">
+      <h3>Conceptual Check</h3>
+      <div class="quiz-q">The barista asks customers face-to-face: "How happy are you with us today?" and 72.5% report being Satisfied or Very Satisfied. This high rate is <em>most likely</em> influenced by:</div>
+      <div class="quiz-options" id="q4">
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,false)">A) Sampling error — 80 customers is too small</button>
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,true)">B) The halo effect — customers feel pressure to please the interviewer</button>
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,false)">C) Coverage error — some customers are excluded</button>
+        <button class="quiz-opt" onclick="checkQuiz('q4',this,false)">D) Non-response error — unhappy customers refused to answer</button>
+      </div>
+      <div class="quiz-feedback correct" id="q4-correct">Correct! When asked face-to-face by the person who served them, customers feel socially obligated to give a positive answer. This is the halo effect — a form of measurement error. An anonymous online survey would reduce this bias.</div>
+      <div class="quiz-feedback wrong" id="q4-wrong">While other errors may exist, the most direct issue with face-to-face satisfaction questions asked by the service provider is the <strong>halo effect</strong> — customers feel pressure to be positive. This is a measurement error.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 15: CHALLENGE — DESIGN YOUR OWN ========== -->
+<div class="slide">
+  <div class="slide-inner">
+    <div class="label gold fade-up">CHALLENGE</div>
+    <h2 class="section-title fade-up-d1">Design a Better <span class="accent">Survey</span></h2>
+    <h3 class="sub fade-up-d2">Apply everything you've learned today</h3>
+    <div class="grid-2 fade-up-d3" style="gap:24px;">
+      <div class="task-box">
+        <h4>Your Brief</h4>
+        <p>The coffee shop owner wants to understand <strong>why some customers visit frequently and others don't</strong>. Design a short survey (5–7 questions) that would help answer this.</p>
+        <ol style="margin-top:12px;">
+          <li>Write 5–7 survey questions</li>
+          <li>Classify each variable you'd collect (nominal, ordinal, discrete, continuous)</li>
+          <li>Define your population and sampling frame</li>
+          <li>Choose a sampling method and justify it</li>
+          <li>Identify at least one potential error and how you'd mitigate it</li>
+        </ol>
+      </div>
+      <div>
+        <div class="card accent-border" style="margin-bottom:14px;">
+          <h4>Criteria for good questions</h4>
+          <p>Include at least one of each: a nominal variable, an ordinal variable, a discrete variable, and a continuous variable.</p>
+        </div>
+        <div class="card green-border" style="margin-bottom:14px;">
+          <h4>Avoid common mistakes</h4>
+          <p>No leading questions, no double-barrelled questions (asking two things at once), and make sure every question has clear response options.</p>
+        </div>
+        <div class="card gold-border">
+          <h4>Discuss with your group</h4>
+          <p>Compare your survey designs. Could your classmates' surveys introduce any errors you hadn't considered?</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 16: SUMMARY ========== -->
+<div class="slide">
+  <div class="slide-inner" style="text-align:center;">
+    <div class="label fade-up">WRAP UP</div>
+    <h2 class="section-title fade-up-d1">What You <span class="accent">Practised</span> Today</h2>
+    <div class="grid-3 fade-up-d2" style="margin-top:20px;text-align:left;">
+      <div class="card accent-border">
+        <h4>Data Classification</h4>
+        <p>Classified 14 real variables as nominal, ordinal, discrete, or continuous — including tricky cases like Customer_ID and Visit_Time.</p>
+      </div>
+      <div class="card green-border">
+        <h4>Excel Skills</h4>
+        <p>Used COUNTA, AVERAGE, MIN, MAX, COUNTIF, and AVERAGEIF to compute descriptive statistics from raw data.</p>
+      </div>
+      <div class="card gold-border">
+        <h4>Critical Thinking</h4>
+        <p>Identified population vs sample, recognised survey errors, and designed a better survey from scratch.</p>
+      </div>
+    </div>
+    <div class="fade-up-d3" style="margin-top:28px;">
+      <div class="card" style="display:inline-block;padding:20px 40px;">
+        <h4>Next week we'll build on these foundations with data visualisation and probability.</h4>
+        <p style="margin-top:8px;">Make sure to complete the tutorial problems (Q1.8–1.10) before next class.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .deck -->
+
+<!-- NAVIGATION -->
+<div class="nav-bar">
+  <button id="prevBtn" onclick="go(-1)" disabled>&#8592; Previous</button>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span class="progress-text" id="counter">1 / 16</span>
+    <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+    <span class="key-hint"><kbd>&#8592;</kbd> <kbd>&#8594;</kbd></span>
+  </div>
+  <button id="nextBtn" onclick="go(1)">Next &#8594;</button>
+</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+update();
+
+function go(dir) {
+  if (current + dir < 0 || current + dir >= total) return;
+  slides[current].classList.remove('active');
+  if (dir > 0) slides[current].classList.add('prev');
+  current += dir;
+  slides[current].classList.remove('prev');
+  slides[current].classList.add('active');
+  update();
+}
+
+function update() {
+  document.getElementById('counter').textContent = (current+1) + ' / ' + total;
+  document.getElementById('progressBar').style.width = ((current+1)/total*100)+'%';
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').disabled = current === total - 1;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+});
+
+function checkQuiz(id, btn, isCorrect) {
+  const opts = document.querySelectorAll('#'+id+' .quiz-opt');
+  opts.forEach(o => {
+    o.classList.add('disabled');
+    if (o === btn) o.classList.add(isCorrect ? 'correct' : 'wrong');
+  });
+  if (!isCorrect) {
+    opts.forEach(o => {
+      if (o.getAttribute('onclick').includes('true')) o.classList.add('correct');
+    });
+  }
+  document.getElementById(id + (isCorrect ? '-correct' : '-wrong')).classList.add('show');
+}
+</script>
+</body>
+</html>
