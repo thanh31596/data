@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CP3501 – Week 6: From Linear Models to Neural Networks</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #c0001a;
+    --red-light: #f5e6e8;
+    --dark: #1a1a1a;
+    --mid: #444;
+    --light: #888;
+    --bg: #ffffff;
+    --surface: #f8f8f8;
+    --border: #e0e0e0;
+    --code-bg: #f4f4f4;
+    --green: #1a7a3a;
+    --blue: #003a8c;
+    --amber: #7a4a00;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .deck { width: 100%; max-width: 960px; position: relative; }
+
+  .slide {
+    display: none;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    min-height: 560px;
+    padding: 52px 60px 44px;
+    position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  }
+  .slide.active { display: flex; flex-direction: column; }
+
+  /* Red top bar */
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--red);
+  }
+
+  /* Slide number */
+  .slide-num {
+    position: absolute;
+    bottom: 16px; right: 24px;
+    font-size: 11px;
+    color: var(--light);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* Course label */
+  .course-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--red);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--red-light);
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 8px;
+    margin-top: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  p { font-size: 15px; line-height: 1.7; color: var(--mid); margin-bottom: 10px; }
+
+  ul { padding-left: 20px; }
+  ul li {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  ul li strong { color: var(--dark); font-weight: 600; }
+
+  code, .mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--blue);
+  }
+
+  pre {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 18px 20px;
+    border-radius: 4px;
+    margin: 14px 0;
+    line-height: 1.6;
+    overflow-x: auto;
+    border-left: 3px solid var(--red);
+  }
+  pre .kw { color: #cba6f7; }
+  pre .fn { color: #89b4fa; }
+  pre .str { color: #a6e3a1; }
+  pre .cm { color: #6c7086; font-style: italic; }
+  pre .num { color: #fab387; }
+  pre .var { color: #cdd6f4; }
+
+  .callout {
+    background: var(--red-light);
+    border-left: 4px solid var(--red);
+    padding: 12px 16px;
+    border-radius: 0 4px 4px 0;
+    margin: 14px 0;
+  }
+  .callout p { color: var(--dark); font-size: 14px; margin: 0; }
+  .callout strong { color: var(--red); }
+
+  .callout.green {
+    background: #e8f5ed;
+    border-left-color: var(--green);
+  }
+  .callout.green p { color: var(--dark); }
+  .callout.green strong { color: var(--green); }
+
+  .callout.blue {
+    background: #e8eef8;
+    border-left-color: var(--blue);
+  }
+  .callout.blue p { color: var(--dark); }
+  .callout.blue strong { color: var(--blue); }
+
+  /* Two-column layouts */
+  .cols { display: grid; gap: 24px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-60-40 { grid-template-columns: 60fr 40fr; }
+  .cols-40-60 { grid-template-columns: 40fr 60fr; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 18px;
+  }
+  .card h3 { margin-top: 0; }
+
+  /* SVG diagrams */
+  .diagram { margin: 16px 0; text-align: center; }
+  .diagram svg { max-width: 100%; }
+
+  /* Progress/roadmap */
+  .roadmap {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    gap: 0;
+  }
+  .roadmap-step {
+    flex: 1;
+    text-align: center;
+    padding: 12px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mid);
+    line-height: 1.4;
+    position: relative;
+  }
+  .roadmap-step.active {
+    background: var(--red);
+    color: white;
+    border-color: var(--red);
+    z-index: 1;
+  }
+  .roadmap-step:not(:last-child)::after {
+    content: '›';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: var(--light);
+    z-index: 2;
+  }
+  .roadmap-step.done { background: var(--red-light); color: var(--red); }
+
+  /* Title slide */
+  .slide.title { justify-content: center; min-height: 560px; }
+  .slide.title h1 { font-size: 40px; margin-bottom: 16px; }
+  .title-sub { font-size: 18px; color: var(--mid); font-family: 'IBM Plex Sans', sans-serif; margin-bottom: 32px; }
+  .title-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .title-meta-item { font-size: 13px; }
+  .title-meta-item span { display: block; color: var(--light); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 14px 0; }
+  th { background: var(--red); color: white; padding: 8px 12px; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.05em; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--mid); }
+  tr:nth-child(even) td { background: var(--surface); }
+
+  /* QUIZ */
+  .quiz-container { margin-top: 10px; }
+  .quiz-q {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt {
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--mid);
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+    line-height: 1.5;
+  }
+  .quiz-opt:hover { border-color: var(--red); background: var(--red-light); }
+  .quiz-opt.correct { border-color: var(--green); background: #e8f5ed; color: #0f4d20; font-weight: 600; }
+  .quiz-opt.wrong { border-color: #c0392b; background: #fdecea; color: #7a1010; }
+  .quiz-opt.disabled { cursor: default; }
+  .quiz-feedback {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    display: none;
+    line-height: 1.6;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: #e8f5ed; border: 1px solid var(--green); color: #0f4d20; }
+  .quiz-feedback.wrong { background: #fdecea; border: 1px solid #c0392b; color: #7a1010; }
+  .quiz-reset {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--red);
+    cursor: pointer;
+    text-decoration: underline;
+    display: none;
+  }
+  .quiz-reset.show { display: inline-block; }
+
+  /* BADGE */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .badge-quiz { background: var(--red); color: white; }
+  .badge-key { background: #1a1a1a; color: white; }
+  .badge-new { background: var(--green); color: white; }
+
+  /* Number annotation */
+  .step-num {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: var(--red);
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 24px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .step-row { display: flex; align-items: flex-start; margin-bottom: 10px; }
+  .step-row p { margin: 0; padding-top: 2px; }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 960px;
+    margin-top: 16px;
+  }
+  .nav-btn {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 10px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    letter-spacing: 0.04em;
+    color: var(--dark);
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; background: white; color: var(--dark); }
+  .nav-info { font-size: 13px; color: var(--light); font-family: 'IBM Plex Mono', monospace; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* Section header slide */
+  .slide.section-header { background: var(--red); justify-content: center; }
+  .slide.section-header::before { background: rgba(255,255,255,0.3); }
+  .slide.section-header .course-tag { color: rgba(255,255,255,0.7); }
+  .slide.section-header h1 { color: white; font-size: 38px; }
+  .slide.section-header p { color: rgba(255,255,255,0.85); font-size: 16px; }
+  .slide.section-header .slide-num { color: rgba(255,255,255,0.5); }
+
+  /* Comparison */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 14px 0;
+  }
+  .compare-col { }
+  .compare-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .compare-label.manual { color: var(--blue); }
+  .compare-label.fastai { color: var(--green); }
+
+  .highlight { background: #fff9c4; padding: 1px 3px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide title active">
+  <div class="course-tag">CP3501 · Deep Learning · Week 6</div>
+  <h1>From Data to Neural Networks</h1>
+  <p class="title-sub">Building and understanding tabular deep learning models — from scratch to framework</p>
+  <div style="margin-top:24px;">
+    <div class="roadmap">
+      <div class="roadmap-step">Data<br>Preprocessing</div>
+      <div class="roadmap-step">Linear<br>Model</div>
+      <div class="roadmap-step">Gradient<br>Descent</div>
+      <div class="roadmap-step">Neural<br>Network</div>
+      <div class="roadmap-step">FastAI<br>Framework</div>
+    </div>
+  </div>
+  <div class="title-meta">
+    <div class="title-meta-item"><span>Subject</span>CP3501 / CP5701</div>
+    <div class="title-meta-item"><span>Dataset</span>Titanic (Kaggle)</div>
+    <div class="title-meta-item"><span>Tools</span>PyTorch · FastAI · Pandas</div>
+    <div class="title-meta-item"><span>Outcome</span>SLO1 · SLO2 · SLO3</div>
+  </div>
+  <div class="slide-num">1 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 2: LESSON OVERVIEW ==================== -->
+<div class="slide">
+  <div class="course-tag">Lesson Overview</div>
+  <h2>What We Are Building Today</h2>
+  <p>By the end of this lesson, you will have implemented a complete binary classifier — twice: once manually, once with FastAI.</p>
+  <div class="roadmap" style="margin:24px 0 20px;">
+    <div class="roadmap-step done">1. Preprocess<br>Titanic Data</div>
+    <div class="roadmap-step done">2. Linear Model<br>in PyTorch</div>
+    <div class="roadmap-step done">3. Gradient<br>Descent Loop</div>
+    <div class="roadmap-step done">4. Add Neural<br>Network Layers</div>
+    <div class="roadmap-step done">5. Redo in<br>FastAI</div>
+  </div>
+  <div class="cols cols-3" style="margin-top:12px;">
+    <div class="card">
+      <h3>What you'll build</h3>
+      <p style="font-size:14px;">A model that predicts whether a Titanic passenger survived — achieving <strong>82%+ accuracy</strong></p>
+    </div>
+    <div class="card">
+      <h3>Key concept</h3>
+      <p style="font-size:14px;">Build from scratch first so you understand what frameworks do <em>automatically</em></p>
+    </div>
+    <div class="card">
+      <h3>Why Titanic?</h3>
+      <p style="font-size:14px;">Real data, mixed types, missing values, categorical features — everything you'll face in practice</p>
+    </div>
+  </div>
+  <div class="slide-num">2 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 3: SECTION — PREPROCESSING ==================== -->
+<div class="slide section-header">
+  <div class="course-tag">Part 1 of 4</div>
+  <h1>Data Preprocessing</h1>
+  <p>Before any model can learn, data must be clean, numerical, and scaled. This is where most real-world time is spent.</p>
+  <div class="slide-num">3 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 4: TITANIC DATASET ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 1 · Preprocessing</div>
+  <h2>The Titanic Dataset</h2>
+  <div class="cols cols-60-40">
+    <div>
+      <p>Each row is one passenger. The goal is to predict the <code>Survived</code> column (0 = died, 1 = survived).</p>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Example</th></tr>
+        <tr><td>Survived</td><td>Binary target</td><td>0 or 1</td></tr>
+        <tr><td>Pclass</td><td>Categorical (numeric)</td><td>1, 2, 3</td></tr>
+        <tr><td>Sex</td><td>Categorical (text)</td><td>male / female</td></tr>
+        <tr><td>Age</td><td>Continuous</td><td>24.0</td></tr>
+        <tr><td>Fare</td><td>Continuous, skewed</td><td>7.25 to 512</td></tr>
+        <tr><td>Embarked</td><td>Categorical (text)</td><td>C, Q, S</td></tr>
+        <tr><td>Cabin</td><td>Mostly missing</td><td>B96 B98</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="callout">
+        <p><strong>Four preprocessing challenges:</strong></p>
+        <p style="margin-top:8px;">① Missing values in Age, Cabin, Embarked<br>② Skewed distribution in Fare<br>③ Text categories can't multiply<br>④ Columns at different scales</p>
+      </div>
+      <div class="callout blue" style="margin-top:12px;">
+        <p><strong>Load the data:</strong></p>
+        <pre style="margin:6px 0 0; padding:10px; font-size:12px;"><span class="kw">import</span> pandas <span class="kw">as</span> pd
+df = pd.<span class="fn">read_csv</span>(<span class="str">'titanic.csv'</span>)
+df.<span class="fn">head</span>()</pre>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">4 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 5: MISSING VALUES ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 1 · Preprocessing</div>
+  <h2>Step 1 — Handle Missing Values</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>Finding missing values</h3>
+      <pre><span class="cm"># Boolean mask: True where value is missing</span>
+df.<span class="fn">isna</span>().<span class="fn">sum</span>()
+
+<span class="cm"># Result:</span>
+<span class="cm"># Age      177  ← some missing</span>
+<span class="cm"># Cabin    687  ← mostly empty</span>
+<span class="cm"># Embarked   2  ← nearly complete</span></pre>
+      <div class="callout">
+        <p><strong>Key insight:</strong> In pandas/numpy, <code>True = 1</code> and <code>False = 0</code>, so <code>.sum()</code> counts the missing values per column.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Mode imputation — the simple fix</h3>
+      <pre><span class="cm"># Replace missing with most common value</span>
+mode_vals = df.<span class="fn">mode</span>().iloc[<span class="num">0</span>]
+df.<span class="fn">fillna</span>(mode_vals, inplace=<span class="kw">True</span>)
+
+<span class="cm"># What gets filled in:</span>
+<span class="cm"># Age      → 24</span>
+<span class="cm"># Cabin    → B96 B98</span>
+<span class="cm"># Embarked → S</span></pre>
+      <div class="callout green">
+        <p><strong>Philosophy:</strong> Start with the simplest method that always works. Mode imputation works for both numeric and categorical columns. Build complexity later.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">5 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 6: LOG TRANSFORM ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 1 · Preprocessing</div>
+  <h2>Step 2 — Fix Skewed Distributions</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>The Fare problem</h3>
+      <p>Most passengers paid &lt;£50, but a few paid up to £512. This <strong>long tail</strong> causes problems in linear models — the model spends too much effort fitting a handful of extreme values.</p>
+      <div class="diagram">
+        <svg width="280" height="130" viewBox="0 0 280 130">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Raw Fare distribution</text>
+          <rect x="10" y="20" width="180" height="18" fill="#c0001a" opacity="0.8" rx="2"/>
+          <rect x="10" y="44" width="40" height="18" fill="#c0001a" opacity="0.5" rx="2"/>
+          <rect x="10" y="68" width="12" height="18" fill="#c0001a" opacity="0.3" rx="2"/>
+          <rect x="10" y="92" width="5" height="18" fill="#c0001a" opacity="0.2" rx="2"/>
+          <text x="196" y="33" font-size="11" fill="#444" font-family="IBM Plex Sans">Most passengers (£5–50)</text>
+          <text x="56" y="57" font-size="11" fill="#444" font-family="IBM Plex Sans">Some (£50–150)</text>
+          <text x="28" y="81" font-size="11" fill="#444" font-family="IBM Plex Sans">Few (£150–300)</text>
+          <text x="21" y="105" font-size="11" fill="#444" font-family="IBM Plex Sans">Rare (£300+)</text>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <h3>Log transformation — the fix</h3>
+      <pre><span class="cm"># +1 to handle fares of £0</span>
+df[<span class="str">'LogFare'</span>] = np.<span class="fn">log</span>(df[<span class="str">'Fare'</span>] + <span class="num">1</span>)
+
+<span class="cm"># Equivalent shorthand:</span>
+df[<span class="str">'LogFare'</span>] = np.<span class="fn">log1p</span>(df[<span class="str">'Fare'</span>])</pre>
+      <div class="diagram">
+        <svg width="260" height="90" viewBox="0 0 260 90">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">After log transform</text>
+          <rect x="10" y="22" width="120" height="18" fill="#1a7a3a" opacity="0.8" rx="2"/>
+          <rect x="10" y="46" width="140" height="18" fill="#1a7a3a" opacity="0.6" rx="2"/>
+          <rect x="10" y="70" width="100" height="18" fill="#1a7a3a" opacity="0.4" rx="2"/>
+          <text x="136" y="35" font-size="11" fill="#444" font-family="IBM Plex Sans">More balanced</text>
+        </svg>
+      </div>
+      <div class="callout">
+        <p><strong>Rule of thumb:</strong> Money, population, and any data that spans several orders of magnitude usually needs a log transform.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">6 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 7: ONE-HOT ENCODING ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 1 · Preprocessing</div>
+  <h2>Step 3 — Convert Categories to Numbers</h2>
+  <p>A neural network multiplies values by coefficients. You cannot multiply <em>"male"</em> by a number — so we convert categories to binary (0/1) columns.</p>
+  <div class="cols cols-2">
+    <div>
+      <h3>The problem</h3>
+      <table>
+        <tr><th>Sex</th><th>Embarked</th></tr>
+        <tr><td>male</td><td>S</td></tr>
+        <tr><td>female</td><td>C</td></tr>
+        <tr><td>male</td><td>Q</td></tr>
+      </table>
+      <p style="font-size:13px; margin-top:8px;">These cannot be used in a linear equation as-is.</p>
+    </div>
+    <div>
+      <h3>One-hot encoding (dummy variables)</h3>
+      <table>
+        <tr><th>Sex_male</th><th>Sex_female</th><th>Emb_S</th><th>Emb_C</th><th>Emb_Q</th></tr>
+        <tr><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td></tr>
+        <tr><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+      </table>
+    </div>
+  </div>
+  <pre style="margin-top:12px;"><span class="cm"># pandas does all of this in one line:</span>
+df_encoded = pd.<span class="fn">get_dummies</span>(df)
+
+<span class="cm"># Creates: Sex_male, Sex_female, Pclass_1, Pclass_2, Pclass_3, Embarked_C, Embarked_Q, Embarked_S ...</span></pre>
+  <div class="callout blue" style="margin-top:10px;">
+    <p><strong>Strategy used here:</strong> Keep all levels (n encoding, no dropped column). Each row has exactly one <code>True</code> per category group. No constant term needed.</p>
+  </div>
+  <div class="slide-num">7 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 8: QUIZ 1 ==================== -->
+<div class="slide">
+  <div class="course-tag">Knowledge Checkpoint <span class="badge badge-quiz">Quiz</span></div>
+  <h2>Check Your Understanding — Preprocessing</h2>
+  <div class="quiz-container" id="quiz1">
+    <p class="quiz-q">After one-hot encoding the <code>Sex</code> column (values: male, female), how many new columns are created using full n-encoding?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q1',false)">1 column — Sex_male only (drop one level to avoid multicollinearity)</div>
+      <div class="quiz-opt" onclick="answer(this,'q1',true)">2 columns — Sex_male and Sex_female (keep all levels)</div>
+      <div class="quiz-opt" onclick="answer(this,'q1',false)">3 columns — one for each category plus an "other" column</div>
+      <div class="quiz-opt" onclick="answer(this,'q1',false)">The Sex column is dropped entirely — it causes bias</div>
+    </div>
+    <div class="quiz-feedback" id="q1-feedback"></div>
+    <span class="quiz-reset" id="q1-reset" onclick="resetQuiz('q1')">Try again</span>
+  </div>
+  <hr style="margin-top:24px;">
+  <div class="quiz-container" id="quiz1b">
+    <p class="quiz-q">You have a Fare column with values ranging from £0 to £512. Why should you apply a log transformation before training?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q1b',false)">Log makes all values exactly equal, so training is fair</div>
+      <div class="quiz-opt" onclick="answer(this,'q1b',false)">It converts Fare from continuous to categorical</div>
+      <div class="quiz-opt" onclick="answer(this,'q1b',true)">It compresses the long tail so extreme values don't dominate the model</div>
+      <div class="quiz-opt" onclick="answer(this,'q1b',false)">Log transformation removes missing values automatically</div>
+    </div>
+    <div class="quiz-feedback" id="q1b-feedback"></div>
+    <span class="quiz-reset" id="q1b-reset" onclick="resetQuiz('q1b')">Try again</span>
+  </div>
+  <div class="slide-num">8 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 9: SECTION — LINEAR MODEL ==================== -->
+<div class="slide section-header">
+  <div class="course-tag">Part 2 of 4</div>
+  <h1>Building a Linear Model from Scratch</h1>
+  <p>We'll implement every step manually in PyTorch — tensors, normalization, predictions, loss, and gradient descent. No shortcuts yet.</p>
+  <div class="slide-num">9 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 10: TENSORS ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 2 · Linear Model</div>
+  <h2>Tensors — The Foundation</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>Why PyTorch instead of NumPy?</h3>
+      <p>PyTorch tensors do everything NumPy arrays do, plus:</p>
+      <ul>
+        <li><strong>Automatic differentiation</strong> — calculates gradients for you</li>
+        <li><strong>GPU acceleration</strong> — same code runs on GPU</li>
+        <li>One library instead of two</li>
+      </ul>
+      <h3 style="margin-top:16px;">Creating tensors from data</h3>
+      <pre><span class="kw">import</span> torch
+
+<span class="cm"># Target variable (what we're predicting)</span>
+y = torch.<span class="fn">tensor</span>(df[<span class="str">'Survived'</span>].values)
+
+<span class="cm"># Input features</span>
+X = torch.<span class="fn">tensor</span>(df[feat_cols].values,
+                  dtype=torch.float)
+<span class="cm"># X.shape → (891, 12)</span></pre>
+    </div>
+    <div>
+      <h3>Tensor ranks explained</h3>
+      <div class="diagram">
+        <svg width="260" height="170" viewBox="0 0 260 170">
+          <text x="10" y="16" font-size="12" fill="#c0001a" font-weight="bold" font-family="IBM Plex Sans">Rank 0 — Scalar</text>
+          <rect x="10" y="22" width="30" height="26" fill="#f5e6e8" stroke="#c0001a" stroke-width="1.5" rx="2"/>
+          <text x="25" y="40" text-anchor="middle" font-size="13" fill="#c0001a" font-family="IBM Plex Mono" font-weight="600">42</text>
+          <text x="50" y="40" font-size="11" fill="#666" font-family="IBM Plex Sans">shape: ()</text>
+
+          <text x="10" y="68" font-size="12" fill="#003a8c" font-weight="bold" font-family="IBM Plex Sans">Rank 1 — Vector</text>
+          <rect x="10" y="74" width="26" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="38" y="74" width="26" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="66" y="74" width="26" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <text x="23" y="92" text-anchor="middle" font-size="11" fill="#003a8c" font-family="IBM Plex Mono">0.3</text>
+          <text x="51" y="92" text-anchor="middle" font-size="11" fill="#003a8c" font-family="IBM Plex Mono">0.7</text>
+          <text x="79" y="92" text-anchor="middle" font-size="11" fill="#003a8c" font-family="IBM Plex Mono">0.1</text>
+          <text x="100" y="92" font-size="11" fill="#666" font-family="IBM Plex Sans">shape: (3,)</text>
+
+          <text x="10" y="122" font-size="12" fill="#1a7a3a" font-weight="bold" font-family="IBM Plex Sans">Rank 2 — Matrix</text>
+          <rect x="10" y="128" width="22" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <rect x="34" y="128" width="22" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <rect x="58" y="128" width="22" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <rect x="10" y="152" width="22" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <rect x="34" y="152" width="22" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <rect x="58" y="152" width="22" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <text x="92" y="146" font-size="11" fill="#666" font-family="IBM Plex Sans">shape: (2, 3)</text>
+          <text x="92" y="162" font-size="11" fill="#666" font-family="IBM Plex Sans">X = 891 rows × 12 cols</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">10 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 11: NORMALIZATION ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 2 · Linear Model</div>
+  <h2>Step 4 — Normalise Features</h2>
+  <p>Raw features live on very different scales. If <code>Age</code> ranges 0–80 and <code>Sex_male</code> is 0 or 1, the coefficients are not comparable.</p>
+  <div class="cols cols-2">
+    <div>
+      <h3>The scaling problem</h3>
+      <div class="diagram">
+        <svg width="280" height="100" viewBox="0 0 280 100">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Before normalisation</text>
+          <text x="10" y="34" font-size="11" fill="#444" font-family="IBM Plex Sans">Age:</text>
+          <rect x="50" y="22" width="160" height="14" fill="#c0001a" opacity="0.7" rx="2"/>
+          <text x="216" y="34" font-size="10" fill="#888" font-family="IBM Plex Mono">0–80</text>
+          <text x="10" y="58" font-size="11" fill="#444" font-family="IBM Plex Sans">Sex:</text>
+          <rect x="50" y="46" width="12" height="14" fill="#c0001a" opacity="0.3" rx="2"/>
+          <text x="68" y="58" font-size="10" fill="#888" font-family="IBM Plex Mono">0–1</text>
+          <text x="10" y="82" font-size="11" fill="#444" font-family="IBM Plex Sans">Fare:</text>
+          <rect x="50" y="70" width="220" height="14" fill="#c0001a" opacity="0.9" rx="2"/>
+          <text x="276" y="82" font-size="10" fill="#888" font-family="IBM Plex Mono">0–512</text>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <h3>Max normalisation — divides by max value</h3>
+      <pre><span class="cm"># Max value per column (across rows)</span>
+max_vals = X.<span class="fn">max</span>(dim=<span class="num">0</span>).values
+
+<span class="cm"># Divide each column by its max</span>
+X_norm = X / max_vals
+<span class="cm"># Now all features range from 0.0 to 1.0</span></pre>
+      <div class="callout">
+        <p><strong>Other options:</strong> Z-score <code>(X - mean) / std</code> or Min-Max scaling. For most tabular problems, the choice matters less than ensuring you <em>do</em> normalise.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">11 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 12: MATRIX MULTIPLY ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 2 · Linear Model</div>
+  <h2>Making Predictions — Matrix Multiplication</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>The linear model equation</h3>
+      <pre><span class="cm"># Random initial coefficients</span>
+torch.<span class="fn">manual_seed</span>(<span class="num">42</span>)
+coeffs = torch.<span class="fn">rand</span>(n_coef) - <span class="num">0.5</span>
+
+<span class="cm"># Make predictions</span>
+preds = (X_norm * coeffs).<span class="fn">sum</span>(dim=<span class="num">1</span>)
+
+<span class="cm"># Equivalent — matrix multiply:</span>
+preds = X_norm @ coeffs</pre>
+      <div class="callout">
+        <p><code>*</code> is <strong>element-wise</strong> multiply<br><code>@</code> is <strong>matrix</strong> multiply<br>Both give the same result here — but <code>@</code> is cleaner and scales to neural networks.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Broadcasting visualised</h3>
+      <div class="diagram">
+        <svg width="260" height="190" viewBox="0 0 260 190">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">X (3 rows × 3 cols)</text>
+          <rect x="10" y="20" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="42" y="20" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="74" y="20" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="10" y="48" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="42" y="48" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="74" y="48" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="10" y="76" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="42" y="76" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+          <rect x="74" y="76" width="30" height="26" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="2"/>
+
+          <text x="116" y="62" font-size="18" fill="#444" font-family="IBM Plex Sans">×</text>
+
+          <text x="140" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">coeffs (3,)</text>
+          <rect x="140" y="20" width="30" height="26" fill="#f5e6e8" stroke="#c0001a" stroke-width="1.5" rx="2"/>
+          <rect x="140" y="48" width="30" height="26" fill="#f5e6e8" stroke="#c0001a" stroke-width="1.5" rx="2"/>
+          <rect x="140" y="76" width="30" height="26" fill="#f5e6e8" stroke="#c0001a" stroke-width="1.5" rx="2"/>
+          <text x="148" y="37" font-size="9" fill="#c0001a" font-family="IBM Plex Mono">c₁</text>
+          <text x="148" y="65" font-size="9" fill="#c0001a" font-family="IBM Plex Mono">c₂</text>
+          <text x="148" y="93" font-size="9" fill="#c0001a" font-family="IBM Plex Mono">c₃</text>
+          <text x="138" y="115" font-size="10" fill="#888" font-family="IBM Plex Sans">same coeffs applied</text>
+          <text x="138" y="128" font-size="10" fill="#888" font-family="IBM Plex Sans">to every row</text>
+
+          <text x="10" y="158" font-size="11" fill="#888" font-family="IBM Plex Sans">Result: 3 predictions (one per row)</text>
+          <rect x="10" y="164" width="30" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <rect x="42" y="164" width="30" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <rect x="74" y="164" width="30" height="22" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="2"/>
+          <text x="9" y="182" font-size="9" fill="#1a7a3a" font-family="IBM Plex Mono">0.62</text>
+          <text x="41" y="182" font-size="9" fill="#1a7a3a" font-family="IBM Plex Mono">0.21</text>
+          <text x="73" y="182" font-size="9" fill="#1a7a3a" font-family="IBM Plex Mono">0.88</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">12 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 13: GRADIENT DESCENT ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 2 · Linear Model</div>
+  <h2>Gradient Descent — How the Model Learns</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>The intuition — rolling downhill</h3>
+      <div class="diagram">
+        <svg width="270" height="140" viewBox="0 0 270 140">
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#c0001a"/>
+            </marker>
+          </defs>
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Loss (how wrong we are)</text>
+          <path d="M 20 120 Q 80 30 140 25 Q 200 20 250 100" fill="none" stroke="#003a8c" stroke-width="2.5"/>
+          <circle cx="60" cy="65" r="7" fill="#c0001a"/>
+          <text x="48" y="55" font-size="10" fill="#c0001a" font-family="IBM Plex Sans">start</text>
+          <line x1="60" y1="65" x2="105" y2="42" stroke="#c0001a" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="4 3"/>
+          <circle cx="140" cy="26" r="7" fill="#1a7a3a"/>
+          <text x="128" y="16" font-size="10" fill="#1a7a3a" font-family="IBM Plex Sans">minimum</text>
+          <text x="80" y="60" font-size="9" fill="#c0001a" font-family="IBM Plex Sans">gradient step</text>
+          <text x="10" y="136" font-size="11" fill="#888" font-family="IBM Plex Sans">Coefficient value (what we adjust)</text>
+        </svg>
+      </div>
+      <p style="font-size:13px;">Think of loss as a hill. The gradient tells us which direction is uphill. We take a step in the <em>opposite</em> direction.</p>
+    </div>
+    <div>
+      <h3>The four-step training loop</h3>
+      <div class="step-row"><span class="step-num">1</span><p><strong>Enable gradients:</strong> tell PyTorch to track operations on coefficients</p></div>
+      <div class="step-row"><span class="step-num">2</span><p><strong>Forward pass:</strong> compute predictions and calculate loss (MAE)</p></div>
+      <div class="step-row"><span class="step-num">3</span><p><strong>Backward pass:</strong> PyTorch computes gradients automatically</p></div>
+      <div class="step-row"><span class="step-num">4</span><p><strong>Update:</strong> subtract a small step in the gradient direction</p></div>
+      <pre style="font-size:12px; margin-top:8px;"><span class="cm"># The update equation</span>
+coeffs -= lr * coeffs.grad
+
+<span class="cm"># Why subtract?</span>
+<span class="cm"># Gradient = direction of increasing loss</span>
+<span class="cm"># We want LESS loss → go opposite way</span></pre>
+    </div>
+  </div>
+  <div class="slide-num">13 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 14: TRAINING LOOP CODE ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 2 · Linear Model</div>
+  <h2>The Complete Training Loop</h2>
+  <div class="cols cols-60-40">
+    <div>
+      <pre><span class="kw">def</span> <span class="fn">calc_preds</span>(coeffs, X):
+    <span class="kw">return</span> (X * coeffs).<span class="fn">sum</span>(dim=<span class="num">1</span>)
+
+<span class="kw">def</span> <span class="fn">calc_loss</span>(coeffs, X, y):
+    preds = <span class="fn">calc_preds</span>(coeffs, X)
+    <span class="kw">return</span> torch.<span class="fn">abs</span>(preds - y).<span class="fn">mean</span>()
+
+<span class="kw">def</span> <span class="fn">train</span>(epochs=<span class="num">30</span>, lr=<span class="num">0.1</span>):
+    coeffs = torch.<span class="fn">rand</span>(n_coef) - <span class="num">0.5</span>
+    coeffs.<span class="fn">requires_grad_</span>()          <span class="cm"># ① enable</span>
+
+    <span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(epochs):
+        loss = <span class="fn">calc_loss</span>(coeffs, X_tr, y_tr)  <span class="cm"># ② forward</span>
+        loss.<span class="fn">backward</span>()                         <span class="cm"># ③ gradients</span>
+
+        <span class="kw">with</span> torch.no_grad():
+            coeffs -= lr * coeffs.grad             <span class="cm"># ④ update</span>
+            coeffs.grad.<span class="fn">zero_</span>()                 <span class="cm"># clear grads</span>
+
+    <span class="kw">return</span> coeffs</pre>
+    </div>
+    <div>
+      <div class="callout">
+        <p><strong>Why zero the gradients?</strong> PyTorch <em>accumulates</em> gradients by default. If you don't zero them, each step adds to the previous one — giving wrong updates.</p>
+      </div>
+      <div class="callout blue" style="margin-top:12px;">
+        <p><strong>Loss over training:</strong></p>
+        <div class="diagram">
+          <svg width="200" height="100" viewBox="0 0 200 100">
+            <text x="10" y="12" font-size="10" fill="#888" font-family="IBM Plex Mono">Loss</text>
+            <polyline points="10,80 30,72 50,63 70,55 90,47 110,41 130,37 150,35 170,34 190,33"
+              fill="none" stroke="#c0001a" stroke-width="2.5"/>
+            <line x1="10" y1="88" x2="195" y2="88" stroke="#ddd" stroke-width="1"/>
+            <text x="10" y="97" font-size="10" fill="#888" font-family="IBM Plex Mono">0</text>
+            <text x="170" y="97" font-size="10" fill="#888" font-family="IBM Plex Mono">Epochs</text>
+            <text x="12" y="82" font-size="9" fill="#666" font-family="IBM Plex Mono">0.53</text>
+            <text x="170" y="36" font-size="9" fill="#1a7a3a" font-family="IBM Plex Mono">~0.30</text>
+          </svg>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top:10px;">
+        <p><strong>Result:</strong> Loss drops from 0.53 → ~0.30. Accuracy ~79%.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">14 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 15: SIGMOID ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 2 · Linear Model</div>
+  <h2>The Sigmoid Function — Essential for Binary Classification</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>The problem with raw predictions</h3>
+      <p>Without sigmoid, our model outputs values like <code>-0.3</code> or <code>1.7</code>. But survival probability must be between 0 and 1.</p>
+      <div class="diagram">
+        <svg width="260" height="70" viewBox="0 0 260 70">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Raw predictions — problematic</text>
+          <line x1="10" y1="40" x2="250" y2="40" stroke="#ddd" stroke-width="1.5"/>
+          <line x1="90" y1="32" x2="90" y2="56" stroke="#1a7a3a" stroke-width="2"/>
+          <text x="82" y="28" font-size="10" fill="#1a7a3a" font-family="IBM Plex Mono">0</text>
+          <line x1="180" y1="32" x2="180" y2="56" stroke="#1a7a3a" stroke-width="2"/>
+          <text x="172" y="28" font-size="10" fill="#1a7a3a" font-family="IBM Plex Mono">1</text>
+          <circle cx="30" cy="40" r="5" fill="#c0001a"/>
+          <text x="20" y="30" font-size="9" fill="#c0001a" font-family="IBM Plex Mono">-0.3</text>
+          <circle cx="220" cy="40" r="5" fill="#c0001a"/>
+          <text x="210" y="30" font-size="9" fill="#c0001a" font-family="IBM Plex Mono">1.7</text>
+          <text x="55" y="65" font-size="9" fill="#c0001a" font-family="IBM Plex Sans">impossible values!</text>
+        </svg>
+      </div>
+      <h3 style="margin-top:8px;">The sigmoid formula</h3>
+      <div class="card" style="text-align:center; padding:12px;">
+        <p style="font-size:18px; font-family:'IBM Plex Mono'; color: #003a8c;">σ(x) = 1 / (1 + e<sup>-x</sup>)</p>
+      </div>
+    </div>
+    <div>
+      <h3>Sigmoid squishes everything to [0, 1]</h3>
+      <div class="diagram">
+        <svg width="260" height="160" viewBox="0 0 260 160">
+          <line x1="20" y1="140" x2="250" y2="140" stroke="#ddd" stroke-width="1"/>
+          <line x1="20" y1="10" x2="20" y2="145" stroke="#ddd" stroke-width="1"/>
+          <text x="22" y="16" font-size="9" fill="#888" font-family="IBM Plex Mono">1.0</text>
+          <text x="22" y="80" font-size="9" fill="#888" font-family="IBM Plex Mono">0.5</text>
+          <text x="22" y="143" font-size="9" fill="#888" font-family="IBM Plex Mono">0.0</text>
+          <path d="M 30,132 C 60,130 90,128 110,110 120,100 130,80 145,72 165,62 185,26 210,18 230,14 245,13 255,12"
+            fill="none" stroke="#003a8c" stroke-width="2.5"/>
+          <line x1="20" y1="76" x2="250" y2="76" stroke="#c0001a" stroke-width="1" stroke-dasharray="4 3"/>
+          <text x="238" y="73" font-size="9" fill="#c0001a" font-family="IBM Plex Mono">0.5</text>
+          <text x="60" y="155" font-size="10" fill="#888" font-family="IBM Plex Sans">x → very negative → output ≈ 0</text>
+          <text x="60" y="10" font-size="10" fill="#888" font-family="IBM Plex Sans">x → very positive → output ≈ 1</text>
+        </svg>
+      </div>
+      <pre style="font-size:12px;"><span class="cm"># Apply sigmoid to predictions</span>
+<span class="kw">def</span> <span class="fn">calc_preds</span>(coeffs, X):
+    <span class="kw">return</span> torch.<span class="fn">sigmoid</span>(X @ coeffs)
+
+<span class="cm"># Result: accuracy 0.79 → 0.823</span>
+<span class="cm"># Learning rate: 0.1 → 2.0 (easier!)</span></pre>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:8px;">
+    <p><strong>Rule:</strong> For binary classification (0 or 1 target), <em>always</em> end your model with sigmoid. Missing it is the #1 beginner mistake.</p>
+  </div>
+  <div class="slide-num">15 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 16: INTERPRETING COEFFICIENTS ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 2 · Linear Model</div>
+  <h2>Interpreting Coefficients — Do They Make Sense?</h2>
+  <p>After training, inspect the learned coefficients. They should align with historical knowledge. If they don't — something is wrong.</p>
+  <div class="cols cols-2">
+    <div>
+      <pre><span class="cm"># View coefficients with feature names</span>
+<span class="fn">dict</span>(<span class="fn">zip</span>(feature_cols, coefficients))</pre>
+      <table style="margin-top:12px;">
+        <tr><th>Feature</th><th>Coefficient</th><th>Interpretation</th></tr>
+        <tr><td>Age</td><td style="color:#c0001a;">Negative</td><td>Older → less likely to survive</td></tr>
+        <tr><td>Sex_male</td><td style="color:#c0001a;">Negative</td><td>Males had lower survival</td></tr>
+        <tr><td>Pclass_1</td><td style="color:#1a7a3a;">Positive</td><td>1st class → more likely to survive</td></tr>
+        <tr><td>Fare (log)</td><td style="color:#1a7a3a;">Positive</td><td>Higher fare → better odds</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="callout green">
+        <p><strong>These results match history:</strong> "Women and children first" — the famous Titanic evacuation order. Negative coefficients for Age and Sex_male confirm our model has learned something real.</p>
+      </div>
+      <div class="callout" style="margin-top:12px;">
+        <p><strong>Accuracy metric vs. loss:</strong></p>
+        <p style="margin-top:6px;">We train using <strong>MAE loss</strong> (differentiable, has gradients). We report <strong>accuracy</strong> (what Kaggle cares about). Both are needed — for different purposes.</p>
+      </div>
+      <pre style="font-size:12px; margin-top:10px;"><span class="cm"># Calculate accuracy</span>
+preds_binary = (preds > <span class="num">0.5</span>).<span class="fn">float</span>()
+acc = (preds_binary == y).<span class="fn">float</span>().<span class="fn">mean</span>()
+<span class="cm"># → 82.3% on validation set</span></pre>
+    </div>
+  </div>
+  <div class="slide-num">16 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 17: QUIZ 2 ==================== -->
+<div class="slide">
+  <div class="course-tag">Knowledge Checkpoint <span class="badge badge-quiz">Quiz</span></div>
+  <h2>Check Your Understanding — Linear Models</h2>
+  <div class="quiz-container" id="quiz2">
+    <p class="quiz-q">In gradient descent, after computing <code>loss.backward()</code>, the update step is: <code>coeffs -= lr * coeffs.grad</code>. Why do we <em>subtract</em> rather than add?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q2',false)">Because subtraction is computationally faster than addition in PyTorch</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',true)">The gradient points toward increasing loss; we subtract to move in the direction of decreasing loss</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',false)">It's a convention — addition would work equally well</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',false)">Because negative coefficients represent survival and positive ones represent death</div>
+    </div>
+    <div class="quiz-feedback" id="q2-feedback"></div>
+    <span class="quiz-reset" id="q2-reset" onclick="resetQuiz('q2')">Try again</span>
+  </div>
+  <hr style="margin-top:28px;">
+  <div class="quiz-container" id="quiz2b">
+    <p class="quiz-q">You build a binary classifier but forget to add sigmoid at the final layer. What symptom are you most likely to observe?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q2b',false)">The model trains perfectly but is very slow</div>
+      <div class="quiz-opt" onclick="answer(this,'q2b',false)">An error is thrown because PyTorch requires sigmoid</div>
+      <div class="quiz-opt" onclick="answer(this,'q2b',true)">Predictions go outside [0,1] and the model trains poorly or fails to converge</div>
+      <div class="quiz-opt" onclick="answer(this,'q2b',false)">Accuracy immediately reaches 100% because the model is unconstrained</div>
+    </div>
+    <div class="quiz-feedback" id="q2b-feedback"></div>
+    <span class="quiz-reset" id="q2b-reset" onclick="resetQuiz('q2b')">Try again</span>
+  </div>
+  <div class="slide-num">17 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 18: SECTION — NEURAL NETWORK ==================== -->
+<div class="slide section-header">
+  <div class="course-tag">Part 3 of 4</div>
+  <h1>Building a Neural Network</h1>
+  <p>The linear model draws a straight decision boundary. Real survival depended on complex interactions — young women in 3rd class had different odds than old men in 1st class. We need curves, not lines.</p>
+  <div class="slide-num">18 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 19: WHY NN ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 3 · Neural Network</div>
+  <h2>Why Go Beyond a Linear Model?</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>Linear model limitation</h3>
+      <div class="diagram">
+        <svg width="240" height="160" viewBox="0 0 240 160">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Linear: one straight boundary</text>
+          <rect x="10" y="20" width="220" height="130" fill="#f0f8ff" stroke="#ddd" rx="3"/>
+          <line x1="10" y1="80" x2="230" y2="80" stroke="#ddd" stroke-width="1"/>
+          <line x1="120" y1="20" x2="120" y2="150" stroke="#ddd" stroke-width="1"/>
+          <line x1="30" y1="140" x2="210" y2="30" stroke="#c0001a" stroke-width="2" stroke-dasharray="5 3"/>
+          <circle cx="50" cy="120" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="80" cy="100" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="150" cy="130" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="170" cy="110" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="60" cy="50" r="5" fill="#1a7a3a" opacity="0.7"/>
+          <circle cx="90" cy="40" r="5" fill="#1a7a3a" opacity="0.7"/>
+          <circle cx="160" cy="55" r="5" fill="#1a7a3a" opacity="0.7"/>
+          <circle cx="130" cy="90" r="5" fill="#c0001a" opacity="0.9"/>
+          <text x="115" y="98" font-size="9" fill="#c0001a" font-family="IBM Plex Sans">misclassified</text>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <h3>Neural network: curved boundaries</h3>
+      <div class="diagram">
+        <svg width="240" height="160" viewBox="0 0 240 160">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Neural net: flexible boundary</text>
+          <rect x="10" y="20" width="220" height="130" fill="#f0f8ff" stroke="#ddd" rx="3"/>
+          <line x1="10" y1="80" x2="230" y2="80" stroke="#ddd" stroke-width="1"/>
+          <line x1="120" y1="20" x2="120" y2="150" stroke="#ddd" stroke-width="1"/>
+          <path d="M 30,145 Q 80,60 130,75 Q 170,88 210,35"
+            fill="none" stroke="#c0001a" stroke-width="2" stroke-dasharray="5 3"/>
+          <circle cx="50" cy="120" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="80" cy="100" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="150" cy="130" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="170" cy="110" r="5" fill="#003a8c" opacity="0.7"/>
+          <circle cx="60" cy="50" r="5" fill="#1a7a3a" opacity="0.7"/>
+          <circle cx="90" cy="40" r="5" fill="#1a7a3a" opacity="0.7"/>
+          <circle cx="160" cy="55" r="5" fill="#1a7a3a" opacity="0.7"/>
+          <circle cx="130" cy="90" r="5" fill="#1a7a3a" opacity="0.9"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="callout blue" style="margin-top:10px;">
+    <p><strong>How do we get curves?</strong> By stacking linear layers with a non-linear activation function (ReLU) in between. ReLU is what gives neural networks their expressive power.</p>
+  </div>
+  <div class="slide-num">19 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 20: NN ARCHITECTURE ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 3 · Neural Network</div>
+  <h2>Neural Network Architecture</h2>
+  <div class="cols cols-40-60">
+    <div>
+      <h3>Our architecture</h3>
+      <ul>
+        <li><strong>Input layer:</strong> 12 features from Titanic data</li>
+        <li><strong>Hidden layer:</strong> 20 activations with ReLU</li>
+        <li><strong>Output layer:</strong> 1 survival prediction with Sigmoid</li>
+      </ul>
+      <div class="callout" style="margin-top:16px;">
+        <p><strong>Weight matrices:</strong><br>
+        W1: (12 × 20) = 240 params<br>
+        W2: (20 × 1) + bias = 21 params<br>
+        <strong>Total: 261 parameters</strong></p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram">
+        <svg width="360" height="240" viewBox="0 0 360 240">
+          <!-- Input layer -->
+          <text x="20" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Input (12)</text>
+          <rect x="10" y="20" width="30" height="200" fill="#e8eef8" stroke="#003a8c" stroke-width="1.5" rx="4"/>
+          <text x="14" y="115" font-size="10" fill="#003a8c" font-family="IBM Plex Mono" transform="rotate(-90,25,120)">12 features</text>
+          <!-- W1 label -->
+          <text x="60" y="105" font-size="11" fill="#888" font-family="IBM Plex Sans" font-style="italic">W1</text>
+          <text x="52" y="118" font-size="10" fill="#888" font-family="IBM Plex Mono">(12×20)</text>
+          <!-- Hidden layer -->
+          <text x="118" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Hidden (20)</text>
+          <rect x="110" y="20" width="30" height="200" fill="#f5e6e8" stroke="#c0001a" stroke-width="1.5" rx="4"/>
+          <text x="105" y="135" font-size="10" fill="#c0001a" font-family="IBM Plex Mono" transform="rotate(-90,125,120)">20 activations</text>
+          <!-- ReLU label -->
+          <text x="115" y="232" font-size="10" fill="#c0001a" font-family="IBM Plex Sans">ReLU</text>
+          <!-- W2 label -->
+          <text x="164" y="105" font-size="11" fill="#888" font-family="IBM Plex Sans" font-style="italic">W2</text>
+          <text x="156" y="118" font-size="10" fill="#888" font-family="IBM Plex Mono">(20×1)</text>
+          <!-- Output layer -->
+          <text x="218" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Output (1)</text>
+          <rect x="210" y="95" width="30" height="30" fill="#e8f5ed" stroke="#1a7a3a" stroke-width="1.5" rx="4"/>
+          <text x="210" y="140" font-size="10" fill="#1a7a3a" font-family="IBM Plex Sans">Sigmoid</text>
+          <!-- Prediction -->
+          <text x="255" y="114" font-size="13" fill="#1a7a3a" font-family="IBM Plex Mono" font-weight="600">→ 0.82</text>
+          <text x="255" y="130" font-size="10" fill="#888" font-family="IBM Plex Sans">"likely survived"</text>
+          <!-- Connection lines -->
+          <line x1="40" y1="120" x2="110" y2="120" stroke="#003a8c" stroke-width="1" opacity="0.5"/>
+          <line x1="140" y1="120" x2="210" y2="110" stroke="#c0001a" stroke-width="1" opacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">20 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 21: RELU ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 3 · Neural Network</div>
+  <h2>ReLU — The Non-linearity That Makes It Work</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>What is ReLU?</h3>
+      <p>Rectified Linear Unit — the simplest useful activation function:</p>
+      <div class="card" style="text-align:center; margin:12px 0;">
+        <p style="font-size:16px; font-family:'IBM Plex Mono';">ReLU(x) = max(0, x)</p>
+        <p style="font-size:13px; color: var(--light); margin-top:4px;">Negative → 0 &nbsp;&nbsp;|&nbsp;&nbsp; Positive → unchanged</p>
+      </div>
+      <div class="diagram">
+        <svg width="220" height="130" viewBox="0 0 220 130">
+          <line x1="10" y1="100" x2="210" y2="100" stroke="#ddd" stroke-width="1"/>
+          <line x1="110" y1="10" x2="110" y2="115" stroke="#ddd" stroke-width="1"/>
+          <polyline points="10,100 110,100 210,10" fill="none" stroke="#c0001a" stroke-width="2.5"/>
+          <text x="40" y="95" font-size="10" fill="#888" font-family="IBM Plex Mono">negative → 0</text>
+          <text x="140" y="50" font-size="10" fill="#c0001a" font-family="IBM Plex Mono">positive → x</text>
+          <text x="100" y="125" font-size="10" fill="#888" font-family="IBM Plex Mono">x</text>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <h3>The full forward pass</h3>
+      <pre style="font-size:12px;"><span class="kw">def</span> <span class="fn">calc_preds</span>(coeffs, X):
+    l1, l2, const = coeffs
+
+    <span class="cm"># Layer 1: input → hidden</span>
+    h1 = (X @ l1).<span class="fn">relu</span>()
+
+    <span class="cm"># Layer 2: hidden → output</span>
+    out = (h1 @ l2) + const
+
+    <span class="cm"># Final activation (binary)</span>
+    <span class="kw">return</span> out.<span class="fn">sigmoid</span>()</pre>
+      <div class="callout" style="margin-top:12px;">
+        <p><strong>Activation function rules:</strong><br>
+        — Hidden layers → <strong>ReLU</strong><br>
+        — Final layer for binary classification → <strong>Sigmoid</strong><br>
+        — Final layer for multi-class → <strong>Softmax</strong><br>
+        — Final layer for regression → <strong>None</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">21 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 22: INITIALISATION ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 3 · Neural Network</div>
+  <h2>Initialising Neural Network Weights</h2>
+  <p>Unlike the linear model, neural networks need careful weight initialisation to avoid gradients that are too large or too small.</p>
+  <div class="cols cols-2">
+    <div>
+      <pre><span class="cm"># Layer 1: input (n_coef) → hidden (20)</span>
+n_hidden = <span class="num">20</span>
+l1 = (torch.<span class="fn">randn</span>(n_coef, n_hidden) - <span class="num">0.5</span>) / n_hidden
+
+<span class="cm"># Layer 2: hidden (20) → output (1)</span>
+l2 = torch.<span class="fn">randn</span>(n_hidden, <span class="num">1</span>) - <span class="num">0.3</span>
+
+<span class="cm"># Constant (bias) term for layer 2</span>
+const = torch.<span class="fn">randn</span>(<span class="num">1</span>) - <span class="num">0.3</span>
+
+<span class="cm"># Enable gradients for all parameters</span>
+<span class="kw">for</span> p <span class="kw">in</span> [l1, l2, const]:
+    p.<span class="fn">requires_grad_</span>()</pre>
+    </div>
+    <div>
+      <h3>Why divide by n_hidden?</h3>
+      <div class="callout">
+        <p>When 20 values are summed in the matrix multiply, the result grows by a factor of ~20. Dividing by <code>n_hidden</code> keeps the scale similar to before, so gradients don't explode on the first step.</p>
+      </div>
+      <h3 style="margin-top:16px;">Why a constant term for layer 2?</h3>
+      <div class="callout blue">
+        <p>Layer 1 doesn't need a constant because one-hot encoding already covers all levels (the dummy variables sum to 1). Layer 2 does need one — without it, the output is forced through the origin.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">22 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 23: QUIZ 3 ==================== -->
+<div class="slide">
+  <div class="course-tag">Knowledge Checkpoint <span class="badge badge-quiz">Quiz</span></div>
+  <h2>Check Your Understanding — Neural Networks</h2>
+  <div class="quiz-container" id="quiz3">
+    <p class="quiz-q">In our 2-layer neural network (Input → Hidden → Output), what activation function should be used after the hidden layer, and what should be used at the output layer for binary classification?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q3',false)">Hidden: Sigmoid &nbsp;&nbsp;|&nbsp;&nbsp; Output: ReLU</div>
+      <div class="quiz-opt" onclick="answer(this,'q3',true)">Hidden: ReLU &nbsp;&nbsp;|&nbsp;&nbsp; Output: Sigmoid</div>
+      <div class="quiz-opt" onclick="answer(this,'q3',false)">Hidden: ReLU &nbsp;&nbsp;|&nbsp;&nbsp; Output: Softmax</div>
+      <div class="quiz-opt" onclick="answer(this,'q3',false)">Hidden: None &nbsp;&nbsp;|&nbsp;&nbsp; Output: ReLU</div>
+    </div>
+    <div class="quiz-feedback" id="q3-feedback"></div>
+    <span class="quiz-reset" id="q3-reset" onclick="resetQuiz('q3')">Try again</span>
+  </div>
+  <hr style="margin-top:24px;">
+  <div class="quiz-container" id="quiz3b">
+    <p class="quiz-q">If you add a second hidden layer with 10 units after the first hidden layer of 20 units, what should be the shape of the new weight matrix connecting them?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q3b',false)">(12 × 10) — same as the input layer shape</div>
+      <div class="quiz-opt" onclick="answer(this,'q3b',false)">(10 × 20) — reverse of the first layer</div>
+      <div class="quiz-opt" onclick="answer(this,'q3b',true)">(20 × 10) — takes 20 inputs from hidden layer 1, outputs 10 activations</div>
+      <div class="quiz-opt" onclick="answer(this,'q3b',false)">(20 × 1) — always ends with a single output</div>
+    </div>
+    <div class="quiz-feedback" id="q3b-feedback"></div>
+    <span class="quiz-reset" id="q3b-reset" onclick="resetQuiz('q3b')">Try again</span>
+  </div>
+  <div class="slide-num">23 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 24: SECTION — FASTAI ==================== -->
+<div class="slide section-header">
+  <div class="course-tag">Part 4 of 4</div>
+  <h1>FastAI — The Same Model in Far Less Code</h1>
+  <p>Now that you understand every step, let FastAI automate the boilerplate. The concepts are identical — the framework just handles preprocessing, initialisation, and training loops for you.</p>
+  <div class="slide-num">24 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 25: MANUAL VS FASTAI ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 4 · FastAI</div>
+  <h2>Manual Implementation vs. FastAI — Side by Side</h2>
+  <div class="compare-row">
+    <div class="compare-col">
+      <p class="compare-label manual">Manual PyTorch</p>
+      <pre style="font-size:11.5px;"><span class="cm"># Missing values</span>
+df.<span class="fn">fillna</span>(df.<span class="fn">mode</span>().iloc[<span class="num">0</span>])
+
+<span class="cm"># Dummy variables</span>
+df = pd.<span class="fn">get_dummies</span>(df)
+
+<span class="cm"># Normalise</span>
+X = X / X.<span class="fn">max</span>(dim=<span class="num">0</span>).values
+
+<span class="cm"># Init weights manually</span>
+l1 = torch.<span class="fn">randn</span>(n_coef, <span class="num">20</span>) / <span class="num">20</span>
+l2 = torch.<span class="fn">randn</span>(<span class="num">20</span>, <span class="num">1</span>)
+
+<span class="cm"># Training loop — ~20 lines</span></pre>
+    </div>
+    <div class="compare-col">
+      <p class="compare-label fastai">FastAI equivalent</p>
+      <pre style="font-size:11.5px;"><span class="cm"># All preprocessing in one call:</span>
+dls = TabularDataLoaders.<span class="fn">from_df</span>(
+    df,
+    cat_names=[<span class="str">'Pclass'</span>, <span class="str">'Sex'</span>],  <span class="cm"># ← dummies</span>
+    cont_names=[<span class="str">'Age'</span>, <span class="str">'LogFare'</span>], <span class="cm"># ← normalise</span>
+    y_names=<span class="str">'Survived'</span>,
+    valid_idx=valid_idx
+)
+
+<span class="cm"># Model + training:</span>
+learn = <span class="fn">tabular_learner</span>(dls,
+          layers=[<span class="num">10</span>, <span class="num">10</span>],
+          metrics=accuracy)</pre>
+    </div>
+  </div>
+  <div class="callout green">
+    <p><strong>FastAI handles automatically:</strong> dummy variables, missing values, normalisation, weight initialisation, gradient zeroing, learning rate scheduling, and the training loop.</p>
+  </div>
+  <div class="slide-num">25 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 26: LR FINDER ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 4 · FastAI</div>
+  <h2>Finding the Right Learning Rate <span class="badge badge-new">New</span></h2>
+  <div class="cols cols-2">
+    <div>
+      <p>Choosing a learning rate manually is guesswork. FastAI includes a <strong>learning rate finder</strong> that tests many values systematically.</p>
+      <pre><span class="cm"># Run the learning rate finder</span>
+learn.<span class="fn">lr_find</span>()</pre>
+      <h3 style="margin-top:16px;">How it works</h3>
+      <div class="step-row"><span class="step-num">1</span><p>Starts with a very small learning rate (1e-7)</p></div>
+      <div class="step-row"><span class="step-num">2</span><p>Gradually increases it across mini-batches</p></div>
+      <div class="step-row"><span class="step-num">3</span><p>Tracks the loss at each step</p></div>
+      <div class="step-row"><span class="step-num">4</span><p>Plots loss vs. learning rate — you pick from the curve</p></div>
+    </div>
+    <div>
+      <h3>Reading the lr_find plot</h3>
+      <div class="diagram">
+        <svg width="270" height="170" viewBox="0 0 270 170">
+          <text x="10" y="14" font-size="11" fill="#888" font-family="IBM Plex Sans">Loss vs. Learning Rate</text>
+          <line x1="30" y1="150" x2="260" y2="150" stroke="#ddd" stroke-width="1"/>
+          <line x1="30" y1="20" x2="30" y2="155" stroke="#ddd" stroke-width="1"/>
+          <text x="10" y="24" font-size="9" fill="#888" font-family="IBM Plex Mono">Loss</text>
+          <text x="200" y="163" font-size="9" fill="#888" font-family="IBM Plex Mono">lr →</text>
+          <path d="M 35,80 C 60,78 90,74 110,65 130,55 140,40 160,38 170,37 180,40 200,70 220,110 240,140 255,148"
+            fill="none" stroke="#003a8c" stroke-width="2.5"/>
+          <line x1="150" y1="20" x2="150" y2="150" stroke="#1a7a3a" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <circle cx="150" cy="38" r="5" fill="#1a7a3a"/>
+          <text x="128" y="18" font-size="9" fill="#1a7a3a" font-family="IBM Plex Sans">pick here</text>
+          <text x="128" y="28" font-size="9" fill="#1a7a3a" font-family="IBM Plex Sans">(0.03)</text>
+          <text x="35" y="165" font-size="9" fill="#888" font-family="IBM Plex Sans">too small</text>
+          <text x="195" y="165" font-size="9" fill="#c0001a" font-family="IBM Plex Sans">too large</text>
+          <text x="108" y="165" font-size="9" fill="#1a7a3a" font-family="IBM Plex Sans">sweet spot</text>
+        </svg>
+      </div>
+      <div class="callout">
+        <p><strong>Rule of thumb:</strong> Pick the learning rate at the steepest downward slope — just before the loss starts climbing again. Typically around the "valley" of the curve.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">26 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 27: ENSEMBLE METHODS ==================== -->
+<div class="slide">
+  <div class="course-tag">Part 4 · FastAI</div>
+  <h2>Ensemble Methods — Easy Accuracy Boost <span class="badge badge-new">New</span></h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>The idea</h3>
+      <p>Train multiple identical models independently. Each starts with different random weights → learns slightly differently → makes different errors. Combining them cancels individual errors.</p>
+      <pre style="font-size:12px;"><span class="kw">def</span> <span class="fn">train_one</span>():
+    learn = <span class="fn">tabular_learner</span>(dls, layers=[<span class="num">10</span>,<span class="num">10</span>])
+    learn.<span class="fn">fit</span>(<span class="num">10</span>, <span class="num">0.03</span>)
+    <span class="kw">return</span> learn.<span class="fn">get_preds</span>(dl=test_dl)
+
+<span class="cm"># Train 5 independent models</span>
+all_preds = [<span class="fn">train_one</span>() <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="num">5</span>)]
+
+<span class="cm"># Average their probability predictions</span>
+final = torch.<span class="fn">stack</span>(all_preds).<span class="fn">mean</span>(<span class="num">0</span>)</pre>
+    </div>
+    <div>
+      <h3>Results on Kaggle</h3>
+      <table>
+        <tr><th>Approach</th><th>Kaggle Rank</th></tr>
+        <tr><td>Single linear model</td><td>~50th percentile</td></tr>
+        <tr><td>Single neural network</td><td>~50th percentile</td></tr>
+        <tr><td>Ensemble of 5 NNs</td><td style="color:#1a7a3a; font-weight:600;">~25th percentile</td></tr>
+      </table>
+      <div class="callout green" style="margin-top:12px;">
+        <p><strong>Key insight:</strong> Small code changes can yield substantial performance improvements. Ensembling is one of the highest return-on-effort techniques in practice.</p>
+      </div>
+      <h3 style="margin-top:12px;">How to aggregate predictions?</h3>
+      <p style="font-size:13px;">Average the <em>probabilities</em> (not the binary 0/1 values), then apply a threshold of 0.5. This retains more information than voting.</p>
+    </div>
+  </div>
+  <div class="slide-num">27 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 28: QUIZ 4 ==================== -->
+<div class="slide">
+  <div class="course-tag">Knowledge Checkpoint <span class="badge badge-quiz">Quiz</span></div>
+  <h2>Check Your Understanding — FastAI &amp; Ensembles</h2>
+  <div class="quiz-container" id="quiz4">
+    <p class="quiz-q">In the FastAI <code>TabularDataLoaders.from_df()</code> call, what is the difference between <code>cat_names</code> and <code>cont_names</code>?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q4',false)"><code>cat_names</code> are columns you care about; <code>cont_names</code> are continuous columns you'll drop</div>
+      <div class="quiz-opt" onclick="answer(this,'q4',true)"><code>cat_names</code> are categorical columns (FastAI applies embeddings/dummy vars); <code>cont_names</code> are numeric columns (FastAI normalises these)</div>
+      <div class="quiz-opt" onclick="answer(this,'q4',false)">Both do the same thing — they're just different parameter names for historical reasons</div>
+      <div class="quiz-opt" onclick="answer(this,'q4',false)"><code>cat_names</code> is for training data; <code>cont_names</code> is for test data</div>
+    </div>
+    <div class="quiz-feedback" id="q4-feedback"></div>
+    <span class="quiz-reset" id="q4-reset" onclick="resetQuiz('q4')">Try again</span>
+  </div>
+  <hr style="margin-top:24px;">
+  <div class="quiz-container" id="quiz4b">
+    <p class="quiz-q">When ensembling 5 models for binary classification, which aggregation strategy is generally best?</p>
+    <div class="quiz-opts">
+      <div class="quiz-opt" onclick="answer(this,'q4b',false)">Convert each model's output to 0/1 first, then take the mode (majority vote)</div>
+      <div class="quiz-opt" onclick="answer(this,'q4b',true)">Average the raw probabilities from all 5 models, then apply a 0.5 threshold</div>
+      <div class="quiz-opt" onclick="answer(this,'q4b',false)">Always use the prediction from whichever single model had the best validation loss</div>
+      <div class="quiz-opt" onclick="answer(this,'q4b',false)">Sum the probabilities and predict 1 if the sum exceeds 2.5 (half of 5)</div>
+    </div>
+    <div class="quiz-feedback" id="q4b-feedback"></div>
+    <span class="quiz-reset" id="q4b-reset" onclick="resetQuiz('q4b')">Try again</span>
+  </div>
+  <div class="slide-num">28 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 29: KEY TAKEAWAYS ==================== -->
+<div class="slide">
+  <div class="course-tag">Summary</div>
+  <h2>Key Takeaways</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>Concepts to remember</h3>
+      <ul>
+        <li><strong>Mode imputation</strong> — simplest way to handle missing values; works for all column types</li>
+        <li><strong>Log transform</strong> — compresses long-tailed distributions like prices or populations</li>
+        <li><strong>One-hot encoding</strong> — converts text categories to 0/1 numbers a model can use</li>
+        <li><strong>Normalisation</strong> — puts all features on a comparable scale (0 to 1)</li>
+        <li><strong>Sigmoid</strong> — always use for binary classification output; compresses to [0, 1]</li>
+        <li><strong>ReLU</strong> — non-linearity in hidden layers; enables curved decision boundaries</li>
+        <li><strong>Ensembles</strong> — average multiple models to cancel individual errors</li>
+      </ul>
+    </div>
+    <div>
+      <h3>The progression we followed</h3>
+      <div class="roadmap" style="flex-direction: column; gap:6px;">
+        <div class="roadmap-step done" style="text-align:left; padding:8px 14px;">① Raw data → Preprocessed (clean, numeric, scaled)</div>
+        <div class="roadmap-step done" style="text-align:left; padding:8px 14px;">② Coefficients → Loss → Gradients → Update</div>
+        <div class="roadmap-step done" style="text-align:left; padding:8px 14px;">③ Linear model + Sigmoid → 82.3% accuracy</div>
+        <div class="roadmap-step done" style="text-align:left; padding:8px 14px;">④ Add hidden layer + ReLU → Neural Network</div>
+        <div class="roadmap-step done" style="text-align:left; padding:8px 14px;">⑤ FastAI automates all of the above</div>
+        <div class="roadmap-step done" style="text-align:left; padding:8px 14px;">⑥ Ensemble × 5 → Top 25% on Kaggle</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">29 / 30</div>
+</div>
+
+<!-- ==================== SLIDE 30: NEXT STEPS ==================== -->
+<div class="slide">
+  <div class="course-tag">Looking Ahead</div>
+  <h2>Next Steps</h2>
+  <div class="cols cols-2">
+    <div>
+      <h3>This week's workshop</h3>
+      <ul>
+        <li>Implement the full preprocessing pipeline from scratch</li>
+        <li>Build and train the linear model with sigmoid</li>
+        <li>Add a hidden layer and verify accuracy improves</li>
+        <li>Reproduce using FastAI's <code>tabular_learner</code></li>
+        <li>Submit to Kaggle and record your leaderboard position</li>
+      </ul>
+      <div class="callout" style="margin-top:16px;">
+        <p><strong>Before the workshop:</strong> Make sure you have a Kaggle account and have accepted the Titanic competition rules — you'll need this to submit.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Coming in Week 7</h3>
+      <ul>
+        <li>Convolutional Neural Networks (CNNs) for image data</li>
+        <li>Transfer learning — using pre-trained models</li>
+        <li>How FastAI manages fine-tuning automatically</li>
+        <li>Data augmentation to improve generalisation</li>
+      </ul>
+      <div class="callout blue" style="margin-top:16px;">
+        <p><strong>Self-study:</strong> Read <em>Chapter 9 of the FastAI book</em> (Tabular Modelling). Pay attention to entity embeddings — a more powerful alternative to one-hot encoding for high-cardinality categories.</p>
+      </div>
+      <div class="callout green" style="margin-top:12px;">
+        <p><strong>Exam relevance:</strong> Gradient descent, sigmoid, loss vs. accuracy distinction, and activation functions are all mid-term and final exam topics (SLO1, SLO2).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">30 / 30</div>
+</div>
+
+</div><!-- end .deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)" disabled>← Previous</button>
+  <span class="nav-info" id="navInfo">Slide 1 of 30</span>
+  <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, total - 1));
+    slides[current].classList.add('active');
+    document.getElementById('navInfo').textContent = `Slide ${current + 1} of ${total}`;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === total - 1;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function changeSlide(dir) { showSlide(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+  });
+
+  // Quiz logic
+  const feedback = {
+    q1:   { correct: "Correct! Using full n-encoding keeps all levels, making coefficients easier to interpret. No constant term is needed.", wrong: "Not quite. FastAI and the approach described use full n-encoding — both Sex_male and Sex_female are kept." },
+    q1b:  { correct: "Exactly right. Log compression reduces the disproportionate influence of extreme values like the £512 fares.", wrong: "Not quite. Log transform compresses extreme values — it doesn't equalise, categorise, or remove missing values." },
+    q2:   { correct: "Correct. The gradient tells you the direction of steepest ascent (increasing loss). Subtracting moves you in the opposite direction — toward lower loss.", wrong: "Not quite. The direction matters: gradient = direction of increasing loss. We subtract to go the other way." },
+    q2b:  { correct: "Correct. Without sigmoid, outputs are unbounded linear values. The loss landscape becomes very difficult to navigate and the model struggles or diverges.", wrong: "Not quite. PyTorch won't throw an error — it'll silently produce wrong results. Missing sigmoid causes poor convergence." },
+    q3:   { correct: "Correct. ReLU in hidden layers provides non-linearity. Sigmoid at the output squeezes the final prediction into [0,1] for binary classification.", wrong: "Not quite. The standard architecture for binary classification is ReLU in hidden layers and Sigmoid at the output." },
+    q3b:  { correct: "Correct. Matrix dimensions must chain: layer 1 outputs 20 activations, so the next matrix must take 20 as input. With 10 outputs: shape is (20 × 10).", wrong: "Not quite. The input dimension of each weight matrix must match the output dimension of the previous layer. Layer 1 outputs 20 values, so the next matrix is (20 × 10)." },
+    q4:   { correct: "Correct. FastAI applies embedding lookups or dummy variables to cat_names, and z-score normalisation to cont_names automatically.", wrong: "Not quite. cat_names receives categorical preprocessing (embeddings/dummies); cont_names receives numeric normalisation." },
+    q4b:  { correct: "Correct. Averaging probabilities preserves more information than majority voting. The continuous probability values contain confidence information that binary 0/1 votes throw away.", wrong: "Not quite. Averaging probabilities before thresholding is generally the best approach — it retains confidence information." }
+  };
+
+  function answer(el, qid, isCorrect) {
+    const opts = el.parentElement.querySelectorAll('.quiz-opt');
+    opts.forEach(o => { o.classList.add('disabled'); o.onclick = null; });
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+    if (!isCorrect) {
+      opts.forEach(o => {
+        if (o.onclick === null && !o.classList.contains('wrong')) {
+          // mark the correct one
+        }
+      });
+    }
+    const fb = document.getElementById(qid + '-feedback');
+    const reset = document.getElementById(qid + '-reset');
+    fb.textContent = isCorrect ? '✓ ' + feedback[qid].correct : '✗ ' + feedback[qid].wrong;
+    fb.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+    if (!isCorrect) reset.className = 'quiz-reset show';
+  }
+
+  function resetQuiz(qid) {
+    const container = document.getElementById(qid.replace('b','') === qid ? 'quiz' + qid.slice(1) : null) || document.querySelector(`[id^="quiz"]`);
+    const fb = document.getElementById(qid + '-feedback');
+    const reset = document.getElementById(qid + '-reset');
+    fb.className = 'quiz-feedback';
+    reset.className = 'quiz-reset';
+    // Re-enable options
+    const allOpts = document.querySelectorAll('.quiz-opt');
+    allOpts.forEach(o => {
+      if (o.closest('.quiz-container') && o.closest('.quiz-container').id === findContainerId(qid)) {
+        o.classList.remove('correct','wrong','disabled');
+        const optIndex = Array.from(o.parentElement.children).indexOf(o);
+        const correctMap = {
+          q1: 1, q1b: 2, q2: 1, q2b: 2, q3: 1, q3b: 2, q4: 1, q4b: 1
+        };
+        o.onclick = function() { answer(this, qid, optIndex === correctMap[qid]); };
+      }
+    });
+  }
+
+  function findContainerId(qid) {
+    const map = { q1:'quiz1', q1b:'quiz1b', q2:'quiz2', q2b:'quiz2b', q3:'quiz3', q3b:'quiz3b', q4:'quiz4', q4b:'quiz4b' };
+    return map[qid];
+  }
+
+  // Re-wire quiz handlers properly on load
+  const quizMap = {
+    q1:   { container: 'quiz1',   correct: 1 },
+    q1b:  { container: 'quiz1b',  correct: 2 },
+    q2:   { container: 'quiz2',   correct: 1 },
+    q2b:  { container: 'quiz2b',  correct: 2 },
+    q3:   { container: 'quiz3',   correct: 1 },
+    q3b:  { container: 'quiz3b',  correct: 2 },
+    q4:   { container: 'quiz4',   correct: 1 },
+    q4b:  { container: 'quiz4b',  correct: 1 },
+  };
+
+  Object.entries(quizMap).forEach(([qid, cfg]) => {
+    const container = document.getElementById(cfg.container);
+    if (!container) return;
+    const opts = container.querySelectorAll('.quiz-opt');
+    opts.forEach((opt, i) => {
+      opt.onclick = function() { answer(this, qid, i === cfg.correct); };
+    });
+    const reset = document.getElementById(qid + '-reset');
+    if (reset) reset.onclick = function() {
+      const fb = document.getElementById(qid + '-feedback');
+      fb.className = 'quiz-feedback';
+      this.className = 'quiz-reset';
+      opts.forEach((o, i) => {
+        o.classList.remove('correct','wrong','disabled');
+        o.onclick = function() { answer(this, qid, i === cfg.correct); };
+      });
+    };
+  });
+</script>
+</body>
+</html>

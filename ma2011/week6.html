@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MA2211/MA2011 — Week 6: Functions &amp; Relations</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:    #c0392b;
+    --red-lt: #f8e8e6;
+    --navy:   #1a2340;
+    --gold:   #e67e22;
+    --gold-lt:#fef5ec;
+    --green:  #27ae60;
+    --green-lt:#eafaf1;
+    --blue:   #2980b9;
+    --blue-lt:#eaf4fb;
+    --purple: #8e44ad;
+    --purple-lt:#f5eef8;
+    --gray:   #f4f4f2;
+    --mid:    #888;
+    --border: #ddd;
+    --white:  #ffffff;
+    --text:   #1a1a1a;
+    --shadow: 0 4px 24px rgba(0,0,0,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  /* ── DECK SHELL ── */
+  #deck {
+    width: 100%;
+    max-width: 960px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 60px rgba(0,0,0,0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+    max-height: 700px;
+    position: relative;
+  }
+
+  /* ── HEADER BAR ── */
+  #header {
+    background: var(--red);
+    color: white;
+    padding: 10px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    letter-spacing: .04em;
+    flex-shrink: 0;
+  }
+  #header .course { font-weight: 700; font-size: 14px; }
+  #header .slide-counter { opacity: .85; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── SLIDE AREA ── */
+  #slides-wrapper {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .slide {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 30px 40px 20px;
+    animation: fadeIn .3s ease;
+    scrollbar-width: thin;
+    scrollbar-color: var(--red) transparent;
+  }
+  .slide.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SLIDE ELEMENTS ── */
+  .slide-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--red);
+    border-bottom: 3px solid var(--red);
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+    line-height: 1.2;
+  }
+  .slide-subtitle {
+    font-size: 13px;
+    color: var(--mid);
+    margin-top: -14px;
+    margin-bottom: 18px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  /* Definition / Theorem boxes */
+  .box {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-left: 4px solid;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .box.def   { background: var(--blue-lt);   border-color: var(--blue);   }
+  .box.ex    { background: var(--green-lt);  border-color: var(--green);  }
+  .box.warn  { background: var(--gold-lt);   border-color: var(--gold);   }
+  .box.note  { background: var(--purple-lt); border-color: var(--purple); }
+  .box.recap { background: var(--red-lt);    border-color: var(--red);    }
+  .box-title {
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .box.def   .box-title { color: var(--blue);   }
+  .box.ex    .box-title { color: var(--green);  }
+  .box.warn  .box-title { color: var(--gold);   }
+  .box.note  .box-title { color: var(--purple); }
+  .box.recap .box-title { color: var(--red);    }
+
+  /* Body text */
+  p { font-size: 15px; line-height: 1.7; margin-bottom: 10px; }
+  ul, ol { padding-left: 22px; font-size: 15px; line-height: 1.75; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+  strong { color: var(--navy); }
+  .math {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    background: var(--gray);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* Two-column layout */
+  .cols { display: grid; gap: 18px; margin: 12px 0; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* Truth table / data table */
+  table.tt {
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    margin: 12px auto;
+  }
+  table.tt th {
+    background: var(--navy);
+    color: white;
+    padding: 7px 14px;
+    text-align: center;
+  }
+  table.tt td {
+    padding: 6px 14px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  table.tt tr:nth-child(even) td { background: var(--gray); }
+  .T { color: var(--green); font-weight: 700; }
+  .F { color: var(--red);   font-weight: 700; }
+
+  /* SVG diagrams */
+  .diagram-wrap {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    margin: 14px 0;
+    flex-wrap: wrap;
+  }
+  .diagram-item { text-align: center; }
+  .diagram-item figcaption {
+    font-size: 12px;
+    color: var(--mid);
+    margin-top: 5px;
+    font-style: italic;
+  }
+
+  /* ── QUIZ COMPONENTS ── */
+  .quiz-block {
+    background: var(--navy);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0 8px;
+    color: white;
+  }
+  .quiz-block .quiz-prompt {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 13px;
+    line-height: 1.5;
+  }
+  .quiz-block .quiz-prompt .math { background: rgba(255,255,255,.15); color: #ffe; }
+  .options {
+    display: grid;
+    gap: 8px;
+  }
+  .opt-btn {
+    background: rgba(255,255,255,.08);
+    border: 1.5px solid rgba(255,255,255,.2);
+    color: white;
+    padding: 9px 15px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    text-align: left;
+    transition: background .2s, border-color .2s, transform .1s;
+  }
+  .opt-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,.18);
+    border-color: rgba(255,255,255,.5);
+    transform: translateX(3px);
+  }
+  .opt-btn.correct  { background: #1e6b3a; border-color: #2ecc71; }
+  .opt-btn.wrong    { background: #6b1e1e; border-color: #e74c3c; }
+  .opt-btn:disabled { cursor: default; }
+  .quiz-feedback {
+    margin-top: 11px;
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 10px 14px;
+    border-radius: 7px;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok  { background: rgba(46,204,113,.18); border: 1px solid #2ecc71; }
+  .quiz-feedback.bad { background: rgba(231,76,60,.18);  border: 1px solid #e74c3c; }
+
+  /* ── STEP-BY-STEP REVEAL ── */
+  .step-btn {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background .2s;
+  }
+  .step-btn:hover { background: #a93226; }
+  .step-reveal {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .4s ease;
+  }
+  .step-reveal.open { max-height: 600px; }
+
+  /* ── TITLE SLIDE ── */
+  .title-slide {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+    background: linear-gradient(135deg, #fff 60%, #fde8e6 100%);
+    padding: 40px;
+  }
+  .title-slide .week-tag {
+    background: var(--red);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .title-slide h1 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+  .title-slide h2 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--red);
+    margin-bottom: 22px;
+  }
+  .title-slide .agenda {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    text-align: left;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--shadow);
+  }
+  .title-slide .agenda-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .agenda-num {
+    width: 24px; height: 24px;
+    background: var(--red);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ── NAV BAR ── */
+  #nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--gray);
+    flex-shrink: 0;
+  }
+  .nav-btn {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 8px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    font-weight: 600;
+  }
+  .nav-btn:hover { background: #a93226; transform: scale(1.03); }
+  .nav-btn:disabled { background: var(--border); color: var(--mid); cursor: default; transform: none; }
+
+  /* Progress dots */
+  #progress {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 420px;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: background .2s, transform .2s;
+  }
+  .dot.active { background: var(--red); transform: scale(1.3); }
+  .dot.visited { background: #c0392b88; }
+
+  /* Keyboard hint */
+  #key-hint { font-size: 11px; color: var(--mid); }
+
+  /* Section divider slides */
+  .section-slide {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+    background: linear-gradient(135deg, var(--navy) 0%, #2c3e6e 100%);
+    color: white;
+  }
+  .section-slide .sec-num {
+    font-size: 64px;
+    font-family: 'Crimson Pro', serif;
+    font-weight: 700;
+    opacity: .2;
+    line-height: 1;
+    margin-bottom: -10px;
+  }
+  .section-slide h2 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 34px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .section-slide p { opacity: .7; font-size: 15px; max-width: 380px; }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- HEADER -->
+  <div id="header">
+    <span class="course">MA2211 / MA2011 &nbsp;·&nbsp; Discrete Mathematics</span>
+    <span class="slide-counter"><span id="cur">1</span> / <span id="tot"></span></span>
+  </div>
+
+  <!-- SLIDES WRAPPER -->
+  <div id="slides-wrapper">
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 1 — TITLE
+    ══════════════════════════════════════════ -->
+    <div class="slide active">
+      <div class="title-slide">
+        <div class="week-tag">Week 6 &nbsp;·&nbsp; 9 July 2025</div>
+        <h1>Functions &amp; Relations</h1>
+        <h2>Sets, Cartesian Products, and Beyond</h2>
+        <div class="agenda">
+          <div class="agenda-item"><span class="agenda-num">1</span> Sets &amp; Power Sets Recap</div>
+          <div class="agenda-item"><span class="agenda-num">2</span> Cartesian Products</div>
+          <div class="agenda-item"><span class="agenda-num">3</span> What is a Function?</div>
+          <div class="agenda-item"><span class="agenda-num">4</span> Injective &amp; Surjective Functions</div>
+          <div class="agenda-item"><span class="agenda-num">5</span> Composition &amp; Inverse</div>
+          <div class="agenda-item"><span class="agenda-num">6</span> Functions as Relations</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 2 — SECTION: SETS
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="section-slide">
+        <div class="sec-num">§1</div>
+        <h2>Sets &amp; Power Sets Recap</h2>
+        <p>A quick review of Week 5 — you'll need this for Cartesian products and functions.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 3 — SETS RECAP
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Sets — the Core Vocabulary</div>
+      <div class="cols cols-2">
+        <div>
+          <div class="box def">
+            <span class="box-title">Definition</span>
+            A <strong>set</strong> is an unordered collection of distinct objects called <strong>elements</strong>.
+            We write <span class="math">a ∈ A</span> to mean "a is an element of A".
+          </div>
+          <div class="box ex">
+            <span class="box-title">Examples</span>
+            <span class="math">A = {1, 2, 3}</span><br>
+            <span class="math">B = {cat, dog, fish}</span><br>
+            <span class="math">ℕ = {0, 1, 2, 3, …}</span>
+          </div>
+        </div>
+        <div>
+          <div class="box def">
+            <span class="box-title">Subset</span>
+            <span class="math">A ⊆ B</span> means every element of A is also in B.<br><br>
+            <span class="math">A ⊂ B</span> means A ⊆ B and A ≠ B (proper subset).
+          </div>
+          <div class="box warn">
+            <span class="box-title">Key Difference</span>
+            <strong>∈ vs ⊆</strong><br>
+            <span class="math">2 ∈ {1,2,3}</span> ✓ (element)<br>
+            <span class="math">{2} ⊆ {1,2,3}</span> ✓ (subset)<br>
+            <span class="math">{2} ∈ {1,2,3}</span> ✗ (set is not listed as element)
+          </div>
+        </div>
+      </div>
+      <div class="box recap">
+        <span class="box-title">Set Operations (Reminder)</span>
+        <span class="math">A ∪ B</span> = union (elements in A <em>or</em> B) &nbsp;|&nbsp;
+        <span class="math">A ∩ B</span> = intersection (elements in A <em>and</em> B) &nbsp;|&nbsp;
+        <span class="math">A \ B</span> = difference (in A but not B) &nbsp;|&nbsp;
+        <span class="math">Ā</span> = complement
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 4 — POWER SET
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">The Power Set</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        The <strong>power set</strong> <span class="math">𝒫(A)</span> of a set A is the <em>set of all subsets</em> of A.<br>
+        Equivalently: <span class="math">X ∈ 𝒫(A) &nbsp;⟺&nbsp; X ⊆ A</span>
+      </div>
+      <div class="box ex">
+        <span class="box-title">Worked Example</span>
+        Let <span class="math">A = {1, 2}</span>. List all subsets:<br><br>
+        <span class="math">∅ &nbsp;&nbsp; {1} &nbsp;&nbsp; {2} &nbsp;&nbsp; {1,2}</span><br><br>
+        So <span class="math">𝒫(A) = { ∅, {1}, {2}, {1,2} }</span> and <span class="math">|𝒫(A)| = 4 = 2²</span>
+      </div>
+      <div class="box note">
+        <span class="box-title">Key Pattern</span>
+        If <span class="math">|A| = n</span> then <span class="math">|𝒫(A)| = 2ⁿ</span>.
+        Each element is either included or not → 2 choices per element.
+      </div>
+
+      <!-- QUIZ 1 -->
+      <div class="quiz-block">
+        <div class="quiz-prompt">
+          Let <span class="math">A = {a, b, c}</span>. How many elements does <span class="math">𝒫(A)</span> have?
+        </div>
+        <div class="options">
+          <button class="opt-btn" onclick="answer(this,false,'|A|=3, so |𝒫(A)| = 2³ = 8, not 6.')">6</button>
+          <button class="opt-btn" onclick="answer(this,true,'Correct! |A|=3 → 2³ = 8 subsets: ∅, {a}, {b}, {c}, {a,b}, {a,c}, {b,c}, {a,b,c}.')">8</button>
+          <button class="opt-btn" onclick="answer(this,false,'That would be 2^n for n=4.')">16</button>
+          <button class="opt-btn" onclick="answer(this,false,'3 is just |A| itself, not |𝒫(A)|.')">3</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 5 — SECTION: CARTESIAN PRODUCTS
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="section-slide">
+        <div class="sec-num">§2</div>
+        <h2>Cartesian Products</h2>
+        <p>Pairing elements from two or more sets — the foundation of functions and relations.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 6 — CARTESIAN PRODUCT DEF
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Cartesian Product: Definition</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        The <strong>Cartesian product</strong> of sets A and B is:<br>
+        <span class="math">A × B = { (a, b) : a ∈ A and b ∈ B }</span><br><br>
+        Each element is an <strong>ordered pair</strong>. Order matters: <span class="math">(a,b) ≠ (b,a)</span> in general.
+      </div>
+      <div class="box ex">
+        <span class="box-title">Worked Example</span>
+        Let <span class="math">A = {1, 2}</span>, <span class="math">B = {x, y, z}</span>.<br><br>
+        <span class="math">A × B = { (1,x), (1,y), (1,z), (2,x), (2,y), (2,z) }</span><br><br>
+        <span class="math">|A × B| = |A| × |B| = 2 × 3 = 6</span>
+      </div>
+      <div class="box warn">
+        <span class="box-title">Real-World Example</span>
+        A deck of playing cards = <span class="math">{A,2,…,K} × {♠,♥,♦,♣}</span>.
+        Each card is an ordered pair (value, suit) → 13 × 4 = 52 cards.
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 7 — CARTESIAN PRODUCT EXTENDED + QUIZ
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Cartesian Product: Extension &amp; Practice</div>
+      <div class="box def">
+        <span class="box-title">n-fold Cartesian Product</span>
+        <span class="math">A₁ × A₂ × … × Aₙ = { (a₁, a₂, …, aₙ) : aᵢ ∈ Aᵢ }</span><br>
+        Elements are called <strong>n-tuples</strong>. The size is <span class="math">|A₁| × |A₂| × … × |Aₙ|</span>.
+      </div>
+      <div class="box ex">
+        <span class="box-title">Car Registration Plates</span>
+        3 letters followed by 3 digits.<br>
+        Let <span class="math">L = {A, B, …, Z}</span> (26 letters), <span class="math">D = {0, 1, …, 9}</span> (10 digits).<br><br>
+        Plates = <span class="math">L × L × L × D × D × D</span><br>
+        Total plates = <span class="math">26³ × 10³ = 17,576 × 1,000 = 17,576,000</span>
+      </div>
+
+      <!-- QUIZ 2 -->
+      <div class="quiz-block">
+        <div class="quiz-prompt">
+          Let <span class="math">A = {0,1}</span> and <span class="math">B = {a,b,c}</span>.
+          What is <span class="math">|B × A|</span>?
+        </div>
+        <div class="options">
+          <button class="opt-btn" onclick="answer(this,false,'B×A has the same size as A×B. |B×A| = |B|×|A| = 3×2 = 6.')">3</button>
+          <button class="opt-btn" onclick="answer(this,true,'Correct! |B × A| = |B| × |A| = 3 × 2 = 6.')">6</button>
+          <button class="opt-btn" onclick="answer(this,false,'That would be |A|+|B| = 5, not a product.')">5</button>
+          <button class="opt-btn" onclick="answer(this,false,'2×3=6, not 9.')">9</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 8 — SECTION: FUNCTIONS
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="section-slide">
+        <div class="sec-num">§3</div>
+        <h2>Functions</h2>
+        <p>Functions assign exactly one output to each input — a precise version of what you already know from algebra.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 9 — FUNCTION DEFINITION
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">What is a Function?</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        A <strong>function</strong> <span class="math">f : A → B</span> is a rule that assigns to each element of A <em>exactly one</em> element of B.<br><br>
+        • <strong>Domain</strong>: the set A (all inputs)<br>
+        • <strong>Codomain</strong>: the set B (all possible outputs)<br>
+        • <strong>Range</strong>: <span class="math">{ f(x) : x ∈ A } ⊆ B</span> (outputs actually produced)
+      </div>
+      <div class="cols cols-2">
+        <div class="box ex">
+          <span class="box-title">Valid Function</span>
+          Every element of A maps to <em>exactly one</em> element of B.
+          <svg viewBox="0 0 200 140" width="100%" style="max-width:200px;display:block;margin:8px auto">
+            <ellipse cx="55" cy="70" rx="40" ry="55" fill="#eaf4fb" stroke="#2980b9" stroke-width="2"/>
+            <ellipse cx="145" cy="70" rx="40" ry="55" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+            <text x="55" y="15" text-anchor="middle" font-size="12" fill="#2980b9" font-weight="bold">A</text>
+            <text x="145" y="15" text-anchor="middle" font-size="12" fill="#27ae60" font-weight="bold">B</text>
+            <circle cx="55" cy="45" r="4" fill="#2980b9"/>
+            <circle cx="55" cy="70" r="4" fill="#2980b9"/>
+            <circle cx="55" cy="95" r="4" fill="#2980b9"/>
+            <circle cx="145" cy="40" r="4" fill="#27ae60"/>
+            <circle cx="145" cy="65" r="4" fill="#27ae60"/>
+            <circle cx="145" cy="90" r="4" fill="#27ae60"/>
+            <text x="40" y="49" font-size="11" fill="#333">a</text>
+            <text x="40" y="74" font-size="11" fill="#333">b</text>
+            <text x="40" y="99" font-size="11" fill="#333">c</text>
+            <text x="152" y="44" font-size="11" fill="#333">1</text>
+            <text x="152" y="69" font-size="11" fill="#333">2</text>
+            <text x="152" y="94" font-size="11" fill="#333">3</text>
+            <line x1="59" y1="45" x2="140" y2="42" stroke="#c0392b" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="59" y1="70" x2="140" y2="43" stroke="#c0392b" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="59" y1="95" x2="140" y2="88" stroke="#c0392b" stroke-width="1.5" marker-end="url(#arr)"/>
+            <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#c0392b"/></marker></defs>
+          </svg>
+        </div>
+        <div class="box warn">
+          <span class="box-title">NOT a Function</span>
+          An element of A maps to <em>two</em> outputs — this breaks the rule!
+          <svg viewBox="0 0 200 140" width="100%" style="max-width:200px;display:block;margin:8px auto">
+            <ellipse cx="55" cy="70" rx="40" ry="55" fill="#fef5ec" stroke="#e67e22" stroke-width="2"/>
+            <ellipse cx="145" cy="70" rx="40" ry="55" fill="#fef5ec" stroke="#e67e22" stroke-width="2"/>
+            <text x="55" y="15" text-anchor="middle" font-size="12" fill="#e67e22" font-weight="bold">A</text>
+            <text x="145" y="15" text-anchor="middle" font-size="12" fill="#e67e22" font-weight="bold">B</text>
+            <circle cx="55" cy="55" r="4" fill="#e67e22"/>
+            <circle cx="55" cy="85" r="4" fill="#e67e22"/>
+            <circle cx="145" cy="40" r="4" fill="#e67e22"/>
+            <circle cx="145" cy="65" r="4" fill="#e67e22"/>
+            <circle cx="145" cy="90" r="4" fill="#e67e22"/>
+            <text x="40" y="59" font-size="11" fill="#333">a</text>
+            <text x="40" y="89" font-size="11" fill="#333">b</text>
+            <line x1="59" y1="53" x2="140" y2="42" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="4"/>
+            <line x1="59" y1="57" x2="140" y2="63" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="4"/>
+            <line x1="59" y1="85" x2="140" y2="88" stroke="#c0392b" stroke-width="1.5"/>
+            <text x="62" y="42" font-size="20" fill="#e74c3c">✗</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 10 — FUNCTION EXAMPLES
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Functions: Domain, Codomain, Range</div>
+      <div class="box ex">
+        <span class="box-title">Example 1 — Capital Letters &amp; Loops</span>
+        Define <span class="math">f : {A,B,…,Z} → ℕ</span> where <span class="math">f(letter)</span> = number of closed loops.<br><br>
+        <span class="math">f(A) = 1 &nbsp;&nbsp; f(B) = 2 &nbsp;&nbsp; f(C) = 0 &nbsp;&nbsp; f(O) = 1 &nbsp;&nbsp; f(Q) = 1</span><br><br>
+        <strong>Range</strong> = <span class="math">{0, 1, 2}</span> (only these values appear, even though codomain is all of ℕ)
+      </div>
+      <div class="box ex">
+        <span class="box-title">Example 2 — Subsets and Cardinality</span>
+        Let <span class="math">X = {1,2,3,4}</span>. Define <span class="math">g : 𝒫(X) → {0,1,2,3,4}</span> by <span class="math">g(A) = |A|</span>.<br><br>
+        <span class="math">g(∅) = 0 &nbsp;&nbsp; g({1,3}) = 2 &nbsp;&nbsp; g({1,2,3,4}) = 4</span><br>
+        <strong>Domain</strong>: all 16 subsets of X. &nbsp; <strong>Range</strong>: <span class="math">{0, 1, 2, 3, 4}</span>
+      </div>
+
+      <!-- QUIZ 3 -->
+      <div class="quiz-block">
+        <div class="quiz-prompt">
+          For the letter-loops function above, what is the <strong>range</strong>?
+        </div>
+        <div class="options">
+          <button class="opt-btn" onclick="answer(this,false,'ℕ is the codomain, not the range. The range is only what is actually produced.')">ℕ (all natural numbers)</button>
+          <button class="opt-btn" onclick="answer(this,true,'Correct! Letters have 0 loops (C,S,…), 1 loop (A,D,O,…), or 2 loops (B). So range = {0,1,2}.')">{ 0, 1, 2 }</button>
+          <button class="opt-btn" onclick="answer(this,false,'No letter has 3 closed loops.')">{ 0, 1, 2, 3 }</button>
+          <button class="opt-btn" onclick="answer(this,false,'Some letters have 0 loops (e.g. C), so 0 is in the range.')">{ 1, 2 }</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 11 — SECTION: INJECTIVE & SURJECTIVE
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="section-slide">
+        <div class="sec-num">§4</div>
+        <h2>Injective &amp; Surjective Functions</h2>
+        <p>Two key properties that describe how a function maps its domain to its codomain.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 12 — INJECTIVE
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Injective (One-to-One) Functions</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        <span class="math">f : A → B</span> is <strong>injective</strong> (one-to-one) if different inputs always give different outputs:<br>
+        <span class="math">x ≠ y &nbsp;⟹&nbsp; f(x) ≠ f(y)</span> &nbsp; (equivalently: <span class="math">f(x) = f(y) ⟹ x = y</span>)
+      </div>
+      <p><strong>Intuition:</strong> No two arrows from A land on the same element in B.</p>
+
+      <div class="diagram-wrap">
+        <div class="diagram-item">
+          <svg viewBox="0 0 180 150" width="180">
+            <ellipse cx="50" cy="80" rx="38" ry="55" fill="#eaf4fb" stroke="#2980b9" stroke-width="2"/>
+            <ellipse cx="130" cy="80" rx="38" ry="65" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+            <text x="50" y="18" text-anchor="middle" font-size="13" fill="#2980b9" font-weight="bold">A</text>
+            <text x="130" y="10" text-anchor="middle" font-size="13" fill="#27ae60" font-weight="bold">B</text>
+            <circle cx="50" cy="55" r="4" fill="#2980b9"/><text x="35" y="59" font-size="11">a</text>
+            <circle cx="50" cy="80" r="4" fill="#2980b9"/><text x="35" y="84" font-size="11">b</text>
+            <circle cx="50" cy="105" r="4" fill="#2980b9"/><text x="35" y="109" font-size="11">c</text>
+            <circle cx="130" cy="45" r="4" fill="#27ae60"/><text x="136" y="49" font-size="11">1</text>
+            <circle cx="130" cy="70" r="4" fill="#27ae60"/><text x="136" y="74" font-size="11">2</text>
+            <circle cx="130" cy="95" r="4" fill="#27ae60"/><text x="136" y="99" font-size="11">3</text>
+            <circle cx="130" cy="120" r="4" fill="#27ae60"/><text x="136" y="124" font-size="11">4</text>
+            <defs><marker id="a1" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#c0392b"/></marker></defs>
+            <line x1="54" y1="54" x2="125" y2="46" stroke="#c0392b" stroke-width="1.8" marker-end="url(#a1)"/>
+            <line x1="54" y1="79" x2="125" y2="70" stroke="#c0392b" stroke-width="1.8" marker-end="url(#a1)"/>
+            <line x1="54" y1="104" x2="125" y2="94" stroke="#c0392b" stroke-width="1.8" marker-end="url(#a1)"/>
+            <text x="90" y="148" text-anchor="middle" font-size="11" fill="#27ae60" font-weight="bold">✓ Injective</text>
+          </svg>
+          <figcaption>Each input maps to a<br>different output</figcaption>
+        </div>
+        <div class="diagram-item">
+          <svg viewBox="0 0 180 150" width="180">
+            <ellipse cx="50" cy="80" rx="38" ry="55" fill="#fef5ec" stroke="#e67e22" stroke-width="2"/>
+            <ellipse cx="130" cy="80" rx="38" ry="55" fill="#fef5ec" stroke="#e67e22" stroke-width="2"/>
+            <text x="50" y="18" text-anchor="middle" font-size="13" fill="#e67e22" font-weight="bold">A</text>
+            <text x="130" y="18" text-anchor="middle" font-size="13" fill="#e67e22" font-weight="bold">B</text>
+            <circle cx="50" cy="55" r="4" fill="#e67e22"/><text x="35" y="59" font-size="11">a</text>
+            <circle cx="50" cy="80" r="4" fill="#e67e22"/><text x="35" y="84" font-size="11">b</text>
+            <circle cx="50" cy="105" r="4" fill="#e67e22"/><text x="35" y="109" font-size="11">c</text>
+            <circle cx="130" cy="60" r="4" fill="#e67e22"/><text x="136" y="64" font-size="11">1</text>
+            <circle cx="130" cy="90" r="4" fill="#e67e22"/><text x="136" y="94" font-size="11">2</text>
+            <circle cx="130" cy="115" r="4" fill="#e67e22"/><text x="136" y="119" font-size="11">3</text>
+            <defs><marker id="a2" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#e74c3c"/></marker></defs>
+            <line x1="54" y1="54" x2="125" y2="61" stroke="#e74c3c" stroke-width="1.8" marker-end="url(#a2)"/>
+            <line x1="54" y1="80" x2="125" y2="61" stroke="#e74c3c" stroke-width="1.8" marker-end="url(#a2)"/>
+            <line x1="54" y1="105" x2="125" y2="89" stroke="#e74c3c" stroke-width="1.8" marker-end="url(#a2)"/>
+            <text x="90" y="142" text-anchor="middle" font-size="11" fill="#e74c3c" font-weight="bold">✗ NOT Injective</text>
+          </svg>
+          <figcaption>Two inputs (a,b) land<br>on the same output (1)</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 13 — SURJECTIVE
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Surjective (Onto) Functions</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        <span class="math">f : A → B</span> is <strong>surjective</strong> (onto) if every element of B is hit by at least one element of A:<br>
+        <span class="math">∀ y ∈ B, ∃ x ∈ A such that f(x) = y</span>
+      </div>
+      <p><strong>Intuition:</strong> No element in B is left without an arrow pointing to it. Range = Codomain.</p>
+
+      <div class="diagram-wrap">
+        <div class="diagram-item">
+          <svg viewBox="0 0 180 150" width="180">
+            <ellipse cx="50" cy="80" rx="38" ry="60" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+            <ellipse cx="130" cy="80" rx="38" ry="45" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+            <text x="50" y="12" text-anchor="middle" font-size="13" fill="#27ae60" font-weight="bold">A</text>
+            <text x="130" y="25" text-anchor="middle" font-size="13" fill="#27ae60" font-weight="bold">B</text>
+            <circle cx="50" cy="50" r="4" fill="#27ae60"/>
+            <circle cx="50" cy="75" r="4" fill="#27ae60"/>
+            <circle cx="50" cy="100" r="4" fill="#27ae60"/>
+            <circle cx="50" cy="120" r="4" fill="#27ae60"/>
+            <circle cx="130" cy="60" r="4" fill="#27ae60"/>
+            <circle cx="130" cy="85" r="4" fill="#27ae60"/>
+            <circle cx="130" cy="110" r="4" fill="#27ae60"/>
+            <defs><marker id="a3" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#27ae60"/></marker></defs>
+            <line x1="54" y1="50" x2="125" y2="61" stroke="#27ae60" stroke-width="1.8" marker-end="url(#a3)"/>
+            <line x1="54" y1="75" x2="125" y2="62" stroke="#27ae60" stroke-width="1.8" marker-end="url(#a3)"/>
+            <line x1="54" y1="100" x2="125" y2="84" stroke="#27ae60" stroke-width="1.8" marker-end="url(#a3)"/>
+            <line x1="54" y1="120" x2="125" y2="109" stroke="#27ae60" stroke-width="1.8" marker-end="url(#a3)"/>
+            <text x="90" y="148" text-anchor="middle" font-size="11" fill="#27ae60" font-weight="bold">✓ Surjective</text>
+          </svg>
+          <figcaption>Every element of B<br>is reached</figcaption>
+        </div>
+        <div class="diagram-item">
+          <svg viewBox="0 0 180 150" width="180">
+            <ellipse cx="50" cy="80" rx="38" ry="45" fill="#f8e8e6" stroke="#c0392b" stroke-width="2"/>
+            <ellipse cx="130" cy="80" rx="38" ry="60" fill="#f8e8e6" stroke="#c0392b" stroke-width="2"/>
+            <text x="50" y="25" text-anchor="middle" font-size="13" fill="#c0392b" font-weight="bold">A</text>
+            <text x="130" y="12" text-anchor="middle" font-size="13" fill="#c0392b" font-weight="bold">B</text>
+            <circle cx="50" cy="60" r="4" fill="#c0392b"/>
+            <circle cx="50" cy="85" r="4" fill="#c0392b"/>
+            <circle cx="50" cy="110" r="4" fill="#c0392b"/>
+            <circle cx="130" cy="45" r="4" fill="#c0392b"/>
+            <circle cx="130" cy="70" r="4" fill="#c0392b"/>
+            <circle cx="130" cy="95" r="4" fill="#c0392b"/>
+            <circle cx="130" cy="120" r="4" fill="#c0392b" stroke="#e74c3c" stroke-width="2"/>
+            <defs><marker id="a4" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 z" fill="#c0392b"/></marker></defs>
+            <line x1="54" y1="60" x2="125" y2="46" stroke="#c0392b" stroke-width="1.8" marker-end="url(#a4)"/>
+            <line x1="54" y1="85" x2="125" y2="70" stroke="#c0392b" stroke-width="1.8" marker-end="url(#a4)"/>
+            <line x1="54" y1="110" x2="125" y2="94" stroke="#c0392b" stroke-width="1.8" marker-end="url(#a4)"/>
+            <text x="130" y="130" text-anchor="middle" font-size="18" fill="#e74c3c">?</text>
+            <text x="90" y="148" text-anchor="middle" font-size="11" fill="#e74c3c" font-weight="bold">✗ NOT Surjective</text>
+          </svg>
+          <figcaption>Bottom element of B<br>is never reached</figcaption>
+        </div>
+      </div>
+
+      <!-- QUIZ 4 -->
+      <div class="quiz-block">
+        <div class="quiz-prompt">
+          Let <span class="math">f : ℝ → ℝ</span> be defined by <span class="math">f(x) = x²</span>. Is f surjective?
+        </div>
+        <div class="options">
+          <button class="opt-btn" onclick="answer(this,false,'No — negative numbers like −1 can never be outputs of x², so not every element of ℝ is reached.')">Yes — every real number has a square root</button>
+          <button class="opt-btn" onclick="answer(this,true,'Correct! f(x) = x² ≥ 0 always. So negative numbers like −1 are never outputs. Range = [0,∞) ≠ ℝ.')">No — negative numbers are never in the range</button>
+          <button class="opt-btn" onclick="answer(this,false,'Surjectivity does not depend on injectivity.')">Only if it is also injective</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 14 — BIJECTIVE
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Bijective Functions</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        A function is <strong>bijective</strong> (a <em>bijection</em> or <em>one-to-one correspondence</em>) if it is <em>both</em> injective <em>and</em> surjective.
+      </div>
+      <div class="cols cols-2">
+        <div>
+          <table class="tt" style="width:100%">
+            <tr><th>Property</th><th>Meaning</th></tr>
+            <tr><td>Injective</td><td>no two inputs share an output</td></tr>
+            <tr><td>Surjective</td><td>every output is reached</td></tr>
+            <tr><td>Bijective</td><td>both — perfect pairing</td></tr>
+          </table>
+          <div class="box note" style="margin-top:12px">
+            <span class="box-title">Why Bijections Matter</span>
+            A bijection <span class="math">f : A → B</span> tells us <span class="math">|A| = |B|</span>.
+            This is how mathematicians compare the sizes of infinite sets!
+          </div>
+        </div>
+        <div class="box ex">
+          <span class="box-title">Example</span>
+          <span class="math">f : {1,2,3} → {a,b,c}</span><br>
+          <span class="math">f(1)=a, f(2)=b, f(3)=c</span><br><br>
+          ✓ Injective — all outputs distinct<br>
+          ✓ Surjective — all of B is covered<br>
+          ✓ Bijective<br><br>
+          <strong>Non-example:</strong> <span class="math">f(x) = x²</span> on ℝ is neither injective (f(2)=f(−2)) nor surjective.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 15 — SECTION: COMPOSITION & INVERSE
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="section-slide">
+        <div class="sec-num">§5</div>
+        <h2>Composition &amp; Inverse</h2>
+        <p>Chaining functions together, and undoing them.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 16 — COMPOSITION
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Function Composition</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        Given <span class="math">f : A → B</span> and <span class="math">g : B → C</span>, the <strong>composition</strong> is:<br>
+        <span class="math">(g ∘ f) : A → C &nbsp;&nbsp; defined by &nbsp;&nbsp; (g ∘ f)(x) = g(f(x))</span><br><br>
+        Read "g after f" — first apply f, then apply g.
+      </div>
+
+      <div class="box ex">
+        <span class="box-title">Worked Example</span>
+        Let <span class="math">f(x) = 2x + 1</span> and <span class="math">g(x) = x²</span>, both from ℝ → ℝ.<br><br>
+        <span class="math">(g ∘ f)(x) = g(f(x)) = g(2x+1) = (2x+1)²</span><br>
+        <span class="math">(f ∘ g)(x) = f(g(x)) = f(x²) = 2x² + 1</span><br><br>
+        <strong>Note:</strong> In general <span class="math">g ∘ f ≠ f ∘ g</span> — composition is not commutative!
+      </div>
+
+      <svg viewBox="0 0 500 80" width="100%" style="max-width:500px;display:block;margin:10px auto">
+        <rect x="20" y="25" width="60" height="30" rx="6" fill="#eaf4fb" stroke="#2980b9" stroke-width="1.5"/>
+        <text x="50" y="45" text-anchor="middle" font-size="13" fill="#2980b9" font-weight="bold">A</text>
+        <rect x="210" y="25" width="60" height="30" rx="6" fill="#eafaf1" stroke="#27ae60" stroke-width="1.5"/>
+        <text x="240" y="45" text-anchor="middle" font-size="13" fill="#27ae60" font-weight="bold">B</text>
+        <rect x="400" y="25" width="60" height="30" rx="6" fill="#f5eef8" stroke="#8e44ad" stroke-width="1.5"/>
+        <text x="430" y="45" text-anchor="middle" font-size="13" fill="#8e44ad" font-weight="bold">C</text>
+        <defs>
+          <marker id="aa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#27ae60"/></marker>
+          <marker id="ab" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#8e44ad"/></marker>
+          <marker id="ac" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#c0392b"/></marker>
+        </defs>
+        <line x1="82" y1="40" x2="208" y2="40" stroke="#27ae60" stroke-width="2" marker-end="url(#aa)"/>
+        <text x="145" y="32" text-anchor="middle" font-size="12" fill="#27ae60">f</text>
+        <line x1="272" y1="40" x2="398" y2="40" stroke="#8e44ad" stroke-width="2" marker-end="url(#ab)"/>
+        <text x="335" y="32" text-anchor="middle" font-size="12" fill="#8e44ad">g</text>
+        <path d="M 50 25 Q 240 -10 430 25" fill="none" stroke="#c0392b" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#ac)"/>
+        <text x="240" y="10" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="bold">g ∘ f</text>
+      </svg>
+
+      <!-- QUIZ 5 -->
+      <div class="quiz-block">
+        <div class="quiz-prompt">
+          Let <span class="math">f(x) = x + 3</span> and <span class="math">g(x) = 2x</span>. What is <span class="math">(g ∘ f)(5)</span>?
+        </div>
+        <div class="options">
+          <button class="opt-btn" onclick="answer(this,true,'Correct! First f(5)=5+3=8, then g(8)=2×8=16.')">16</button>
+          <button class="opt-btn" onclick="answer(this,false,'That is (f∘g)(5) = f(g(5)) = f(10) = 13. You applied them in the wrong order.')">13</button>
+          <button class="opt-btn" onclick="answer(this,false,'g∘f means apply f first, then g. f(5)=8, g(8)=16.')">8</button>
+          <button class="opt-btn" onclick="answer(this,false,'Check again: f(5)=8, g(8)=16.')">10</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 17 — INVERSE FUNCTIONS
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Inverse Functions</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        Let <span class="math">f : A → B</span>. A function <span class="math">g : B → A</span> is the <strong>inverse</strong> of f if:<br>
+        <span class="math">g ∘ f = id_A &nbsp;&nbsp; and &nbsp;&nbsp; f ∘ g = id_B</span><br>
+        where <span class="math">id_A(x) = x</span> for all <span class="math">x ∈ A</span>. We write <span class="math">g = f⁻¹</span>.
+      </div>
+      <div class="cols cols-2">
+        <div class="box ex">
+          <span class="box-title">Example</span>
+          <span class="math">f : ℝ → ℝ, &nbsp; f(x) = 3x − 1</span><br><br>
+          To find <span class="math">f⁻¹</span>, solve <span class="math">y = 3x − 1</span> for x:<br>
+          <span class="math">x = (y + 1) / 3</span><br><br>
+          So <span class="math">f⁻¹(y) = (y + 1) / 3</span><br><br>
+          Check: <span class="math">f(f⁻¹(y)) = 3·(y+1)/3 − 1 = y ✓</span>
+        </div>
+        <div>
+          <div class="box warn">
+            <span class="box-title">Key Theorem</span>
+            A function has an inverse <strong>if and only if it is bijective</strong>.
+            <br><br>
+            • Not injective → two inputs share an output, so the inverse can't be a function (which output to go back to?)<br>
+            • Not surjective → some outputs in B have no pre-image, so the inverse is undefined there.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 18 — SECTION: FUNCTIONS AS RELATIONS
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="section-slide">
+        <div class="sec-num">§6</div>
+        <h2>Functions as Relations</h2>
+        <p>Connecting functions back to Cartesian products — a deeper, more abstract view.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 19 — RELATIONS DEF
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Binary Relations</div>
+      <div class="box def">
+        <span class="box-title">Definition</span>
+        A <strong>(binary) relation</strong> R between sets A and B is any subset of <span class="math">A × B</span>:<br>
+        <span class="math">R ⊆ A × B</span><br><br>
+        We write <span class="math">a R b</span> (or <span class="math">(a,b) ∈ R</span>) to mean "a is related to b".
+      </div>
+      <div class="box ex">
+        <span class="box-title">Familiar Relations</span>
+        <ul>
+          <li><strong>≤ on ℤ</strong>: <span class="math">R = {(a,b) : a ≤ b}</span> — e.g. <span class="math">(2,5) ∈ R</span> but <span class="math">(5,2) ∉ R</span></li>
+          <li><strong>Divisibility</strong>: <span class="math">R = {(a,b) : a divides b}</span> — e.g. <span class="math">(3,12) ∈ R</span></li>
+          <li><strong>"Is a friend of"</strong> on people — a social network is literally this!</li>
+        </ul>
+      </div>
+      <div class="box note">
+        <span class="box-title">How Many Relations Exist?</span>
+        The set of all relations between A and B is <span class="math">𝒫(A × B)</span> — the power set of the Cartesian product.
+        If <span class="math">|A|=2, |B|=3</span> then <span class="math">|A×B|=6</span>, so there are <span class="math">2⁶ = 64</span> possible relations between A and B.
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 20 — FUNCTIONS AS SPECIAL RELATIONS
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Functions as Special Relations</div>
+      <p>Every function <em>is</em> a relation, but with extra rules.</p>
+      <div class="box def">
+        <span class="box-title">Function as a Relation</span>
+        A function <span class="math">f : A → B</span> can be represented as a relation (set of ordered pairs):<br>
+        <span class="math">R_f = { (x, f(x)) : x ∈ A } ⊆ A × B</span><br><br>
+        This relation satisfies two special conditions:<br>
+        1. <strong>Total</strong>: every <span class="math">x ∈ A</span> appears as a first element in some pair<br>
+        2. <strong>Functional</strong>: no <span class="math">x ∈ A</span> appears with two different second elements
+      </div>
+      <div class="box ex">
+        <span class="box-title">Concrete Example</span>
+        Let <span class="math">f : 𝒫({a,b}) → {0,1,2}</span> where <span class="math">f(S) = |S|</span>.<br><br>
+        <span class="math">R_f = { (∅, 0), ({a}, 1), ({b}, 1), ({a,b}, 2) }</span><br><br>
+        This is a subset of <span class="math">𝒫({a,b}) × {0,1,2}</span>. ✓ Total (all subsets listed) ✓ Functional (each subset has exactly one size)
+      </div>
+      <div class="box warn">
+        <span class="box-title">The Bridge</span>
+        A relation <span class="math">R ⊆ A × B</span> is a function exactly when it is <em>total</em> and <em>functional</em>.
+        Relations that are NOT functions: like ≤ — the number 2 relates to 3, 4, 5, … (multiple outputs).
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 21 — QUIZ ON RELATIONS
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Relations vs Functions — Check Your Understanding</div>
+      <div class="box recap">
+        <span class="box-title">Quick Summary</span>
+        <ul>
+          <li>Every function is a relation, but not every relation is a function.</li>
+          <li>A relation <span class="math">R ⊆ A × B</span> is a function iff each <span class="math">a ∈ A</span> appears <em>exactly once</em> as a first element.</li>
+          <li>The set of all relations between A and B is <span class="math">𝒫(A × B)</span>.</li>
+        </ul>
+      </div>
+
+      <!-- QUIZ 6 -->
+      <div class="quiz-block">
+        <div class="quiz-prompt">
+          Which of these subsets of <span class="math">{1,2} × {a,b,c}</span> represents a <strong>function</strong> from {1,2} to {a,b,c}?
+        </div>
+        <div class="options">
+          <button class="opt-btn" onclick="answer(this,false,'This maps 1 to both a and b — violates the functional condition. Not a function.')">{ (1,a), (1,b), (2,c) }</button>
+          <button class="opt-btn" onclick="answer(this,true,'Correct! Element 1 maps to exactly a, and element 2 maps to exactly c. Total and functional.')">{ (1,a), (2,c) }</button>
+          <button class="opt-btn" onclick="answer(this,false,'Element 2 has no pair — violates the totality condition. Not a function.')">{ (1,b) }</button>
+          <button class="opt-btn" onclick="answer(this,false,'Element 1 maps to both b and c — violates the functional condition.')">{ (1,b), (1,c), (2,a) }</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <!-- QUIZ 7 -->
+      <div class="quiz-block" style="margin-top:10px">
+        <div class="quiz-prompt">
+          How many relations exist between <span class="math">A = {0,1}</span> and <span class="math">B = {x,y}</span>?
+        </div>
+        <div class="options">
+          <button class="opt-btn" onclick="answer(this,false,'|A×B|=4, so there are 2⁴=16 relations, not 4.')">4</button>
+          <button class="opt-btn" onclick="answer(this,false,'That is |A×B|=4. The number of relations = |𝒫(A×B)| = 2⁴.')">8</button>
+          <button class="opt-btn" onclick="answer(this,true,'Correct! |A×B| = 2×2 = 4, so |𝒫(A×B)| = 2⁴ = 16.')">16</button>
+          <button class="opt-btn" onclick="answer(this,false,'2⁴=16, not 2.')">2</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 22 — POLYA'S PROBLEM SOLVING
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Pólya's Problem-Solving Framework</div>
+      <p style="margin-bottom:14px">Use this every time you tackle an unfamiliar problem!</p>
+      <div class="cols cols-2">
+        <div>
+          <div class="box def">
+            <span class="box-title" style="color:#1a2340">① Understand the Problem</span>
+            <ul>
+              <li>What are you being asked?</li>
+              <li>Do you understand every word?</li>
+              <li>Can you draw a picture or diagram?</li>
+              <li>Is there enough information?</li>
+            </ul>
+          </div>
+          <div class="box def" style="margin-top:10px">
+            <span class="box-title" style="color:#1a2340">② Devise a Plan</span>
+            <ul>
+              <li>Try small cases first</li>
+              <li>Look for a pattern</li>
+              <li>Work backwards from the answer</li>
+              <li>Reduce to a known problem</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="box def">
+            <span class="box-title" style="color:#1a2340">③ Carry Out the Plan</span>
+            <ul>
+              <li>Execute methodically</li>
+              <li>Check each step</li>
+              <li>Be willing to revise the plan</li>
+            </ul>
+          </div>
+          <div class="box def" style="margin-top:10px">
+            <span class="box-title" style="color:#1a2340">④ Look Back</span>
+            <ul>
+              <li>Does the answer make sense?</li>
+              <li>Can you verify it another way?</li>
+              <li>What did you learn from this problem?</li>
+              <li>Can the method generalise?</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="box warn" style="margin-top:8px">
+        <span class="box-title">Practice Problem</span>
+        Find the domain and range of the function that assigns to each pair of positive integers its first element. Is it injective? Surjective?
+        <button class="step-btn" onclick="toggleStep('polya-hint')">Show Hint</button>
+        <div class="step-reveal" id="polya-hint">
+          <div style="padding:10px 0; font-size:14px; color:#7d6608">
+            Domain: ℤ⁺ × ℤ⁺ (pairs of positive integers). &nbsp;
+            Range: ℤ⁺ (every positive integer is the first of some pair). &nbsp;
+            Injective? No — (1,1) and (1,2) both map to 1. &nbsp;
+            Surjective? Yes — for any n ∈ ℤ⁺, the pair (n,1) maps to n.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 23 — SUMMARY & NEXT WEEK
+    ══════════════════════════════════════════ -->
+    <div class="slide">
+      <div class="slide-title">Week 6 Summary</div>
+      <div class="cols cols-2">
+        <div>
+          <div class="box recap">
+            <span class="box-title">What We Covered</span>
+            <ul>
+              <li><strong>Power sets:</strong> <span class="math">𝒫(A)</span>, <span class="math">|𝒫(A)| = 2ⁿ</span></li>
+              <li><strong>Cartesian products:</strong> ordered pairs/tuples</li>
+              <li><strong>Functions:</strong> domain, codomain, range</li>
+              <li><strong>Injective:</strong> no two inputs → same output</li>
+              <li><strong>Surjective:</strong> every output is reached</li>
+              <li><strong>Bijective:</strong> both; has an inverse</li>
+              <li><strong>Composition:</strong> <span class="math">(g∘f)(x) = g(f(x))</span></li>
+              <li><strong>Inverse:</strong> exists iff bijective</li>
+              <li><strong>Relations:</strong> subsets of <span class="math">A×B</span>; functions are special relations</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="box note">
+            <span class="box-title">Next Week</span>
+            <ul>
+              <li>Finishing off functions and relations</li>
+              <li>More on the written assessment (choosing &amp; designing your project)</li>
+              <li>Introduction to <strong>Recursion &amp; Induction</strong></li>
+            </ul>
+          </div>
+          <div class="box ex" style="margin-top:12px">
+            <span class="box-title">To Prepare</span>
+            <ul>
+              <li>Read Rosen Ch. 2.3 (Functions)</li>
+              <li>Try: Rosen 2.3 exercises 1–10</li>
+              <li>Think about your written project topic</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="box def" style="margin-top:10px;text-align:center">
+        <span class="box-title">Questions?</span>
+        Email: <strong>cue.nguyen@jcu.edu.au</strong> &nbsp;·&nbsp; Subject: MA2211 or MA2011 in the title
+      </div>
+    </div>
+
+  </div><!-- /slides-wrapper -->
+
+  <!-- NAV BAR -->
+  <div id="nav">
+    <button class="nav-btn" id="prev-btn" onclick="goTo(current-1)" disabled>← Prev</button>
+    <div id="progress"></div>
+    <button class="nav-btn" id="next-btn" onclick="goTo(current+1)">Next →</button>
+  </div>
+
+</div><!-- /deck -->
+
+<div id="key-hint" style="color:#888;font-size:12px;margin-top:10px">Use ← → arrow keys or click buttons to navigate</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+
+  document.getElementById('tot').textContent = totalSlides;
+
+  // Build progress dots
+  const prog = document.getElementById('progress');
+  for (let i = 0; i < totalSlides; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' active':'');
+    d.onclick = () => goTo(i);
+    prog.appendChild(d);
+  }
+
+  function goTo(n) {
+    if (n < 0 || n >= totalSlides) return;
+    slides[current].classList.remove('active');
+    const dots = prog.querySelectorAll('.dot');
+    dots[current].classList.remove('active');
+    dots[current].classList.add('visited');
+    current = n;
+    slides[current].classList.add('active');
+    dots[current].classList.remove('visited');
+    dots[current].classList.add('active');
+    document.getElementById('cur').textContent = current + 1;
+    document.getElementById('prev-btn').disabled = current === 0;
+    document.getElementById('next-btn').disabled = current === totalSlides - 1;
+    slides[current].scrollTop = 0;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+  });
+
+  // Quiz answer handler — scoped per quiz block
+  function answer(btn, correct, feedback) {
+    const block = btn.closest('.quiz-block');
+    const allBtns = block.querySelectorAll('.opt-btn');
+    const fb = block.querySelector('.quiz-feedback');
+    allBtns.forEach(b => b.disabled = true);
+    btn.classList.add(correct ? 'correct' : 'wrong');
+    fb.textContent = (correct ? '✓ ' : '✗ ') + feedback;
+    fb.className = 'quiz-feedback show ' + (correct ? 'ok' : 'bad');
+  }
+
+  // Step reveal toggle
+  function toggleStep(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+    const btn = el.previousElementSibling;
+    btn.textContent = el.classList.contains('open') ? 'Hide Hint' : 'Show Hint';
+  }
+</script>
+</body>
+</html>
