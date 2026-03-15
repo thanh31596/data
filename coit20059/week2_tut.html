@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 2 Lab — ORM Customisation &amp; Entity Relationships</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&display=swap');
+
+  :root {
+    --red: #C8102E;
+    --red-dark: #A00D24;
+    --red-light: #FDE8EC;
+    --red-subtle: #FFF5F7;
+    --gray-900: #1a1a2e;
+    --gray-700: #374151;
+    --gray-500: #6b7280;
+    --gray-300: #d1d5db;
+    --gray-100: #f3f4f6;
+    --white: #ffffff;
+    --code-bg: #1e1e2e;
+    --code-text: #cdd6f4;
+    --keyword: #cba6f7;
+    --string: #a6e3a1;
+    --annotation: #f9e2af;
+    --comment: #6c7086;
+    --type: #89b4fa;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --warn-bg: #FFF8E1;
+    --warn-border: #FFB300;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  #progress-bar {
+    position: fixed; top:0; left:0; height:4px;
+    background: var(--red);
+    transition: width 0.4s ease;
+    z-index: 1000;
+  }
+
+  .slide-deck { width:100vw; height:100vh; position:relative; }
+
+  .slide {
+    display: none;
+    width: 100%; height: 100%;
+    padding: 56px 80px 80px;
+    overflow-y: auto;
+    background: var(--white);
+    position: absolute; top:0; left:0;
+    animation: fadeIn 0.35s ease;
+  }
+  .slide.active { display:flex; flex-direction:column; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Title slide */
+  .slide.title-slide {
+    background: var(--red);
+    color: var(--white);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .title-slide h1 { font-size:2.8rem; font-weight:700; margin-bottom:12px; }
+  .title-slide .subtitle { font-size:1.4rem; font-weight:300; opacity:0.9; }
+  .title-slide .week-badge {
+    display:inline-block; background:rgba(255,255,255,0.2);
+    padding:8px 24px; border-radius:24px; font-size:1rem;
+    font-weight:600; margin-bottom:24px; letter-spacing:1px;
+  }
+
+  /* Section slide */
+  .slide.section-slide {
+    background: var(--gray-900); color: var(--white);
+    justify-content: center; align-items: flex-start; padding-left:100px;
+  }
+  .section-slide .project-num { font-size:4.5rem; font-weight:700; color:var(--red); line-height:1; }
+  .section-slide h2 { font-size:2.2rem; font-weight:700; margin-top:8px; }
+  .section-slide .section-desc { font-size:1.1rem; font-weight:300; opacity:0.7; margin-top:12px; max-width:600px; }
+
+  /* Content */
+  .slide h2 {
+    font-size:1.6rem; font-weight:700; color:var(--gray-900);
+    margin-bottom:20px; padding-bottom:8px;
+    border-bottom:3px solid var(--red); display:inline-block;
+  }
+  .slide h3 { font-size:1.1rem; font-weight:600; color:var(--gray-900); margin:14px 0 8px; }
+  .slide p, .slide li { font-size:1rem; line-height:1.7; }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:36px; flex:1; align-items:start; }
+
+  /* Step cards */
+  .step-card {
+    background: var(--gray-100);
+    border-radius: 12px;
+    padding: 20px 24px;
+    border-left: 4px solid var(--red);
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .step-card .step-num {
+    position: absolute;
+    top: -10px; left: -10px;
+    background: var(--red);
+    color: var(--white);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700;
+  }
+  .step-card h3 { margin-top: 0; }
+
+  /* Why box */
+  .why-box {
+    background: var(--red-light);
+    border-left: 4px solid var(--red);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 12px 0;
+    font-size: 0.95rem;
+  }
+  .why-box strong { color: var(--red); }
+
+  /* Success / check box */
+  .check-box {
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    border-left: 4px solid var(--success);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 12px 0;
+    font-size: 0.95rem;
+  }
+  .check-box strong { color: var(--success); }
+
+  /* Warning box */
+  .warn-box {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-left: 4px solid var(--warn-border);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 12px 0;
+    font-size: 0.95rem;
+  }
+  .warn-box strong { color: #E65100; }
+
+  /* Code */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 10px;
+    padding: 18px 22px;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 0.84rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+  .kw { color: var(--keyword); }
+  .str { color: var(--string); }
+  .ann { color: var(--annotation); }
+  .cmt { color: var(--comment); font-style:italic; }
+  .typ { color: var(--type); }
+  .hl { background: rgba(200,16,46,0.15); display:inline-block; width:100%; margin:0 -22px; padding:0 22px; }
+
+  code {
+    font-family: 'Source Code Pro', monospace;
+    background: var(--gray-100);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--red-dark);
+  }
+
+  /* Table boxes for DB diagrams */
+  .table-box {
+    display:inline-block; background:var(--white);
+    border:2px solid var(--red); border-radius:8px;
+    min-width:180px; text-align:left; overflow:hidden; vertical-align:top;
+  }
+  .table-box .th { background:var(--red); color:var(--white); padding:8px 14px; font-weight:700; font-size:0.9rem; text-align:center; }
+  .table-box .tb { padding:10px 14px; font-family:'Source Code Pro',monospace; font-size:0.8rem; line-height:1.8; }
+  .table-box .pk { color:var(--red); font-weight:600; }
+  .table-box .fk { color:var(--keyword); font-weight:600; }
+
+  .diagram-box {
+    background: var(--gray-100);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    margin: 10px 0;
+  }
+
+  /* Quiz */
+  .quiz-container { flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .quiz-question { font-size:1.15rem; font-weight:600; color:var(--gray-900); margin-bottom:18px; }
+  .quiz-options { display:flex; flex-direction:column; gap:12px; max-width:600px; }
+  .quiz-option {
+    padding:13px 18px; border:2px solid var(--gray-300); border-radius:10px;
+    cursor:pointer; font-size:0.98rem; transition:all 0.2s; background:var(--white);
+  }
+  .quiz-option:hover { border-color:var(--red); background:var(--red-subtle); }
+  .quiz-option.correct { border-color:#16a34a; background:#f0fdf4; color:#166534; }
+  .quiz-option.incorrect { border-color:var(--red); background:var(--red-light); color:var(--red-dark); }
+  .quiz-feedback { margin-top:14px; padding:13px 18px; border-radius:10px; font-size:0.93rem; display:none; }
+  .quiz-feedback.show { display:block; }
+  .quiz-feedback.correct-fb { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+  .quiz-feedback.incorrect-fb { background:var(--red-light); color:var(--red-dark); border:1px solid #fca5a5; }
+
+  /* Checklist */
+  .checklist { list-style:none; padding:0; }
+  .checklist li {
+    padding: 8px 0 8px 32px;
+    position: relative;
+    font-size: 0.98rem;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 4px;
+    font-size: 1.1rem;
+  }
+
+  /* Extension card */
+  .extension-card {
+    background: linear-gradient(135deg, var(--gray-900) 0%, #2d2d4e 100%);
+    color: var(--white);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .extension-card h3 { color: var(--white); margin-top:0; }
+  .extension-card p { color: rgba(255,255,255,0.8); }
+
+  /* Nav */
+  .nav-bar {
+    position:fixed; bottom:0; left:0; right:0;
+    background:var(--white); border-top:1px solid var(--gray-300);
+    padding:12px 30px; display:flex; justify-content:space-between; align-items:center; z-index:100;
+  }
+  .nav-btn {
+    background:var(--red); color:var(--white); border:none;
+    padding:10px 24px; border-radius:8px; font-size:0.95rem;
+    font-weight:600; cursor:pointer; font-family:inherit; transition:background 0.2s;
+  }
+  .nav-btn:hover { background:var(--red-dark); }
+  .nav-btn:disabled { background:var(--gray-300); cursor:default; }
+  .slide-counter { font-size:0.9rem; color:var(--gray-500); font-weight:600; }
+
+  @media (max-width:900px) {
+    .slide { padding:36px 24px 80px; }
+    .two-col { grid-template-columns:1fr; }
+    .title-slide h1 { font-size:2rem; }
+  }
+
+  .slide::-webkit-scrollbar { width:6px; }
+  .slide::-webkit-scrollbar-thumb { background:var(--gray-300); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div class="slide-deck" id="deck">
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide title-slide active">
+  <div class="week-badge">WEEK 2 LAB</div>
+  <h1>ORM Customisation &amp;<br>Entity Relationships</h1>
+  <p class="subtitle">Two hands-on projects — build, persist, and verify</p>
+</div>
+
+<!-- ==================== SLIDE 2: OVERVIEW ==================== -->
+<div class="slide">
+  <h2>What You'll Build Today</h2>
+  <div class="two-col" style="margin-top:12px;">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <h3>Project 1: ORM Customisation</h3>
+      <p>Take a <code>Book</code> entity and customise its table name, column names, constraints, and lengths using <code>@Table</code> and <code>@Column</code> annotations. Then persist it to MySQL and verify the schema.</p>
+      <p style="margin-top:8px; font-size:0.9rem; color:var(--gray-500);">Estimated: 30–40 minutes</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <h3>Project 2: Entity Relationships</h3>
+      <p>Create an <code>AnOrder</code> entity with a one-to-many relationship to <code>OrderLine</code> entities. Persist an order with two order lines and examine the generated join table.</p>
+      <p style="margin-top:8px; font-size:0.9rem; color:var(--gray-500);">Estimated: 30–40 minutes</p>
+    </div>
+  </div>
+  <div class="why-box" style="margin-top:16px;">
+    <strong>Prerequisites:</strong> You should have completed Week 1's lab (JPA project setup with MySQL). If not, refer to Week 1 Lab Projects – Part 2 for project creation steps.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 3: PROJECT 1 HEADER ==================== -->
+<div class="slide section-slide">
+  <div class="project-num">P1</div>
+  <h2>ORM Customisation</h2>
+  <p class="section-desc">Customise table and column mappings for a Book entity, then persist it to MySQL.</p>
+</div>
+
+<!-- ==================== SLIDE 4: P1 REQUIREMENTS ==================== -->
+<div class="slide">
+  <h2>Project 1 — Requirements</h2>
+  <p style="margin-bottom:16px;">You have a plain <code>Book</code> class. Your task is to make it a JPA entity and customise these specific mappings:</p>
+  <table style="width:100%; border-collapse:collapse; font-size:0.95rem;">
+    <tr style="background:var(--red); color:var(--white);">
+      <th style="padding:12px 16px; text-align:left;">Customisation</th>
+      <th style="padding:12px 16px; text-align:left;">Annotation</th>
+      <th style="padding:12px 16px; text-align:left;">What It Does</th>
+    </tr>
+    <tr><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300);">Table name → <strong>MyFavouriteBook</strong></td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300);"><code>@Table(name=...)</code></td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300);">Overrides default BOOK table name</td></tr>
+    <tr><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300); background:var(--gray-100);">title column → <strong>Book_Title</strong>, NOT NULL, not updatable</td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300); background:var(--gray-100);"><code>@Column(name=..., nullable=false, updatable=false)</code></td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300); background:var(--gray-100);">Rename, prevent nulls, lock after insert</td></tr>
+    <tr><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300);">description length → <strong>2,000 chars</strong></td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300);"><code>@Column(length=2000)</code></td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300);">Override default VARCHAR(255)</td></tr>
+    <tr><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300); background:var(--gray-100);">nbOfPage column → <strong>Number_of_Pages</strong>, NOT NULL</td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300); background:var(--gray-100);"><code>@Column(name=..., nullable=false)</code></td><td style="padding:10px 16px; border-bottom:1px solid var(--gray-300); background:var(--gray-100);">Rename and prevent nulls</td></tr>
+  </table>
+</div>
+
+<!-- ==================== SLIDE 5: P1 STEP 1 — CREATE PROJECT ==================== -->
+<div class="slide">
+  <h2>Step 1 — Create a New JPA Project</h2>
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <h3>In NetBeans: File → New Project</h3>
+    <p>Select <strong>Java with Maven → Java Application</strong>. Name it <code>Week2_Project1</code>.</p>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <h3>Add JPA dependencies to pom.xml</h3>
+    <p>You need the same dependencies as Week 1: <code>jakarta.persistence-api</code>, <code>eclipselink</code>, and <code>mysql-connector-java</code>.</p>
+<pre style="font-size:0.82rem;"><span class="cmt">&lt;!-- Add inside &lt;dependencies&gt; in pom.xml --&gt;</span>
+&lt;dependency&gt;
+  &lt;groupId&gt;jakarta.persistence&lt;/groupId&gt;
+  &lt;artifactId&gt;<span class="str">jakarta.persistence-api</span>&lt;/artifactId&gt;
+  &lt;version&gt;<span class="str">3.1.0</span>&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.eclipse.persistence&lt;/groupId&gt;
+  &lt;artifactId&gt;<span class="str">eclipselink</span>&lt;/artifactId&gt;
+  &lt;version&gt;<span class="str">4.0.2</span>&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;mysql&lt;/groupId&gt;
+  &lt;artifactId&gt;<span class="str">mysql-connector-java</span>&lt;/artifactId&gt;
+  &lt;version&gt;<span class="str">8.0.33</span>&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+  </div>
+  <div class="why-box">
+    <strong>Why these three?</strong> The API defines the annotations, EclipseLink is the persistence provider that does the actual work, and the MySQL connector lets Java talk to your database.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 6: P1 STEP 2 — BOOK ENTITY ==================== -->
+<div class="slide">
+  <h2>Step 2 — Create Book.java</h2>
+  <p style="margin-bottom:8px;">Create this file in your project's source package. The highlighted lines are the customisation annotations.</p>
+<pre><span class="kw">package</span> week2.project1;
+
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="ann">@Entity</span>
+<span class="hl"><span class="ann">@Table</span>(name = <span class="str">"MyFavouriteBook"</span>)</span>
+<span class="kw">public class</span> <span class="typ">Book</span> {
+
+    <span class="ann">@Id</span>
+    <span class="ann">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kw">private</span> Long id;
+
+<span class="hl">    <span class="ann">@Column</span>(name = <span class="str">"Book_Title"</span>, nullable = <span class="kw">false</span>, updatable = <span class="kw">false</span>)</span>
+    <span class="kw">private</span> String title;
+
+    <span class="kw">private</span> Float price;
+
+<span class="hl">    <span class="ann">@Column</span>(length = 2000)</span>
+    <span class="kw">private</span> String description;
+
+    <span class="kw">private</span> String isbn;
+
+<span class="hl">    <span class="ann">@Column</span>(name = <span class="str">"Number_of_Pages"</span>, nullable = <span class="kw">false</span>)</span>
+    <span class="kw">private</span> Integer nbOfPage;
+
+    <span class="kw">private</span> Boolean illustrations;
+
+    <span class="cmt">// Required no-arg constructor</span>
+    <span class="kw">public</span> Book() {}
+
+    <span class="cmt">// Convenience constructor</span>
+    <span class="kw">public</span> Book(String title, Float price, String description,
+               String isbn, Integer nbOfPage, Boolean illustrations) {
+        <span class="kw">this</span>.title = title;
+        <span class="kw">this</span>.price = price;
+        <span class="kw">this</span>.description = description;
+        <span class="kw">this</span>.isbn = isbn;
+        <span class="kw">this</span>.nbOfPage = nbOfPage;
+        <span class="kw">this</span>.illustrations = illustrations;
+    }
+
+    <span class="cmt">// Getters and setters (generate via IDE: right-click → Insert Code)</span>
+    <span class="cmt">// ... getId(), getTitle(), setTitle(), getPrice(), setPrice(), etc.</span>
+}</pre>
+</div>
+
+<!-- ==================== SLIDE 7: P1 STEP 3 — PERSISTENCE.XML ==================== -->
+<div class="slide">
+  <h2>Step 3 — Configure persistence.xml</h2>
+  <p style="margin-bottom:8px;">Create <code>src/main/resources/META-INF/persistence.xml</code>. This tells JPA where the database is and which entities to manage.</p>
+<pre style="font-size:0.82rem;">&lt;?xml version=<span class="str">"1.0"</span> encoding=<span class="str">"UTF-8"</span>?&gt;
+&lt;persistence version=<span class="str">"3.0"</span>
+  xmlns=<span class="str">"https://jakarta.ee/xml/ns/persistence"</span>&gt;
+
+  &lt;persistence-unit name=<span class="str">"Week2PU"</span>
+                    transaction-type=<span class="str">"RESOURCE_LOCAL"</span>&gt;
+    &lt;provider&gt;org.eclipse.persistence.jpa.PersistenceProvider&lt;/provider&gt;
+<span class="hl">    &lt;class&gt;week2.project1.Book&lt;/class&gt;</span>
+    &lt;properties&gt;
+      &lt;property name=<span class="str">"jakarta.persistence.jdbc.driver"</span>
+               value=<span class="str">"com.mysql.cj.jdbc.Driver"</span>/&gt;
+      &lt;property name=<span class="str">"jakarta.persistence.jdbc.url"</span>
+               value=<span class="str">"jdbc:mysql://localhost:3306/week2db"</span>/&gt;
+      &lt;property name=<span class="str">"jakarta.persistence.jdbc.user"</span>
+               value=<span class="str">"root"</span>/&gt;
+      &lt;property name=<span class="str">"jakarta.persistence.jdbc.password"</span>
+               value=<span class="str">"your_password"</span>/&gt;
+<span class="hl">      &lt;property name=<span class="str">"jakarta.persistence.schema-generation.database.action"</span>
+               value=<span class="str">"drop-and-create"</span>/&gt;</span>
+    &lt;/properties&gt;
+  &lt;/persistence-unit&gt;
+&lt;/persistence&gt;</pre>
+  <div class="warn-box">
+    <strong>Before running:</strong> Create the <code>week2db</code> database in MySQL first: <code>CREATE DATABASE week2db;</code>
+  </div>
+  <div class="why-box">
+    <strong>Why drop-and-create?</strong> During development, this regenerates tables from your entity annotations every time you run. Switch to <code>none</code> for production.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 8: P1 STEP 4 — MAIN CLASS ==================== -->
+<div class="slide">
+  <h2>Step 4 — Create Main.java</h2>
+  <p style="margin-bottom:8px;">This class creates an EntityManager, begins a transaction, persists a Book, and commits.</p>
+<pre><span class="kw">package</span> week2.project1;
+
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="kw">public class</span> <span class="typ">Main</span> {
+    <span class="kw">public static void</span> main(String[] args) {
+        <span class="cmt">// 1. Create EntityManagerFactory from persistence.xml</span>
+        EntityManagerFactory emf =
+            Persistence.createEntityManagerFactory(<span class="str">"Week2PU"</span>);
+        EntityManager em = emf.createEntityManager();
+
+        <span class="cmt">// 2. Begin transaction</span>
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+
+        <span class="cmt">// 3. Create and persist a Book</span>
+        Book book = <span class="kw">new</span> Book(
+            <span class="str">"Beginning Jakarta EE"</span>,
+            49.99f,
+            <span class="str">"A comprehensive guide to enterprise Java"</span>,
+            <span class="str">"978-1-4302-4627-5"</span>,
+            560,
+            <span class="kw">true</span>
+        );
+        em.persist(book);
+        System.out.println(<span class="str">"Book persisted with ID: "</span> + book.getId());
+
+        <span class="cmt">// 4. Commit and clean up</span>
+        tx.commit();
+        em.close();
+        emf.close();
+    }
+}</pre>
+</div>
+
+<!-- ==================== SLIDE 9: P1 STEP 5 — RUN & VERIFY ==================== -->
+<div class="slide">
+  <h2>Step 5 — Run &amp; Verify</h2>
+  <div class="step-card" style="margin-bottom:16px;">
+    <div class="step-num">1</div>
+    <h3>Run Main.java</h3>
+    <p>Right-click → Run File. You should see <code>"Book persisted with ID: 1"</code> in the output console with no errors.</p>
+  </div>
+  <div class="step-card" style="margin-bottom:16px;">
+    <div class="step-num">2</div>
+    <h3>Check MySQL</h3>
+    <p>Open MySQL Workbench or terminal and run:</p>
+<pre style="font-size:0.85rem;">USE week2db;
+DESCRIBE MyFavouriteBook;
+SELECT * FROM MyFavouriteBook;</pre>
+  </div>
+  <h3>Expected Table Structure</h3>
+  <div class="diagram-box">
+    <div class="table-box" style="min-width:360px;">
+      <div class="th">MyFavouriteBook</div>
+      <div class="tb">
+        <span class="pk">ID</span> BIGINT AUTO_INCREMENT (PK)<br>
+        <strong>Book_Title</strong> VARCHAR(255) NOT NULL<br>
+        PRICE FLOAT<br>
+        DESCRIPTION VARCHAR(<strong>2000</strong>)<br>
+        ISBN VARCHAR(255)<br>
+        <strong>Number_of_Pages</strong> INT NOT NULL<br>
+        ILLUSTRATIONS TINYINT(1)
+      </div>
+    </div>
+  </div>
+  <div class="check-box">
+    <strong>✓ Verify:</strong> Table is named MyFavouriteBook (not BOOK). Columns Book_Title and Number_of_Pages are renamed. Both are NOT NULL. DESCRIPTION allows 2000 characters.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 10: P1 TROUBLESHOOTING ==================== -->
+<div class="slide">
+  <h2>Troubleshooting — Project 1</h2>
+  <div class="two-col">
+    <div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">Table not found / schema not created</h3>
+        <p>Check that <code>persistence.xml</code> is in <code>src/main/resources/META-INF/</code> (not just META-INF). Verify the database URL and that <code>week2db</code> exists.</p>
+      </div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">Column "Book_Title" cannot be null</h3>
+        <p>You set <code>nullable = false</code> — make sure you pass a non-null title in your Book constructor.</p>
+      </div>
+    </div>
+    <div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">No Persistence provider for EntityManager</h3>
+        <p>EclipseLink dependency may be missing from <code>pom.xml</code>. Also check the persistence unit name matches between <code>persistence.xml</code> and <code>Main.java</code>.</p>
+      </div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">Table still named BOOK</h3>
+        <p>Make sure <code>@Table(name = "MyFavouriteBook")</code> is on the class, not on a field. Also run a clean build to clear cached schema.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 11: PROJECT 2 HEADER ==================== -->
+<div class="slide section-slide">
+  <div class="project-num">P2</div>
+  <h2>Entity Relationships</h2>
+  <p class="section-desc">Create a one-to-many relationship between AnOrder and OrderLine, then persist and verify.</p>
+</div>
+
+<!-- ==================== SLIDE 12: P2 GOAL ==================== -->
+<div class="slide">
+  <h2>Project 2 — What We're Building</h2>
+  <p style="margin-bottom:16px;">An order that contains multiple order lines — a classic one-to-many unidirectional relationship.</p>
+  <div class="diagram-box" style="padding:28px;">
+    <div style="display:flex; justify-content:center; align-items:flex-start; gap:20px; flex-wrap:wrap;">
+      <div class="table-box" style="border-color:var(--gray-900);">
+        <div class="th" style="background:var(--gray-900);">AnOrder (Java)</div>
+        <div class="tb"><span class="pk">id</span><br>creationDate<br><strong style="color:var(--red);">orderLines → List&lt;OrderLine&gt;</strong></div>
+      </div>
+      <div style="padding-top:30px; font-size:2rem; color:var(--red);">→</div>
+      <div class="table-box" style="border-color:var(--gray-900);">
+        <div class="th" style="background:var(--gray-900);">OrderLine (Java)</div>
+        <div class="tb"><span class="pk">id</span><br>item<br>unitPrice<br>quantity</div>
+      </div>
+    </div>
+    <p style="margin-top:16px; font-size:0.9rem; color:var(--gray-500);">Navigation: Order → OrderLines only (unidirectional)</p>
+  </div>
+  <div class="why-box">
+    <strong>What JPA will create:</strong> Three database tables — ANORDER, ORDERLINE, and a join table ANORDER_ORDERLINE linking them via foreign keys. You don't need to create these manually.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 13: P2 STEP 1 — ORDERLINE ENTITY ==================== -->
+<div class="slide">
+  <h2>Step 1 — Create OrderLine.java</h2>
+  <p style="margin-bottom:8px;">This is the simpler entity — it doesn't know about its parent Order (unidirectional).</p>
+<pre><span class="kw">package</span> week2.project2;
+
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">OrderLine</span> {
+
+    <span class="ann">@Id</span>
+    <span class="ann">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kw">private</span> Long id;
+
+    <span class="kw">private</span> String item;
+    <span class="kw">private</span> Double unitPrice;
+    <span class="kw">private</span> Integer quantity;
+
+    <span class="cmt">// Required no-arg constructor</span>
+    <span class="kw">public</span> OrderLine() {}
+
+    <span class="cmt">// Convenience constructor</span>
+    <span class="kw">public</span> OrderLine(String item, Double unitPrice, Integer quantity) {
+        <span class="kw">this</span>.item = item;
+        <span class="kw">this</span>.unitPrice = unitPrice;
+        <span class="kw">this</span>.quantity = quantity;
+    }
+
+    <span class="cmt">// Getters and setters...</span>
+    <span class="cmt">// Generate via IDE: right-click → Insert Code → Getter and Setter</span>
+}</pre>
+  <div class="why-box">
+    <strong>No relationship annotations here.</strong> Since the relationship is unidirectional from Order → OrderLine, the OrderLine entity has no reference back to its parent order.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 14: P2 STEP 2 — ANORDER ENTITY ==================== -->
+<div class="slide">
+  <h2>Step 2 — Create AnOrder.java</h2>
+  <p style="margin-bottom:8px;">This entity "owns" the relationship. The <code>List&lt;OrderLine&gt;</code> field triggers JPA's one-to-many behaviour.</p>
+<pre><span class="kw">package</span> week2.project2;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> java.util.*;
+
+<span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">AnOrder</span> {
+
+    <span class="ann">@Id</span>
+    <span class="ann">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kw">private</span> Long id;
+
+    <span class="ann">@Temporal</span>(TemporalType.TIMESTAMP)
+    <span class="kw">private</span> Date creationDate;
+
+    <span class="cmt">// Collection of entities = JPA infers @OneToMany</span>
+<span class="hl">    <span class="ann">@OneToMany</span>(cascade = CascadeType.PERSIST)</span>
+    <span class="kw">private</span> List&lt;<span class="typ">OrderLine</span>&gt; orderLines = <span class="kw">new</span> ArrayList&lt;&gt;();
+
+    <span class="cmt">// Required no-arg constructor</span>
+    <span class="kw">public</span> AnOrder() {}
+
+    <span class="kw">public</span> AnOrder(Date creationDate) {
+        <span class="kw">this</span>.creationDate = creationDate;
+    }
+
+    <span class="kw">public void</span> addOrderLine(OrderLine line) {
+        <span class="kw">this</span>.orderLines.add(line);
+    }
+
+    <span class="cmt">// Getters and setters...</span>
+}</pre>
+  <div class="why-box">
+    <strong>Why <code>cascade = CascadeType.PERSIST</code>?</strong> This tells JPA: "When I persist the Order, also persist its OrderLines automatically." Without this, you'd have to call <code>em.persist()</code> on each OrderLine separately.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 15: P2 STEP 3 — PERSISTENCE.XML ==================== -->
+<div class="slide">
+  <h2>Step 3 — Update persistence.xml</h2>
+  <p style="margin-bottom:8px;">Register <em>both</em> entity classes. If you're using a separate project, create a new persistence.xml; if extending Project 1, add the new classes.</p>
+<pre style="font-size:0.82rem;">&lt;persistence-unit name=<span class="str">"Week2PU"</span>
+                  transaction-type=<span class="str">"RESOURCE_LOCAL"</span>&gt;
+  &lt;provider&gt;org.eclipse.persistence.jpa.PersistenceProvider&lt;/provider&gt;
+<span class="hl">  &lt;class&gt;week2.project2.AnOrder&lt;/class&gt;</span>
+<span class="hl">  &lt;class&gt;week2.project2.OrderLine&lt;/class&gt;</span>
+  &lt;properties&gt;
+    &lt;property name=<span class="str">"jakarta.persistence.jdbc.driver"</span>
+             value=<span class="str">"com.mysql.cj.jdbc.Driver"</span>/&gt;
+    &lt;property name=<span class="str">"jakarta.persistence.jdbc.url"</span>
+             value=<span class="str">"jdbc:mysql://localhost:3306/week2db"</span>/&gt;
+    &lt;property name=<span class="str">"jakarta.persistence.jdbc.user"</span>
+             value=<span class="str">"root"</span>/&gt;
+    &lt;property name=<span class="str">"jakarta.persistence.jdbc.password"</span>
+             value=<span class="str">"your_password"</span>/&gt;
+    &lt;property name=<span class="str">"jakarta.persistence.schema-generation.database.action"</span>
+             value=<span class="str">"drop-and-create"</span>/&gt;
+  &lt;/properties&gt;
+&lt;/persistence-unit&gt;</pre>
+  <div class="warn-box">
+    <strong>Both classes must be listed.</strong> If you forget to register OrderLine, JPA won't recognise it as an entity and the relationship mapping will fail.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 16: P2 STEP 4 — MAIN CLASS ==================== -->
+<div class="slide">
+  <h2>Step 4 — Create Main.java for Project 2</h2>
+  <p style="margin-bottom:8px;">Create an order, add two order lines, and persist everything in a single transaction.</p>
+<pre><span class="kw">package</span> week2.project2;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> java.util.Date;
+
+<span class="kw">public class</span> <span class="typ">Main</span> {
+    <span class="kw">public static void</span> main(String[] args) {
+        EntityManagerFactory emf =
+            Persistence.createEntityManagerFactory(<span class="str">"Week2PU"</span>);
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
+        <span class="cmt">// Create order lines</span>
+        OrderLine line1 = <span class="kw">new</span> OrderLine(<span class="str">"Jakarta EE Book"</span>, 49.99, 2);
+        OrderLine line2 = <span class="kw">new</span> OrderLine(<span class="str">"USB-C Cable"</span>, 12.50, 5);
+
+        <span class="cmt">// Create order and add lines</span>
+        AnOrder order = <span class="kw">new</span> AnOrder(<span class="kw">new</span> Date());
+        order.addOrderLine(line1);
+        order.addOrderLine(line2);
+
+        <span class="cmt">// Persist — cascade saves OrderLines too</span>
+        em.persist(order);
+        System.out.println(<span class="str">"Order persisted with ID: "</span> + order.getId());
+
+        tx.commit();
+        em.close();
+        emf.close();
+    }
+}</pre>
+</div>
+
+<!-- ==================== SLIDE 17: P2 STEP 5 — RUN & VERIFY ==================== -->
+<div class="slide">
+  <h2>Step 5 — Run &amp; Verify</h2>
+  <div class="step-card" style="margin-bottom:12px;">
+    <div class="step-num">1</div>
+    <h3>Run Main.java</h3>
+    <p>You should see <code>"Order persisted with ID: 1"</code> in the console.</p>
+  </div>
+  <div class="step-card" style="margin-bottom:12px;">
+    <div class="step-num">2</div>
+    <h3>Check MySQL — Three tables should exist</h3>
+<pre style="font-size:0.85rem;">USE week2db;
+SHOW TABLES;
+SELECT * FROM ANORDER;
+SELECT * FROM ORDERLINE;
+SELECT * FROM ANORDER_ORDERLINE;</pre>
+  </div>
+  <h3>Expected Database Structure</h3>
+  <div class="diagram-box" style="padding:20px;">
+    <div style="display:flex; justify-content:center; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+      <div class="table-box" style="min-width:150px;">
+        <div class="th">ANORDER</div>
+        <div class="tb"><span class="pk">ID</span> = 1<br>CREATIONDATE = <em>now</em></div>
+      </div>
+      <div style="padding-top:20px;">←</div>
+      <div class="table-box" style="min-width:200px; border-color:var(--warn-border);">
+        <div class="th" style="background:var(--warn-border);">ANORDER_ORDERLINE</div>
+        <div class="tb"><span class="fk">AnOrder_ID</span> = 1, <span class="fk">orderLines_ID</span> = 1<br><span class="fk">AnOrder_ID</span> = 1, <span class="fk">orderLines_ID</span> = 2</div>
+      </div>
+      <div style="padding-top:20px;">→</div>
+      <div class="table-box" style="min-width:180px;">
+        <div class="th">ORDERLINE</div>
+        <div class="tb"><span class="pk">ID</span> = 1, Jakarta EE Book<br><span class="pk">ID</span> = 2, USB-C Cable</div>
+      </div>
+    </div>
+  </div>
+  <div class="check-box">
+    <strong>✓ Verify:</strong> ANORDER has 1 row. ORDERLINE has 2 rows. ANORDER_ORDERLINE has 2 rows linking order 1 to both order lines.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 18: P2 TROUBLESHOOTING ==================== -->
+<div class="slide">
+  <h2>Troubleshooting — Project 2</h2>
+  <div class="two-col">
+    <div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">OrderLine not persisted / only Order saved</h3>
+        <p>You likely forgot <code>cascade = CascadeType.PERSIST</code> on the <code>@OneToMany</code> annotation. Without cascade, JPA only persists the Order and ignores its children.</p>
+      </div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">"Unknown entity type: OrderLine"</h3>
+        <p>Make sure <code>&lt;class&gt;week2.project2.OrderLine&lt;/class&gt;</code> is listed in persistence.xml. Both entity classes must be registered.</p>
+      </div>
+    </div>
+    <div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">No join table created</h3>
+        <p>Check that the <code>orderLines</code> field type is <code>List&lt;OrderLine&gt;</code> (not just <code>OrderLine</code>). The Collection type triggers the join table strategy.</p>
+      </div>
+      <div class="step-card" style="border-left-color:var(--warn-border);">
+        <h3 style="color:#E65100;">"Object: OrderLine is not a known entity type"</h3>
+        <p>The <code>@Entity</code> annotation might be missing from OrderLine.java, or you imported the wrong <code>@Entity</code> (should be <code>jakarta.persistence.Entity</code>).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 19: QUIZ ==================== -->
+<div class="slide">
+  <h2>Quick Check</h2>
+  <div class="quiz-container">
+    <p class="quiz-question">You have <code>@OneToMany</code> on a <code>List&lt;OrderLine&gt;</code> field but forgot <code>cascade = CascadeType.PERSIST</code>. You call <code>em.persist(order)</code>. What happens?</p>
+    <div class="quiz-options" id="quiz3">
+      <div class="quiz-option" onclick="checkQuiz('quiz3', this, false)">A. Everything works fine — cascade is optional.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz3', this, true)">B. The Order is saved but OrderLines are not persisted — the join table will be empty.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz3', this, false)">C. A compile error — cascade is required on @OneToMany.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz3', this, false)">D. Both are saved but in separate transactions.</div>
+    </div>
+    <div class="quiz-feedback correct-fb" id="quiz3-correct">Correct! Without cascade, <code>em.persist(order)</code> only persists the Order entity. The OrderLine objects remain "new" (unmanaged) and are not written to the database. You'd either need cascade or explicit <code>em.persist(line)</code> calls for each OrderLine.</div>
+    <div class="quiz-feedback incorrect-fb" id="quiz3-incorrect">Not quite. Without <code>cascade = CascadeType.PERSIST</code>, only the Order itself is persisted. The OrderLine objects are ignored — they remain detached. You need either the cascade setting or separate <code>em.persist()</code> calls for each line.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 20: VERIFICATION CHECKLIST ==================== -->
+<div class="slide">
+  <h2>Final Verification Checklist</h2>
+  <div class="two-col" style="margin-top:12px;">
+    <div>
+      <h3>Project 1: ORM Customisation</h3>
+      <ul class="checklist">
+        <li>Table is named <strong>MyFavouriteBook</strong></li>
+        <li>Column <strong>Book_Title</strong> exists and is NOT NULL</li>
+        <li>Column <strong>Number_of_Pages</strong> exists and is NOT NULL</li>
+        <li>DESCRIPTION column allows 2000 characters</li>
+        <li>A Book row exists with your test data</li>
+        <li>Title field cannot be updated (test with an UPDATE query — optional)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Project 2: Entity Relationships</h3>
+      <ul class="checklist">
+        <li>ANORDER table exists with 1 row</li>
+        <li>ORDERLINE table exists with 2 rows</li>
+        <li>Join table ANORDER_ORDERLINE exists</li>
+        <li>Join table has 2 rows linking order to both lines</li>
+        <li>CREATIONDATE column has a timestamp value</li>
+        <li>All foreign keys reference correct IDs</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 21: EXTENSIONS ==================== -->
+<div class="slide">
+  <h2>Extension Challenges</h2>
+  <p style="margin-bottom:16px;">Finished early? Try these additional exercises to deepen your understanding.</p>
+  <div class="two-col">
+    <div>
+      <div class="extension-card">
+        <h3>Extension A: Add More Constraints</h3>
+        <p>Add <code>@Column(unique = true)</code> to the ISBN field in Project 1. Try inserting two books with the same ISBN — what error do you get?</p>
+      </div>
+      <div class="extension-card">
+        <h3>Extension B: Switch to @JoinColumn</h3>
+        <p>In Project 2, replace the default join table with a foreign key strategy by adding <code>@JoinColumn(name = "ORDER_FK")</code> to the orderLines field. Verify that the join table disappears and ORDER_FK appears in the ORDERLINE table.</p>
+      </div>
+    </div>
+    <div>
+      <div class="extension-card">
+        <h3>Extension C: Add @Transient</h3>
+        <p>Add a <code>totalPrice</code> field to AnOrder that computes the sum of all order line amounts. Mark it <code>@Transient</code>. Verify it doesn't appear in the database table.</p>
+      </div>
+      <div class="extension-card">
+        <h3>Extension D: Custom Join Table Names</h3>
+        <p>Use <code>@JoinTable(name = "order_items", joinColumns = ..., inverseJoinColumns = ...)</code> to rename the join table and its FK columns. Verify the new names in MySQL.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 22: SUMMARY ==================== -->
+<div class="slide">
+  <h2>Lab Summary</h2>
+  <div class="two-col" style="margin-top:12px;">
+    <div>
+      <div class="step-card">
+        <h3>What You Learned</h3>
+        <p><code>@Table</code> overrides table names. <code>@Column</code> controls column names, lengths, nullability, and updatability. <code>@OneToMany</code> with a Collection field creates a join table by default. <code>cascade = CascadeType.PERSIST</code> auto-saves child entities.</p>
+      </div>
+    </div>
+    <div>
+      <div class="step-card">
+        <h3>Key Pattern</h3>
+        <p>The workflow is always: <strong>Annotate → Persist → Verify in MySQL</strong>. JPA's configuration-by-exception means annotations are for overrides only — the defaults handle the common cases.</p>
+      </div>
+    </div>
+  </div>
+  <div class="why-box" style="margin-top:16px;">
+    <strong>Next week:</strong> We'll build on these relationships with bidirectional mappings, cascading operations, and JPQL queries to retrieve your persisted data.
+  </div>
+</div>
+
+</div><!-- end deck -->
+
+<div class="nav-bar">
+  <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+  <span class="slide-counter" id="counter"></span>
+  <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+
+function showSlide(n) {
+  slides.forEach(s => s.classList.remove('active'));
+  slides[n].classList.add('active');
+  current = n;
+  document.getElementById('counter').textContent = (n+1) + ' / ' + total;
+  document.getElementById('prevBtn').disabled = n === 0;
+  document.getElementById('nextBtn').disabled = n === total - 1;
+  document.getElementById('progress-bar').style.width = ((n+1)/total*100) + '%';
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next >= 0 && next < total) showSlide(next);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+});
+
+function checkQuiz(quizId, el, correct) {
+  const opts = document.querySelectorAll('#' + quizId + ' .quiz-option');
+  opts.forEach(o => { o.style.pointerEvents = 'none'; });
+  if (correct) {
+    el.classList.add('correct');
+    document.getElementById(quizId + '-correct').classList.add('show');
+  } else {
+    el.classList.add('incorrect');
+    document.getElementById(quizId + '-incorrect').classList.add('show');
+    opts.forEach(o => { if (o !== el && o.onclick.toString().includes('true')) o.classList.add('correct'); });
+  }
+}
+
+showSlide(0);
+</script>
+
+</body>
+</html>

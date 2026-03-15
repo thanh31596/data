@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 2 — Object-Relational Mapping</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&display=swap');
+
+  :root {
+    --red: #C8102E;
+    --red-dark: #A00D24;
+    --red-light: #FDE8EC;
+    --red-subtle: #FFF5F7;
+    --gray-900: #1a1a2e;
+    --gray-700: #374151;
+    --gray-500: #6b7280;
+    --gray-300: #d1d5db;
+    --gray-100: #f3f4f6;
+    --white: #ffffff;
+    --code-bg: #1e1e2e;
+    --code-text: #cdd6f4;
+    --keyword: #cba6f7;
+    --string: #a6e3a1;
+    --annotation: #f9e2af;
+    --comment: #6c7086;
+    --type: #89b4fa;
+    --optional-bg: #FFF8E1;
+    --optional-border: #FFB300;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* Progress bar */
+  #progress-bar {
+    position: fixed; top:0; left:0; height:4px;
+    background: var(--red);
+    transition: width 0.4s ease;
+    z-index: 1000;
+  }
+
+  /* Slide container */
+  .slide-deck {
+    width: 100vw; height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    display: none;
+    width: 100%; height: 100%;
+    padding: 60px 80px 80px;
+    overflow-y: auto;
+    background: var(--white);
+    position: absolute; top:0; left:0;
+    animation: fadeIn 0.35s ease;
+  }
+
+  .slide.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* Title slide */
+  .slide.title-slide {
+    background: var(--red);
+    color: var(--white);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .title-slide h1 { font-size: 3.2rem; font-weight: 700; margin-bottom: 12px; }
+  .title-slide .subtitle { font-size: 1.5rem; font-weight: 300; opacity: 0.9; }
+  .title-slide .week-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 8px 24px;
+    border-radius: 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  /* Section header slide */
+  .slide.section-slide {
+    background: var(--gray-900);
+    color: var(--white);
+    justify-content: center;
+    align-items: flex-start;
+    padding-left: 100px;
+  }
+  .section-slide .section-num { font-size: 5rem; font-weight: 700; color: var(--red); line-height: 1; }
+  .section-slide h2 { font-size: 2.4rem; font-weight: 700; margin-top: 8px; }
+  .section-slide .section-desc { font-size: 1.1rem; font-weight: 300; opacity: 0.7; margin-top: 12px; max-width: 600px; }
+
+  /* Content slides */
+  .slide h2 {
+    font-size: 1.7rem; font-weight: 700; color: var(--gray-900);
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid var(--red);
+    display: inline-block;
+  }
+
+  .slide h3 {
+    font-size: 1.15rem; font-weight: 600; color: var(--gray-900);
+    margin: 16px 0 8px;
+  }
+
+  .slide p, .slide li {
+    font-size: 1.05rem; line-height: 1.7; color: var(--gray-700);
+  }
+
+  /* Two column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; flex:1; align-items: start; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex:1; }
+
+  /* Cards */
+  .card {
+    background: var(--gray-100);
+    border-radius: 12px;
+    padding: 24px;
+    border-left: 4px solid var(--red);
+  }
+  .card h3 { margin-top: 0; }
+
+  .card.optional {
+    background: var(--optional-bg);
+    border-left-color: var(--optional-border);
+  }
+  .card.optional::before {
+    content: "OPTIONAL";
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--optional-border);
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .kw { color: var(--keyword); }
+  .str { color: var(--string); }
+  .ann { color: var(--annotation); }
+  .cmt { color: var(--comment); font-style: italic; }
+  .typ { color: var(--type); }
+  .highlight-line { background: rgba(200,16,46,0.15); display: inline-block; width: 100%; margin: 0 -24px; padding: 0 24px; }
+
+  /* Comparison / before-after */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 0;
+    align-items: center;
+  }
+  .comparison .arrow-col {
+    display: flex; justify-content: center; align-items: center;
+    font-size: 2rem; color: var(--red); font-weight: 700;
+  }
+  .before-box, .after-box {
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .before-box { background: var(--gray-100); border: 2px solid var(--gray-300); }
+  .after-box { background: var(--red-light); border: 2px solid var(--red); }
+  .before-box .label, .after-box .label {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .before-box .label { color: var(--gray-500); }
+  .after-box .label { color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.95rem;
+  }
+  th {
+    background: var(--red);
+    color: var(--white);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--gray-300);
+  }
+  tr:nth-child(even) td { background: var(--gray-100); }
+
+  /* Diagram containers */
+  .diagram-box {
+    background: var(--gray-100);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+  }
+
+  .entity-box {
+    display: inline-block;
+    background: var(--white);
+    border: 2px solid var(--gray-900);
+    border-radius: 8px;
+    min-width: 180px;
+    text-align: left;
+    overflow: hidden;
+    vertical-align: top;
+  }
+  .entity-box .entity-header {
+    background: var(--gray-900);
+    color: var(--white);
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+  .entity-box .entity-body {
+    padding: 12px 16px;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+  }
+  .entity-box .entity-body .pk { color: var(--red); font-weight: 600; }
+
+  .table-box {
+    display: inline-block;
+    background: var(--white);
+    border: 2px solid var(--red);
+    border-radius: 8px;
+    min-width: 180px;
+    text-align: left;
+    overflow: hidden;
+    vertical-align: top;
+  }
+  .table-box .table-header {
+    background: var(--red);
+    color: var(--white);
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+  .table-box .table-body {
+    padding: 12px 16px;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+  }
+  .table-box .table-body .pk-col { color: var(--red); font-weight: 600; }
+  .table-box .table-body .fk-col { color: var(--keyword); font-weight: 600; }
+
+  .arrow-right {
+    display: inline-block;
+    font-size: 2rem;
+    color: var(--red);
+    margin: 0 24px;
+    vertical-align: middle;
+  }
+
+  .mapping-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  /* Quiz */
+  .quiz-container { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .quiz-question { font-size: 1.2rem; font-weight: 600; color: var(--gray-900); margin-bottom: 20px; }
+  .quiz-options { display: flex; flex-direction: column; gap: 12px; max-width: 600px; }
+  .quiz-option {
+    padding: 14px 20px;
+    border: 2px solid var(--gray-300);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    background: var(--white);
+  }
+  .quiz-option:hover { border-color: var(--red); background: var(--red-subtle); }
+  .quiz-option.correct { border-color: #16a34a; background: #f0fdf4; color: #166534; }
+  .quiz-option.incorrect { border-color: var(--red); background: var(--red-light); color: var(--red-dark); }
+  .quiz-feedback {
+    margin-top: 16px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .quiz-feedback.incorrect-fb { background: var(--red-light); color: var(--red-dark); border: 1px solid #fca5a5; }
+
+  /* Key concept callout */
+  .key-concept {
+    background: var(--red-light);
+    border-left: 4px solid var(--red);
+    padding: 16px 20px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+    font-size: 1rem;
+  }
+  .key-concept strong { color: var(--red); }
+
+  /* Flowchart */
+  .flow-row {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    margin: 10px 0;
+  }
+  .flow-box {
+    background: var(--white);
+    border: 2px solid var(--gray-900);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    min-width: 140px;
+    text-align: center;
+  }
+  .flow-box.decision {
+    border-color: var(--red);
+    background: var(--red-light);
+    color: var(--red-dark);
+    transform: rotate(0deg);
+    border-radius: 4px;
+  }
+  .flow-box.result {
+    background: var(--gray-900);
+    color: var(--white);
+    border-color: var(--gray-900);
+  }
+  .flow-arrow { font-size: 1.3rem; color: var(--red); font-weight: 700; }
+  .flow-arrow-down { text-align: center; font-size: 1.3rem; color: var(--red); font-weight: 700; }
+  .flow-label { font-size: 0.8rem; color: var(--gray-500); font-weight: 600; }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    background: var(--red);
+    color: var(--white);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .tag.optional-tag {
+    background: var(--optional-border);
+  }
+  .tag.core-tag {
+    background: var(--red);
+  }
+
+  /* Inline code */
+  code {
+    font-family: 'Source Code Pro', monospace;
+    background: var(--gray-100);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--red-dark);
+  }
+
+  /* Navigation */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--gray-300);
+    padding: 12px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+  }
+  .nav-btn {
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+  }
+  .nav-btn:hover { background: var(--red-dark); }
+  .nav-btn:disabled { background: var(--gray-300); cursor: default; }
+  .slide-counter { font-size: 0.9rem; color: var(--gray-500); font-weight: 600; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .slide { padding: 40px 30px 80px; }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .comparison { grid-template-columns: 1fr; }
+    .comparison .arrow-col { transform: rotate(90deg); }
+    .title-slide h1 { font-size: 2.2rem; }
+    .mapping-arrow { flex-direction: column; }
+  }
+
+  /* Scrollbar */
+  .slide::-webkit-scrollbar { width: 6px; }
+  .slide::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<div class="slide-deck" id="deck">
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide title-slide active">
+  <div class="week-badge">WEEK 2</div>
+  <h1>Object-Relational Mapping</h1>
+  <p class="subtitle">Customising Entities, Attributes & Relationships</p>
+</div>
+
+<!-- ==================== SLIDE 2: OBJECTIVES ==================== -->
+<div class="slide">
+  <h2>Learning Objectives</h2>
+  <div class="two-col" style="margin-top:12px;">
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <h3>1. Customise ORM Mappings</h3>
+        <p>Override JPA's default table names, column properties, and primary key strategies using annotations.</p>
+      </div>
+      <div class="card">
+        <h3>2. Map Entity Attributes</h3>
+        <p>Control column length, nullability, updatability, fetch strategies, and handle temporal/enumerated types.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <h3>3. Model Entity Relationships</h3>
+        <p>Implement one-to-one and one-to-many unidirectional relationships with JPA annotations.</p>
+      </div>
+      <div class="card">
+        <h3>4. Choose Join Strategies</h3>
+        <p>Decide between join columns (foreign keys) and join tables based on cardinality and performance needs.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 3: CONFIG BY EXCEPTION ==================== -->
+<div class="slide">
+  <h2>Configuration by Exception</h2>
+  <p style="margin-bottom:20px;">JPA's core design principle: <strong>sensible defaults mean you only configure what's different.</strong></p>
+  <div class="comparison">
+    <div class="before-box">
+      <div class="label">DEFAULT (ZERO CONFIGURATION)</div>
+      <p>With just <code>@Entity</code> and <code>@Id</code>, JPA automatically maps:</p>
+      <ul style="margin:12px 0 0 20px; line-height:2;">
+        <li>Class name → Table name</li>
+        <li>Field names → Column names</li>
+        <li>Java types → SQL types (JDBC rules)</li>
+        <li>All fields → Persistent columns</li>
+      </ul>
+    </div>
+    <div class="arrow-col">→</div>
+    <div class="after-box">
+      <div class="label">EXCEPTION (WHEN YOU CUSTOMISE)</div>
+      <p>Add annotations <em>only</em> to override defaults:</p>
+      <ul style="margin:12px 0 0 20px; line-height:2;">
+        <li><code>@Table</code> → Change table name</li>
+        <li><code>@Column</code> → Change column properties</li>
+        <li><code>@GeneratedValue</code> → Auto-generate IDs</li>
+        <li><code>@Transient</code> → Exclude a field</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-concept" style="margin-top:20px;">
+    <strong>Key insight:</strong> The less you annotate, the more you rely on defaults. Annotation is the <em>exception</em>, not the rule.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 4: DEFAULT MAPPING VISUAL ==================== -->
+<div class="slide">
+  <h2>Default Mapping in Action</h2>
+  <p style="margin-bottom:20px;">A minimal <code>Book</code> entity with only <code>@Entity</code> and <code>@Id</code> — everything else maps automatically.</p>
+  <div class="two-col">
+    <div>
+      <h3>Java Entity</h3>
+<pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">Book</span> {
+    <span class="ann">@Id</span>
+    <span class="kw">private</span> Long id;
+    <span class="kw">private</span> String title;
+    <span class="kw">private</span> Float price;
+    <span class="kw">private</span> String isbn;
+    <span class="kw">private</span> Integer nbOfPage;
+    <span class="kw">private</span> Boolean illustrations;
+}</pre>
+    </div>
+    <div>
+      <h3>Database Table (auto-generated)</h3>
+      <div class="diagram-box">
+        <div class="table-box" style="min-width:260px;">
+          <div class="table-header">BOOK</div>
+          <div class="table-body">
+            <span class="pk-col">ID</span> BIGINT (PK)<br>
+            TITLE VARCHAR(255)<br>
+            PRICE FLOAT<br>
+            ISBN VARCHAR(255)<br>
+            NBOFPAGE INTEGER<br>
+            ILLUSTRATIONS SMALLINT
+          </div>
+        </div>
+      </div>
+      <div class="key-concept" style="margin-top:16px;">
+        <strong>Notice:</strong> Class name → table name, field names → column names, all uppercase.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 5: TYPE MAPPING TABLE ==================== -->
+<div class="slide">
+  <h2>Java → SQL Type Mapping</h2>
+  <p style="margin-bottom:16px;">JDBC rules determine the default SQL type. Database vendors may differ slightly.</p>
+  <table>
+    <tr><th>Java Type</th><th>Derby</th><th>MySQL</th><th>Oracle</th></tr>
+    <tr><td><code>String</code></td><td>VARCHAR(255)</td><td>VARCHAR(255)</td><td>VARCHAR2(255)</td></tr>
+    <tr><td><code>Long</code></td><td>BIGINT</td><td>BIGINT</td><td>NUMBER(19)</td></tr>
+    <tr><td><code>Integer</code></td><td>INTEGER</td><td>INT</td><td>NUMBER(10)</td></tr>
+    <tr><td><code>Float</code></td><td>FLOAT</td><td>FLOAT</td><td>FLOAT</td></tr>
+    <tr><td><code>Boolean</code></td><td>SMALLINT</td><td>TINYINT(1)</td><td>NUMBER(1)</td></tr>
+    <tr><td><code>java.util.Date</code></td><td>TIMESTAMP</td><td>DATETIME</td><td>TIMESTAMP</td></tr>
+  </table>
+  <div class="key-concept" style="margin-top:12px;">
+    <strong>Tip:</strong> Always test on your target database — defaults vary by vendor.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 6: SECTION — CUSTOMISING TABLES ==================== -->
+<div class="slide section-slide">
+  <div class="section-num">01</div>
+  <h2>Customising Tables & Columns</h2>
+  <p class="section-desc">Overriding JPA's default mappings with @Table, @Column, and @SecondaryTable annotations.</p>
+</div>
+
+<!-- ==================== SLIDE 7: @TABLE ==================== -->
+<div class="slide">
+  <h2>@Table — Rename the Table</h2>
+  <p style="margin-bottom:16px;">Use <code>@Table(name="...")</code> when you need the table name to differ from the class name.</p>
+  <div class="comparison">
+    <div class="before-box">
+      <div class="label">DEFAULT</div>
+<pre style="background:transparent;color:var(--gray-700);padding:8px 0;margin:0;"><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">Book</span> { ... }</pre>
+      <p style="margin-top:8px;">↓ Maps to table <strong>BOOK</strong></p>
+    </div>
+    <div class="arrow-col">→</div>
+    <div class="after-box">
+      <div class="label">CUSTOMISED</div>
+<pre style="background:transparent;color:var(--gray-700);padding:8px 0;margin:0;"><span class="ann">@Entity</span>
+<span class="ann">@Table</span>(name = <span class="str">"t_Book"</span>)
+<span class="kw">public class</span> <span class="typ">Book</span> { ... }</pre>
+      <p style="margin-top:8px;">↓ Maps to table <strong>t_Book</strong></p>
+    </div>
+  </div>
+  <p style="margin-top:20px;">The <code>@Table</code> annotation can also set <code>catalog</code> and <code>schema</code> for more complex database structures.</p>
+</div>
+
+<!-- ==================== SLIDE 8: @COLUMN ==================== -->
+<div class="slide">
+  <h2>@Column — The Customisation Powerhouse</h2>
+  <p style="margin-bottom:16px;">Fine-tune individual column properties. Every parameter has a sensible default.</p>
+  <table>
+    <tr><th>Parameter</th><th>Default</th><th>Purpose</th></tr>
+    <tr><td><code>name</code></td><td>Field name</td><td>Rename the column</td></tr>
+    <tr><td><code>nullable</code></td><td><code>true</code></td><td>Allow NULL values</td></tr>
+    <tr><td><code>length</code></td><td><code>255</code></td><td>Max string length</td></tr>
+    <tr><td><code>unique</code></td><td><code>false</code></td><td>Enforce uniqueness</td></tr>
+    <tr><td><code>updatable</code></td><td><code>true</code></td><td>Allow value changes after insert</td></tr>
+    <tr><td><code>insertable</code></td><td><code>true</code></td><td>Include in INSERT statements</td></tr>
+  </table>
+  <div class="key-concept" style="margin-top:14px;">
+    <strong>updatable = false</strong> means you can change the value in Java memory, but it <em>won't</em> sync to the database. The column is "locked" after the first INSERT.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 9: @COLUMN BEFORE/AFTER ==================== -->
+<div class="slide">
+  <h2>@Column — Before &amp; After</h2>
+  <div class="two-col">
+    <div>
+      <h3>Customised Book Entity</h3>
+<pre><span class="ann">@Entity</span>
+<span class="ann">@Table</span>(name = <span class="str">"MyFavouriteBook"</span>)
+<span class="kw">public class</span> <span class="typ">Book</span> {
+  <span class="ann">@Id</span> <span class="ann">@GeneratedValue</span>
+  <span class="kw">private</span> Long id;
+
+<span class="highlight-line">  <span class="ann">@Column</span>(name = <span class="str">"Book_Title"</span>,
+         nullable = <span class="kw">false</span>,
+         updatable = <span class="kw">false</span>)</span>
+  <span class="kw">private</span> String title;
+
+  <span class="kw">private</span> Float price;
+
+<span class="highlight-line">  <span class="ann">@Column</span>(length = 2000)</span>
+  <span class="kw">private</span> String description;
+
+  <span class="kw">private</span> String isbn;
+
+<span class="highlight-line">  <span class="ann">@Column</span>(name = <span class="str">"Number_of_Pages"</span>,
+         nullable = <span class="kw">false</span>)</span>
+  <span class="kw">private</span> Integer nbOfPage;
+
+  <span class="kw">private</span> Boolean illustrations;
+}</pre>
+    </div>
+    <div>
+      <h3>Resulting Database Table</h3>
+      <div class="diagram-box">
+        <div class="table-box" style="min-width:300px;">
+          <div class="table-header">MyFavouriteBook</div>
+          <div class="table-body">
+            <span class="pk-col">ID</span> BIGINT (PK, auto)<br>
+            <strong>Book_Title</strong> VARCHAR(255) NOT NULL<br>
+            PRICE FLOAT<br>
+            DESCRIPTION VARCHAR(<strong>2000</strong>)<br>
+            ISBN VARCHAR(255)<br>
+            <strong>Number_of_Pages</strong> INT NOT NULL<br>
+            ILLUSTRATIONS SMALLINT
+          </div>
+        </div>
+      </div>
+      <div class="key-concept" style="margin-top:16px;">
+        <strong>What changed:</strong> Table renamed, two columns renamed, two columns made NOT NULL, description extended to 2000 chars, title locked from updates.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 10: PRIMARY KEYS ==================== -->
+<div class="slide">
+  <h2>Primary Keys &amp; @GeneratedValue</h2>
+  <p style="margin-bottom:16px;">Every entity needs <code>@Id</code>. The value can be assigned manually or auto-generated.</p>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Manual Assignment</h3>
+<pre style="font-size:0.85rem;"><span class="ann">@Id</span>
+<span class="kw">private</span> Long id;
+<span class="cmt">// Application must set id before persist</span></pre>
+      </div>
+      <div class="card">
+        <h3>Auto-Generated</h3>
+<pre style="font-size:0.85rem;"><span class="ann">@Id</span>
+<span class="ann">@GeneratedValue</span>
+<span class="kw">private</span> Long id;
+<span class="cmt">// Provider assigns id automatically</span></pre>
+      </div>
+    </div>
+    <div>
+      <h3>Generation Strategies</h3>
+      <table style="font-size:0.9rem;">
+        <tr><th>Strategy</th><th>How It Works</th></tr>
+        <tr><td><code>AUTO</code></td><td>Provider picks best strategy (default)</td></tr>
+        <tr><td><code>IDENTITY</code></td><td>Database auto-increment column</td></tr>
+        <tr><td><code>SEQUENCE</code></td><td>Database sequence object</td></tr>
+        <tr><td><code>TABLE</code></td><td>Separate table stores next ID values</td></tr>
+      </table>
+      <div class="key-concept" style="margin-top:12px;">
+        <strong>Rule:</strong> Once assigned, a primary key value can <em>never</em> be updated.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 11: @BASIC & FETCH ==================== -->
+<div class="slide">
+  <h2>@Basic — Fetch Strategies</h2>
+  <p style="margin-bottom:16px;">Controls whether an attribute is loaded immediately or on-demand.</p>
+  <div class="two-col">
+    <div class="card">
+      <h3>EAGER (default)</h3>
+      <p>Load the attribute immediately when the entity is fetched.</p>
+      <p style="margin-top:8px;"><strong>Use for:</strong> Small fields you always need — names, prices, flags.</p>
+<pre style="font-size:0.85rem;"><span class="ann">@Basic</span>(fetch = FetchType.EAGER)
+<span class="kw">private</span> String title;</pre>
+    </div>
+    <div class="card">
+      <h3>LAZY</h3>
+      <p>Load the attribute only when the application accesses it.</p>
+      <p style="margin-top:8px;"><strong>Use for:</strong> Large fields — BLOBs, file data, long text.</p>
+<pre style="font-size:0.85rem;"><span class="ann">@Basic</span>(fetch = FetchType.LAZY)
+<span class="kw">private</span> <span class="kw">byte</span>[] wavFile;</pre>
+    </div>
+  </div>
+  <div class="key-concept" style="margin-top:16px;">
+    <strong>Performance tip:</strong> A music Track entity storing a 10MB WAV file should use LAZY fetch — you don't want to load that binary every time you list tracks.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 12: OPTIONAL ATTRIBUTES ==================== -->
+<div class="slide">
+  <h2>More Attribute Annotations <span class="tag optional-tag">OPTIONAL</span></h2>
+  <div class="three-col" style="margin-top:12px;">
+    <div class="card optional">
+      <h3>@Transient</h3>
+      <p>Exclude a field from persistence. Useful for computed values.</p>
+<pre style="font-size:0.82rem;"><span class="ann">@Transient</span>
+<span class="kw">private</span> Integer age;
+<span class="cmt">// Calculated from dateOfBirth</span></pre>
+    </div>
+    <div class="card optional">
+      <h3>@Temporal</h3>
+      <p>Map <code>java.util.Date</code> to DATE, TIME, or TIMESTAMP.</p>
+<pre style="font-size:0.82rem;"><span class="ann">@Temporal</span>(TemporalType.DATE)
+<span class="kw">private</span> Date dateOfBirth;</pre>
+    </div>
+    <div class="card optional">
+      <h3>@Enumerated</h3>
+      <p>Store enums as ORDINAL (int) or STRING (text). Prefer STRING.</p>
+<pre style="font-size:0.82rem;"><span class="ann">@Enumerated</span>(EnumType.STRING)
+<span class="kw">private</span> CreditCardType type;
+<span class="cmt">// Stores "VISA", not 0</span></pre>
+    </div>
+  </div>
+  <div class="key-concept" style="margin-top:20px;">
+    <strong>Why prefer STRING over ORDINAL?</strong> If you reorder or insert new enum values, ordinal numbers shift — existing database data becomes incorrect. String storage is safe against reordering.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 13: QUIZ 1 ==================== -->
+<div class="slide">
+  <h2>Quick Check — ORM Customisation</h2>
+  <div class="quiz-container">
+    <p class="quiz-question">You annotate a field with <code>@Column(updatable = false)</code>. What happens when you call <code>setTitle("New Title")</code> on a managed entity?</p>
+    <div class="quiz-options" id="quiz1">
+      <div class="quiz-option" onclick="checkQuiz('quiz1', this, false)">A. A runtime exception is thrown.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1', this, false)">B. The setter is blocked — the value doesn't change in memory.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1', this, true)">C. The value changes in memory but is NOT written back to the database.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1', this, false)">D. The value changes both in memory and in the database.</div>
+    </div>
+    <div class="quiz-feedback correct-fb" id="quiz1-correct">Correct! <code>updatable = false</code> only prevents the database UPDATE — Java setters still work normally. The in-memory value changes, but the persistence provider won't include that column in UPDATE statements.</div>
+    <div class="quiz-feedback incorrect-fb" id="quiz1-incorrect">Not quite. <code>updatable = false</code> doesn't affect Java code — the setter works fine and the value changes in memory. But the persistence provider simply <em>won't include</em> that column in UPDATE SQL statements, so the change never reaches the database.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 14: SECTION — RELATIONSHIPS ==================== -->
+<div class="slide section-slide">
+  <div class="section-num">02</div>
+  <h2>Entity Relationships</h2>
+  <p class="section-desc">Modelling how entities connect — direction, cardinality, and database strategies.</p>
+</div>
+
+<!-- ==================== SLIDE 15: WHY RELATIONSHIPS ==================== -->
+<div class="slide">
+  <h2>Why Relationship Mapping?</h2>
+  <p style="margin-bottom:20px;">Real applications don't have isolated entities. Objects reference other objects — JPA needs to represent those connections in relational tables.</p>
+  <div class="diagram-box">
+    <div style="display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div class="entity-box">
+        <div class="entity-header">Customer</div>
+        <div class="entity-body"><span class="pk">id</span><br>name<br>email<br><strong style="color:var(--red);">address →</strong></div>
+      </div>
+      <span class="arrow-right">→</span>
+      <div class="entity-box">
+        <div class="entity-header">Address</div>
+        <div class="entity-body"><span class="pk">id</span><br>street<br>city<br>country</div>
+      </div>
+      <span style="display:inline-block;width:60px;"></span>
+      <div class="entity-box">
+        <div class="entity-header">Order</div>
+        <div class="entity-body"><span class="pk">id</span><br>creationDate<br><strong style="color:var(--red);">orderLines →</strong></div>
+      </div>
+      <span class="arrow-right">→</span>
+      <div class="entity-box">
+        <div class="entity-header">OrderLine</div>
+        <div class="entity-body"><span class="pk">id</span><br>item<br>unitPrice<br>quantity</div>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:16px;">Two fundamental questions: <strong>How many?</strong> (cardinality) and <strong>Which direction?</strong> (navigation)</p>
+</div>
+
+<!-- ==================== SLIDE 16: DIRECTION ==================== -->
+<div class="slide">
+  <h2>Direction — Unidirectional vs Bidirectional</h2>
+  <div class="two-col" style="margin-top:12px;">
+    <div class="card">
+      <h3>Unidirectional</h3>
+      <div class="diagram-box" style="margin:12px 0;">
+        <div class="entity-box" style="min-width:130px;">
+          <div class="entity-header">Customer</div>
+          <div class="entity-body">name<br>address →</div>
+        </div>
+        <span class="arrow-right">→</span>
+        <div class="entity-box" style="min-width:130px;">
+          <div class="entity-header">Address</div>
+          <div class="entity-body">street<br>city</div>
+        </div>
+      </div>
+      <p>Only Customer "knows about" Address.</p>
+      <p><code>customer.getAddress()</code> works.</p>
+      <p style="color:var(--red);">Can't go from Address → Customer.</p>
+    </div>
+    <div class="card">
+      <h3>Bidirectional</h3>
+      <div class="diagram-box" style="margin:12px 0;">
+        <div class="entity-box" style="min-width:130px;">
+          <div class="entity-header">Customer</div>
+          <div class="entity-body">name<br>address ⇄</div>
+        </div>
+        <span style="font-size:2rem;color:var(--red);margin:0 16px;">⇄</span>
+        <div class="entity-box" style="min-width:130px;">
+          <div class="entity-header">Address</div>
+          <div class="entity-body">street<br>customer ⇄</div>
+        </div>
+      </div>
+      <p>Both entities reference each other.</p>
+      <p><code>customer.getAddress()</code> works.</p>
+      <p style="color:#16a34a;"><code>address.getCustomer()</code> also works.</p>
+    </div>
+  </div>
+  <div class="key-concept" style="margin-top:16px;">
+    <strong>In Java:</strong> Navigate with dot syntax — <code>customer.getAddress().getCountry()</code>. Bidirectional relationships require specifying an <em>owning side</em>.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 17: CARDINALITY ==================== -->
+<div class="slide">
+  <h2>Cardinality — The Four Types</h2>
+  <p style="margin-bottom:16px;">Each end of a relationship specifies how many objects are involved.</p>
+  <table>
+    <tr><th>Annotation</th><th>Source → Target</th><th>Java Type</th><th>Example</th></tr>
+    <tr><td><code>@OneToOne</code></td><td>1 → 1</td><td>Single reference</td><td>Customer → Address</td></tr>
+    <tr><td><code>@OneToMany</code></td><td>1 → *</td><td>Collection/List/Set</td><td>Order → OrderLines</td></tr>
+    <tr><td><code>@ManyToOne</code></td><td>* → 1</td><td>Single reference</td><td>OrderLine → Order</td></tr>
+    <tr><td><code>@ManyToMany</code></td><td>* → *</td><td>Collection/List/Set</td><td>Student → Courses</td></tr>
+  </table>
+  <div class="key-concept" style="margin-top:16px;">
+    <strong>Pattern:</strong> Whenever a field's type is a <em>Collection</em> of entities, JPA infers a "to-many" relationship. A single entity reference implies "to-one."
+  </div>
+</div>
+
+<!-- ==================== SLIDE 18: JOIN STRATEGIES ==================== -->
+<div class="slide">
+  <h2>Join Column vs Join Table</h2>
+  <p style="margin-bottom:16px;">Two strategies for representing relationships in the database.</p>
+  <div class="two-col">
+    <div>
+      <h3>Join Column (Foreign Key)</h3>
+      <div class="diagram-box" style="margin:12px 0; text-align:center;">
+        <div class="table-box" style="min-width:150px; display:inline-block;">
+          <div class="table-header">CUSTOMER</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>NAME<br><span class="fk-col">ADDRESS_ID (FK)</span></div>
+        </div>
+        <span class="arrow-right">→</span>
+        <div class="table-box" style="min-width:150px; display:inline-block;">
+          <div class="table-header">ADDRESS</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>STREET<br>CITY</div>
+        </div>
+      </div>
+      <p>Direct FK in the owning table. Faster for 1:1 and M:1.</p>
+    </div>
+    <div>
+      <h3>Join Table (Intermediate Table)</h3>
+      <div class="diagram-box" style="margin:12px 0; text-align:center;">
+        <div class="table-box" style="min-width:110px; display:inline-block;">
+          <div class="table-header">ORDER</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>DATE</div>
+        </div>
+        <span class="arrow-right">←</span>
+        <div class="table-box" style="min-width:160px; display:inline-block; border-color:var(--optional-border);">
+          <div class="table-header" style="background:var(--optional-border);">ORDER_ORDERLINE</div>
+          <div class="table-body"><span class="fk-col">ORDER_ID (FK)</span><br><span class="fk-col">ORDERLINE_ID (FK)</span></div>
+        </div>
+        <span class="arrow-right">→</span>
+        <div class="table-box" style="min-width:110px; display:inline-block;">
+          <div class="table-header">ORDERLINE</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>ITEM</div>
+        </div>
+      </div>
+      <p>Third table holds both FKs. Default for 1:N unidirectional.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 19: DECISION GUIDE ==================== -->
+<div class="slide">
+  <h2>Which Join Strategy? — Decision Guide</h2>
+  <div class="diagram-box" style="margin-top:16px; padding: 32px;">
+    <div class="flow-row">
+      <div class="flow-box decision">What's the cardinality?</div>
+    </div>
+    <div style="display:flex; justify-content:center; gap:200px; margin-top:8px;">
+      <div style="text-align:center;">
+        <div class="flow-arrow-down">↓</div>
+        <div class="flow-label">One-to-One or Many-to-One</div>
+        <div class="flow-arrow-down" style="margin-top:4px;">↓</div>
+        <div class="flow-box result">Join Column (FK)</div>
+        <p style="font-size:0.85rem; color:var(--gray-500); margin-top:8px;">Direct, efficient, no extra table</p>
+      </div>
+      <div style="text-align:center;">
+        <div class="flow-arrow-down">↓</div>
+        <div class="flow-label">One-to-Many or Many-to-Many</div>
+        <div class="flow-arrow-down" style="margin-top:4px;">↓</div>
+        <div class="flow-box decision">Need minimal tables?</div>
+        <div style="display:flex; gap:40px; justify-content:center; margin-top:8px;">
+          <div style="text-align:center;">
+            <div class="flow-label">Yes</div>
+            <div class="flow-arrow-down">↓</div>
+            <div class="flow-box result" style="font-size:0.85rem;">@JoinColumn<br><span style="font-weight:400;font-size:0.8rem;">FK in target table</span></div>
+          </div>
+          <div style="text-align:center;">
+            <div class="flow-label">No / Default</div>
+            <div class="flow-arrow-down">↓</div>
+            <div class="flow-box result" style="font-size:0.85rem;">@JoinTable<br><span style="font-weight:400;font-size:0.8rem;">Intermediate table</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 20: ONE-TO-ONE CONCEPT ==================== -->
+<div class="slide">
+  <h2>@OneToOne Unidirectional — Concept</h2>
+  <p style="margin-bottom:16px;">A customer has exactly one address. We only navigate Customer → Address.</p>
+  <div class="two-col">
+    <div>
+      <h3>Customer Entity</h3>
+<pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">Customer</span> {
+  <span class="ann">@Id</span> <span class="ann">@GeneratedValue</span>
+  <span class="kw">private</span> Long id;
+  <span class="kw">private</span> String name;
+
+  <span class="cmt">// Entity as attribute = relationship</span>
+<span class="highlight-line">  <span class="kw">private</span> <span class="typ">Address</span> address;</span>
+}</pre>
+      <div class="key-concept" style="margin-top:12px;">
+        <strong>No @OneToOne needed!</strong> JPA infers a one-to-one relationship when an entity attribute references another entity.
+      </div>
+    </div>
+    <div>
+      <h3>Address Entity</h3>
+<pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">Address</span> {
+  <span class="ann">@Id</span> <span class="ann">@GeneratedValue</span>
+  <span class="kw">private</span> Long id;
+  <span class="kw">private</span> String street;
+  <span class="kw">private</span> String city;
+  <span class="kw">private</span> String country;
+
+  <span class="cmt">// No reference back to Customer
+  // → Unidirectional</span>
+}</pre>
+      <h3 style="margin-top:16px;">Default Database Result</h3>
+      <div class="diagram-box" style="font-size:0.9rem;">
+        CUSTOMER table gets an <strong>ADDRESS_ID</strong> foreign key column pointing to ADDRESS table.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 21: ONE-TO-ONE CUSTOMISED ==================== -->
+<div class="slide">
+  <h2>@OneToOne — Customised Mapping</h2>
+  <p style="margin-bottom:16px;">Use <code>@OneToOne</code> + <code>@JoinColumn</code> to control the relationship and foreign key.</p>
+  <div class="two-col">
+    <div>
+<pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">Customer</span> {
+  <span class="ann">@Id</span> <span class="ann">@GeneratedValue</span>
+  <span class="kw">private</span> Long id;
+  <span class="kw">private</span> String name;
+
+<span class="highlight-line">  <span class="ann">@OneToOne</span>(fetch = FetchType.LAZY)</span>
+<span class="highlight-line">  <span class="ann">@JoinColumn</span>(name = <span class="str">"ADD_FK"</span>,</span>
+<span class="highlight-line">             nullable = <span class="kw">false</span>)</span>
+  <span class="kw">private</span> <span class="typ">Address</span> address;
+}</pre>
+    </div>
+    <div>
+      <h3>What These Annotations Do</h3>
+      <table style="font-size:0.9rem;">
+        <tr><th>Setting</th><th>Effect</th></tr>
+        <tr><td><code>fetch = LAZY</code></td><td>Address loaded only when accessed</td></tr>
+        <tr><td><code>name = "ADD_FK"</code></td><td>FK column renamed from ADDRESS_ID</td></tr>
+        <tr><td><code>nullable = false</code></td><td>Every customer must have an address</td></tr>
+      </table>
+      <div class="diagram-box" style="margin-top:16px;">
+        <div class="table-box" style="min-width:200px; display:inline-block;">
+          <div class="table-header">CUSTOMER</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>NAME<br><span class="fk-col">ADD_FK</span> NOT NULL</div>
+        </div>
+        <span class="arrow-right">→</span>
+        <div class="table-box" style="min-width:150px; display:inline-block;">
+          <div class="table-header">ADDRESS</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>STREET<br>CITY</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 22: ONE-TO-MANY CONCEPT ==================== -->
+<div class="slide">
+  <h2>@OneToMany Unidirectional — Concept</h2>
+  <p style="margin-bottom:16px;">One order contains many order lines. Navigate only from Order → OrderLines.</p>
+  <div class="two-col">
+    <div>
+      <h3>Order Entity</h3>
+<pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">AnOrder</span> {
+  <span class="ann">@Id</span> <span class="ann">@GeneratedValue</span>
+  <span class="kw">private</span> Long id;
+
+  <span class="ann">@Temporal</span>(TemporalType.TIMESTAMP)
+  <span class="kw">private</span> Date creationDate;
+
+  <span class="cmt">// Collection of entities = OneToMany</span>
+<span class="highlight-line">  <span class="kw">private</span> List&lt;<span class="typ">OrderLine</span>&gt; orderLines;</span>
+}</pre>
+    </div>
+    <div>
+      <h3>OrderLine Entity</h3>
+<pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">OrderLine</span> {
+  <span class="ann">@Id</span> <span class="ann">@GeneratedValue</span>
+  <span class="kw">private</span> Long id;
+
+  <span class="kw">private</span> String item;
+  <span class="kw">private</span> Double unitPrice;
+  <span class="kw">private</span> Integer quantity;
+
+  <span class="cmt">// No reference back to Order
+  // → Unidirectional</span>
+}</pre>
+    </div>
+  </div>
+  <div class="key-concept" style="margin-top:12px;">
+    <strong>Default behaviour:</strong> JPA creates a <em>join table</em> named <strong>ANORDER_ORDERLINE</strong> with two foreign key columns. No annotation needed for this default.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 23: ONE-TO-MANY JOIN TABLE VISUAL ==================== -->
+<div class="slide">
+  <h2>@OneToMany — Default Join Table</h2>
+  <p style="margin-bottom:16px;">Three tables are created automatically for a one-to-many unidirectional relationship.</p>
+  <div class="diagram-box" style="padding:32px;">
+    <div style="display:flex; justify-content:center; align-items:flex-start; gap:20px; flex-wrap:wrap;">
+      <div class="table-box" style="min-width:160px;">
+        <div class="table-header">ANORDER</div>
+        <div class="table-body"><span class="pk-col">ID</span> (PK)<br>CREATIONDATE</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:20px;">
+        <span style="font-size:1.5rem;color:var(--red);">←</span>
+      </div>
+      <div class="table-box" style="min-width:220px; border-color:var(--optional-border);">
+        <div class="table-header" style="background:var(--optional-border);">ANORDER_ORDERLINE</div>
+        <div class="table-body"><span class="fk-col">ANORDER_ID</span> (FK → ANORDER)<br><span class="fk-col">ORDERLINES_ID</span> (FK → ORDERLINE)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:20px;">
+        <span style="font-size:1.5rem;color:var(--red);">→</span>
+      </div>
+      <div class="table-box" style="min-width:160px;">
+        <div class="table-header">ORDERLINE</div>
+        <div class="table-body"><span class="pk-col">ID</span> (PK)<br>ITEM<br>UNITPRICE<br>QUANTITY</div>
+      </div>
+    </div>
+  </div>
+  <div class="key-concept" style="margin-top:16px;">
+    <strong>Join table naming convention:</strong> <code>OWNING_ENTITY</code> + <code>_</code> + <code>TARGET_ENTITY</code>. The join table holds no data of its own — just the two foreign keys linking the tables.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 24: ONE-TO-MANY CUSTOMISED ==================== -->
+<div class="slide">
+  <h2>@OneToMany — Customised Mapping</h2>
+  <p style="margin-bottom:12px;">You can rename the join table, change FK column names, or switch to a foreign key strategy entirely.</p>
+  <div class="two-col">
+    <div>
+      <h3>Option A: Custom Join Table</h3>
+<pre style="font-size:0.84rem;"><span class="ann">@OneToMany</span>
+<span class="ann">@JoinTable</span>(
+  name = <span class="str">"jnd_ord_line"</span>,
+  joinColumns =
+    <span class="ann">@JoinColumn</span>(name = <span class="str">"order_fk"</span>),
+  inverseJoinColumns =
+    <span class="ann">@JoinColumn</span>(name = <span class="str">"line_fk"</span>)
+)
+<span class="kw">private</span> List&lt;<span class="typ">OrderLine</span>&gt; orderLines;</pre>
+      <p style="margin-top:8px;font-size:0.9rem;">Still uses a join table, but with custom names.</p>
+    </div>
+    <div>
+      <h3>Option B: Foreign Key (No Join Table)</h3>
+<pre style="font-size:0.84rem;"><span class="ann">@OneToMany</span>(fetch = FetchType.EAGER)
+<span class="ann">@JoinColumn</span>(name = <span class="str">"ORDER_FK"</span>)
+<span class="kw">private</span> List&lt;<span class="typ">OrderLine</span>&gt; orderLines;</pre>
+      <p style="margin-top:8px;font-size:0.9rem;">Puts the FK directly in the ORDERLINE table. No intermediate table needed.</p>
+      <div class="diagram-box" style="margin-top:12px;">
+        <div class="table-box" style="min-width:200px;display:inline-block;">
+          <div class="table-header">ORDERLINE</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>ITEM<br>UNITPRICE<br>QUANTITY<br><span class="fk-col">ORDER_FK</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 25: SECONDARY TABLE ==================== -->
+<div class="slide">
+  <h2>@SecondaryTable — One Entity, Multiple Tables <span class="tag optional-tag">OPTIONAL</span></h2>
+  <p style="margin-bottom:16px;">Spread an entity's attributes across multiple tables — useful for legacy databases or very wide tables.</p>
+  <div class="two-col">
+    <div>
+<pre style="font-size:0.84rem;"><span class="ann">@Entity</span>
+<span class="ann">@SecondaryTables</span>({
+  <span class="ann">@SecondaryTable</span>(name = <span class="str">"CITY"</span>),
+  <span class="ann">@SecondaryTable</span>(name = <span class="str">"COUNTRY"</span>)
+})
+<span class="kw">public class</span> <span class="typ">Address</span> {
+  <span class="ann">@Id</span> <span class="kw">private</span> Long id;
+  <span class="kw">private</span> String street;
+
+  <span class="ann">@Column</span>(table = <span class="str">"CITY"</span>)
+  <span class="kw">private</span> String city;
+
+  <span class="ann">@Column</span>(table = <span class="str">"COUNTRY"</span>)
+  <span class="kw">private</span> String country;
+}</pre>
+    </div>
+    <div>
+      <h3>Resulting Tables</h3>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="table-box" style="min-width:200px;">
+          <div class="table-header">ADDRESS (primary)</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>STREET</div>
+        </div>
+        <div class="table-box" style="min-width:200px;">
+          <div class="table-header">CITY (secondary)</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>CITY</div>
+        </div>
+        <div class="table-box" style="min-width:200px;">
+          <div class="table-header">COUNTRY (secondary)</div>
+          <div class="table-body"><span class="pk-col">ID</span><br>COUNTRY</div>
+        </div>
+      </div>
+      <p style="margin-top:8px; font-size:0.9rem;">All share the same PK for joining.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 26: COMPOSITE PKs ==================== -->
+<div class="slide">
+  <h2>Composite Primary Keys <span class="tag optional-tag">OPTIONAL</span></h2>
+  <p style="margin-bottom:16px;">When a single column isn't enough — combine multiple fields into one primary key.</p>
+  <div class="two-col">
+    <div>
+      <h3>1. Create a PK Class</h3>
+<pre style="font-size:0.84rem;"><span class="ann">@Embeddable</span>
+<span class="kw">public class</span> <span class="typ">NewsId</span>
+       <span class="kw">implements</span> Serializable {
+  <span class="kw">private</span> String title;
+  <span class="kw">private</span> String language;
+
+  <span class="cmt">// Must override equals() & hashCode()</span>
+  <span class="cmt">// Must have no-arg constructor</span>
+}</pre>
+      <h3 style="margin-top:16px;">2. Embed in Entity</h3>
+<pre style="font-size:0.84rem;"><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">News</span> {
+  <span class="ann">@EmbeddedId</span>
+  <span class="kw">private</span> <span class="typ">NewsId</span> id;
+  <span class="kw">private</span> String content;
+}</pre>
+    </div>
+    <div>
+      <h3>Why Use Composite Keys?</h3>
+      <div class="card" style="margin-bottom:12px;">
+        <p><strong>Legacy databases</strong> — existing schema uses multi-column PKs</p>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <p><strong>Business rules</strong> — e.g., news identified by title + language code</p>
+      </div>
+      <h3>Finding by Composite Key</h3>
+<pre style="font-size:0.84rem;"><span class="typ">NewsId</span> id = <span class="kw">new</span> NewsId(<span class="str">"JPA Tips"</span>, <span class="str">"EN"</span>);
+<span class="typ">News</span> news = em.find(News.<span class="kw">class</span>, id);</pre>
+      <div class="key-concept" style="margin-top:12px;">
+        <strong>Best practice:</strong> Prefer a single auto-generated PK when possible. Use composites only when required by business logic or legacy constraints.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 27: EMBEDDABLES ==================== -->
+<div class="slide">
+  <h2>@Embeddable — Reusable Value Objects <span class="tag optional-tag">OPTIONAL</span></h2>
+  <p style="margin-bottom:16px;">Embeddables have no identity of their own — their fields merge into the owning entity's table.</p>
+  <div class="two-col">
+    <div>
+<pre style="font-size:0.84rem;"><span class="ann">@Embeddable</span>
+<span class="kw">public class</span> <span class="typ">Address</span> {
+  <span class="kw">private</span> String street;
+  <span class="kw">private</span> String city;
+  <span class="kw">private</span> String country;
+  <span class="cmt">// No @Id — not an entity!</span>
+}
+
+<span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="typ">Customer</span> {
+  <span class="ann">@Id</span> <span class="ann">@GeneratedValue</span>
+  <span class="kw">private</span> Long id;
+  <span class="kw">private</span> String name;
+
+  <span class="ann">@Embedded</span>
+  <span class="kw">private</span> <span class="typ">Address</span> address;
+}</pre>
+    </div>
+    <div>
+      <h3>Result: Single Table</h3>
+      <div class="table-box" style="min-width:260px;">
+        <div class="table-header">CUSTOMER</div>
+        <div class="table-body">
+          <span class="pk-col">ID</span> (PK)<br>
+          NAME<br>
+          <span style="color:var(--keyword);">STREET</span> ← from Address<br>
+          <span style="color:var(--keyword);">CITY</span> ← from Address<br>
+          <span style="color:var(--keyword);">COUNTRY</span> ← from Address
+        </div>
+      </div>
+      <div class="key-concept" style="margin-top:16px;">
+        <strong>Entity vs Embeddable:</strong> Entities have their own table and identity (@Id). Embeddables are "absorbed" into the parent entity's table — no separate table, no ID.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 28: QUIZ 2 ==================== -->
+<div class="slide">
+  <h2>Quick Check — Relationships</h2>
+  <div class="quiz-container">
+    <p class="quiz-question">An <code>Order</code> entity has a <code>List&lt;OrderLine&gt;</code> field with no JPA annotations. What does the persistence provider create by default?</p>
+    <div class="quiz-options" id="quiz2">
+      <div class="quiz-option" onclick="checkQuiz('quiz2', this, false)">A. A foreign key column in the ORDER table.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2', this, true)">B. A join table named ORDER_ORDERLINE with two foreign key columns.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2', this, false)">C. A foreign key column in the ORDERLINE table.</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2', this, false)">D. No relationship — you must add @OneToMany explicitly.</div>
+    </div>
+    <div class="quiz-feedback correct-fb" id="quiz2-correct">Correct! For a unidirectional one-to-many relationship, JPA's default strategy is a join table. The table name follows the convention: OWNING_TARGET (e.g., ORDER_ORDERLINE).</div>
+    <div class="quiz-feedback incorrect-fb" id="quiz2-incorrect">Not quite. JPA infers a @OneToMany relationship from the Collection type and defaults to a <strong>join table</strong> strategy. To use a foreign key instead, you'd need to explicitly add <code>@JoinColumn</code>.</div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 29: SUMMARY ==================== -->
+<div class="slide">
+  <h2>Week 2 Summary</h2>
+  <div class="two-col" style="margin-top:8px;">
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>ORM Customisation</h3>
+        <p><code>@Table</code> renames the table. <code>@Column</code> controls column name, length, nullability, updatability. <code>@GeneratedValue</code> auto-generates primary keys. <code>@SecondaryTable</code> splits across tables.</p>
+      </div>
+      <div class="card">
+        <h3>Attribute Types</h3>
+        <p><code>@Basic</code> controls fetch strategy (LAZY/EAGER). <code>@Transient</code> excludes fields. <code>@Temporal</code> maps dates. <code>@Enumerated</code> stores enums as ordinal or string.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Relationships</h3>
+        <p>Direction: unidirectional or bidirectional. Cardinality: @OneToOne, @OneToMany, @ManyToOne, @ManyToMany. All can be inferred from field types with zero annotations.</p>
+      </div>
+      <div class="card">
+        <h3>Join Strategies</h3>
+        <p><strong>Join Column</strong> (FK in owning table) — best for 1:1 and M:1. <strong>Join Table</strong> (intermediate table) — default for 1:N unidirectional. Use <code>@JoinColumn</code> or <code>@JoinTable</code> to switch or customise.</p>
+      </div>
+    </div>
+  </div>
+  <div class="key-concept" style="margin-top:16px;">
+    <strong>Next week:</strong> We'll explore bidirectional relationships, cascading operations, and the Jakarta Persistence Query Language (JPQL).
+  </div>
+</div>
+
+</div><!-- end deck -->
+
+<!-- Navigation -->
+<div class="nav-bar">
+  <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+  <span class="slide-counter" id="counter"></span>
+  <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+
+function showSlide(n) {
+  slides.forEach(s => s.classList.remove('active'));
+  slides[n].classList.add('active');
+  current = n;
+  document.getElementById('counter').textContent = (n+1) + ' / ' + total;
+  document.getElementById('prevBtn').disabled = n === 0;
+  document.getElementById('nextBtn').disabled = n === total - 1;
+  document.getElementById('progress-bar').style.width = ((n+1)/total*100) + '%';
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next >= 0 && next < total) showSlide(next);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+});
+
+function checkQuiz(quizId, el, correct) {
+  const opts = document.querySelectorAll('#' + quizId + ' .quiz-option');
+  opts.forEach(o => { o.style.pointerEvents = 'none'; });
+  if (correct) {
+    el.classList.add('correct');
+    document.getElementById(quizId + '-correct').classList.add('show');
+  } else {
+    el.classList.add('incorrect');
+    document.getElementById(quizId + '-incorrect').classList.add('show');
+    opts.forEach(o => { if (o !== el && o.onclick.toString().includes('true')) o.classList.add('correct'); });
+  }
+}
+
+showSlide(0);
+</script>
+
+</body>
+</html>
