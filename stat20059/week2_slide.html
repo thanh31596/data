@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 2 – Presenting Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #C0272D;
+    --red-light: #f8e8e8;
+    --dark: #1a1a2e;
+    --mid: #4a4a5a;
+    --light: #f5f5f7;
+    --white: #ffffff;
+    --border: #e0e0e8;
+    --green: #2e7d32;
+    --orange: #e65100;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Source Sans 3', sans-serif; background: #d0d0d8; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+
+  .deck { width: 960px; position: relative; }
+
+  .slide {
+    display: none;
+    background: var(--white);
+    width: 960px;
+    min-height: 580px;
+    border-radius: 4px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    padding: 52px 64px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .slide.active { display: flex; flex-direction: column; }
+
+  /* Red left accent bar */
+  .slide::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: var(--red);
+  }
+
+  /* Title slide */
+  .slide-title {
+    background: var(--dark);
+    color: var(--white);
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .slide-title::before { background: var(--red); }
+  .slide-title .week-tag {
+    font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--red); margin-bottom: 24px;
+    border: 1px solid var(--red); display: inline-block; padding: 4px 12px; border-radius: 2px;
+  }
+  .slide-title h1 { font-family: 'Playfair Display', serif; font-size: 54px; line-height: 1.1; color: var(--white); margin-bottom: 20px; }
+  .slide-title .subtitle { font-size: 20px; color: #aab; font-weight: 300; margin-bottom: 40px; }
+  .slide-title .scenario-pill {
+    background: rgba(192,39,45,0.15); border: 1px solid var(--red);
+    color: #ffaaaa; padding: 10px 20px; border-radius: 3px; font-size: 15px;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+
+  /* Section divider slides */
+  .slide-section {
+    background: var(--red);
+    color: var(--white);
+    justify-content: center;
+  }
+  .slide-section::before { background: rgba(0,0,0,0.2); }
+  .slide-section .section-num { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.7; margin-bottom: 16px; }
+  .slide-section h2 { font-family: 'Playfair Display', serif; font-size: 44px; color: var(--white); margin-bottom: 16px; }
+  .slide-section .section-desc { font-size: 18px; opacity: 0.85; max-width: 600px; }
+
+  /* Regular slides */
+  .slide-content h2 { font-family: 'Playfair Display', serif; font-size: 30px; color: var(--red); margin-bottom: 24px; line-height: 1.2; }
+  .slide-content h3 { font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
+
+  /* Scenario banner */
+  .scenario-banner {
+    background: var(--red-light);
+    border-left: 4px solid var(--red);
+    padding: 10px 16px; border-radius: 0 4px 4px 0;
+    font-size: 13px; color: var(--red); font-weight: 600;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Two-column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; flex: 1; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; flex: 1; }
+
+  /* Cards */
+  .card {
+    background: var(--light);
+    border-radius: 6px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+  }
+  .card.red { background: var(--red-light); border-color: var(--red); }
+  .card.dark { background: var(--dark); color: var(--white); }
+  .card h4 { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
+  .card.dark h4 { color: #ffaaaa; }
+
+  /* Big stat */
+  .big-stat { text-align: center; padding: 20px; }
+  .big-stat .num { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--red); line-height: 1; }
+  .big-stat .label { font-size: 13px; color: var(--mid); margin-top: 6px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: var(--red); color: white; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--dark); }
+  tr:nth-child(even) td { background: var(--light); }
+  tr.total td { background: var(--red-light); font-weight: 700; border-top: 2px solid var(--red); }
+
+  /* Stem and leaf */
+  .stemleaf { font-family: 'Courier New', monospace; font-size: 16px; line-height: 1.8; }
+  .stemleaf .row { display: flex; align-items: center; gap: 0; }
+  .stemleaf .stem { background: var(--dark); color: white; width: 44px; text-align: center; padding: 4px 0; font-weight: 700; }
+  .stemleaf .bar { width: 3px; background: var(--red); align-self: stretch; }
+  .stemleaf .leaves { padding: 4px 12px; background: var(--light); flex: 1; letter-spacing: 4px; color: var(--dark); }
+  .stemleaf .leaves span.hi { color: var(--red); font-weight: 700; }
+
+  /* Bullet list */
+  .bullet-list { list-style: none; }
+  .bullet-list li { padding: 7px 0 7px 22px; position: relative; font-size: 15px; color: var(--dark); border-bottom: 1px solid var(--border); }
+  .bullet-list li:last-child { border-bottom: none; }
+  .bullet-list li::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 8px; height: 8px; background: var(--red); border-radius: 50%; }
+
+  /* Quiz styles */
+  .slide-quiz { background: var(--dark); color: var(--white); }
+  .slide-quiz::before { background: var(--red); }
+  .quiz-tag { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--red); font-weight: 700; margin-bottom: 12px; }
+  .quiz-q { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--white); margin-bottom: 28px; line-height: 1.4; }
+  .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .quiz-opt {
+    background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 6px; padding: 14px 18px; cursor: pointer; font-size: 15px;
+    color: #dde; transition: all 0.2s; display: flex; align-items: center; gap: 12px;
+  }
+  .quiz-opt:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.35); }
+  .quiz-opt.correct { background: rgba(46,125,50,0.25); border-color: #66bb6a; color: #a5d6a7; }
+  .quiz-opt.wrong { background: rgba(192,39,45,0.25); border-color: #ef5350; color: #ef9a9a; }
+  .quiz-opt .opt-letter { background: rgba(255,255,255,0.12); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .quiz-feedback { background: rgba(46,125,50,0.15); border: 1px solid #66bb6a; border-radius: 6px; padding: 14px 18px; font-size: 14px; color: #a5d6a7; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.wrong-fb { background: rgba(192,39,45,0.15); border-color: #ef5350; color: #ef9a9a; }
+
+  /* SVG chart containers */
+  .chart-wrap { background: var(--light); border-radius: 6px; padding: 16px; border: 1px solid var(--border); }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--mid); text-align: center; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* Objectives */
+  .obj-item { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .obj-item:last-child { border-bottom: none; }
+  .obj-num { background: var(--red); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .obj-text { font-size: 15px; color: var(--dark); padding-top: 4px; }
+
+  /* Process steps */
+  .steps { display: flex; gap: 0; align-items: stretch; }
+  .step { flex: 1; background: var(--light); border: 1px solid var(--border); padding: 16px 14px; position: relative; }
+  .step:not(:last-child)::after { content: '→'; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--red); z-index: 2; }
+  .step .step-n { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--red); font-weight: 700; margin-bottom: 6px; }
+  .step p { font-size: 13px; color: var(--dark); }
+
+  /* Comparison table */
+  .comp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .comp-table th { background: var(--red); color: white; padding: 10px 14px; }
+  .comp-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  .comp-table tr:nth-child(even) td { background: var(--light); }
+
+  /* Principles */
+  .principle { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .principle:last-child { border-bottom: none; }
+  .principle .icon { background: var(--red); color: white; width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .principle .text strong { color: var(--dark); font-size: 15px; display: block; margin-bottom: 3px; }
+  .principle .text span { font-size: 13px; color: var(--mid); }
+
+  /* Highlight box */
+  .highlight { background: var(--red-light); border: 1.5px solid var(--red); border-radius: 6px; padding: 14px 18px; }
+  .highlight strong { color: var(--red); }
+
+  /* Brain teaser */
+  .bt-item { background: var(--light); border-radius: 6px; padding: 14px 18px; margin-bottom: 12px; border-left: 4px solid var(--red); }
+  .bt-q { font-weight: 700; font-size: 14px; color: var(--dark); margin-bottom: 6px; }
+  .bt-a { font-size: 13px; color: var(--mid); display: none; padding-top: 6px; border-top: 1px solid var(--border); margin-top: 6px; }
+  .bt-a.show { display: block; }
+  .reveal-btn { font-size: 12px; color: var(--red); cursor: pointer; font-weight: 600; background: none; border: none; padding: 4px 0; }
+
+  /* Navigation */
+  .nav { display: flex; align-items: center; justify-content: space-between; width: 960px; margin-top: 16px; }
+  .nav-btn {
+    background: var(--white); border: 1.5px solid var(--border); color: var(--dark);
+    padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px;
+    font-family: 'Source Sans 3', sans-serif; font-weight: 600; transition: all 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav-btn:disabled:hover { background: var(--white); color: var(--dark); border-color: var(--border); }
+  .slide-counter { font-size: 14px; color: #888; font-weight: 600; }
+  .progress-bar { width: 100%; height: 3px; background: var(--border); margin-top: 8px; border-radius: 2px; }
+  .progress-fill { height: 100%; background: var(--red); border-radius: 2px; transition: width 0.3s; }
+
+  /* Dataset grid */
+  .data-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .data-cell { background: var(--light); border: 1px solid var(--border); border-radius: 3px; padding: 5px 2px; text-align: center; font-family: 'Courier New', monospace; font-size: 13px; color: var(--dark); }
+  .data-cell.hi { background: var(--red-light); border-color: var(--red); color: var(--red); font-weight: 700; }
+
+  /* Chart selector */
+  .selector-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+  .selector-row:last-child { border-bottom: none; }
+  .sel-pill { background: var(--dark); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .sel-cond { font-size: 13px; color: var(--mid); flex: 1; }
+  .sel-chart { background: var(--red); color: white; padding: 4px 14px; border-radius: 3px; font-size: 13px; font-weight: 700; }
+
+  /* Multidim */
+  .dim-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .dim-item:last-child { border-bottom: none; }
+  .dim-badge { background: var(--red); color: white; width: 32px; height: 22px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .dim-text { font-size: 14px; color: var(--dark); }
+
+  /* slide number badge */
+  .slide-num-badge { position: absolute; top: 18px; right: 24px; font-size: 11px; color: #bbb; font-weight: 600; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+<!-- ============ SLIDE 1: TITLE ============ -->
+<div class="slide slide-title active">
+  <div class="week-tag">Week 2 · Statistics for Accounting</div>
+  <h1>Presenting<br>Data</h1>
+  <div class="subtitle">Turning raw numbers into accounting insight</div>
+  <div class="scenario-pill">
+    <strong>Running Scenario:</strong> MegaMart Retail Audit — expense claims &amp; invoice analysis
+  </div>
+</div>
+
+<!-- ============ SLIDE 2: OBJECTIVES ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">2 / 40</div>
+  <h2>Learning Objectives</h2>
+  <div class="obj-item"><div class="obj-num">1</div><div class="obj-text">Construct a <strong>stem-and-leaf plot</strong> by hand and interpret its shape</div></div>
+  <div class="obj-item"><div class="obj-num">2</div><div class="obj-text">Build a <strong>frequency distribution</strong> and draw a histogram and ogive</div></div>
+  <div class="obj-item"><div class="obj-num">3</div><div class="obj-text">Produce and interpret <strong>scatter plots</strong> and <strong>time series plots</strong></div></div>
+  <div class="obj-item"><div class="obj-num">4</div><div class="obj-text">Select and compare <strong>bar charts, pie charts</strong> and <strong>Pareto diagrams</strong></div></div>
+  <div class="obj-item"><div class="obj-num">5</div><div class="obj-text">Apply <strong>graphical excellence</strong> principles and avoid common errors</div></div>
+  <div class="obj-item"><div class="obj-num">6</div><div class="obj-text">Use <strong>multidimensional visualisation</strong> to encode more than two variables</div></div>
+</div>
+
+<!-- ============ SLIDE 3: SCENARIO INTRO ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">3 / 40</div>
+  <h2>The MegaMart Audit</h2>
+  <div class="scenario-banner">Running Scenario — used for every chart type throughout this lecture</div>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <h4>The Client</h4>
+        <p style="font-size:14px;">MegaMart is a national retailer with 12 stores. Your firm has been engaged to audit employee expense claims submitted over the past financial year.</p>
+      </div>
+      <div class="card red">
+        <h4>The Audit Question</h4>
+        <p style="font-size:14px;">Are there unusual patterns in claim amounts, categories, or timing that might indicate errors or irregularities?</p>
+      </div>
+    </div>
+    <div>
+      <div class="three-col" style="margin-bottom:14px;">
+        <div class="big-stat card"><div class="num">568</div><div class="label">Total claims</div></div>
+        <div class="big-stat card"><div class="num">20</div><div class="label">Sample size</div></div>
+        <div class="big-stat card"><div class="num">6</div><div class="label">Categories</div></div>
+      </div>
+      <div class="card">
+        <h4>Our Tools Today</h4>
+        <ul class="bullet-list">
+          <li>Stem-and-leaf — see every value</li>
+          <li>Histogram &amp; ogive — see the shape</li>
+          <li>Pareto — find the biggest problems</li>
+          <li>Scatter &amp; time series — spot trends</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 4: RAW DATA → INFORMATION ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">4 / 40</div>
+  <h2>Raw Data → Information</h2>
+  <div class="scenario-banner">MegaMart — 20 sampled expense claim amounts ($)</div>
+  <div class="data-grid" style="margin-bottom:20px;">
+    <div class="data-cell">52</div><div class="data-cell">67</div><div class="data-cell">43</div><div class="data-cell hi">89</div><div class="data-cell">71</div>
+    <div class="data-cell">55</div><div class="data-cell">48</div><div class="data-cell hi">93</div><div class="data-cell">62</div><div class="data-cell">77</div>
+    <div class="data-cell">58</div><div class="data-cell hi">84</div><div class="data-cell">46</div><div class="data-cell">69</div><div class="data-cell">75</div>
+    <div class="data-cell">51</div><div class="data-cell hi">88</div><div class="data-cell">63</div><div class="data-cell">72</div><div class="data-cell">56</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-n">Step 1</div><p><strong>Raw data</strong> — individual values, hard to interpret at a glance</p></div>
+    <div class="step"><div class="step-n">Step 2</div><p><strong>Organise</strong> — sort, group, tabulate</p></div>
+    <div class="step"><div class="step-n">Step 3</div><p><strong>Visualise</strong> — charts reveal patterns instantly</p></div>
+    <div class="step"><div class="step-n">Step 4</div><p><strong>Insight</strong> — auditor can draw conclusions</p></div>
+  </div>
+  <div class="highlight" style="margin-top:16px;">
+    <strong>Key question throughout today:</strong> What does this data tell us about MegaMart's expense claims — and which chart tells it best?
+  </div>
+</div>
+
+<!-- ============ SLIDE 5: SECTION — STEM AND LEAF ============ -->
+<div class="slide slide-section">
+  <div class="section-num">Section 1 of 6</div>
+  <h2>Stem-and-Leaf Plots</h2>
+  <div class="section-desc">The only chart that shows you every individual value — essential when sample sizes are small.</div>
+</div>
+
+<!-- ============ SLIDE 6: STEM-AND-LEAF CONCEPT ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">6 / 40</div>
+  <h2>What is a Stem-and-Leaf Plot?</h2>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <h4>The Idea</h4>
+        <p style="font-size:14px;">Split each data value into a <strong>stem</strong> (leading digits) and a <strong>leaf</strong> (final digit). The result is a display that acts like both a sorted list and a histogram.</p>
+      </div>
+      <div class="card red">
+        <h4>Why Auditors Use It</h4>
+        <ul class="bullet-list" style="font-size:13px;">
+          <li>Preserves every original value</li>
+          <li>Instantly shows the distribution shape</li>
+          <li>Highlights outliers (unusually high claims)</li>
+          <li>Quick to construct by hand in the field</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>Anatomy of a Stem-and-Leaf</h4>
+        <div style="margin:12px 0 4px; font-size:13px; color:var(--mid);">Example: values 52, 55, 58</div>
+        <div class="stemleaf">
+          <div class="row">
+            <div class="stem" style="font-size:13px; padding:6px 0; background:#eee; color:#333; width:60px; text-align:center;">Stem</div>
+            <div class="bar"></div>
+            <div class="leaves" style="font-size:13px; background:#f9f9f9; color:#666; letter-spacing:2px;">Leaves</div>
+          </div>
+          <div class="row">
+            <div class="stem">5</div>
+            <div class="bar"></div>
+            <div class="leaves">2  5  8</div>
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--mid); margin-top:10px;">Stem = tens digit (5 = $50s). Leaf = units digit.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 7: BUILDING THE STEM AND LEAF ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">7 / 40</div>
+  <h2>Building the Stem-and-Leaf</h2>
+  <div class="scenario-banner">MegaMart — 20 expense claim amounts, ordered: $43 to $93</div>
+  <div class="two-col">
+    <div>
+      <p style="font-size:14px; color:var(--mid); margin-bottom:12px;"><strong>Step 1.</strong> Sort values from smallest to largest.<br><strong>Step 2.</strong> Choose stems (tens digits: 4, 5, 6, 7, 8, 9).<br><strong>Step 3.</strong> Write each units digit as a leaf next to its stem.</p>
+      <div class="card red" style="margin-top:12px;">
+        <h4>Ordered Values</h4>
+        <div style="font-family:'Courier New',monospace; font-size:13px; line-height:2; color:var(--dark);">
+          43 46 48 51 52 55 56 58<br>
+          62 63 67 69 71 72 75 77<br>
+          84 88 89 93
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="stemleaf">
+        <div class="row"><div class="stem">4</div><div class="bar"></div><div class="leaves">3  6  8</div></div>
+        <div class="row"><div class="stem">5</div><div class="bar"></div><div class="leaves">1  2  5  6  8</div></div>
+        <div class="row"><div class="stem">6</div><div class="bar"></div><div class="leaves">2  3  7  9</div></div>
+        <div class="row"><div class="stem">7</div><div class="bar"></div><div class="leaves">1  2  5  7</div></div>
+        <div class="row"><div class="stem">8</div><div class="bar"></div><div class="leaves"><span class="hi">4  8  9</span></div></div>
+        <div class="row"><div class="stem">9</div><div class="bar"></div><div class="leaves"><span class="hi">3</span></div></div>
+      </div>
+      <div style="font-size:12px; color:var(--mid); margin-top:10px;">Stem unit = $10. Leaf unit = $1. Red values = potential outliers for audit investigation.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 8: STEM-AND-LEAF INTERPRETATION ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">8 / 40</div>
+  <h2>Reading the Stem-and-Leaf</h2>
+  <div class="scenario-banner">MegaMart audit — what does the plot tell us?</div>
+  <div class="two-col">
+    <div>
+      <div class="stemleaf" style="margin-bottom:16px;">
+        <div class="row"><div class="stem">4</div><div class="bar"></div><div class="leaves">3  6  8</div></div>
+        <div class="row"><div class="stem">5</div><div class="bar"></div><div class="leaves">1  2  5  6  8</div></div>
+        <div class="row"><div class="stem">6</div><div class="bar"></div><div class="leaves">2  3  7  9</div></div>
+        <div class="row"><div class="stem">7</div><div class="bar"></div><div class="leaves">1  2  5  7</div></div>
+        <div class="row"><div class="stem">8</div><div class="bar"></div><div class="leaves"><span class="hi">4  8  9</span></div></div>
+        <div class="row"><div class="stem">9</div><div class="bar"></div><div class="leaves"><span class="hi">3</span></div></div>
+      </div>
+      <div style="font-size:12px; color:var(--mid);">Advantage over histogram: all original values are preserved.</div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>Shape</h4>
+        <p style="font-size:14px;">Slight right skew — most claims cluster in the $50–$70 range, with a tail of higher values.</p>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>Centre</h4>
+        <p style="font-size:14px;">The median falls in the $60s — around $65.</p>
+      </div>
+      <div class="card red">
+        <h4>Audit Flag</h4>
+        <p style="font-size:14px;">The $80–$93 cluster (4 values) stands out. These 4 claims warrant closer review — are they legitimate or inflated?</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 9: QUIZ 1 ============ -->
+<div class="slide slide-quiz" id="quiz1">
+  <div class="quiz-tag">Quiz 1 of 5</div>
+  <div class="quiz-q">An auditor needs to examine 20 sampled invoice amounts while keeping every individual value visible. Which display is best suited?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" onclick="answerQuiz('quiz1','A','B')"><div class="opt-letter">A</div> Histogram</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz1','B','B')"><div class="opt-letter">B</div> Stem-and-leaf plot</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz1','C','B')"><div class="opt-letter">C</div> Pie chart</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz1','D','B')"><div class="opt-letter">D</div> Time series plot</div>
+  </div>
+  <div class="quiz-feedback" id="quiz1-fb"></div>
+</div>
+
+<!-- ============ SLIDE 10: SECTION — FREQUENCY DISTRIBUTION ============ -->
+<div class="slide slide-section">
+  <div class="section-num">Section 2 of 6</div>
+  <h2>Frequency Distributions &amp; Histograms</h2>
+  <div class="section-desc">Group your data into classes — then visualise the distribution as a bar chart with no gaps.</div>
+</div>
+
+<!-- ============ SLIDE 11: BUILDING THE FREQUENCY TABLE ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">11 / 40</div>
+  <h2>Building a Frequency Distribution</h2>
+  <div class="scenario-banner">MegaMart — 20 expense claims, range $43–$93</div>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>Step-by-Step</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li><strong>1. Find range:</strong> $93 − $43 = $50</li>
+          <li><strong>2. Choose classes:</strong> 6 classes</li>
+          <li><strong>3. Class width:</strong> $50 ÷ 6 ≈ $10</li>
+          <li><strong>4. Start point:</strong> $40 (round down)</li>
+          <li><strong>5. Tally</strong> each value into its class</li>
+        </ul>
+      </div>
+      <div class="highlight">
+        <strong>Rule of thumb:</strong> 5–20 classes; equal width; classes must not overlap.
+      </div>
+    </div>
+    <div>
+      <table>
+        <tr><th>Claim Amount ($)</th><th>Tally</th><th>Count</th></tr>
+        <tr><td>$40 to &lt;$50</td><td>/// </td><td>3</td></tr>
+        <tr><td>$50 to &lt;$60</td><td>/////</td><td>5</td></tr>
+        <tr><td>$60 to &lt;$70</td><td>////</td><td>4</td></tr>
+        <tr><td>$70 to &lt;$80</td><td>////</td><td>4</td></tr>
+        <tr><td>$80 to &lt;$90</td><td>///</td><td>3</td></tr>
+        <tr><td>$90 to &lt;$100</td><td>/</td><td>1</td></tr>
+        <tr class="total"><td><strong>Total</strong></td><td></td><td><strong>20</strong></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 12: FREQUENCY AND PERCENTAGE TABLE ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">12 / 40</div>
+  <h2>Frequency &amp; Percentage Distribution</h2>
+  <div class="scenario-banner">MegaMart — 20 expense claim amounts</div>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Amount ($)</th><th>Count</th><th>%</th><th>Cumulative %</th></tr>
+        <tr><td>$40–&lt;$50</td><td>3</td><td>15%</td><td>15%</td></tr>
+        <tr><td>$50–&lt;$60</td><td>5</td><td>25%</td><td>40%</td></tr>
+        <tr><td>$60–&lt;$70</td><td>4</td><td>20%</td><td>60%</td></tr>
+        <tr><td>$70–&lt;$80</td><td>4</td><td>20%</td><td>80%</td></tr>
+        <tr><td>$80–&lt;$90</td><td>3</td><td>15%</td><td>95%</td></tr>
+        <tr><td>$90–&lt;$100</td><td>1</td><td>5%</td><td>100%</td></tr>
+        <tr class="total"><td><strong>Total</strong></td><td><strong>20</strong></td><td><strong>100%</strong></td><td></td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="card red" style="margin-bottom:12px;">
+        <h4>Audit Insight</h4>
+        <p style="font-size:14px;">60% of claims fall between $40 and $70. The 20% of claims above $80 represent a high-value tail worth scrutinising.</p>
+      </div>
+      <div class="card">
+        <h4>Percentage vs Frequency</h4>
+        <p style="font-size:14px;">Percentages (relative frequencies) allow comparison across different sample sizes — useful when comparing MegaMart stores of different sizes.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 13: HISTOGRAM ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">13 / 40</div>
+  <h2>The Histogram</h2>
+  <div class="scenario-banner">MegaMart expense claim distribution — frequency histogram</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">MegaMart — Expense Claim Amounts ($)</div>
+      <svg width="100%" viewBox="0 0 380 240" style="display:block;">
+        <!-- axes -->
+        <line x1="50" y1="20" x2="50" y2="200" stroke="#999" stroke-width="1.5"/>
+        <line x1="50" y1="200" x2="370" y2="200" stroke="#999" stroke-width="1.5"/>
+        <!-- y gridlines and labels -->
+        <line x1="50" y1="164" x2="370" y2="164" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="128" x2="370" y2="128" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="92" x2="370" y2="92" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="56" x2="370" y2="56" stroke="#eee" stroke-width="1"/>
+        <text x="44" y="204" font-size="11" fill="#999" text-anchor="end">0</text>
+        <text x="44" y="168" font-size="11" fill="#999" text-anchor="end">1</text>
+        <text x="44" y="132" font-size="11" fill="#999" text-anchor="end">2</text>
+        <text x="44" y="96" font-size="11" fill="#999" text-anchor="end">3</text>
+        <text x="44" y="60" font-size="11" fill="#999" text-anchor="end">4</text>
+        <text x="44" y="24" font-size="11" fill="#999" text-anchor="end">5</text>
+        <!-- bars: each class width = 52px, heights: 3,5,4,4,3,1 * 36px each -->
+        <!-- $40-50: 3 -->
+        <rect x="54" y="92" width="50" height="108" fill="#C0272D" opacity="0.8"/>
+        <text x="79" y="88" font-size="11" fill="#C0272D" text-anchor="middle" font-weight="bold">3</text>
+        <!-- $50-60: 5 -->
+        <rect x="106" y="20" width="50" height="180" fill="#C0272D"/>
+        <text x="131" y="16" font-size="11" fill="#C0272D" text-anchor="middle" font-weight="bold">5</text>
+        <!-- $60-70: 4 -->
+        <rect x="158" y="56" width="50" height="144" fill="#C0272D" opacity="0.85"/>
+        <text x="183" y="52" font-size="11" fill="#C0272D" text-anchor="middle" font-weight="bold">4</text>
+        <!-- $70-80: 4 -->
+        <rect x="210" y="56" width="50" height="144" fill="#C0272D" opacity="0.85"/>
+        <text x="235" y="52" font-size="11" fill="#C0272D" text-anchor="middle" font-weight="bold">4</text>
+        <!-- $80-90: 3 -->
+        <rect x="262" y="92" width="50" height="108" fill="#8B0000" opacity="0.9"/>
+        <text x="287" y="88" font-size="11" fill="#8B0000" text-anchor="middle" font-weight="bold">3</text>
+        <!-- $90-100: 1 -->
+        <rect x="314" y="164" width="50" height="36" fill="#8B0000" opacity="0.9"/>
+        <text x="339" y="160" font-size="11" fill="#8B0000" text-anchor="middle" font-weight="bold">1</text>
+        <!-- x labels -->
+        <text x="79" y="214" font-size="10" fill="#666" text-anchor="middle">$40-50</text>
+        <text x="131" y="214" font-size="10" fill="#666" text-anchor="middle">$50-60</text>
+        <text x="183" y="214" font-size="10" fill="#666" text-anchor="middle">$60-70</text>
+        <text x="235" y="214" font-size="10" fill="#666" text-anchor="middle">$70-80</text>
+        <text x="287" y="214" font-size="10" fill="#8B0000" text-anchor="middle">$80-90</text>
+        <text x="339" y="214" font-size="10" fill="#8B0000" text-anchor="middle">$90-100</text>
+        <!-- axis labels -->
+        <text x="210" y="232" font-size="11" fill="#555" text-anchor="middle">Claim Amount ($)</text>
+        <text x="14" y="110" font-size="11" fill="#555" text-anchor="middle" transform="rotate(-90,14,110)">Frequency</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>Key Rules</h4>
+        <ul class="bullet-list" style="font-size:13px;">
+          <li>No gaps between bars (continuous data)</li>
+          <li>Bars must be equal width</li>
+          <li>Always label both axes</li>
+          <li>Always include a title</li>
+        </ul>
+      </div>
+      <div class="card red">
+        <h4>Audit Reading</h4>
+        <p style="font-size:13px;">The distribution is <strong>slightly right-skewed</strong>. The dark bars ($80+) flag 4 claims for review. A perfectly symmetric distribution would suggest no unusual patterns.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 14: QUIZ 2 ============ -->
+<div class="slide slide-quiz" id="quiz2">
+  <div class="quiz-tag">Quiz 2 of 5</div>
+  <div class="quiz-q">Using MegaMart's frequency distribution, what percentage of expense claims fall between $50 and $70?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" onclick="answerQuiz('quiz2','A','C')"><div class="opt-letter">A</div> 25%</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz2','B','C')"><div class="opt-letter">B</div> 40%</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz2','C','C')"><div class="opt-letter">C</div> 45%</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz2','D','C')"><div class="opt-letter">D</div> 60%</div>
+  </div>
+  <div class="quiz-feedback" id="quiz2-fb"></div>
+</div>
+
+<!-- ============ SLIDE 15: SECTION — OGIVE ============ -->
+<div class="slide slide-section">
+  <div class="section-num">Section 3 of 6</div>
+  <h2>Ogive</h2>
+  <div class="section-desc">The cumulative percentage polygon — answers "what fraction of values fall below a threshold?"</div>
+</div>
+
+<!-- ============ SLIDE 16: OGIVE CHART ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">16 / 40</div>
+  <h2>Ogive (Cumulative % Polygon)</h2>
+  <div class="scenario-banner">MegaMart — cumulative distribution of claim amounts</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">MegaMart Ogive — Expense Claims</div>
+      <svg width="100%" viewBox="0 0 380 240" style="display:block;">
+        <line x1="50" y1="20" x2="50" y2="205" stroke="#999" stroke-width="1.5"/>
+        <line x1="50" y1="205" x2="375" y2="205" stroke="#999" stroke-width="1.5"/>
+        <!-- gridlines -->
+        <line x1="50" y1="186" x2="375" y2="186" stroke="#eee" stroke-width="1" stroke-dasharray="4"/>
+        <line x1="50" y1="148" x2="375" y2="148" stroke="#eee" stroke-width="1" stroke-dasharray="4"/>
+        <line x1="50" y1="110" x2="375" y2="110" stroke="#eee" stroke-width="1" stroke-dasharray="4"/>
+        <line x1="50" y1="72" x2="375" y2="72" stroke="#eee" stroke-width="1" stroke-dasharray="4"/>
+        <line x1="50" y1="34" x2="375" y2="34" stroke="#eee" stroke-width="1" stroke-dasharray="4"/>
+        <!-- y labels -->
+        <text x="44" y="209" font-size="10" fill="#999" text-anchor="end">0%</text>
+        <text x="44" y="190" font-size="10" fill="#999" text-anchor="end">20%</text>
+        <text x="44" y="152" font-size="10" fill="#999" text-anchor="end">40%</text>
+        <text x="44" y="114" font-size="10" fill="#999" text-anchor="end">60%</text>
+        <text x="44" y="76" font-size="10" fill="#999" text-anchor="end">80%</text>
+        <text x="44" y="38" font-size="10" fill="#999" text-anchor="end">100%</text>
+        <!-- x points at: 40,50,60,70,80,90,100 → pixels: 55,103,151,199,247,295,343 -->
+        <!-- cum%: 0, 15, 40, 60, 80, 95, 100 → y: 205, 176, 148, 110, 72, 39, 34 -->
+        <!-- Let me recalculate: y = 205 - (cum%/100)*171 -->
+        <!-- 0%: 205, 15%: 205-25.65=179, 40%: 205-68.4=137, 60%: 205-102.6=102, 80%: 205-136.8=68, 95%: 205-162.45=43, 100%: 34 -->
+        <polyline points="55,205 103,179 151,137 199,102 247,68 295,43 343,34" fill="none" stroke="#C0272D" stroke-width="2.5"/>
+        <!-- dots -->
+        <circle cx="55" cy="205" r="4" fill="#C0272D"/>
+        <circle cx="103" cy="179" r="4" fill="#C0272D"/>
+        <circle cx="151" cy="137" r="4" fill="#C0272D"/>
+        <circle cx="199" cy="102" r="4" fill="#C0272D"/>
+        <circle cx="247" cy="68" r="4" fill="#C0272D"/>
+        <circle cx="295" cy="43" r="4" fill="#C0272D"/>
+        <circle cx="343" cy="34" r="4" fill="#C0272D"/>
+        <!-- reference line at 80% -->
+        <line x1="50" y1="68" x2="247" y2="68" stroke="#8B0000" stroke-width="1" stroke-dasharray="5"/>
+        <line x1="247" y1="68" x2="247" y2="205" stroke="#8B0000" stroke-width="1" stroke-dasharray="5"/>
+        <text x="52" y="64" font-size="10" fill="#8B0000">80%</text>
+        <text x="250" y="215" font-size="10" fill="#8B0000">$80</text>
+        <!-- x labels -->
+        <text x="55" y="218" font-size="10" fill="#666" text-anchor="middle">$40</text>
+        <text x="103" y="218" font-size="10" fill="#666" text-anchor="middle">$50</text>
+        <text x="151" y="218" font-size="10" fill="#666" text-anchor="middle">$60</text>
+        <text x="199" y="218" font-size="10" fill="#666" text-anchor="middle">$70</text>
+        <text x="295" y="218" font-size="10" fill="#666" text-anchor="middle">$90</text>
+        <text x="343" y="218" font-size="10" fill="#666" text-anchor="middle">$100</text>
+        <text x="210" y="235" font-size="11" fill="#555" text-anchor="middle">Upper Class Boundary ($)</text>
+        <text x="14" y="120" font-size="10" fill="#555" transform="rotate(-90,14,120)" text-anchor="middle">Cumulative %</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>How to Read It</h4>
+        <p style="font-size:14px;">To find "what % of claims are below $X", read up from the x-axis to the curve, then across to the y-axis.</p>
+      </div>
+      <div class="card red" style="margin-bottom:12px;">
+        <h4>Audit Application</h4>
+        <p style="font-size:14px;">The dashed lines show: <strong>80% of claims are below $80</strong>. The top 20% — 4 claims over $80 — are the high-risk zone.</p>
+      </div>
+      <div class="card">
+        <h4>Vs Histogram</h4>
+        <p style="font-size:14px;">The ogive answers threshold questions (<em>"below $70?"</em>) that a histogram cannot directly answer.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 17: SECTION — SCATTER + TIME SERIES ============ -->
+<div class="slide slide-section">
+  <div class="section-num">Section 4 of 6</div>
+  <h2>Scatterplots &amp; Time Series</h2>
+  <div class="section-desc">Two charts that reveal relationships and trends over time — powerful tools for forensic and management accounting.</div>
+</div>
+
+<!-- ============ SLIDE 18: SCATTERPLOT CONCEPT ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">18 / 40</div>
+  <h2>The Scatterplot</h2>
+  <div class="scenario-banner">MegaMart — does invoice value predict expense claim size?</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">Invoice Value vs Expense Claim ($)</div>
+      <svg width="100%" viewBox="0 0 360 230" style="display:block;">
+        <line x1="50" y1="15" x2="50" y2="195" stroke="#999" stroke-width="1.5"/>
+        <line x1="50" y1="195" x2="350" y2="195" stroke="#999" stroke-width="1.5"/>
+        <!-- gridlines -->
+        <line x1="50" y1="155" x2="350" y2="155" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="115" x2="350" y2="115" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="75" x2="350" y2="75" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="35" x2="350" y2="35" stroke="#eee" stroke-width="1"/>
+        <!-- y axis labels (claim $: 40,55,70,85,100) -->
+        <text x="44" y="199" font-size="10" fill="#999" text-anchor="end">40</text>
+        <text x="44" y="159" font-size="10" fill="#999" text-anchor="end">55</text>
+        <text x="44" y="119" font-size="10" fill="#999" text-anchor="end">70</text>
+        <text x="44" y="79" font-size="10" fill="#999" text-anchor="end">85</text>
+        <text x="44" y="39" font-size="10" fill="#999" text-anchor="end">100</text>
+        <!-- x axis labels (invoice: 100-550) -->
+        <text x="80" y="208" font-size="10" fill="#999" text-anchor="middle">$100</text>
+        <text x="155" y="208" font-size="10" fill="#999" text-anchor="middle">$250</text>
+        <text x="230" y="208" font-size="10" fill="#999" text-anchor="middle">$400</text>
+        <text x="305" y="208" font-size="10" fill="#999" text-anchor="middle">$550</text>
+        <!-- data points: (invoice, claim) → scaled -->
+        <!-- x: (val-100)/450*250+80, y: 195-(val-40)/60*160 -->
+        <!-- (150,52)→x=105,y=195-12*160/60=195-32=163 -->
+        <!-- (280,67)→x=150,y=195-27*160/60=195-72=123 -->
+        <!-- (120,43)→x=94,y=195-3*160/60=195-8=187 -->
+        <!-- (450,89)→x=250,y=195-49*160/60=195-131=64 -->
+        <!-- (380,71)→x=228,y=195-31*160/60=195-83=112 -->
+        <!-- (200,55)→x=122,y=195-15*160/60=195-40=155 -->
+        <!-- (160,48)→x=111,y=195-8*160/60=195-21=174 -->
+        <!-- (520,93)→x=280,y=195-53*160/60=195-141=54 -->
+        <!-- (310,62)→x=163,y=195-22*160/60=195-59=136 -->
+        <!-- (420,77)→x=239,y=195-37*160/60=195-99=96 -->
+        <!-- trend line rough: from ~(90,192) to (295,50) -->
+        <line x1="90" y1="192" x2="295" y2="50" stroke="#C0272D" stroke-width="1.5" stroke-dasharray="6" opacity="0.5"/>
+        <circle cx="105" cy="163" r="5" fill="#C0272D" opacity="0.75"/>
+        <circle cx="150" cy="123" r="5" fill="#C0272D" opacity="0.75"/>
+        <circle cx="94" cy="187" r="5" fill="#C0272D" opacity="0.75"/>
+        <circle cx="250" cy="64" r="5" fill="#8B0000"/>
+        <circle cx="228" cy="112" r="5" fill="#C0272D" opacity="0.75"/>
+        <circle cx="122" cy="155" r="5" fill="#C0272D" opacity="0.75"/>
+        <circle cx="111" cy="174" r="5" fill="#C0272D" opacity="0.75"/>
+        <circle cx="280" cy="54" r="5" fill="#8B0000"/>
+        <circle cx="163" cy="136" r="5" fill="#C0272D" opacity="0.75"/>
+        <circle cx="239" cy="96" r="5" fill="#C0272D" opacity="0.75"/>
+        <text x="200" y="222" font-size="11" fill="#555" text-anchor="middle">Invoice Value ($)</text>
+        <text x="14" y="110" font-size="10" fill="#555" transform="rotate(-90,14,110)" text-anchor="middle">Claim ($)</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>What a Scatterplot Shows</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Each dot = one observation (one invoice)</li>
+          <li>X-axis = first variable (invoice value)</li>
+          <li>Y-axis = second variable (claim amount)</li>
+          <li>Pattern = direction and strength of relationship</li>
+        </ul>
+      </div>
+      <div class="card red">
+        <h4>Audit Insight</h4>
+        <p style="font-size:14px;">A positive relationship exists — larger invoices tend to generate larger claims. The two dark dots are high outliers — claims disproportionately large for their invoice size. Flag for review.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 19: TIME SERIES CONCEPT ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">19 / 40</div>
+  <h2>Time Series Plot</h2>
+  <div class="scenario-banner">MegaMart — monthly expense claim volume (Jan–Dec)</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">Monthly Expense Claims Submitted</div>
+      <svg width="100%" viewBox="0 0 380 230" style="display:block;">
+        <line x1="50" y1="15" x2="50" y2="195" stroke="#999" stroke-width="1.5"/>
+        <line x1="50" y1="195" x2="375" y2="195" stroke="#999" stroke-width="1.5"/>
+        <line x1="50" y1="55" x2="375" y2="55" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="95" x2="375" y2="95" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="135" x2="375" y2="135" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="175" x2="375" y2="175" stroke="#eee" stroke-width="1"/>
+        <text x="44" y="199" font-size="10" fill="#999" text-anchor="end">20</text>
+        <text x="44" y="179" font-size="10" fill="#999" text-anchor="end">30</text>
+        <text x="44" y="139" font-size="10" fill="#999" text-anchor="end">40</text>
+        <text x="44" y="99" font-size="10" fill="#999" text-anchor="end">50</text>
+        <text x="44" y="59" font-size="10" fill="#999" text-anchor="end">60</text>
+        <!-- months: 12 pts x=70,95,120,...345, spacing=25 -->
+        <!-- values: J28,F31,M35,A29,May33,Jun38,Jul25,Aug30,Sep36,Oct42,Nov48,Dec55 -->
+        <!-- y scale: (val-20)/40*160+15 → subtract from 195 -->
+        <!-- y=195-(val-20)/40*160 -->
+        <!-- J28: y=195-8/40*160=195-32=163 -->
+        <!-- F31: y=195-11/40*160=195-44=151 -->
+        <!-- M35: y=195-15/40*160=195-60=135 -->
+        <!-- A29: y=195-9/40*160=195-36=159 -->
+        <!-- May33: y=195-13/40*160=195-52=143 -->
+        <!-- Jun38: y=195-18/40*160=195-72=123 -->
+        <!-- Jul25: y=195-5/40*160=195-20=175 -->
+        <!-- Aug30: y=195-10/40*160=195-40=155 -->
+        <!-- Sep36: y=195-16/40*160=195-64=131 -->
+        <!-- Oct42: y=195-22/40*160=195-88=107 -->
+        <!-- Nov48: y=195-28/40*160=195-112=83 -->
+        <!-- Dec55: y=195-35/40*160=195-140=55 -->
+        <polyline points="70,163 95,151 120,135 145,159 170,143 195,123 220,175 245,155 270,131 295,107 320,83 345,55"
+          fill="none" stroke="#C0272D" stroke-width="2.5"/>
+        <!-- Shaded area under line -->
+        <polygon points="70,163 95,151 120,135 145,159 170,143 195,123 220,175 245,155 270,131 295,107 320,83 345,55 345,195 70,195"
+          fill="#C0272D" opacity="0.07"/>
+        <!-- dots -->
+        <circle cx="70" cy="163" r="3.5" fill="#C0272D"/>
+        <circle cx="95" cy="151" r="3.5" fill="#C0272D"/>
+        <circle cx="120" cy="135" r="3.5" fill="#C0272D"/>
+        <circle cx="145" cy="159" r="3.5" fill="#C0272D"/>
+        <circle cx="170" cy="143" r="3.5" fill="#C0272D"/>
+        <circle cx="195" cy="123" r="3.5" fill="#C0272D"/>
+        <circle cx="220" cy="175" r="3.5" fill="#C0272D"/>
+        <circle cx="245" cy="155" r="3.5" fill="#C0272D"/>
+        <circle cx="270" cy="131" r="3.5" fill="#C0272D"/>
+        <circle cx="295" cy="107" r="3.5" fill="#8B0000"/>
+        <circle cx="320" cy="83" r="3.5" fill="#8B0000"/>
+        <circle cx="345" cy="55" r="3.5" fill="#8B0000"/>
+        <!-- x labels -->
+        <text x="70" y="208" font-size="9" fill="#666" text-anchor="middle">Jan</text>
+        <text x="95" y="208" font-size="9" fill="#666" text-anchor="middle">Feb</text>
+        <text x="120" y="208" font-size="9" fill="#666" text-anchor="middle">Mar</text>
+        <text x="145" y="208" font-size="9" fill="#666" text-anchor="middle">Apr</text>
+        <text x="170" y="208" font-size="9" fill="#666" text-anchor="middle">May</text>
+        <text x="195" y="208" font-size="9" fill="#666" text-anchor="middle">Jun</text>
+        <text x="220" y="208" font-size="9" fill="#666" text-anchor="middle">Jul</text>
+        <text x="245" y="208" font-size="9" fill="#666" text-anchor="middle">Aug</text>
+        <text x="270" y="208" font-size="9" fill="#666" text-anchor="middle">Sep</text>
+        <text x="295" y="208" font-size="9" fill="#8B0000" text-anchor="middle">Oct</text>
+        <text x="320" y="208" font-size="9" fill="#8B0000" text-anchor="middle">Nov</text>
+        <text x="345" y="208" font-size="9" fill="#8B0000" text-anchor="middle">Dec</text>
+        <text x="14" y="110" font-size="10" fill="#555" transform="rotate(-90,14,110)" text-anchor="middle">Claims</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>What Makes It "Time Series"?</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Time is always on the x-axis</li>
+          <li>Points are connected by lines to show trend</li>
+          <li>Data recorded at regular intervals</li>
+          <li>Cannot randomly sample — order matters</li>
+        </ul>
+      </div>
+      <div class="card red">
+        <h4>Audit Insight</h4>
+        <p style="font-size:14px;">Claim volume is rising sharply in Q4 (Oct–Dec). This could indicate year-end budget flushing — a known fraud risk pattern worth investigating.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 20: QUIZ 3 ============ -->
+<div class="slide slide-quiz" id="quiz3">
+  <div class="quiz-tag">Quiz 3 of 5</div>
+  <div class="quiz-q">The MegaMart audit team wants to investigate whether larger invoices tend to produce larger expense claims. Which chart should they use?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" onclick="answerQuiz('quiz3','A','C')"><div class="opt-letter">A</div> Bar chart</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz3','B','C')"><div class="opt-letter">B</div> Ogive</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz3','C','C')"><div class="opt-letter">C</div> Scatterplot</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz3','D','C')"><div class="opt-letter">D</div> Stem-and-leaf</div>
+  </div>
+  <div class="quiz-feedback" id="quiz3-fb"></div>
+</div>
+
+<!-- ============ SLIDE 21: SECTION — BAR PIE PARETO ============ -->
+<div class="slide slide-section">
+  <div class="section-num">Section 5 of 6</div>
+  <h2>Bar, Pie &amp; Pareto Charts</h2>
+  <div class="section-desc">Visualising categorical data — and using the Pareto principle to focus on what matters most.</div>
+</div>
+
+<!-- ============ SLIDE 22: BAR CHART ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">22 / 40</div>
+  <h2>Bar Chart — Expense Categories</h2>
+  <div class="scenario-banner">MegaMart — 568 expense claims across 6 categories</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">Expense Claims by Category</div>
+      <svg width="100%" viewBox="0 0 360 240" style="display:block;">
+        <line x1="150" y1="15" x2="150" y2="210" stroke="#999" stroke-width="1.5"/>
+        <line x1="150" y1="210" x2="355" y2="210" stroke="#999" stroke-width="1.5"/>
+        <!-- gridlines -->
+        <line x1="150" y1="210" x2="355" y2="210" stroke="#eee"/>
+        <line x1="204" y1="15" x2="204" y2="210" stroke="#eee" stroke-width="1"/>
+        <line x1="258" y1="15" x2="258" y2="210" stroke="#eee" stroke-width="1"/>
+        <line x1="312" y1="15" x2="312" y2="210" stroke="#eee" stroke-width="1"/>
+        <text x="204" y="222" font-size="10" fill="#999" text-anchor="middle">20</text>
+        <text x="258" y="222" font-size="10" fill="#999" text-anchor="middle">40</text>
+        <text x="312" y="222" font-size="10" fill="#999" text-anchor="middle">60</text>
+        <!-- bars: horizontal. Each bar height=26, gap=8 -->
+        <!-- Travel: 45 → width = 45/60*162=121.5 -->
+        <rect x="150" y="24" width="122" height="26" fill="#C0272D"/>
+        <text x="144" y="40" font-size="11" fill="#555" text-anchor="end">Travel</text>
+        <text x="276" y="40" font-size="11" fill="white" font-weight="bold">45</text>
+        <!-- M&E: 38 → 103 -->
+        <rect x="150" y="58" width="103" height="26" fill="#C0272D" opacity="0.85"/>
+        <text x="144" y="74" font-size="11" fill="#555" text-anchor="end">Meals &amp; Ent.</text>
+        <text x="257" y="74" font-size="11" fill="white" font-weight="bold">38</text>
+        <!-- Accommodation: 22 → 60 -->
+        <rect x="150" y="92" width="60" height="26" fill="#C0272D" opacity="0.7"/>
+        <text x="144" y="108" font-size="11" fill="#555" text-anchor="end">Accommodation</text>
+        <text x="214" y="108" font-size="11" fill="white" font-weight="bold">22</text>
+        <!-- Office: 18 → 49 -->
+        <rect x="150" y="126" width="49" height="26" fill="#C0272D" opacity="0.6"/>
+        <text x="144" y="142" font-size="11" fill="#555" text-anchor="end">Office Supplies</text>
+        <text x="203" y="142" font-size="11" fill="white" font-weight="bold">18</text>
+        <!-- Training: 12 → 32 -->
+        <rect x="150" y="160" width="32" height="26" fill="#C0272D" opacity="0.45"/>
+        <text x="144" y="176" font-size="11" fill="#555" text-anchor="end">Training</text>
+        <text x="186" y="176" font-size="11" fill="#555" font-weight="bold">12</text>
+        <!-- Misc: 8 → 22 -->
+        <rect x="150" y="194" width="22" height="14" fill="#C0272D" opacity="0.3"/>
+        <text x="144" y="205" font-size="11" fill="#555" text-anchor="end">Misc</text>
+        <text x="176" y="205" font-size="11" fill="#555" font-weight="bold">8</text>
+        <text x="253" y="236" font-size="11" fill="#555" text-anchor="middle">Number of Claims</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>When to Use a Bar Chart</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Categorical (not numerical) data</li>
+          <li>Comparing counts or amounts across groups</li>
+          <li>Horizontal bars work better with long category names</li>
+        </ul>
+      </div>
+      <div class="card red">
+        <h4>Audit Insight</h4>
+        <p style="font-size:14px;">Travel and Meals &amp; Entertainment alone account for 83 claims (58% of all). These two categories are the natural starting point for any expense audit.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 23: PIE CHART ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">23 / 40</div>
+  <h2>Pie Chart — Strengths &amp; Limitations</h2>
+  <div class="scenario-banner">MegaMart — same data, different chart</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">Expense Claims by Category</div>
+      <svg width="100%" viewBox="0 0 300 220" style="display:block;">
+        <!-- Pie chart centered at 130,105, r=85 -->
+        <!-- Slices: Travel 45/143=28.7%=103°, M&E 38/143=24.5%=88°, Accom 22/143=15.4%=55°, Office 18/143=12.6%=45°, Training 12/143=8.4%=30°, Misc 8/143=5.6%=20° -->
+        <!-- Start at top (-90°) -->
+        <!-- Travel: -90 to 13° -->
+        <path d="M130,105 L130,20 A85,85 0 0,1 215,118 Z" fill="#C0272D"/>
+        <!-- M&E: 13 to 101° -->
+        <path d="M130,105 L215,118 A85,85 0 0,1 100,185 Z" fill="#D95050"/>
+        <!-- Accom: 101 to 156° -->
+        <path d="M130,105 L100,185 A85,85 0 0,1 57,140 Z" fill="#E07070"/>
+        <!-- Office: 156 to 201° -->
+        <path d="M130,105 L57,140 A85,85 0 0,1 51,75 Z" fill="#E89090"/>
+        <!-- Training: 201 to 231° -->
+        <path d="M130,105 L51,75 A85,85 0 0,1 68,35 Z" fill="#F0B0B0"/>
+        <!-- Misc: 231 to 251 -->
+        <path d="M130,105 L68,35 A85,85 0 0,1 100,22 Z" fill="#F8D0D0"/>
+        <!-- Remaining to close: 251 to 270 -->
+        <path d="M130,105 L100,22 A85,85 0 0,1 130,20 Z" fill="#F8D0D0"/>
+        <!-- Legend -->
+        <rect x="220" y="30" width="12" height="12" fill="#C0272D" rx="2"/>
+        <text x="236" y="41" font-size="11" fill="#333">Travel 32%</text>
+        <rect x="220" y="50" width="12" height="12" fill="#D95050" rx="2"/>
+        <text x="236" y="61" font-size="11" fill="#333">M&amp;E 27%</text>
+        <rect x="220" y="70" width="12" height="12" fill="#E07070" rx="2"/>
+        <text x="236" y="81" font-size="11" fill="#333">Accom 15%</text>
+        <rect x="220" y="90" width="12" height="12" fill="#E89090" rx="2"/>
+        <text x="236" y="101" font-size="11" fill="#333">Office 13%</text>
+        <rect x="220" y="110" width="12" height="12" fill="#F0B0B0" rx="2"/>
+        <text x="236" y="121" font-size="11" fill="#333">Training 8%</text>
+        <rect x="220" y="130" width="12" height="12" fill="#F8D0D0" rx="2"/>
+        <text x="236" y="141" font-size="11" fill="#333">Misc 5%</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>When Pie Charts Work</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Showing part-to-whole relationships</li>
+          <li>Few categories (ideally 3–5)</li>
+          <li>Large differences between slices</li>
+        </ul>
+      </div>
+      <div class="card red">
+        <h4>Limitations for This Data</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>6 categories → slices are hard to compare</li>
+          <li>Similar-sized slices (8%, 13%, 15%) are indistinguishable</li>
+          <li>Cannot identify the biggest problem at a glance</li>
+        </ul>
+      </div>
+      <div class="highlight" style="margin-top:12px;">
+        <strong>Bottom line:</strong> The bar chart was clearer for this data. Pie charts often look appealing but communicate less effectively.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 24: PARETO CHART ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">24 / 40</div>
+  <h2>The Pareto Chart</h2>
+  <div class="scenario-banner">MegaMart — identifying the highest-priority audit areas</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">Pareto Chart — Expense Claims by Category</div>
+      <svg width="100%" viewBox="0 0 380 240" style="display:block;">
+        <line x1="50" y1="15" x2="50" y2="205" stroke="#999" stroke-width="1.5"/>
+        <line x1="50" y1="205" x2="350" y2="205" stroke="#999" stroke-width="1.5"/>
+        <line x1="350" y1="15" x2="350" y2="205" stroke="#bbb" stroke-width="1"/>
+        <!-- gridlines -->
+        <line x1="50" y1="78" x2="350" y2="78" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="123" x2="350" y2="123" stroke="#eee" stroke-width="1"/>
+        <line x1="50" y1="164" x2="350" y2="164" stroke="#eee" stroke-width="1"/>
+        <!-- left axis labels (frequency) -->
+        <text x="44" y="209" font-size="10" fill="#999" text-anchor="end">0</text>
+        <text x="44" y="168" font-size="10" fill="#999" text-anchor="end">20</text>
+        <text x="44" y="127" font-size="10" fill="#999" text-anchor="end">40</text>
+        <text x="44" y="82" font-size="10" fill="#999" text-anchor="end">60</text>
+        <text x="44" y="19" font-size="10" fill="#999" text-anchor="end">80</text>
+        <!-- right axis labels (cumulative %) -->
+        <text x="356" y="209" font-size="10" fill="#C0272D" text-anchor="start">0%</text>
+        <text x="356" y="168" font-size="10" fill="#C0272D" text-anchor="start">29%</text>
+        <text x="356" y="120" font-size="10" fill="#C0272D" text-anchor="start">58%</text>
+        <text x="356" y="84" font-size="10" fill="#C0272D" text-anchor="start">73%</text>
+        <text x="356" y="19" font-size="10" fill="#C0272D" text-anchor="start">100%</text>
+        <!-- bars: sorted desc. Scale: max 45, bars span 205-15=190px. Width=44px ea -->
+        <!-- Travel 45: h=45/45*190=190 → y=15 -->
+        <rect x="55" y="15" width="44" height="190" fill="#C0272D"/>
+        <!-- M&E 38: h=38/45*190=160 → y=45 -->
+        <rect x="101" y="45" width="44" height="160" fill="#C0272D" opacity="0.85"/>
+        <!-- Accommodation 22: h=22/45*190=93 → y=112 -->
+        <rect x="147" y="112" width="44" height="93" fill="#C0272D" opacity="0.7"/>
+        <!-- Office 18: h=18/45*190=76 → y=129 -->
+        <rect x="193" y="129" width="44" height="76" fill="#C0272D" opacity="0.55"/>
+        <!-- Training 12: h=12/45*190=51 → y=154 -->
+        <rect x="239" y="154" width="44" height="51" fill="#C0272D" opacity="0.4"/>
+        <!-- Misc 8: h=8/45*190=34 → y=171 -->
+        <rect x="285" y="171" width="44" height="34" fill="#C0272D" opacity="0.3"/>
+        <!-- cumulative %: 31.5,58.0,73.4,86.0,94.4,100 — position at bar right edge centers: 77,123,169,215,261,307 -->
+        <!-- cum% y: 205-(cum/100)*190 -->
+        <!-- 31.5: 205-60=145; 58: 205-110=95; 73.4: 205-139=66; 86: 205-163=42; 94.4: 205-179=26; 100: 205-190=15 -->
+        <polyline points="77,145 123,95 169,66 215,42 261,26 307,15" fill="none" stroke="#8B0000" stroke-width="2" stroke-dasharray="0"/>
+        <circle cx="77" cy="145" r="3.5" fill="#8B0000"/>
+        <circle cx="123" cy="95" r="3.5" fill="#8B0000"/>
+        <circle cx="169" cy="66" r="3.5" fill="#8B0000"/>
+        <circle cx="215" cy="42" r="3.5" fill="#8B0000"/>
+        <circle cx="261" cy="26" r="3.5" fill="#8B0000"/>
+        <circle cx="307" cy="15" r="3.5" fill="#8B0000"/>
+        <!-- 80% line -->
+        <line x1="50" y1="43" x2="350" y2="43" stroke="#888" stroke-width="1" stroke-dasharray="5"/>
+        <text x="52" y="40" font-size="9" fill="#888">80%</text>
+        <!-- x labels -->
+        <text x="77" y="218" font-size="9" fill="#555" text-anchor="middle">Travel</text>
+        <text x="123" y="218" font-size="9" fill="#555" text-anchor="middle">M&amp;E</text>
+        <text x="169" y="218" font-size="9" fill="#555" text-anchor="middle">Accom</text>
+        <text x="215" y="218" font-size="9" fill="#555" text-anchor="middle">Office</text>
+        <text x="261" y="218" font-size="9" fill="#555" text-anchor="middle">Training</text>
+        <text x="307" y="218" font-size="9" fill="#555" text-anchor="middle">Misc</text>
+        <text x="7" y="110" font-size="10" fill="#555" transform="rotate(-90,7,110)" text-anchor="middle">Frequency</text>
+        <text x="370" y="110" font-size="10" fill="#C0272D" transform="rotate(90,370,110)" text-anchor="middle">Cumulative %</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>What a Pareto Chart Does</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Orders categories <strong>largest to smallest</strong></li>
+          <li>Adds a <strong>cumulative % line</strong> on the right</li>
+          <li>Applies the <strong>80/20 rule</strong></li>
+        </ul>
+      </div>
+      <div class="card red">
+        <h4>The 80/20 Rule</h4>
+        <p style="font-size:14px;">80% of the total claims come from just 3 categories (Travel, M&amp;E, Accommodation). Auditors should concentrate resources there — not spread effort evenly across all 6.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 25: PARETO VS BAR vs PIE COMPARISON ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">25 / 40</div>
+  <h2>Choosing the Right Categorical Chart</h2>
+  <div style="margin-bottom:18px;">
+    <table class="comp-table">
+      <tr><th>Chart</th><th>Best For</th><th>Weakness</th><th>Accounting Use</th></tr>
+      <tr><td><strong>Bar chart</strong></td><td>Comparing counts across categories</td><td>Doesn't show priorities</td><td>Claims by department</td></tr>
+      <tr><td><strong>Pie chart</strong></td><td>Part-to-whole, few categories</td><td>Hard to compare similar slices</td><td>Revenue by business unit (2–4 units)</td></tr>
+      <tr><td><strong>Pareto chart</strong></td><td>Finding biggest contributors fast</td><td>More complex to construct</td><td>Audit exceptions by type</td></tr>
+      <tr><td><strong>Grouped bar</strong></td><td>Two categorical variables</td><td>Can become cluttered</td><td>Claims by dept × quarter</td></tr>
+    </table>
+  </div>
+  <div class="highlight">
+    <strong>Audit rule of thumb:</strong> When you need to prioritise limited audit resources, a Pareto chart almost always outperforms a bar chart or pie chart — it does the prioritisation for you.
+  </div>
+</div>
+
+<!-- ============ SLIDE 26: QUIZ 4 ============ -->
+<div class="slide slide-quiz" id="quiz4">
+  <div class="quiz-tag">Quiz 4 of 5</div>
+  <div class="quiz-q">In MegaMart's expense data, Travel (45) and Meals &amp; Entertainment (38) together account for how much of the 143 total claims?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" onclick="answerQuiz('quiz4','A','B')"><div class="opt-letter">A</div> 45%</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz4','B','B')"><div class="opt-letter">B</div> 58%</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz4','C','B')"><div class="opt-letter">C</div> 70%</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz4','D','B')"><div class="opt-letter">D</div> 83%</div>
+  </div>
+  <div class="quiz-feedback" id="quiz4-fb"></div>
+</div>
+
+<!-- ============ SLIDE 27: SECTION — GRAPHICAL EXCELLENCE ============ -->
+<div class="slide slide-section">
+  <div class="section-num">Section 6 of 6</div>
+  <h2>Graphical Excellence</h2>
+  <div class="section-desc">Why some charts illuminate and others deceive — Tufte's principles every accountant should know.</div>
+</div>
+
+<!-- ============ SLIDE 28: PRINCIPLES OF GRAPHICAL EXCELLENCE ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">28 / 40</div>
+  <h2>Principles of Graphical Excellence</h2>
+  <div class="two-col">
+    <div>
+      <div class="principle">
+        <div class="icon">1</div>
+        <div class="text"><strong>Show the data</strong><span>The chart should foreground the data — not the design. Decoration that doesn't carry information is clutter.</span></div>
+      </div>
+      <div class="principle">
+        <div class="icon">2</div>
+        <div class="text"><strong>Avoid distortion</strong><span>The visual size of shapes should be proportional to the data values they represent.</span></div>
+      </div>
+      <div class="principle">
+        <div class="icon">3</div>
+        <div class="text"><strong>Encourage comparison</strong><span>The best charts invite viewers to compare data across categories, time, or groups.</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="principle">
+        <div class="icon">4</div>
+        <div class="text"><strong>Serve a clear purpose</strong><span>Know whether you are describing, comparing, showing a relationship, or showing change over time — and pick the right chart.</span></div>
+      </div>
+      <div class="principle">
+        <div class="icon">5</div>
+        <div class="text"><strong>Integrate with text</strong><span>A graph should be explainable in one sentence. If you can't explain it, redesign it.</span></div>
+      </div>
+      <div class="card red" style="margin-top:14px;">
+        <h4>Tufte's Maxim</h4>
+        <p style="font-size:14px;">"The best statistical graphic communicates the largest number of ideas in the shortest time with the least ink."</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 29: CHARTJUNK AND LIE FACTOR ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">29 / 40</div>
+  <h2>What to Avoid: Chartjunk &amp; Lie Factor</h2>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <h4>Chartjunk</h4>
+        <p style="font-size:14px; margin-bottom:10px;">Visual decoration that adds no information:</p>
+        <ul class="bullet-list" style="font-size:13px;">
+          <li>3D effects on bar charts or pie charts</li>
+          <li>Excessive gridlines or background patterns</li>
+          <li>Decorative icons replacing data bars</li>
+          <li>Unnecessary legend boxes for a single series</li>
+        </ul>
+      </div>
+      <div class="highlight">
+        <strong>In practice:</strong> Audit report graphs with chartjunk obscure findings and undermine credibility with clients and regulators.
+      </div>
+    </div>
+    <div>
+      <div class="card red" style="margin-bottom:14px;">
+        <h4>The Lie Factor</h4>
+        <p style="font-size:14px; margin-bottom:8px;">When the visual size change ≠ the data size change.</p>
+        <p style="font-size:14px; margin-bottom:8px;"><strong>Example:</strong> Revenue grew from $10M to $11M (10% increase). A y-axis starting at $9.5M makes this look like a 100% jump.</p>
+        <p style="font-size:14px; color:var(--red);"><strong>Solution:</strong> Always start y-axis at zero for bar charts.</p>
+      </div>
+      <div class="card">
+        <h4>How Companies Manipulate Charts</h4>
+        <p style="font-size:14px;">Truncating the y-axis (starting at a non-zero value) is the most common way companies visually exaggerate revenue growth — without technically lying.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 30: CHART SELECTOR ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">30 / 40</div>
+  <h2>Which Chart, When?</h2>
+  <p style="font-size:14px; color:var(--mid); margin-bottom:16px;">Use this as your quick reference for selecting the right chart in assessments, reports, and audit work.</p>
+  <div class="selector-row"><div class="sel-pill">Numerical</div><div class="sel-cond">Distribution of one numerical variable, preserve values</div><div class="sel-chart">Stem-and-Leaf</div></div>
+  <div class="selector-row"><div class="sel-pill">Numerical</div><div class="sel-cond">Distribution of one numerical variable, grouped</div><div class="sel-chart">Histogram</div></div>
+  <div class="selector-row"><div class="sel-pill">Numerical</div><div class="sel-cond">Cumulative distribution, threshold questions</div><div class="sel-chart">Ogive</div></div>
+  <div class="selector-row"><div class="sel-pill">Two vars</div><div class="sel-cond">Relationship between two numerical variables</div><div class="sel-chart">Scatterplot</div></div>
+  <div class="selector-row"><div class="sel-pill">Time</div><div class="sel-cond">Trend of a numerical variable over time</div><div class="sel-chart">Time Series</div></div>
+  <div class="selector-row"><div class="sel-pill">Categorical</div><div class="sel-cond">Counts across categories, easy comparison</div><div class="sel-chart">Bar Chart</div></div>
+  <div class="selector-row"><div class="sel-pill">Categorical</div><div class="sel-cond">Part-to-whole, few categories, large differences</div><div class="sel-chart">Pie Chart</div></div>
+  <div class="selector-row"><div class="sel-pill">Categorical</div><div class="sel-cond">Prioritise categories, apply 80/20 rule</div><div class="sel-chart">Pareto</div></div>
+</div>
+
+<!-- ============ SLIDE 31: SECTION — MULTIDIM VIZ ============ -->
+<div class="slide slide-section">
+  <div class="section-num">Bonus Section</div>
+  <h2>Multidimensional Visualisation</h2>
+  <div class="section-desc">Going beyond two axes — encoding 3, 4, or more variables in a single chart.</div>
+</div>
+
+<!-- ============ SLIDE 32: OVERVIEW ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">32 / 40</div>
+  <h2>Beyond Two Dimensions</h2>
+  <p style="font-size:14px; color:var(--mid); margin-bottom:16px;">Standard charts show two variables (x and y). But real accounting data has many dimensions — here are three ways to encode more.</p>
+  <div class="three-col">
+    <div class="card">
+      <h4>Colour</h4>
+      <p style="font-size:13px; margin-bottom:10px;">A 3rd variable can be encoded as the colour of points, bars, or areas.</p>
+      <p style="font-size:13px; color:var(--mid);"><em>Example: Scatterplot with points coloured by department.</em></p>
+    </div>
+    <div class="card">
+      <h4>Multiple Panels</h4>
+      <p style="font-size:13px; margin-bottom:10px;">Repeat the same chart for each level of a categorical variable — called a "small multiples" display.</p>
+      <p style="font-size:13px; color:var(--mid);"><em>Example: One histogram per MegaMart store.</em></p>
+    </div>
+    <div class="card">
+      <h4>Bubble Size</h4>
+      <p style="font-size:13px; margin-bottom:10px;">A 4th variable can be encoded as the size of points in a scatterplot — creating a bubble chart.</p>
+      <p style="font-size:13px; color:var(--mid);"><em>Example: Bubble size = total claim value.</em></p>
+    </div>
+  </div>
+  <div class="highlight" style="margin-top:16px;">
+    <strong>Rule:</strong> Each additional dimension adds cognitive load. Only add dimensions if they reveal a pattern you couldn't show otherwise. Never add dimensions for decoration.
+  </div>
+</div>
+
+<!-- ============ SLIDE 33: COLOUR AS A DIMENSION ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">33 / 40</div>
+  <h2>Colour: Adding a 3rd Variable</h2>
+  <div class="scenario-banner">MegaMart — Invoice value vs Claim amount, coloured by department</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">3-Variable Scatterplot (X, Y, Colour = Dept)</div>
+      <svg width="100%" viewBox="0 0 320 220" style="display:block;">
+        <line x1="40" y1="15" x2="40" y2="185" stroke="#999" stroke-width="1.5"/>
+        <line x1="40" y1="185" x2="300" y2="185" stroke="#999" stroke-width="1.5"/>
+        <text x="170" y="200" font-size="11" fill="#555" text-anchor="middle">Invoice Value ($)</text>
+        <text x="12" y="100" font-size="10" fill="#555" transform="rotate(-90,12,100)" text-anchor="middle">Claim ($)</text>
+        <!-- scatter points with colour encoding dept -->
+        <!-- Sales dept (red): -->
+        <circle cx="90" cy="153" r="6" fill="#C0272D" opacity="0.85"/>
+        <circle cx="130" cy="130" r="6" fill="#C0272D" opacity="0.85"/>
+        <circle cx="200" cy="85" r="6" fill="#C0272D" opacity="0.85"/>
+        <circle cx="240" cy="58" r="6" fill="#C0272D" opacity="0.85"/>
+        <!-- Operations (orange): -->
+        <circle cx="80" cy="175" r="6" fill="#E65100" opacity="0.85"/>
+        <circle cx="155" cy="120" r="6" fill="#E65100" opacity="0.85"/>
+        <circle cx="220" cy="96" r="6" fill="#E65100" opacity="0.85"/>
+        <!-- Finance (blue): -->
+        <circle cx="100" cy="168" r="6" fill="#1565C0" opacity="0.85"/>
+        <circle cx="175" cy="105" r="6" fill="#1565C0" opacity="0.85"/>
+        <circle cx="260" cy="43" r="6" fill="#1565C0" opacity="0.85"/>
+        <!-- Legend -->
+        <circle cx="215" cy="150" r="6" fill="#C0272D"/>
+        <text x="225" y="154" font-size="11" fill="#555">Sales</text>
+        <circle cx="215" cy="166" r="6" fill="#E65100"/>
+        <text x="225" y="170" font-size="11" fill="#555">Operations</text>
+        <circle cx="215" cy="182" r="6" fill="#1565C0"/>
+        <text x="225" y="186" font-size="11" fill="#555">Finance</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <h4>What This Shows</h4>
+        <p style="font-size:14px;">Three variables in one chart: invoice value (x), claim amount (y), and department (colour). The Finance department's claims are concentrated in the high-value upper-right zone.</p>
+      </div>
+      <div class="dim-item"><div class="dim-badge">X</div><div class="dim-text">Invoice value (numerical)</div></div>
+      <div class="dim-item"><div class="dim-badge">Y</div><div class="dim-text">Claim amount (numerical)</div></div>
+      <div class="dim-item"><div class="dim-badge">Col</div><div class="dim-text">Department (categorical)</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 34: BUBBLE PLOT ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">34 / 40</div>
+  <h2>Bubble Plot: Four Variables at Once</h2>
+  <div class="scenario-banner">MegaMart — audit risk summary by store</div>
+  <div class="two-col">
+    <div class="chart-wrap">
+      <div class="chart-title">Audit Risk Bubble Plot (4 Variables)</div>
+      <svg width="100%" viewBox="0 0 320 210" style="display:block;">
+        <line x1="40" y1="15" x2="40" y2="180" stroke="#999" stroke-width="1.5"/>
+        <line x1="40" y1="180" x2="300" y2="180" stroke="#999" stroke-width="1.5"/>
+        <!-- gridlines -->
+        <line x1="40" y1="105" x2="300" y2="105" stroke="#eee" stroke-width="1"/>
+        <line x1="170" y1="15" x2="170" y2="180" stroke="#eee" stroke-width="1"/>
+        <!-- bubbles: (x=avg invoice, y=days to approve, size=claim total, colour=dept) -->
+        <circle cx="90" cy="150" r="12" fill="#C0272D" opacity="0.6" stroke="#C0272D" stroke-width="1.5"/>
+        <text x="90" y="154" font-size="9" fill="white" text-anchor="middle">S1</text>
+        <circle cx="130" cy="120" r="18" fill="#C0272D" opacity="0.6" stroke="#C0272D" stroke-width="1.5"/>
+        <text x="130" y="124" font-size="9" fill="white" text-anchor="middle">S2</text>
+        <circle cx="200" cy="80" r="28" fill="#8B0000" opacity="0.65" stroke="#8B0000" stroke-width="1.5"/>
+        <text x="200" y="84" font-size="9" fill="white" text-anchor="middle">S3</text>
+        <circle cx="240" cy="140" r="10" fill="#E65100" opacity="0.6" stroke="#E65100" stroke-width="1.5"/>
+        <text x="240" y="144" font-size="9" fill="white" text-anchor="middle">S4</text>
+        <circle cx="170" cy="55" r="22" fill="#8B0000" opacity="0.65" stroke="#8B0000" stroke-width="1.5"/>
+        <text x="170" y="59" font-size="9" fill="white" text-anchor="middle">S5</text>
+        <circle cx="90" cy="60" r="8" fill="#E65100" opacity="0.6" stroke="#E65100" stroke-width="1.5"/>
+        <text x="90" y="64" font-size="9" fill="white" text-anchor="middle">S6</text>
+        <!-- axis labels -->
+        <text x="170" y="196" font-size="11" fill="#555" text-anchor="middle">Avg Invoice Value ($)</text>
+        <text x="12" y="97" font-size="10" fill="#555" transform="rotate(-90,12,97)" text-anchor="middle">Days to Approve</text>
+        <text x="44" y="185" font-size="9" fill="#999">Low</text>
+        <text x="280" y="185" font-size="9" fill="#999">High</text>
+        <text x="42" y="178" font-size="9" fill="#999" text-anchor="end">Fast</text>
+        <text x="42" y="20" font-size="9" fill="#999" text-anchor="end">Slow</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h4>Four Variables Encoded</h4>
+        <div class="dim-item"><div class="dim-badge">X</div><div class="dim-text">Avg invoice value (numerical)</div></div>
+        <div class="dim-item"><div class="dim-badge">Y</div><div class="dim-text">Days to approve claim (numerical)</div></div>
+        <div class="dim-item"><div class="dim-badge">Size</div><div class="dim-text">Total claim value (numerical)</div></div>
+        <div class="dim-item"><div class="dim-badge">Col</div><div class="dim-text">Risk level (categorical)</div></div>
+      </div>
+      <div class="card red">
+        <h4>Audit Reading</h4>
+        <p style="font-size:14px;">Store 3 (large dark bubble, upper right) has high invoice values, slow approvals, and large claim totals — the highest priority for audit investigation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 35: QUIZ 5 ============ -->
+<div class="slide slide-quiz" id="quiz5">
+  <div class="quiz-tag">Quiz 5 of 5</div>
+  <div class="quiz-q">A bubble plot of MegaMart stores shows: x-axis = invoice value, y-axis = days to approve, bubble size = claim total, colour = risk level. How many variables does this chart display?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" onclick="answerQuiz('quiz5','A','C')"><div class="opt-letter">A</div> 2</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz5','B','C')"><div class="opt-letter">B</div> 3</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz5','C','C')"><div class="opt-letter">C</div> 4</div>
+    <div class="quiz-opt" onclick="answerQuiz('quiz5','D','C')"><div class="opt-letter">D</div> 5</div>
+  </div>
+  <div class="quiz-feedback" id="quiz5-fb"></div>
+</div>
+
+<!-- ============ SLIDE 36: ACCOUNTING APPLICATIONS SUMMARY ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">36 / 40</div>
+  <h2>Charts in Accounting Careers</h2>
+  <p style="font-size:14px; color:var(--mid); margin-bottom:16px;">Every visualisation we've covered today appears in real accounting and audit work.</p>
+  <table>
+    <tr><th>Chart</th><th>Audit</th><th>Management Accounting</th><th>Tax &amp; Compliance</th></tr>
+    <tr><td><strong>Stem-and-leaf</strong></td><td>Quick field review of sampled values</td><td>Analysing cost distributions</td><td>—</td></tr>
+    <tr><td><strong>Histogram</strong></td><td>Distribution of sampled items</td><td>Production output variance</td><td>Distribution of deduction amounts</td></tr>
+    <tr><td><strong>Ogive</strong></td><td>"What % of items exceed threshold X?"</td><td>Cumulative cost reporting</td><td>Percentile analysis of lodgements</td></tr>
+    <tr><td><strong>Scatterplot</strong></td><td>Detecting unusual claim/invoice ratios</td><td>Cost vs volume analysis</td><td>Spotting regression anomalies</td></tr>
+    <tr><td><strong>Time series</strong></td><td>Detecting seasonal fraud patterns</td><td>Monthly P&amp;L trends</td><td>Lodgement volume over time</td></tr>
+    <tr><td><strong>Pareto</strong></td><td>Prioritising audit exceptions</td><td>Cost reduction priorities</td><td>Top compliance breach types</td></tr>
+  </table>
+</div>
+
+<!-- ============ SLIDE 37: COMMON MISTAKES ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">37 / 40</div>
+  <h2>Common Graphing Mistakes to Avoid</h2>
+  <div class="two-col">
+    <div>
+      <div class="card red" style="margin-bottom:14px;">
+        <h4>Structural Errors</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Gaps between histogram bars (not allowed for continuous data)</li>
+          <li>Unequal class widths without adjustment</li>
+          <li>Y-axis not starting at zero (bar charts)</li>
+          <li>Omitting axis labels or chart title</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Chart Choice Errors</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Pie chart with more than 5 categories</li>
+          <li>Bar chart when a Pareto would prioritise better</li>
+          <li>Time series when data isn't time-ordered</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <h4>Interpretation Errors</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Confusing correlation with causation in scatterplots</li>
+          <li>Ignoring outliers instead of investigating them</li>
+          <li>Concluding "no pattern" from a noisy chart without statistics</li>
+        </ul>
+      </div>
+      <div class="highlight">
+        <strong>Exam tip:</strong> In assessments, you will be asked to identify errors in charts — and these are the most common ones that appear.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 38: BRAIN TEASERS ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">38 / 40</div>
+  <h2>Brain Teasers</h2>
+  <p style="font-size:13px; color:var(--mid); margin-bottom:16px;">Think through these before revealing — they often appear in a different form in assessments.</p>
+  <div class="bt-item">
+    <div class="bt-q">1. What is the primary advantage of a stem-and-leaf display over a histogram?</div>
+    <button class="reveal-btn" onclick="revealBT('bt1')">Reveal answer</button>
+    <div class="bt-a" id="bt1">The stem-and-leaf preserves every original value while still showing the shape of the distribution. A histogram only shows frequency counts per class — the individual values are lost.</div>
+  </div>
+  <div class="bt-item">
+    <div class="bt-q">2. How do companies visually exaggerate revenue growth in their annual reports without falsifying numbers?</div>
+    <button class="reveal-btn" onclick="revealBT('bt2')">Reveal answer</button>
+    <div class="bt-a" id="bt2">By truncating the y-axis — starting it at a non-zero value so that even small absolute changes appear as large visual jumps. A 5% revenue increase can be made to look like a doubling.</div>
+  </div>
+  <div class="bt-item">
+    <div class="bt-q">3. Can you randomly sample a time series? Why or why not?</div>
+    <button class="reveal-btn" onclick="revealBT('bt3')">Reveal answer</button>
+    <div class="bt-a" id="bt3">No. The time element is part of the data — the sequence matters. Randomly sampling a time series would destroy the ordering and make any trend analysis meaningless. You must keep the observations in time order.</div>
+  </div>
+  <div class="bt-item">
+    <div class="bt-q">4. A Pareto chart shows that 3 categories account for 78% of audit exceptions. A colleague says "let's focus equally on all categories." How would you respond?</div>
+    <button class="reveal-btn" onclick="revealBT('bt4')">Reveal answer</button>
+    <div class="bt-a" id="bt4">The Pareto principle (80/20 rule) tells us to focus effort where it produces the greatest return. Spreading resources equally across all categories ignores the evidence. Concentrating on the top 3 categories will address nearly 80% of the problem with a fraction of the effort.</div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 39: AFTER THE LECTURE ============ -->
+<div class="slide slide-content">
+  <div class="slide-num-badge">39 / 40</div>
+  <h2>After This Lecture</h2>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <h4>Review</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Re-read lecture material and study guide pages</li>
+          <li>Complete all recommended textbook problems</li>
+          <li>Attempt at least some additional problems</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Excel Practice</h4>
+        <ul class="bullet-list" style="font-size:14px;">
+          <li>Produce a histogram using Excel (Demo Problem 2.2)</li>
+          <li>Construct a Pareto chart from categorical data</li>
+          <li>Plot a time series and identify any trend</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card red" style="margin-bottom:14px;">
+        <h4>Before Tutorial</h4>
+        <p style="font-size:14px;">Consider: If you were the lead auditor on the MegaMart engagement, which single chart would you present to the audit committee — and why?</p>
+      </div>
+      <div class="card">
+        <h4>Key Formula to Know</h4>
+        <div style="font-family:'Courier New',monospace; background:var(--light); padding:10px; border-radius:4px; margin-top:8px; font-size:14px; text-align:center;">
+          Class width = Range ÷ Number of classes<br><br>
+          Cumulative % = (Running total ÷ Grand total) × 100
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLIDE 40: SUMMARY ============ -->
+<div class="slide slide-section" style="background:var(--dark);">
+  <div style="position:absolute; top:0; right:0; width:280px; height:100%; background:var(--red); opacity:0.08;"></div>
+  <div class="section-num" style="color:#aab;">Week 2 Complete</div>
+  <h2 style="font-size:38px; margin-bottom:20px;">Six tools. One dataset. Infinite insight.</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; max-width:760px;">
+    <div style="background:rgba(255,255,255,0.07); border-radius:6px; padding:14px; border-left:3px solid var(--red);">
+      <div style="font-size:12px; color:#aab; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Stem-and-leaf</div>
+      <div style="font-size:13px; color:#dde;">See every value + shape</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07); border-radius:6px; padding:14px; border-left:3px solid var(--red);">
+      <div style="font-size:12px; color:#aab; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Histogram &amp; Ogive</div>
+      <div style="font-size:13px; color:#dde;">Distribution + thresholds</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07); border-radius:6px; padding:14px; border-left:3px solid var(--red);">
+      <div style="font-size:12px; color:#aab; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Scatter + Time Series</div>
+      <div style="font-size:13px; color:#dde;">Relationships + trends</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07); border-radius:6px; padding:14px; border-left:3px solid var(--red);">
+      <div style="font-size:12px; color:#aab; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Bar / Pie / Pareto</div>
+      <div style="font-size:13px; color:#dde;">Categorical priorities</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07); border-radius:6px; padding:14px; border-left:3px solid var(--red);">
+      <div style="font-size:12px; color:#aab; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Graphical Excellence</div>
+      <div style="font-size:13px; color:#dde;">Clarity over decoration</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07); border-radius:6px; padding:14px; border-left:3px solid var(--red);">
+      <div style="font-size:12px; color:#aab; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Multidim Viz</div>
+      <div style="font-size:13px; color:#dde;">Colour, size, panels</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)" disabled>← Previous</button>
+  <div style="text-align:center;">
+    <div class="slide-counter" id="slideCounter">1 / 40</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:2.5%"></div></div>
+  </div>
+  <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+
+  function changeSlide(dir) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(slides.length - 1, cur + dir));
+    slides[cur].classList.add('active');
+    document.getElementById('slideCounter').textContent = (cur + 1) + ' / ' + slides.length;
+    document.getElementById('progressFill').style.width = ((cur + 1) / slides.length * 100) + '%';
+    document.getElementById('prevBtn').disabled = cur === 0;
+    document.getElementById('nextBtn').disabled = cur === slides.length - 1;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+  });
+
+  const quizFeedback = {
+    quiz1: { B: "Correct! The stem-and-leaf plot is the only display that preserves every original value while also showing the distribution shape — ideal for small samples in field audit work.", wrong: "Not quite. A histogram groups data and loses individual values. A stem-and-leaf plot is the right choice when you need to see every value." },
+    quiz2: { C: "Correct! $50–$60 = 25%, and $60–$70 = 20%. Together that's 45%. Always add the relevant class percentages from the frequency table.", wrong: "Not quite. Add the $50–$60 class (25%) and the $60–$70 class (20%) = 45%. Check the frequency distribution table." },
+    quiz3: { C: "Correct! A scatterplot plots two numerical variables against each other — perfect for investigating whether invoice size and claim size are related.", wrong: "Not quite. When investigating the relationship between two numerical variables, a scatterplot is the correct choice." },
+    quiz4: { B: "Correct! Travel (45) + M&E (38) = 83 claims. 83 ÷ 143 = 58%. These two categories alone represent more than half of all claims — a key Pareto insight.", wrong: "Not quite. 45 + 38 = 83 claims out of 143 total. 83/143 = 0.58 = 58%." },
+    quiz5: { C: "Correct! X-axis, Y-axis, bubble size, and colour = four variables encoded in one chart. Bubble plots are one of the most powerful compact visualisations available.", wrong: "Not quite. Count the encoding channels: x-axis (1), y-axis (2), bubble size (3), colour (4) = four variables total." }
+  };
+
+  function answerQuiz(qid, choice, correct) {
+    const q = document.getElementById(qid);
+    const opts = q.querySelectorAll('.quiz-opt');
+    opts.forEach((opt, i) => {
+      const letter = ['A','B','C','D'][i];
+      opt.style.pointerEvents = 'none';
+      if (letter === correct) opt.classList.add('correct');
+      else if (letter === choice && choice !== correct) opt.classList.add('wrong');
+    });
+    const fb = document.getElementById(qid + '-fb');
+    fb.classList.add('show');
+    if (choice === correct) {
+      fb.textContent = '✓ ' + quizFeedback[qid][correct];
+    } else {
+      fb.classList.add('wrong-fb');
+      fb.textContent = '✗ ' + quizFeedback[qid].wrong;
+    }
+  }
+
+  function revealBT(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('show');
+    const btn = el.previousElementSibling;
+    btn.textContent = el.classList.contains('show') ? 'Hide answer' : 'Reveal answer';
+  }
+</script>
+</body>
+</html>
