@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CP3501 Week 7 — Random Forests</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Source+Sans+3:wght@300;400;600&family=Source+Code+Pro:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red:    #C0272D;
+    --red-dk: #8B1A1E;
+    --red-lt: #F9EAEA;
+    --grey:   #4A4A4A;
+    --grey-lt:#F5F5F5;
+    --line:   #E0E0E0;
+    --code-bg:#1E1E2E;
+    --code-fg:#CDD6F4;
+    --blue:   #1565C0;
+    --green:  #2E7D32;
+    --amber:  #E65100;
+  }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: #DADADA;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 16px;
+    color: var(--grey);
+  }
+
+  /* ── Navigation bar ── */
+  #nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #fff;
+    border-bottom: 3px solid var(--red);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  #nav .course { font-size: 13px; font-weight: 600; color: var(--red); letter-spacing: .04em; }
+  #nav .week   { font-size: 13px; color: #888; }
+  #nav-btns { display: flex; gap: 8px; align-items: center; }
+  #nav-btns button {
+    background: none; border: 2px solid var(--line); border-radius: 6px;
+    padding: 5px 14px; cursor: pointer; font-size: 13px;
+    font-family: inherit; color: var(--grey); font-weight: 600;
+    transition: all .18s;
+  }
+  #nav-btns button:hover { border-color: var(--red); color: var(--red); }
+  #slide-counter { font-size: 13px; color: #888; min-width: 70px; text-align: center; }
+
+  /* ── Progress bar ── */
+  #progress-bar {
+    position: fixed; top: 51px; left: 0; right: 0; height: 4px; z-index: 99;
+    background: var(--line);
+  }
+  #progress-fill { height: 100%; background: var(--red); transition: width .3s; width: 0%; }
+
+  /* ── Section tabs ── */
+  #section-nav {
+    position: fixed; top: 55px; left: 0; right: 0; z-index: 98;
+    background: var(--grey-lt); border-bottom: 1px solid var(--line);
+    display: flex; gap: 0; overflow-x: auto; padding: 0 24px;
+  }
+  .sec-tab {
+    padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer;
+    color: #888; border-bottom: 3px solid transparent;
+    white-space: nowrap; transition: all .15s; user-select: none;
+  }
+  .sec-tab:hover  { color: var(--red); }
+  .sec-tab.active { color: var(--red); border-bottom-color: var(--red); background: #fff; }
+
+  /* ── Slide wrapper ── */
+  #slides-container {
+    margin-top: 100px;
+    width: 100%; max-width: 920px;
+  }
+
+  .slide {
+    display: none;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.1);
+    padding: 56px 64px;
+    min-height: 540px;
+    animation: fadeIn .25s ease;
+    position: relative;
+  }
+  .slide.active { display: flex; flex-direction: column; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+  /* ── Section badge ── */
+  .section-badge {
+    display: inline-block;
+    background: var(--red-lt);
+    color: var(--red-dk);
+    font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 3px 10px; border-radius: 3px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Slide titles ── */
+  .slide h1 {
+    font-family: 'Source Serif 4', serif;
+    color: var(--red);
+    font-size: 30px; font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 28px;
+    border-bottom: 2px solid var(--red-lt);
+    padding-bottom: 14px;
+  }
+  .slide h2 {
+    font-family: 'Source Serif 4', serif;
+    color: var(--red);
+    font-size: 20px; font-weight: 600;
+    margin: 24px 0 10px;
+  }
+
+  /* ── Body text ── */
+  .slide p { font-size: 17px; line-height: 1.7; margin-bottom: 14px; }
+  .slide ul, .slide ol { padding-left: 24px; margin-bottom: 14px; }
+  .slide li { font-size: 16px; line-height: 1.7; margin-bottom: 6px; }
+  .slide li strong { color: var(--red-dk); }
+  .slide strong { color: var(--red-dk); }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    font-family: 'Source Code Pro', monospace;
+    font-size: 14px; line-height: 1.65;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+  code {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 14px;
+    background: #F0F0F0;
+    padding: 2px 6px; border-radius: 3px;
+    color: var(--red-dk);
+  }
+  pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+  /* ── Highlight boxes ── */
+  .box {
+    border-left: 4px solid var(--red);
+    background: var(--red-lt);
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    margin: 18px 0;
+    font-size: 16px; line-height: 1.6;
+  }
+  .box.blue  { border-color: var(--blue); background: #E3F2FD; }
+  .box.green { border-color: var(--green); background: #E8F5E9; }
+  .box.amber { border-color: var(--amber); background: #FFF3E0; }
+
+  /* ── Two column layout ── */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin: 16px 0; }
+  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin: 16px 0; }
+
+  /* ── Data table ── */
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+  th { background: var(--red); color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--line); }
+  tr:nth-child(even) td { background: var(--grey-lt); }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── Math formula display ── */
+  .formula {
+    font-family: 'Source Serif 4', serif;
+    font-size: 19px;
+    text-align: center;
+    padding: 18px;
+    background: var(--grey-lt);
+    border-radius: 8px;
+    margin: 18px 0;
+    letter-spacing: .03em;
+  }
+
+  /* ── Title slide ── */
+  .slide.title-slide {
+    background: #fff;
+    align-items: flex-start;
+    justify-content: center;
+    border-top: 8px solid var(--red);
+    min-height: 520px;
+  }
+  .slide.title-slide .course-code {
+    font-size: 13px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 16px;
+  }
+  .slide.title-slide h1 {
+    font-size: 38px; border: none; padding: 0; margin-bottom: 12px; color: var(--red);
+  }
+  .slide.title-slide .subtitle {
+    font-size: 20px; color: #666; margin-bottom: 32px; font-style: italic;
+  }
+  .slide.title-slide .meta {
+    font-size: 14px; color: #999; margin-top: auto;
+  }
+
+  /* ── Section divider slide ── */
+  .slide.section-slide {
+    background: var(--red);
+    justify-content: center; align-items: flex-start;
+    min-height: 300px;
+  }
+  .slide.section-slide h1 {
+    color: #fff; border-bottom: 2px solid rgba(255,255,255,.3);
+    padding-bottom: 14px; font-size: 34px;
+  }
+  .slide.section-slide p { color: rgba(255,255,255,.85); font-size: 17px; }
+  .slide.section-slide .section-num {
+    font-size: 64px; font-weight: 700; color: rgba(255,255,255,.15);
+    font-family: 'Source Serif 4', serif;
+    position: absolute; right: 56px; bottom: 32px;
+  }
+
+  /* ── Step diagram ── */
+  .steps {
+    display: flex; align-items: center; gap: 0; margin: 20px 0; flex-wrap: wrap;
+  }
+  .step-box {
+    background: var(--red-lt); border: 2px solid var(--red);
+    border-radius: 8px; padding: 12px 18px;
+    text-align: center; font-size: 14px; font-weight: 600; color: var(--red-dk);
+    flex: 1; min-width: 130px;
+  }
+  .step-arrow { font-size: 22px; color: var(--red); padding: 0 6px; flex-shrink: 0; }
+
+  /* ── Stat callout ── */
+  .stat-row { display: flex; gap: 20px; margin: 18px 0; flex-wrap: wrap; }
+  .stat-card {
+    flex: 1; min-width: 160px;
+    background: var(--grey-lt); border-radius: 8px; padding: 18px 20px;
+    text-align: center; border-top: 4px solid var(--red);
+  }
+  .stat-card .num { font-size: 36px; font-weight: 700; color: var(--red); font-family: 'Source Serif 4', serif; }
+  .stat-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+
+  /* ── Tree diagram ── */
+  .tree-diagram { margin: 20px auto; font-size: 14px; line-height: 2; }
+
+  /* ── QUIZ ── */
+  .quiz-slide { background: #fff; border-top: 8px solid var(--red); }
+  .quiz-header {
+    font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--red); margin-bottom: 6px;
+  }
+  .quiz-q { font-size: 20px; font-weight: 600; font-family: 'Source Serif 4', serif; margin-bottom: 24px; color: #2a2a2a; }
+  .quiz-options { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .quiz-options li {
+    padding: 13px 18px; border: 2px solid var(--line); border-radius: 8px;
+    cursor: pointer; font-size: 16px; transition: all .18s;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .quiz-options li:hover { border-color: var(--red); background: var(--red-lt); }
+  .quiz-options li.correct { border-color: var(--green); background: #E8F5E9; color: #1B5E20; }
+  .quiz-options li.wrong   { border-color: #D32F2F; background: #FFEBEE; color: #B71C1C; }
+  .quiz-options li.disabled { pointer-events: none; }
+  .opt-letter {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--line); font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .correct .opt-letter { background: var(--green); color: #fff; }
+  .wrong   .opt-letter { background: #D32F2F; color: #fff; }
+  .quiz-feedback {
+    margin-top: 18px; padding: 14px 18px; border-radius: 8px;
+    font-size: 15px; line-height: 1.6; display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok  { background: #E8F5E9; border-left: 4px solid var(--green); color: #1B5E20; }
+  .quiz-feedback.bad { background: #FFEBEE; border-left: 4px solid #D32F2F; color: #B71C1C; }
+  .quiz-retry { margin-top: 12px; padding: 8px 20px; border: 2px solid var(--red); background: none; color: var(--red); border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; }
+  .quiz-retry:hover { background: var(--red); color: #fff; }
+
+  /* ── Keyboard hint ── */
+  #kbd-hint {
+    margin-top: 16px; text-align: center; font-size: 12px; color: #aaa;
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<div id="nav">
+  <div>
+    <div class="course">CP3501 Deep Learning</div>
+    <div class="week">Week 7 — Random Forests</div>
+  </div>
+  <div id="nav-btns">
+    <button onclick="prev()">← Prev</button>
+    <span id="slide-counter">1 / 1</span>
+    <button onclick="next()">Next →</button>
+  </div>
+</div>
+<div id="progress-bar"><div id="progress-fill"></div></div>
+
+<!-- Section tabs -->
+<div id="section-nav">
+  <div class="sec-tab" data-sec="0">Title</div>
+  <div class="sec-tab" data-sec="1">Why RF?</div>
+  <div class="sec-tab" data-sec="2">Data Prep</div>
+  <div class="sec-tab" data-sec="3">Binary Splits</div>
+  <div class="sec-tab" data-sec="4">Decision Trees</div>
+  <div class="sec-tab" data-sec="5">Random Forests</div>
+  <div class="sec-tab" data-sec="6">Interpretability</div>
+  <div class="sec-tab" data-sec="7">Practical Tips</div>
+</div>
+
+<div id="slides-container">
+
+<!-- ══════════════════════════════════════════════════════
+     TITLE
+══════════════════════════════════════════════════════ -->
+<div class="slide title-slide active" data-section="0">
+  <div class="course-code">CP3501 / CP5701 · Week 7 · FastAI Lesson 6</div>
+  <h1>Random Forests</h1>
+  <div class="subtitle">From a single binary split to a powerful ensemble</div>
+  <div class="box" style="margin-top:32px;">
+    <strong>Today's journey:</strong> We'll start where we left off — a single yes/no rule — and build all the way up to a Random Forest that can handle thousands of messy real-world features.
+  </div>
+  <div style="margin-top:28px;">
+    <strong>Roadmap</strong>
+    <div class="steps" style="margin-top:12px; flex-wrap:wrap;">
+      <div class="step-box">Binary Split</div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">OneR Model</div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">Decision Tree</div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">Bagging</div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">Random Forest</div>
+    </div>
+  </div>
+  <div class="meta" style="margin-top:auto; padding-top:40px;">
+    James Cook University · College of Science and Engineering
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 1: WHY RANDOM FORESTS?
+══════════════════════════════════════════════════════ -->
+<div class="slide section-slide" data-section="1">
+  <div class="section-badge" style="background:rgba(255,255,255,.2); color:#fff;">Section 1</div>
+  <h1>Why Random Forests?</h1>
+  <p>Motivation, strengths, and where they fit in your ML toolkit</p>
+  <div class="section-num">01</div>
+</div>
+
+<div class="slide" data-section="1">
+  <div class="section-badge">Section 1 · Why RF?</div>
+  <h1>What Is a Random Forest?</h1>
+  <p>Introduced by <strong>Leo Breiman in 1999</strong>, Random Forests became the go-to method for tabular data throughout the 2000s.</p>
+  <div class="cols">
+    <div>
+      <h2>Core idea</h2>
+      <ul>
+        <li>Build <strong>many decision trees</strong> independently</li>
+        <li>Each tree sees a <strong>random subset</strong> of rows (bootstrapping) and features</li>
+        <li>Combine predictions by <strong>averaging</strong> (regression) or <strong>majority vote</strong> (classification)</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Why it works</h2>
+      <ul>
+        <li>Individual trees have <strong>high variance</strong> but low bias</li>
+        <li>Averaging cancels out each tree's random errors</li>
+        <li>Result: a model with <strong>lower variance</strong> and strong accuracy</li>
+      </ul>
+    </div>
+  </div>
+  <div class="box green">
+    <strong>Fun fact:</strong> Jeremy Howard's early Kaggle wins earned him the nickname <em>"Mr. Random Forests"</em> — the method is that reliable.
+  </div>
+</div>
+
+<div class="slide" data-section="1">
+  <div class="section-badge">Section 1 · Why RF?</div>
+  <h1>Random Forests vs. Logistic Regression</h1>
+  <p>Logistic regression is often called the "simple baseline" — but it's surprisingly fragile in practice.</p>
+  <table>
+    <tr><th></th><th>Logistic Regression</th><th>Random Forest</th></tr>
+    <tr><td><strong>Feature engineering</strong></td><td>Requires careful transforms, interaction terms, outlier handling</td><td>Handles non-linearities and interactions automatically</td></tr>
+    <tr><td><strong>Outliers</strong></td><td>Can collapse the model</td><td>Largely ignored — trees split on thresholds</td></tr>
+    <tr><td><strong>Missing values</strong></td><td>Must impute carefully</td><td>Forgiving; median fill usually sufficient</td></tr>
+    <tr><td><strong>Failure rate</strong></td><td>High — easy to misuse</td><td>Rare in practice</td></tr>
+  </table>
+  <div class="box amber">
+    <strong>Key insight:</strong> Logistic regression is only simple if you do everything right. One slip in preprocessing and the whole model collapses. Random Forests are resilient — they <em>learn</em> the complexity instead of requiring you to engineer it in manually.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 2: DATA PREPARATION
+══════════════════════════════════════════════════════ -->
+<div class="slide section-slide" data-section="2">
+  <div class="section-badge" style="background:rgba(255,255,255,.2); color:#fff;">Section 2</div>
+  <h1>Data Preparation</h1>
+  <p>Getting the Titanic dataset ready — and why trees need less preprocessing than you think</p>
+  <div class="section-num">02</div>
+</div>
+
+<div class="slide" data-section="2">
+  <div class="section-badge">Section 2 · Data Prep</div>
+  <h1>FastAI Setup &amp; Titanic Preprocessing</h1>
+  <p>One import brings in NumPy, pandas, and matplotlib automatically:</p>
+<pre><code>from fastai.imports import *
+
+# Download Titanic train + test
+path = untar_data(URLs.TITANIC)
+df = pd.read_csv(path/'train.csv')</code></pre>
+  <h2>Essential preprocessing steps</h2>
+  <ul>
+    <li><strong>Fill missing numerics</strong> with median/mode — trees need no NaN values</li>
+    <li><strong>Log-transform</strong> <code>Fare</code> → <code>log_fare = np.log1p(Fare)</code> for a nicer distribution in plots</li>
+    <li><strong>Convert</strong> <code>Sex</code> and <code>Embarked</code> to <code>category</code> dtype</li>
+    <li>Separate features into <strong>categorical</strong> and <strong>continuous</strong> lists</li>
+  </ul>
+  <div class="box">
+    <strong>Remember:</strong> Trees split on thresholds, not values — so you don't need to normalise or standardise continuous features.
+  </div>
+</div>
+
+<div class="slide" data-section="2">
+  <div class="section-badge">Section 2 · Data Prep</div>
+  <h1>Pandas <code>category</code> dtype &amp; <code>cat_codes</code></h1>
+  <p>Converting a string column to <code>category</code> is a critical step:</p>
+<pre><code>df['Sex'] = df['Sex'].astype('category')
+
+# Inspect what pandas stores internally:
+df['Sex'].cat.categories   # → Index(['female', 'male'])
+df['Sex'].cat.codes        # → 0 = female, 1 = male</code></pre>
+  <div class="cols">
+    <div>
+      <h2>What this gives you</h2>
+      <ul>
+        <li>Human-readable labels are preserved</li>
+        <li>Internally stored as compact integers</li>
+        <li><strong>No one-hot encoding needed</strong> for tree models</li>
+        <li>Faster computation on large datasets</li>
+      </ul>
+    </div>
+    <div>
+      <h2>When NOT to use category</h2>
+      <p>Leave <code>Pclass</code> (1st, 2nd, 3rd) as a numeric column. Trees can learn thresholds like <em>"Pclass &lt; 2.5"</em> directly — converting it forces the model to treat each class as unordered.</p>
+    </div>
+  </div>
+  <div class="box blue">
+    <strong>Rule of thumb:</strong> Use <code>category</code> for nominal variables (Sex, Embarked). Keep ordinal or naturally numeric variables as integers or floats.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 3: BINARY SPLITS & OneR
+══════════════════════════════════════════════════════ -->
+<div class="slide section-slide" data-section="3">
+  <div class="section-badge" style="background:rgba(255,255,255,.2); color:#fff;">Section 3</div>
+  <h1>Binary Splits &amp; The OneR Model</h1>
+  <p>The foundation of every tree — one rule at a time</p>
+  <div class="section-num">03</div>
+</div>
+
+<div class="slide" data-section="3">
+  <div class="section-badge">Section 3 · Binary Splits</div>
+  <h1>What Is a Binary Split?</h1>
+  <p>A binary split partitions all rows into exactly <strong>two groups</strong> based on a single rule:</p>
+  <div class="box" style="font-size:18px; text-align:center; padding:20px;">
+    e.g., &nbsp;&nbsp; <code>Sex == "male"</code> &nbsp;&nbsp; → &nbsp; Group Left &nbsp; | &nbsp; Group Right
+  </div>
+  <h2>The Titanic Sex split — a very strong rule</h2>
+  <table>
+    <tr><th>Group</th><th>Survival Rate</th><th>Count</th></tr>
+    <tr><td>Female</td><td>≈ 75%</td><td>~314</td></tr>
+    <tr><td>Male</td><td>≈ 20%</td><td>~577</td></tr>
+  </table>
+  <p>With just one yes/no question, we can predict survival with reasonable accuracy. This is the entire basis of decision trees — we just keep asking more questions.</p>
+  <div class="steps" style="margin-top:20px;">
+    <div class="step-box">Ask one yes/no question</div>
+    <div class="step-arrow">→</div>
+    <div class="step-box">Split rows into two groups</div>
+    <div class="step-arrow">→</div>
+    <div class="step-box">Predict the group's mean</div>
+  </div>
+</div>
+
+<div class="slide" data-section="3">
+  <div class="section-badge">Section 3 · Binary Splits</div>
+  <h1>Scoring a Split — The Variance Method</h1>
+  <p>How do we know if a split is <em>good</em>? We measure how "pure" each resulting group is using its standard deviation:</p>
+  <div class="formula">
+    score_side = σ(y<sub>side</sub>) × |y<sub>side</sub>|
+    <br><br>
+    split_score = (score_left + score_right) / |y|
+  </div>
+  <div class="cols">
+    <div>
+      <h2>Interpretation</h2>
+      <ul>
+        <li><strong>σ (std dev)</strong> → how mixed the labels are in that group</li>
+        <li><strong>× group size</strong> → weigh larger groups more heavily</li>
+        <li><strong>Lower score = better</strong> split (tighter, more uniform groups)</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Two splits compared</h2>
+      <table>
+        <tr><th>Split</th><th>MAE</th></tr>
+        <tr><td>Sex == female</td><td><strong>0.215</strong> ✓ better</td></tr>
+        <tr><td>log_fare &gt; 2.7</td><td>0.333</td></tr>
+      </table>
+      <p style="font-size:14px; color:#888; margin-top:8px;">Picking thresholds by eye is unreliable — scoring finds the best one automatically.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-section="3">
+  <div class="section-badge">Section 3 · Binary Splits</div>
+  <h1>The OneR Model</h1>
+  <p><strong>OneR</strong> = "One Rule" — find the <em>single best binary split</em> across all features and stop there.</p>
+  <div class="box">
+    <strong>Result on Titanic:</strong> "Predict survived = 1 if Sex == female" → MAE ≈ 0.215 (21.5% error)
+  </div>
+  <h2>Why start so simple?</h2>
+  <ul>
+    <li>A 1990s meta-analysis found OneR <strong>often matched or beat</strong> more complex models</li>
+    <li>It creates a <strong>baseline to beat</strong> — if your complex model doesn't clearly improve on this, something's wrong</li>
+    <li>It's <strong>transparent and explainable</strong> — you can show a business stakeholder exactly what the model does</li>
+  </ul>
+  <div class="box amber">
+    <strong>Always build a simple baseline first.</strong> If your deep model barely beats a single yes/no rule, that's important information about your data.
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="slide quiz-slide" data-section="3">
+  <div class="quiz-header">Knowledge Checkpoint · Quiz 1 of 5</div>
+  <div class="quiz-q">When scoring a binary split, a lower split score is better because it indicates…</div>
+  <ul class="quiz-options" id="q1-opts">
+    <li onclick="answer('q1',this,false)"><span class="opt-letter">A</span> Larger group sizes on each side of the split</li>
+    <li onclick="answer('q1',this,false)"><span class="opt-letter">B</span> A higher mean value of the target variable</li>
+    <li onclick="answer('q1',this,true)"><span class="opt-letter">C</span> Each group has tightly clustered, more uniform target values</li>
+    <li onclick="answer('q1',this,false)"><span class="opt-letter">D</span> The split uses fewer features</li>
+  </ul>
+  <div class="quiz-feedback" id="q1-fb"></div>
+  <button class="quiz-retry" onclick="resetQuiz('q1')" id="q1-retry" style="display:none">Try Again</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 4: DECISION TREES
+══════════════════════════════════════════════════════ -->
+<div class="slide section-slide" data-section="4">
+  <div class="section-badge" style="background:rgba(255,255,255,.2); color:#fff;">Section 4</div>
+  <h1>Decision Trees</h1>
+  <p>Recursively stacking binary splits until we have a powerful (but interpretable) model</p>
+  <div class="section-num">04</div>
+</div>
+
+<div class="slide" data-section="4">
+  <div class="section-badge">Section 4 · Decision Trees</div>
+  <h1>From One Split to a Full Tree</h1>
+  <p>A decision tree is nothing more than <strong>recursively applied binary splits</strong>. After the first split (Sex), we split each group again:</p>
+  <div class="cols">
+    <div>
+      <h2>Female branch</h2>
+      <p>Best next split: <strong>Pclass == 1</strong></p>
+      <ul>
+        <li>Female &amp; 1st class → ≈ 97% survive</li>
+        <li>Female &amp; other class → ≈ 39% survive</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Male branch</h2>
+      <p>Best next split: <strong>Age &lt; 6</strong></p>
+      <ul>
+        <li>Male &amp; young child → ≈ 46% survive</li>
+        <li>Male &amp; adult → ≈ 16% survive</li>
+      </ul>
+    </div>
+  </div>
+  <p>After two levels of splitting we have <strong>4 leaf nodes</strong> — a proper decision tree.</p>
+  <div class="box blue">
+    <strong>Leaf node:</strong> A terminal group where we stop splitting. The prediction for any row landing in that leaf is the group's mean (or majority class).
+  </div>
+</div>
+
+<div class="slide" data-section="4">
+  <div class="section-badge">Section 4 · Decision Trees</div>
+  <h1>Building a Tree with scikit-learn</h1>
+<pre><code>from sklearn.tree import DecisionTreeClassifier, plot_tree
+import matplotlib.pyplot as plt
+
+tree = DecisionTreeClassifier(
+    max_leaf_nodes=4,
+    random_state=42
+).fit(X_train, y_train)
+
+fig, ax = plt.subplots(figsize=(12, 5))
+plot_tree(tree, feature_names=X_train.columns,
+          class_names=['Died','Survived'], filled=True, ax=ax)
+plt.show()</code></pre>
+  <h2>Key parameter: <code>max_leaf_nodes</code></h2>
+  <ul>
+    <li>Controls <strong>tree depth</strong> / capacity — the main knob for bias-variance tradeoff</li>
+    <li>Start small (4–8 leaves) to understand the model, then increase</li>
+    <li>Alternative: <code>min_samples_leaf=50</code> — each leaf must have ≥ 50 rows</li>
+  </ul>
+</div>
+
+<div class="slide" data-section="4">
+  <div class="section-badge">Section 4 · Decision Trees</div>
+  <h1>Interpreting the 4-Leaf Tree</h1>
+  <table>
+    <tr><th>Leaf</th><th>Rule</th><th>Survived / Total</th><th>Insight</th></tr>
+    <tr><td>L1</td><td>Female &amp; 1st class</td><td>116 / 120</td><td>"Rich women lived"</td></tr>
+    <tr><td>L2</td><td>Female &amp; not 1st class</td><td>73 / 186</td><td>Mixed outcomes</td></tr>
+    <tr><td>L3</td><td>Male &amp; Age &lt; 6</td><td>24 / 52</td><td>"Young boys had a chance"</td></tr>
+    <tr><td>L4</td><td>Male &amp; Age ≥ 6</td><td>68 / 418</td><td>"Adult men mostly perished"</td></tr>
+  </table>
+  <div class="box">
+    This four-leaf tree is <strong>fully human-readable</strong>. You can explain every prediction. This interpretability is a major advantage of tree-based models.
+  </div>
+</div>
+
+<div class="slide" data-section="4">
+  <div class="section-badge">Section 4 · Decision Trees</div>
+  <h1>Gini Impurity — scikit-learn's Split Criterion</h1>
+  <p>scikit-learn uses <strong>Gini impurity</strong> to score splits (instead of our variance method). For a binary target:</p>
+  <div class="formula">
+    Gini = 2 × p × (1 − p)
+  </div>
+  <p>where <em>p</em> is the proportion of class-1 in the node.</p>
+  <div class="cols">
+    <div>
+      <h2>Key values</h2>
+      <ul>
+        <li><strong>Pure node</strong> (all same class): Gini = <strong>0</strong></li>
+        <li><strong>50/50 mix</strong>: Gini = <strong>0.5</strong> (maximum)</li>
+      </ul>
+    </div>
+    <div>
+      <h2>How the tree grows</h2>
+      <p>At each node, try every possible split for every feature. Choose whichever split <strong>minimises the weighted average Gini</strong> of the two resulting children.</p>
+    </div>
+  </div>
+  <div class="box amber">
+    <strong>Gini vs variance scoring:</strong> Both measure purity; Gini is preferred in scikit-learn for classification. For regression trees, <strong>mean squared error</strong> (MSE) is used instead.
+  </div>
+</div>
+
+<div class="slide" data-section="4">
+  <div class="section-badge">Section 4 · Decision Trees</div>
+  <h1>How Well Does a Single Tree Perform?</h1>
+  <table>
+    <tr><th>Model</th><th>MAE (validation)</th><th>Notes</th></tr>
+    <tr><td>OneR — Sex split</td><td>0.215</td><td>Our baseline</td></tr>
+    <tr><td>Decision tree — 4 leaves</td><td>0.224</td><td>Slightly worse on small data</td></tr>
+    <tr><td>Decision tree — <code>min_samples_leaf=50</code></td><td><strong>0.183</strong></td><td>Best so far</td></tr>
+  </table>
+  <h2>Why can one rule sometimes beat a tree?</h2>
+  <ul>
+    <li>With only ~890 training rows, deeper splits create <strong>tiny, noisy leaf nodes</strong></li>
+    <li>Small leaves → unstable predictions → higher variance</li>
+    <li>This is the core problem that Random Forests solve</li>
+  </ul>
+  <div class="box blue">
+    <strong>Note:</strong> On larger real-world datasets, a deeper tree with <code>min_samples_leaf=50</code> typically outperforms OneR convincingly.
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="slide quiz-slide" data-section="4">
+  <div class="quiz-header">Knowledge Checkpoint · Quiz 2 of 5</div>
+  <div class="quiz-q">A decision tree node has Gini impurity = 0. What does this tell you?</div>
+  <ul class="quiz-options" id="q2-opts">
+    <li onclick="answer('q2',this,false)"><span class="opt-letter">A</span> The node has equal numbers of each class — a 50/50 split</li>
+    <li onclick="answer('q2',this,true)"><span class="opt-letter">B</span> All samples in that node belong to the same class — a pure leaf</li>
+    <li onclick="answer('q2',this,false)"><span class="opt-letter">C</span> The node has not yet been split</li>
+    <li onclick="answer('q2',this,false)"><span class="opt-letter">D</span> The split used the maximum number of features</li>
+  </ul>
+  <div class="quiz-feedback" id="q2-fb"></div>
+  <button class="quiz-retry" onclick="resetQuiz('q2')" id="q2-retry" style="display:none">Try Again</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 5: RANDOM FORESTS
+══════════════════════════════════════════════════════ -->
+<div class="slide section-slide" data-section="5">
+  <div class="section-badge" style="background:rgba(255,255,255,.2); color:#fff;">Section 5</div>
+  <h1>Random Forests</h1>
+  <p>Bagging many trees to get the best of all worlds</p>
+  <div class="section-num">05</div>
+</div>
+
+<div class="slide" data-section="5">
+  <div class="section-badge">Section 5 · Random Forests</div>
+  <h1>The Problem with a Single Tree</h1>
+  <ul>
+    <li>Deeper splits → smaller leaf nodes → fewer rows per leaf</li>
+    <li>Tiny leaves give <strong>unstable, high-variance</strong> predictions</li>
+    <li>Accuracy plateaus; adding more depth eventually <strong>overfits</strong></li>
+  </ul>
+  <h2>Leo Breiman's insight — Bagging</h2>
+  <p>What if we built many trees and averaged them? Errors that are <em>random</em> will cancel out; only the signal remains.</p>
+  <div class="box">
+    <strong>Three conditions for bagging to work:</strong>
+    <ol style="margin:8px 0 0 20px;">
+      <li>Each model should be <strong>reasonably good</strong> individually (low bias)</li>
+      <li>Errors between models should be <strong>uncorrelated</strong> (different data/features)</li>
+      <li>Average over <strong>many</strong> models — positive and negative errors cancel</li>
+    </ol>
+  </div>
+  <div class="formula" style="font-size:17px;">
+    Bagging = <strong>B</strong>ootstrap <strong>Agg</strong>regat<strong>ing</strong>
+  </div>
+</div>
+
+<div class="slide" data-section="5">
+  <div class="section-badge">Section 5 · Random Forests</div>
+  <h1>Building a Random Forest — Step by Step</h1>
+  <p>A Random Forest is <strong>bagged decision trees</strong> with an extra twist: random feature subsets at each split.</p>
+  <div class="steps" style="flex-direction:column; gap:12px; align-items:stretch;">
+    <div class="step-box" style="text-align:left; padding:14px 18px;">
+      <strong>Step 1 — Bootstrap:</strong> Sample k% of training rows <em>with replacement</em> → creates a unique sub-dataset for this tree
+    </div>
+    <div class="step-box" style="text-align:left; padding:14px 18px;">
+      <strong>Step 2 — Random features:</strong> At each split, only consider a <em>random subset of columns</em> (typically √p features)
+    </div>
+    <div class="step-box" style="text-align:left; padding:14px 18px;">
+      <strong>Step 3 — Grow tree:</strong> Build a shallow decision tree on this subset (don't prune aggressively)
+    </div>
+    <div class="step-box" style="text-align:left; padding:14px 18px;">
+      <strong>Step 4 — Repeat:</strong> Build N trees (e.g., 100) — each sees different rows and different features
+    </div>
+    <div class="step-box" style="background:var(--red); color:#fff; text-align:left; padding:14px 18px; border-color:var(--red-dk);">
+      <strong>Final prediction:</strong> Average (regression) or majority vote (classification) across all N trees
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-section="5">
+  <div class="section-badge">Section 5 · Random Forests</div>
+  <h1>Building a Random Forest in scikit-learn</h1>
+<pre><code>from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier(
+    n_estimators=100,       # number of trees
+    min_samples_leaf=5,     # minimum rows per leaf
+    max_features=0.5,       # random subset of features per split
+    oob_score=True,         # built-in validation (explained next)
+    n_jobs=-1,              # use all CPU cores
+    random_state=42
+).fit(X_train, y_train)
+
+print(f"OOB accuracy: {rf.oob_score_:.3f}")
+print(f"Validation MAE: {mean_absolute_error(y_val, rf.predict(X_val)):.3f}")</code></pre>
+  <h2>Results on Titanic</h2>
+  <table>
+    <tr><th>Model</th><th>MAE</th><th>Comment</th></tr>
+    <tr><td>Single tree (min_leaf=50)</td><td>0.183</td><td>Previous best</td></tr>
+    <tr><td>Random forest (100 trees)</td><td>≈ 0.185</td><td>Similar — Titanic is tiny</td></tr>
+  </table>
+  <div class="box amber">
+    <strong>Don't be fooled by the Titanic result.</strong> On datasets with thousands of rows and hundreds of features, Random Forests typically win convincingly. Titanic (~890 rows) is too small to show the full benefit.
+  </div>
+</div>
+
+<div class="slide" data-section="5">
+  <div class="section-badge">Section 5 · Random Forests</div>
+  <h1>How Many Trees Do You Need?</h1>
+  <p>More trees always help — <strong>error decreases monotonically</strong> as you add trees. It never gets worse.</p>
+  <div class="cols">
+    <div>
+      <h2>Practical guidance</h2>
+      <ul>
+        <li>50–100 trees usually reach the <strong>plateau</strong> of diminishing returns</li>
+        <li>Beyond that, you're paying in <strong>inference time</strong> for tiny gains</li>
+        <li>Start with 100, check your OOB error curve, then decide</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Can it overfit?</h2>
+      <ul>
+        <li><strong>No</strong> — adding more trees cannot increase test error</li>
+        <li>Risk comes only from <strong>very deep trees with too few estimators</strong> — fix by raising <code>n_estimators</code></li>
+        <li>RFs are remarkably forgiving of hyperparameter choices</li>
+      </ul>
+    </div>
+  </div>
+  <div class="box green">
+    <strong>RF resilience:</strong> Thousands of irrelevant features? Fine — trees ignore them. Non-linear interactions? Learned automatically. Outliers? Thresholds make them irrelevant. Normalisation? Not needed.
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="slide quiz-slide" data-section="5">
+  <div class="quiz-header">Knowledge Checkpoint · Quiz 3 of 5</div>
+  <div class="quiz-q">Random Forests reduce the variance of single decision trees primarily through…</div>
+  <ul class="quiz-options" id="q3-opts">
+    <li onclick="answer('q3',this,false)"><span class="opt-letter">A</span> Pruning branches that don't improve accuracy by more than 1%</li>
+    <li onclick="answer('q3',this,true)"><span class="opt-letter">B</span> Averaging predictions from many trees trained on different random subsets of data and features</li>
+    <li onclick="answer('q3',this,false)"><span class="opt-letter">C</span> Using Gini impurity instead of variance to score splits</li>
+    <li onclick="answer('q3',this,false)"><span class="opt-letter">D</span> Training on the full dataset with regularisation applied to each tree</li>
+  </ul>
+  <div class="quiz-feedback" id="q3-fb"></div>
+  <button class="quiz-retry" onclick="resetQuiz('q3')" id="q3-retry" style="display:none">Try Again</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 6: INTERPRETABILITY
+══════════════════════════════════════════════════════ -->
+<div class="slide section-slide" data-section="6">
+  <div class="section-badge" style="background:rgba(255,255,255,.2); color:#fff;">Section 6</div>
+  <h1>Interpretability</h1>
+  <p>Feature importance, OOB validation, partial dependence, and explaining individual predictions</p>
+  <div class="section-num">06</div>
+</div>
+
+<div class="slide" data-section="6">
+  <div class="section-badge">Section 6 · Interpretability</div>
+  <h1>Out-of-Bag (OOB) Error — Free Validation</h1>
+  <p>Because each tree only sees a bootstrapped subset of data, approximately <strong>25–37% of rows are left out</strong> for any given tree. These are the "out-of-bag" rows.</p>
+  <div class="steps" style="flex-direction:column; gap:12px; align-items:stretch;">
+    <div class="step-box" style="text-align:left; padding:12px 16px;">
+      <strong>1.</strong> For each row, collect predictions from all trees that <em>did not</em> use it in training
+    </div>
+    <div class="step-box" style="text-align:left; padding:12px 16px;">
+      <strong>2.</strong> Average those predictions → OOB prediction for that row
+    </div>
+    <div class="step-box" style="text-align:left; padding:12px 16px;">
+      <strong>3.</strong> Compare OOB predictions to true labels → OOB error score
+    </div>
+  </div>
+  <div class="box green">
+    <strong>Why this matters:</strong> OOB error is a built-in, unbiased estimate of generalisation error — no separate validation set required. Enable with <code>RandomForestClassifier(oob_score=True)</code>.
+  </div>
+</div>
+
+<div class="slide" data-section="6">
+  <div class="section-badge">Section 6 · Interpretability</div>
+  <h1>Feature Importance</h1>
+  <p>For every split in every tree, track how much the Gini impurity improved × how many rows were in that node. Sum across all trees → <strong>feature importance score</strong>.</p>
+<pre><code>import matplotlib.pyplot as plt
+
+importances = pd.Series(rf.feature_importances_, index=X_train.columns)
+importances.sort_values().plot.barh(figsize=(8, 5), color='#C0272D')
+plt.title('Feature Importances')
+plt.tight_layout()
+plt.show()</code></pre>
+  <h2>Titanic result</h2>
+  <p style="font-size:16px;"><strong>Sex ≫ Pclass ≈ Fare ≫ Age ≫ Embarked</strong></p>
+  <div class="box amber">
+    <strong>Real-world power:</strong> A credit scoring team had 7,000 raw database columns. A Random Forest reduced this to ~30 key variables in under 2 hours — matching a multi-million-dollar consulting study.
+  </div>
+</div>
+
+<div class="slide" data-section="6">
+  <div class="section-badge">Section 6 · Interpretability</div>
+  <h1>Partial Dependence Plots (PDPs)</h1>
+  <p>Feature importance tells you <em>what</em> matters. PDPs tell you <em>how</em> a feature affects the prediction, all else held equal.</p>
+  <h2>How to compute a PDP for one feature</h2>
+  <ol>
+    <li>Take the validation set</li>
+    <li>Set the target column to a fixed value (e.g., <code>Age = 5</code>) for all rows</li>
+    <li>Run the forest and average all predictions → one point on the curve</li>
+    <li>Repeat for every candidate value across the feature's range → full curve</li>
+  </ol>
+  <div class="box blue">
+    <strong>Key insight:</strong> Because we're averaging over <em>all</em> other feature values, the curve isolates the true effect of the one variable — unconfounded by correlated features like passenger class and fare.
+  </div>
+  <div class="box green">
+    <strong>scikit-learn shortcut:</strong> <code>from sklearn.inspection import PartialDependenceDisplay</code> — just call <code>.from_estimator(rf, X_val, features=[...])</code>
+  </div>
+</div>
+
+<div class="slide" data-section="6">
+  <div class="section-badge">Section 6 · Interpretability</div>
+  <h1>Explaining a Single Prediction</h1>
+  <p>Feature importance explains the <em>model overall</em>. But sometimes you need to explain <em>why this specific passenger was predicted to die</em>.</p>
+  <h2>Tree-path contribution method</h2>
+  <ol>
+    <li>For one row, trace its path through every tree in the forest</li>
+    <li>At each split, record: which feature was used, and how much it changed the prediction</li>
+    <li>Sum contributions across all trees → per-feature Δ prediction for that row</li>
+  </ol>
+  <div class="box">
+    <strong>Result:</strong> A waterfall chart showing e.g. "Sex ↑ +0.42, Pclass ↓ −0.15, Age ↑ +0.07…" — intuitive enough to explain to a non-technical stakeholder why a loan was declined.
+  </div>
+  <div class="box amber">
+    <strong>SHAP library</strong> provides a principled, model-agnostic implementation of this idea: <code>pip install shap</code>. SHAP values are the gold standard for single-prediction explanations.
+  </div>
+</div>
+
+<!-- QUIZ 4 -->
+<div class="slide quiz-slide" data-section="6">
+  <div class="quiz-header">Knowledge Checkpoint · Quiz 4 of 5</div>
+  <div class="quiz-q">What is the key advantage of Out-of-Bag (OOB) error over using a separate validation set?</div>
+  <ul class="quiz-options" id="q4-opts">
+    <li onclick="answer('q4',this,false)"><span class="opt-letter">A</span> OOB error is always lower (more optimistic) than hold-out validation error</li>
+    <li onclick="answer('q4',this,false)"><span class="opt-letter">B</span> OOB error can only be computed on classification tasks, not regression</li>
+    <li onclick="answer('q4',this,true)"><span class="opt-letter">C</span> It gives an unbiased generalisation estimate without removing any rows from training</li>
+    <li onclick="answer('q4',this,false)"><span class="opt-letter">D</span> OOB error measures how well the forest memorised the training data</li>
+  </ul>
+  <div class="quiz-feedback" id="q4-fb"></div>
+  <button class="quiz-retry" onclick="resetQuiz('q4')" id="q4-retry" style="display:none">Try Again</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 7: PRACTICAL TIPS
+══════════════════════════════════════════════════════ -->
+<div class="slide section-slide" data-section="7">
+  <div class="section-badge" style="background:rgba(255,255,255,.2); color:#fff;">Section 7</div>
+  <h1>Practical Tips &amp; Bigger Picture</h1>
+  <p>When to use RF, how it compares to boosting, and the Kaggle mindset</p>
+  <div class="section-num">07</div>
+</div>
+
+<div class="slide" data-section="7">
+  <div class="section-badge">Section 7 · Practical</div>
+  <h1>Bagging vs. Boosting</h1>
+  <p>Two fundamentally different ensemble strategies — know when to use each.</p>
+  <table>
+    <tr><th>Aspect</th><th>Bagging (Random Forest)</th><th>Boosting (XGBoost / LightGBM)</th></tr>
+    <tr><td><strong>Core idea</strong></td><td>Train trees on random subsets simultaneously, then average</td><td>Train tiny trees sequentially, each correcting the previous</td></tr>
+    <tr><td><strong>Tuning effort</strong></td><td>Minimal — hard to break</td><td>Many hyperparams, can overfit</td></tr>
+    <tr><td><strong>Typical accuracy</strong></td><td>Strong baseline</td><td>Often higher with careful tuning</td></tr>
+    <tr><td><strong>When to use</strong></td><td>First model — fast, robust, interpretable</td><td>Second pass, once baseline is established</td></tr>
+  </table>
+  <div class="box green">
+    <strong>Recommended workflow:</strong> Start with a Random Forest to get a strong baseline and understand your features. Then try gradient boosting if you need to squeeze out more accuracy.
+  </div>
+</div>
+
+<div class="slide" data-section="7">
+  <div class="section-badge">Section 7 · Practical</div>
+  <h1>Breiman's "Two Cultures" — A Final Thought</h1>
+  <p>Leo Breiman (2001) argued there are two cultures in statistical modelling:</p>
+  <div class="cols">
+    <div>
+      <h2>Data modelling culture</h2>
+      <p>Assume a parametric form for the data (e.g., linear regression). Fit that form, explain coefficients. Prioritises interpretability of the assumed model.</p>
+    </div>
+    <div>
+      <h2>Algorithmic culture</h2>
+      <p>Let the algorithm find the structure. Prioritise predictive accuracy first — then explain the accurate model. Breiman championed this approach decades before "data science" existed.</p>
+    </div>
+  </div>
+  <div class="box amber">
+    <strong>Practical implication:</strong> A model that predicts poorly also <em>explains</em> poorly. Always get a good-fitting model first. A 60% accurate model that you can explain is worse than a 95% accurate model that you can also explain with SHAP.
+  </div>
+</div>
+
+<div class="slide" data-section="7">
+  <div class="section-badge">Section 7 · Practical</div>
+  <h1>The Kaggle Iteration Mindset</h1>
+  <p>Jeremy Howard's approach to competition — applicable to every real project.</p>
+  <div class="cols-3">
+    <div class="box" style="margin:0;">
+      <strong>Reliable validation</strong><br>
+      <span style="font-size:14px;">Your local validation must mirror the hidden leaderboard. Without it, you're flying blind.</span>
+    </div>
+    <div class="box blue" style="margin:0;">
+      <strong>Rapid iteration</strong><br>
+      <span style="font-size:14px;">Models that train in seconds (RF on Titanic) let you try 50+ ideas. Slow models let you try 5.</span>
+    </div>
+    <div class="box green" style="margin:0;">
+      <strong>Clean code</strong><br>
+      <span style="font-size:14px;">Avoid "Untitled (25).ipynb" chaos. Small, reproducible notebooks are essential.</span>
+    </div>
+  </div>
+  <h2>Submission workflow</h2>
+<pre><code>test_pred = rf.predict(X_test)
+sub = pd.DataFrame({
+    'PassengerId': test_df.PassengerId,
+    'Survived': test_pred
+})
+sub.to_csv('submission_rf.csv', index=False)
+# → Upload to Kaggle. Repeat. Improve.</code></pre>
+</div>
+
+<!-- QUIZ 5 -->
+<div class="slide quiz-slide" data-section="7">
+  <div class="quiz-header">Knowledge Checkpoint · Quiz 5 of 5</div>
+  <div class="quiz-q">You need to explain to a bank manager why a specific customer's loan application was rejected by your Random Forest model. Which tool is most appropriate?</div>
+  <ul class="quiz-options" id="q5-opts">
+    <li onclick="answer('q5',this,false)"><span class="opt-letter">A</span> Feature importance plot — it shows the most influential features across all predictions</li>
+    <li onclick="answer('q5',this,false)"><span class="opt-letter">B</span> A partial dependence plot for income — it shows how income affects predictions on average</li>
+    <li onclick="answer('q5',this,true)"><span class="opt-letter">C</span> SHAP values for that specific customer — they quantify each feature's contribution to this individual prediction</li>
+    <li onclick="answer('q5',this,false)"><span class="opt-letter">D</span> OOB error — it measures whether the model is generalising well overall</li>
+  </ul>
+  <div class="quiz-feedback" id="q5-fb"></div>
+  <button class="quiz-retry" onclick="resetQuiz('q5')" id="q5-retry" style="display:none">Try Again</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SUMMARY SLIDE
+══════════════════════════════════════════════════════ -->
+<div class="slide" data-section="7">
+  <div class="section-badge">Week 7 · Summary</div>
+  <h1>What We Covered Today</h1>
+  <div class="cols">
+    <div>
+      <h2>Theory</h2>
+      <ul>
+        <li>Binary splits → OneR → Decision Trees → Random Forests</li>
+        <li>Variance scoring &amp; Gini impurity for split quality</li>
+        <li>Bagging: why averaging uncorrelated trees works</li>
+        <li>Bagging vs. Boosting trade-offs</li>
+      </ul>
+      <h2>Implementation</h2>
+      <ul>
+        <li>Pandas <code>category</code> dtype and <code>cat_codes</code></li>
+        <li><code>DecisionTreeClassifier</code> and <code>RandomForestClassifier</code></li>
+        <li>OOB score for built-in validation</li>
+        <li>Feature importance &amp; SHAP for explanations</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Next Steps</h2>
+      <ul>
+        <li>Practical workshop: build and tune a Random Forest on Titanic in Colab</li>
+        <li>Submit to Kaggle — aim to beat your single-tree MAE</li>
+        <li>Try adding <code>oob_score=True</code> and inspecting feature importances</li>
+      </ul>
+      <div class="box green" style="margin-top:20px;">
+        <strong>Key takeaway:</strong> Random Forests are the best "first serious model" for any tabular dataset. They're forgiving, interpretable, and surprisingly hard to break.
+      </div>
+      <div class="box amber" style="margin-top:12px;">
+        <strong>Workshop goal:</strong> Achieve MAE &lt; 0.18 using a tuned Random Forest with feature importance analysis.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides-container -->
+
+<div id="kbd-hint">Use ← → arrow keys to navigate · Click section tabs to jump</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let cur = 0;
+
+// Section mapping: [startSlideIndex, sectionIndex]
+const sectionMap = slides.map(s => parseInt(s.dataset.section));
+const sectionStarts = [];
+for (let i = 0; i < 8; i++) {
+  sectionStarts.push(sectionMap.indexOf(i));
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(n, total - 1));
+  slides[cur].classList.add('active');
+  document.getElementById('slide-counter').textContent = `${cur + 1} / ${total}`;
+  document.getElementById('progress-fill').style.width = `${((cur + 1) / total) * 100}%`;
+  // Update section tabs
+  const sec = sectionMap[cur];
+  document.querySelectorAll('.sec-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.querySelector(`.sec-tab[data-sec="${sec}"]`);
+  if (tab) tab.classList.add('active');
+  slides[cur].scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function next() { goTo(cur + 1); }
+function prev() { goTo(cur - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prev();
+});
+
+document.querySelectorAll('.sec-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const sec = parseInt(tab.dataset.sec);
+    const start = sectionStarts[sec];
+    if (start >= 0) goTo(start);
+  });
+});
+
+// ── Quiz logic ────────────────────────────────────────────────────────────
+const feedback = {
+  q1: { ok: "Correct! A lower split score means smaller σ (standard deviation) within each group — the target values are tightly clustered, so the split is doing a good job of separating the data.", bad: "Not quite. The score = σ × group_size, summed over both sides. Lower score means each side has tightly clustered target values (low σ), which is exactly what we want." },
+  q2: { ok: "Correct! Gini = 2p(1−p). When p = 0 or p = 1 (all one class), Gini = 0. This is a pure leaf — no further splitting is needed or beneficial.", bad: "Not quite. Gini = 2p(1−p) = 0 when p = 0 or p = 1, meaning all samples belong to the same class. A 50/50 split gives the maximum Gini of 0.5." },
+  q3: { ok: "Correct! Bagging's power comes from averaging over many trees, each trained on a different bootstrap sample with different random feature subsets. Uncorrelated errors cancel out when averaged.", bad: "Not quite. The variance reduction comes from averaging predictions across many trees trained on different random subsets of the data and features — errors that are random cancel out." },
+  q4: { ok: "Correct! Because each row is only predicted by trees that did NOT use it for training, OOB error is an unbiased estimate of how well the model generalises — and every row contributes to training some trees.", bad: "Not quite. OOB rows weren't used to train their corresponding trees, so predictions on them are honest — no data is wasted by holding out a separate validation set." },
+  q5: { ok: "Correct! SHAP (SHapley Additive exPlanations) values decompose a specific prediction into per-feature contributions — the only tool here that explains an individual prediction, not the model overall.", bad: "Not quite. Feature importance and PDPs describe the model's global behaviour. OOB measures overall generalisation. Only SHAP values explain why the model made a specific individual prediction." },
+};
+
+function answer(qid, el, correct) {
+  const opts = document.getElementById(`${qid}-opts`);
+  if (opts.querySelector('.correct') || opts.querySelector('.wrong')) return;
+  el.classList.add(correct ? 'correct' : 'wrong');
+  opts.querySelectorAll('li').forEach(li => li.classList.add('disabled'));
+  // highlight correct answer if wrong
+  if (!correct) {
+    opts.querySelectorAll('li').forEach(li => {
+      if (li.onclick && li.onclick.toString().includes('true')) li.classList.add('correct');
+    });
+  }
+  const fb = document.getElementById(`${qid}-fb`);
+  fb.textContent = feedback[qid][correct ? 'ok' : 'bad'];
+  fb.className = `quiz-feedback show ${correct ? 'ok' : 'bad'}`;
+  if (!correct) document.getElementById(`${qid}-retry`).style.display = 'inline-block';
+}
+
+function resetQuiz(qid) {
+  document.getElementById(`${qid}-opts`).querySelectorAll('li').forEach(li => {
+    li.className = '';
+  });
+  const fb = document.getElementById(`${qid}-fb`);
+  fb.className = 'quiz-feedback';
+  document.getElementById(`${qid}-retry`).style.display = 'none';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+goTo(0);
+</script>
+</body>
+</html>
