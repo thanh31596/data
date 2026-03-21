@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 3 Lab – JPA Inheritance &amp; Cascading</title>
+<style>
+  :root {
+    --red: #C8102E;
+    --red-dark: #9B0D22;
+    --red-light: #f7e8eb;
+    --red-mid: #e8c0c8;
+    --white: #ffffff;
+    --off-white: #fafafa;
+    --text: #1a1a1a;
+    --text-muted: #555;
+    --code-bg: #1e1e2e;
+    --code-text: #cdd6f4;
+    --border: #e0e0e0;
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #f0f0f0;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding-bottom: 70px;
+  }
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 4px;
+    background: var(--red); transition: width 0.3s ease; z-index: 1000;
+  }
+  #deck { width: 100%; max-width: 960px; }
+  .slide {
+    display: none; background: var(--white); min-height: 580px;
+    box-shadow: 0 4px 24px rgba(200,16,46,0.10);
+    position: relative; overflow: hidden; flex-direction: column;
+  }
+  .slide.active { display: flex; }
+
+  /* Title */
+  .slide-title {
+    background: linear-gradient(135deg, var(--red-dark) 0%, var(--red) 55%, #e63050 100%);
+    color: white; justify-content: center; align-items: center;
+    text-align: center; padding: 60px 80px;
+  }
+  .slide-title .badge {
+    font-family: 'Trebuchet MS', sans-serif; font-size: 12px;
+    letter-spacing: 3px; text-transform: uppercase;
+    background: rgba(255,255,255,0.2); padding: 6px 18px;
+    border-radius: 20px; display: inline-block; margin-bottom: 24px;
+  }
+  .slide-title h1 { font-size: 40px; font-weight: 700; margin-bottom: 16px; }
+  .slide-title .sub { font-family: 'Trebuchet MS', sans-serif; font-size: 16px; opacity: 0.88; }
+  .slide-title .proj-row { display: flex; gap: 24px; margin-top: 32px; justify-content: center; flex-wrap: wrap; }
+  .slide-title .proj-pill {
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 8px; padding: 12px 22px; font-family: 'Trebuchet MS', sans-serif; font-size: 14px;
+  }
+  .slide-title .proj-pill span { font-size: 11px; opacity: 0.7; display: block; margin-bottom: 3px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* Project section */
+  .slide-section { justify-content: center; align-items: center; text-align: center; padding: 60px; }
+  .slide-section.p1 { background: var(--red); color: white; }
+  .slide-section.p2 { background: #1a3a5c; color: white; }
+  .slide-section .pnum { font-family: 'Trebuchet MS', sans-serif; font-size: 12px; letter-spacing: 4px; text-transform: uppercase; opacity: 0.75; margin-bottom: 14px; }
+  .slide-section h2 { font-size: 36px; font-weight: 700; margin-bottom: 16px; }
+  .slide-section .goal { font-family: 'Trebuchet MS', sans-serif; font-size: 15px; opacity: 0.88; line-height: 1.7; max-width: 600px; }
+
+  /* Content header */
+  .slide-content { }
+  .slide-header {
+    color: white; padding: 20px 44px 16px;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  .slide-header.red { background: var(--red); }
+  .slide-header.blue { background: #1a3a5c; }
+  .slide-header h2 { font-size: 22px; font-weight: 700; }
+  .slide-header .tag {
+    font-family: 'Trebuchet MS', sans-serif; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase;
+    background: rgba(255,255,255,0.22); padding: 3px 10px; border-radius: 12px;
+  }
+  .slide-header .step-badge {
+    font-family: 'Trebuchet MS', sans-serif; font-size: 12px; font-weight: 700;
+    background: rgba(255,255,255,0.9); color: var(--red); padding: 4px 12px; border-radius: 12px;
+  }
+  .step-badge.blue-step { color: #1a3a5c; }
+  .slide-body { padding: 32px 44px; flex: 1; }
+
+  /* Two col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+  .two-col-60 { display: grid; grid-template-columns: 3fr 2fr; gap: 28px; align-items: start; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+  /* Typography */
+  h3 { font-size: 16px; color: var(--red); margin-bottom: 8px; font-weight: 700; }
+  h3.blue { color: #1a3a5c; }
+  h4 { font-size: 13.5px; color: var(--text); margin-bottom: 6px; font-weight: 700; font-family: 'Trebuchet MS', sans-serif; }
+  p { font-family: 'Trebuchet MS', sans-serif; font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 8px; }
+  ul, ol { padding-left: 20px; margin-bottom: 8px; }
+  li { font-family: 'Trebuchet MS', sans-serif; font-size: 13.5px; line-height: 1.7; color: var(--text); margin-bottom: 3px; }
+  li::marker { color: var(--red); }
+  ol li::marker { color: var(--red); font-weight: 700; }
+  strong { color: var(--red-dark); }
+
+  /* Code */
+  pre {
+    background: var(--code-bg); border-radius: 8px; padding: 14px 18px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px; line-height: 1.65; color: var(--code-text);
+    overflow-x: auto; margin: 8px 0;
+  }
+  .kw { color: #cba6f7; }
+  .an { color: #a6e3a1; }
+  .st { color: #f9e2af; }
+  .cm { color: #6c7086; font-style: italic; }
+  .ty { color: #89dceb; }
+  .nu { color: #fab387; }
+
+  /* Cards */
+  .card { background: var(--off-white); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 10px; }
+  .card-red { background: var(--red-light); border-color: var(--red-mid); }
+  .card-green { background: var(--green-light); border: 1px solid #bbf7d0; }
+  .card-blue { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .card-amber { background: var(--amber-light); border: 1px solid #fcd34d; }
+
+  /* Step boxes */
+  .step-box {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--off-white); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  }
+  .step-num {
+    background: var(--red); color: white; border-radius: 50%;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Trebuchet MS', sans-serif; font-weight: 700; font-size: 13px;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step-num.blue-num { background: #1a3a5c; }
+  .step-content h4 { margin-bottom: 4px; color: var(--red-dark); }
+  .step-content h4.blue-h { color: #1a3a5c; }
+  .step-content p { font-size: 13px; margin-bottom: 0; }
+
+  /* Info / warning */
+  .info-box {
+    background: var(--red-light); border-left: 4px solid var(--red);
+    border-radius: 0 8px 8px 0; padding: 11px 15px; margin: 10px 0;
+    font-family: 'Trebuchet MS', sans-serif; font-size: 13px; line-height: 1.6;
+  }
+  .info-box.blue { background: #eff6ff; border-left-color: #3b82f6; }
+  .warn-box {
+    background: var(--amber-light); border-left: 4px solid var(--amber);
+    border-radius: 0 8px 8px 0; padding: 11px 15px; margin: 10px 0;
+    font-family: 'Trebuchet MS', sans-serif; font-size: 13px; line-height: 1.6;
+  }
+  .success-box {
+    background: var(--green-light); border-left: 4px solid var(--green);
+    border-radius: 0 8px 8px 0; padding: 11px 15px; margin: 10px 0;
+    font-family: 'Trebuchet MS', sans-serif; font-size: 13px; line-height: 1.6;
+  }
+
+  /* Checklist */
+  .checklist li { list-style: none; padding-left: 4px; }
+  .checklist li::before { content: '☐ '; color: var(--red); font-size: 15px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-family: 'Trebuchet MS', sans-serif; font-size: 12.5px; }
+  th { background: var(--red); color: white; padding: 9px 13px; text-align: left; }
+  td { padding: 8px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--off-white); }
+  th.blue-th { background: #1a3a5c; }
+
+  /* Badge */
+  .badge { display: inline-block; font-family: 'Trebuchet MS', sans-serif; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 12px; font-weight: 700; margin-left: 6px; }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-blue { background: #eff6ff; color: #1d4ed8; }
+
+  /* Nav */
+  #nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: white;
+    border-top: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: space-between; padding: 12px 32px; z-index: 999;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  }
+  .nav-btn {
+    background: var(--red); color: white; border: none;
+    padding: 10px 28px; border-radius: 8px; font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .nav-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
+  .nav-btn:disabled { background: #ccc; cursor: default; transform: none; }
+  #slide-counter { font-family: 'Trebuchet MS', sans-serif; font-size: 14px; color: var(--text-muted); text-align: center; }
+  #slide-counter .curr { color: var(--red); font-weight: 700; font-size: 18px; }
+
+  .quiz-slide { background: #1a0008; color: white; }
+  .quiz-slide .slide-body { background: #1a0008; }
+  .quiz-q { font-size: 17px; font-weight: 700; color: white; margin-bottom: 20px; line-height: 1.5; font-family: Georgia; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt {
+    background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 12px 18px; font-family: 'Trebuchet MS', sans-serif;
+    font-size: 13.5px; color: white; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .quiz-opt:hover { background: rgba(200,16,46,0.3); border-color: var(--red); }
+  .quiz-opt.correct { background: rgba(22,163,74,0.3); border-color: #16a34a; }
+  .quiz-opt.wrong { background: rgba(220,38,38,0.25); border-color: #dc2626; }
+  .quiz-opt .opt-l { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+  .quiz-feedback { margin-top: 14px; padding: 12px 18px; border-radius: 10px; font-family: 'Trebuchet MS', sans-serif; font-size: 13.5px; line-height: 1.6; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(22,163,74,0.2); border: 1px solid #16a34a; color: #bbf7d0; }
+  .quiz-feedback.wrong { background: rgba(220,38,38,0.2); border: 1px solid #dc2626; color: #fecaca; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="deck">
+
+<!-- ══════════════════════ SLIDE 1 – TITLE ══════════════════ -->
+<div class="slide slide-title active">
+  <div class="badge">Enterprise Computing · Week 3 Lab</div>
+  <h1>JPA Inheritance &amp; Cascading</h1>
+  <div class="sub">Two hands-on projects to cement this week's concepts</div>
+  <div class="proj-row">
+    <div class="proj-pill">
+      <span>Project 1</span>
+      JPA Inheritance Mapping<br><small style="opacity:0.7">Item → Book &amp; CD (Joined Subclass)</small>
+    </div>
+    <div class="proj-pill">
+      <span>Project 2</span>
+      Event Cascading<br><small style="opacity:0.7">Customer ↔ Address with cascade</small>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 2 – OVERVIEW ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red"><h2>Before You Start</h2><span class="tag">Setup &amp; Notes</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>📋 What You'll Build</h3>
+        <div class="card card-red" style="margin-bottom:10px">
+          <h4>Project 1 — Inheritance Mapping</h4>
+          <p style="font-size:13px">Map an Item/Book/CD class hierarchy to MySQL using the <strong>Joined-Subclass</strong> strategy, then persist sample data.</p>
+        </div>
+        <div class="card card-blue">
+          <h4>Project 2 — Event Cascading</h4>
+          <p style="font-size:13px">Map Customer and Address with cascading persist/remove. Test persistence context membership.</p>
+        </div>
+        <div class="warn-box" style="margin-top:14px">
+          💡 <strong>Tip:</strong> Complete sample projects are on Moodle. Try building your own version first — you'll learn more from the struggle!
+        </div>
+      </div>
+      <div>
+        <h3>✅ Pre-flight Checklist</h3>
+        <ul class="checklist">
+          <li>NetBeans IDE is open</li>
+          <li>MySQL Server is running (check Services panel)</li>
+          <li>You can connect to MySQL via NetBeans</li>
+          <li>Your target database exists (e.g., <code>week3db</code>)</li>
+          <li>You reviewed the Week 3 lecture slides</li>
+          <li>You know how to create a JPA project (Week 1 Lab Part 2)</li>
+        </ul>
+        <div class="info-box" style="margin-top:14px">
+          🆘 If you can't create a JPA project, refer to <strong>Week 1 Lab – Part 2</strong> before continuing.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 3 – PROJECT 1 SECTION ══════════════════ -->
+<div class="slide slide-section p1">
+  <div class="pnum">Project 1 of 2</div>
+  <h2>JPA Inheritance Mapping</h2>
+  <div class="goal">
+    Map an Item/Book/CD class hierarchy to MySQL using the<br>
+    <strong>Joined-Subclass strategy</strong>, then persist a Book and CD entity.
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 4 – P1 DOMAIN MODEL ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red"><h2>Project 1 — Domain Model</h2><span class="tag">What you're mapping</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Class Hierarchy</h3>
+        <div class="diagram-wrap" style="background:var(--off-white); border:1px solid var(--border); border-radius:10px; padding:16px;">
+          <svg viewBox="0 0 280 210" xmlns="http://www.w3.org/2000/svg" style="width:100%">
+            <!-- Item -->
+            <rect x="80" y="10" width="120" height="70" rx="8" fill="#f7e8eb" stroke="#C8102E" stroke-width="2"/>
+            <rect x="80" y="10" width="120" height="22" rx="8" fill="#C8102E"/>
+            <rect x="80" y="22" width="120" height="10" fill="#C8102E"/>
+            <text x="140" y="26" text-anchor="middle" font-family="Trebuchet MS" font-size="12" font-weight="700" fill="white">Item</text>
+            <text x="140" y="46" text-anchor="middle" font-family="Consolas" font-size="9.5" fill="#555">id: Long</text>
+            <text x="140" y="58" text-anchor="middle" font-family="Consolas" font-size="9.5" fill="#555">title: String</text>
+            <text x="140" y="70" text-anchor="middle" font-family="Consolas" font-size="9.5" fill="#555">price, description</text>
+            <!-- Lines -->
+            <line x1="80" y1="80" x2="55" y2="140" stroke="#C8102E" stroke-width="1.5"/>
+            <line x1="200" y1="80" x2="225" y2="140" stroke="#C8102E" stroke-width="1.5"/>
+            <!-- extends labels -->
+            <text x="56" y="115" font-family="Trebuchet MS" font-size="9" fill="#888" transform="rotate(-28,56,115)">extends</text>
+            <text x="197" y="115" font-family="Trebuchet MS" font-size="9" fill="#888" transform="rotate(28,197,115)">extends</text>
+            <!-- Book -->
+            <rect x="10" y="140" width="110" height="62" rx="8" fill="#f7e8eb" stroke="#C8102E" stroke-width="2"/>
+            <rect x="10" y="140" width="110" height="22" rx="8" fill="#C8102E"/>
+            <rect x="10" y="152" width="110" height="10" fill="#C8102E"/>
+            <text x="65" y="156" text-anchor="middle" font-family="Trebuchet MS" font-size="12" font-weight="700" fill="white">Book</text>
+            <text x="65" y="176" text-anchor="middle" font-family="Consolas" font-size="9" fill="#555">isbn, publisher</text>
+            <text x="65" y="188" text-anchor="middle" font-family="Consolas" font-size="9" fill="#555">nbOfPage, illustrations</text>
+            <!-- CD -->
+            <rect x="162" y="140" width="108" height="62" rx="8" fill="#f7e8eb" stroke="#C8102E" stroke-width="2"/>
+            <rect x="162" y="140" width="108" height="22" rx="8" fill="#C8102E"/>
+            <rect x="162" y="152" width="108" height="10" fill="#C8102E"/>
+            <text x="216" y="156" text-anchor="middle" font-family="Trebuchet MS" font-size="12" font-weight="700" fill="white">CD</text>
+            <text x="216" y="176" text-anchor="middle" font-family="Consolas" font-size="9" fill="#555">musicCompany, gender</text>
+            <text x="216" y="188" text-anchor="middle" font-family="Consolas" font-size="9" fill="#555">numberOfCDs, duration</text>
+          </svg>
+        </div>
+      </div>
+      <div>
+        <h3>Database Target (Joined-Subclass)</h3>
+        <p style="font-size:13px">Each entity maps to its own table. JPA joins them on primary key to rebuild the full object.</p>
+        <div class="card" style="font-size:12.5px; margin-bottom:8px">
+          <h4>ITEM table</h4>
+          ID (PK), DTYPE, TITLE, PRICE, DESCRIPTION
+        </div>
+        <div class="card" style="font-size:12.5px; margin-bottom:8px">
+          <h4>BOOK table</h4>
+          ID (FK→ITEM), ISBN, PUBLISHER, NB_OF_PAGE, ILLUSTRATIONS
+        </div>
+        <div class="card" style="font-size:12.5px">
+          <h4>CD table</h4>
+          ID (FK→ITEM), MUSIC_COMPANY, NUMBER_OF_CDS, TOTAL_DURATION, GENDER
+        </div>
+        <div class="info-box" style="margin-top:12px">
+          🎯 <strong>Goal:</strong> Run the main class and see 3 tables created with correctly linked rows in MySQL.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 5 – P1 STEP 1 CREATE PROJECT ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red">
+    <h2>Project 1 — Create the JPA Project</h2>
+    <span class="step-badge">Step 1</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>In NetBeans</h3>
+        <div class="step-box">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>File → New Project</h4>
+            <p>Choose <strong>Java with Maven → Java Application</strong>. Click Next.</p>
+          </div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Name the project</h4>
+            <p>e.g., <code>Week3_Project1</code>. Set Group ID to <code>au.edu.youruni</code>. Click Finish.</p>
+          </div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>Add JPA dependencies (pom.xml)</h4>
+            <p>Open <code>pom.xml</code> and add EclipseLink + MySQL Connector dependencies.</p>
+          </div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h4>Create META-INF folder</h4>
+            <p>Under <code>src/main/resources</code>, create a folder named <code>META-INF</code>.</p>
+          </div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <h4>Add persistence.xml</h4>
+            <p>Right-click <code>META-INF</code> → New → XML Document → name it <code>persistence</code>.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>pom.xml dependencies</h3>
+        <pre><span class="cm">&lt;!-- EclipseLink JPA --&gt;</span>
+&lt;dependency&gt;
+  &lt;groupId&gt;org.eclipse.persistence
+  &lt;/groupId&gt;
+  &lt;artifactId&gt;eclipselink&lt;/artifactId&gt;
+  &lt;version&gt;4.0.2&lt;/version&gt;
+&lt;/dependency&gt;
+
+<span class="cm">&lt;!-- MySQL Connector --&gt;</span>
+&lt;dependency&gt;
+  &lt;groupId&gt;com.mysql&lt;/groupId&gt;
+  &lt;artifactId&gt;mysql-connector-j&lt;/artifactId&gt;
+  &lt;version&gt;8.3.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+        <div class="warn-box">
+          After editing <code>pom.xml</code>, right-click the project → <strong>Download Dependencies</strong> (or Run build to trigger download).
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 6 – P1 ITEM ENTITY ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red">
+    <h2>Project 1 — Item Entity</h2>
+    <span class="step-badge">Step 2</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <p>Create package <code>entities</code> under <code>src/main/java</code>. Add a new class <code>Item.java</code>.</p>
+        <pre><span class="kw">package</span> entities;
+
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="an">@Entity</span>
+<span class="an">@Inheritance</span>(strategy =
+  <span class="ty">InheritanceType</span>.JOINED)
+<span class="kw">public class</span> <span class="ty">Item</span> {
+
+  <span class="an">@Id</span>
+  <span class="an">@GeneratedValue</span>(strategy =
+    <span class="ty">GenerationType</span>.AUTO)
+  <span class="kw">protected</span> <span class="ty">Long</span> id;
+
+  <span class="kw">protected</span> <span class="ty">String</span> title;
+  <span class="kw">protected</span> <span class="ty">Float</span> price;
+  <span class="kw">protected</span> <span class="ty">String</span> description;
+
+  <span class="cm">// Constructors, getters, setters...</span>
+}</pre>
+      </div>
+      <div>
+        <div class="card card-red">
+          <h4>🔑 Key annotations on Item</h4>
+          <ul style="font-size:12.5px">
+            <li><code>@Entity</code> — marks this as a JPA entity</li>
+            <li><code>@Inheritance(strategy = InheritanceType.JOINED)</code> — tells JPA to use the joined-subclass strategy for this hierarchy</li>
+            <li><code>@Id</code> — marks the primary key field</li>
+            <li><code>@GeneratedValue</code> — auto-generate ID values</li>
+          </ul>
+        </div>
+        <div class="info-box" style="margin-top:10px">
+          ⚠️ Use <code>protected</code> (not <code>private</code>) for fields that subclasses need to access directly.
+        </div>
+        <div class="card card-amber" style="margin-top:10px">
+          <h4>💡 Add a no-arg constructor</h4>
+          <p style="font-size:12.5px">JPA requires a <strong>public or protected no-argument constructor</strong> on every entity. Don't forget it!</p>
+          <pre style="font-size:11px"><span class="kw">public</span> <span class="ty">Item</span>() {}
+<span class="kw">public</span> <span class="ty">Item</span>(<span class="ty">String</span> t, <span class="ty">Float</span> p) {
+  <span class="kw">this</span>.title = t;
+  <span class="kw">this</span>.price = p;
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 7 – P1 BOOK & CD ENTITIES ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red">
+    <h2>Project 1 — Book &amp; CD Entities</h2>
+    <span class="step-badge">Step 3</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Book.java</h3>
+        <pre><span class="kw">package</span> entities;
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">Book</span> <span class="kw">extends</span> <span class="ty">Item</span> {
+
+  <span class="kw">private</span> <span class="ty">String</span>  isbn;
+  <span class="kw">private</span> <span class="ty">String</span>  publisher;
+  <span class="kw">private</span> <span class="ty">Integer</span> nbOfPage;
+  <span class="kw">private</span> <span class="ty">Boolean</span> illustrations;
+
+  <span class="kw">public</span> <span class="ty">Book</span>() {}
+
+  <span class="cm">// Constructor, getters, setters...</span>
+}</pre>
+        <div class="info-box" style="font-size:12.5px">
+          ✅ No need to repeat <code>@Id</code> or <code>@Inheritance</code> — Book <em>inherits</em> those from Item. Only add <code>@Entity</code> and its own fields.
+        </div>
+      </div>
+      <div>
+        <h3>CD.java</h3>
+        <pre><span class="kw">package</span> entities;
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">CD</span> <span class="kw">extends</span> <span class="ty">Item</span> {
+
+  <span class="kw">private</span> <span class="ty">String</span>  musicCompany;
+  <span class="kw">private</span> <span class="ty">Integer</span> numberOfCDs;
+  <span class="kw">private</span> <span class="ty">Float</span>   totalDuration;
+  <span class="kw">private</span> <span class="ty">String</span>  gender;
+
+  <span class="kw">public</span> <span class="ty">CD</span>() {}
+
+  <span class="cm">// Constructor, getters, setters...</span>
+}</pre>
+        <div class="card card-red" style="margin-top:8px">
+          <h4>What JPA creates automatically:</h4>
+          <ul style="font-size:12px">
+            <li>ITEM table (ID, DTYPE, shared cols)</li>
+            <li>BOOK table (ID as FK, Book-only cols)</li>
+            <li>CD table (ID as FK, CD-only cols)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 8 – P1 PERSISTENCE.XML ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red">
+    <h2>Project 1 — persistence.xml</h2>
+    <span class="step-badge">Step 4</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <p>Create <code>src/main/resources/META-INF/persistence.xml</code>:</p>
+        <pre>&lt;?xml version=<span class="st">"1.0"</span> encoding=<span class="st">"UTF-8"</span>?&gt;
+&lt;persistence version=<span class="st">"3.0"</span>
+  xmlns=<span class="st">"https://jakarta.ee/xml/ns/persistence"</span>&gt;
+
+  &lt;persistence-unit name=<span class="st">"Week3PU"</span>
+    transaction-type=<span class="st">"RESOURCE_LOCAL"</span>&gt;
+
+    &lt;class&gt;<span class="ty">entities.Item</span>&lt;/class&gt;
+    &lt;class&gt;<span class="ty">entities.Book</span>&lt;/class&gt;
+    &lt;class&gt;<span class="ty">entities.CD</span>&lt;/class&gt;
+
+    &lt;properties&gt;
+      &lt;property name=<span class="st">"jakarta.persistence.jdbc.driver"</span>
+        value=<span class="st">"com.mysql.cj.jdbc.Driver"</span>/&gt;
+      &lt;property name=<span class="st">"jakarta.persistence.jdbc.url"</span>
+        value=<span class="st">"jdbc:mysql://localhost:3306/week3db"</span>/&gt;
+      &lt;property name=<span class="st">"jakarta.persistence.jdbc.user"</span>
+        value=<span class="st">"root"</span>/&gt;
+      &lt;property name=<span class="st">"jakarta.persistence.jdbc.password"</span>
+        value=<span class="st">"password"</span>/&gt;
+      &lt;property name=<span class="st">"eclipselink.ddl-generation"</span>
+        value=<span class="st">"create-tables"</span>/&gt;
+      &lt;property name=<span class="st">"eclipselink.logging.level"</span>
+        value=<span class="st">"FINE"</span>/&gt;
+    &lt;/properties&gt;
+
+  &lt;/persistence-unit&gt;
+&lt;/persistence&gt;</pre>
+      </div>
+      <div>
+        <div class="card card-red">
+          <h4>🔧 Customise these values</h4>
+          <ul style="font-size:12.5px">
+            <li><strong>jdbc.url</strong> — change <code>week3db</code> to your DB name</li>
+            <li><strong>jdbc.user</strong> — your MySQL username</li>
+            <li><strong>jdbc.password</strong> — your MySQL password</li>
+            <li><strong>ddl-generation</strong> — <code>create-tables</code> creates tables if they don't exist</li>
+          </ul>
+        </div>
+        <div class="warn-box" style="margin-top:10px">
+          ⚠️ Make sure the database <strong>already exists</strong> in MySQL before running. JPA can create <em>tables</em> but not the <em>database</em> itself. Run:<br><br>
+          <code>CREATE DATABASE week3db;</code>
+        </div>
+        <div class="info-box" style="margin-top:10px">
+          💡 <code>eclipselink.logging.level=FINE</code> prints the generated SQL to the console — great for debugging!
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 9 – P1 MAIN CLASS ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red">
+    <h2>Project 1 — Main Class</h2>
+    <span class="step-badge">Step 5</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <p>Create <code>Main.java</code> in a <code>main</code> package (or the root package):</p>
+        <pre><span class="kw">package</span> main;
+<span class="kw">import</span> entities.*;
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="kw">public class</span> <span class="ty">Main</span> {
+  <span class="kw">public static void</span> main(<span class="ty">String</span>[] args) {
+
+    <span class="ty">EntityManagerFactory</span> emf =
+      <span class="ty">Persistence</span>.createEntityManagerFactory(
+        <span class="st">"Week3PU"</span>
+      );
+    <span class="ty">EntityManager</span> em = emf.createEntityManager();
+    <span class="ty">EntityTransaction</span> tx = em.getTransaction();
+
+    tx.begin();
+
+    <span class="cm">// Create a Book</span>
+    <span class="ty">Book</span> book = <span class="kw">new</span> <span class="ty">Book</span>();
+    book.setTitle(<span class="st">"Clean Code"</span>);
+    book.setPrice(<span class="nu">49.99f</span>);
+    book.setIsbn(<span class="st">"978-0132350884"</span>);
+    book.setPublisher(<span class="st">"Prentice Hall"</span>);
+    book.setNbOfPage(<span class="nu">464</span>);
+    em.persist(book);
+
+    <span class="cm">// Create a CD</span>
+    <span class="ty">CD</span> cd = <span class="kw">new</span> <span class="ty">CD</span>();
+    cd.setTitle(<span class="st">"Kind of Blue"</span>);
+    cd.setPrice(<span class="nu">12.99f</span>);
+    cd.setMusicCompany(<span class="st">"Columbia"</span>);
+    cd.setNumberOfCDs(<span class="nu">1</span>);
+    cd.setTotalDuration(<span class="nu">46.4f</span>);
+    em.persist(cd);
+
+    tx.commit();
+    System.out.println(<span class="st">"✅ Done!"</span>);
+
+    em.close();
+    emf.close();
+  }
+}</pre>
+      </div>
+      <div>
+        <div class="card card-red" style="margin-bottom:12px">
+          <h4>📌 Match the PU name</h4>
+          <p style="font-size:12.5px">The string <code>"Week3PU"</code> must <strong>exactly match</strong> the <code>name</code> attribute in your <code>persistence.xml</code>.</p>
+        </div>
+        <h3 style="margin-top:4px">Expected Console Output</h3>
+        <pre style="font-size:11px; background:#0a1628; color:#a8d8a8">[EclipseLink] Creating tables...
+INSERT INTO ITEM (ID, DTYPE, TITLE, ...)
+INSERT INTO BOOK (ID, ISBN, ...)
+INSERT INTO ITEM (ID, DTYPE, TITLE, ...)
+INSERT INTO CD (ID, MUSIC_COMPANY, ...)
+✅ Done!</pre>
+        <div class="success-box" style="margin-top:10px">
+          ✅ If you see INSERT statements and "Done!" — the project works! Go verify in MySQL Workbench or the NetBeans Services panel.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 10 – P1 VERIFY ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red">
+    <h2>Project 1 — Verify in MySQL</h2>
+    <span class="step-badge">Step 6 — Verify</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Using NetBeans Services Panel</h3>
+        <div class="step-box">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>Open Services tab</h4>
+            <p>Window → Services (or Ctrl+5)</p>
+          </div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Expand Databases → your connection</h4>
+            <p>Connect if not already. Expand your <code>week3db</code> database.</p>
+          </div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>Execute SQL queries</h4>
+            <p>Right-click the connection → Execute Command, then run the queries on the right.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:16px">Expected Tables</h3>
+        <div class="three-col" style="gap:10px">
+          <div class="card" style="text-align:center; padding:10px">
+            <h4>ITEM</h4>
+            <p style="font-size:11px">2 rows<br>(Book + CD)</p>
+          </div>
+          <div class="card" style="text-align:center; padding:10px">
+            <h4>BOOK</h4>
+            <p style="font-size:11px">1 row<br>(Clean Code)</p>
+          </div>
+          <div class="card" style="text-align:center; padding:10px">
+            <h4>CD</h4>
+            <p style="font-size:11px">1 row<br>(Kind of Blue)</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>Verification SQL</h3>
+        <pre><span class="cm">-- Check all tables exist</span>
+<span class="kw">SHOW TABLES</span> <span class="kw">FROM</span> week3db;
+
+<span class="cm">-- Check ITEM table (root)</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ITEM;
+
+<span class="cm">-- Should show:</span>
+<span class="cm">-- ID | DTYPE | TITLE      | PRICE</span>
+<span class="cm">-- 1  | Book  | Clean Code | 49.99</span>
+<span class="cm">-- 2  | CD    | Kind of... | 12.99</span>
+
+<span class="cm">-- Check subclass tables</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> BOOK;
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> CD;
+
+<span class="cm">-- Verify the JOIN works</span>
+<span class="kw">SELECT</span> i.title, b.isbn
+<span class="kw">FROM</span> ITEM i
+<span class="kw">JOIN</span> BOOK b <span class="kw">ON</span> i.ID = b.ID;</pre>
+        <div class="warn-box" style="margin-top:10px">
+          🐛 <strong>No tables created?</strong> Check that:
+          <ul style="font-size:12px; margin-top:6px">
+            <li>The database exists in MySQL</li>
+            <li>Connection URL is correct</li>
+            <li>All 3 entities are listed in persistence.xml</li>
+            <li>No compilation errors in the entity classes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 11 – P1 TROUBLESHOOTING ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red"><h2>Project 1 — Troubleshooting</h2><span class="tag">Common Issues</span></div>
+  <div class="slide-body">
+    <table>
+      <tr><th>Error / Symptom</th><th>Likely Cause</th><th>Fix</th></tr>
+      <tr>
+        <td><code>Unknown database 'week3db'</code></td>
+        <td>Database doesn't exist</td>
+        <td>Run <code>CREATE DATABASE week3db;</code> in MySQL first</td>
+      </tr>
+      <tr>
+        <td><code>Communications link failure</code></td>
+        <td>MySQL not running or wrong port</td>
+        <td>Start MySQL service; check URL uses correct port (usually 3306)</td>
+      </tr>
+      <tr>
+        <td><code>No persistence provider for "Week3PU"</code></td>
+        <td>EclipseLink not on classpath, or PU name mismatch</td>
+        <td>Check pom.xml has EclipseLink; name in code must match persistence.xml exactly</td>
+      </tr>
+      <tr>
+        <td>Tables created but no data</td>
+        <td>Transaction not committed</td>
+        <td>Ensure <code>tx.commit()</code> is called and no exception swallowed it</td>
+      </tr>
+      <tr>
+        <td><code>Entity not mapped</code> for Book or CD</td>
+        <td>Missing <code>&lt;class&gt;</code> tag in persistence.xml</td>
+        <td>Add <code>&lt;class&gt;entities.Book&lt;/class&gt;</code> and <code>&lt;class&gt;entities.CD&lt;/class&gt;</code></td>
+      </tr>
+      <tr>
+        <td><code>No default constructor</code> exception</td>
+        <td>Entity missing no-arg constructor</td>
+        <td>Add <code>public Item() {}</code>, <code>public Book() {}</code>, etc. to each entity</td>
+      </tr>
+      <tr>
+        <td>Old test data still showing after re-run</td>
+        <td><code>create-tables</code> does not drop existing tables</td>
+        <td>Change ddl-generation to <code>drop-and-create-tables</code> to start fresh (careful: deletes all data)</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 12 – PROJECT 2 SECTION ══════════════════ -->
+<div class="slide slide-section p2">
+  <div class="pnum">Project 2 of 2</div>
+  <h2>Event Cascading</h2>
+  <div class="goal">
+    Map Customer and Address as entities with a one-to-one relationship.<br>
+    Configure <strong>cascade persist &amp; remove</strong>, test persistence context membership.
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 13 – P2 DOMAIN ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header blue"><h2>Project 2 — Domain Model &amp; Plan</h2><span class="tag">What you're building</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3 class="blue">Entities</h3>
+        <div class="diagram-wrap" style="background:var(--off-white); border:1px solid var(--border); border-radius:10px; padding:16px;">
+          <svg viewBox="0 0 280 100" xmlns="http://www.w3.org/2000/svg" style="width:100%">
+            <!-- Customer -->
+            <rect x="10" y="10" width="115" height="80" rx="8" fill="#eff6ff" stroke="#1a3a5c" stroke-width="2"/>
+            <rect x="10" y="10" width="115" height="22" rx="8" fill="#1a3a5c"/>
+            <rect x="10" y="22" width="115" height="10" fill="#1a3a5c"/>
+            <text x="67" y="26" text-anchor="middle" font-family="Trebuchet MS" font-size="12" font-weight="700" fill="white">Customer</text>
+            <text x="67" y="48" text-anchor="middle" font-family="Consolas" font-size="9" fill="#444">id: Long</text>
+            <text x="67" y="60" text-anchor="middle" font-family="Consolas" font-size="9" fill="#444">firstName, lastName</text>
+            <text x="67" y="72" text-anchor="middle" font-family="Consolas" font-size="9" fill="#444">email</text>
+            <text x="67" y="84" text-anchor="middle" font-family="Consolas" font-size="9" fill="#C8102E">address: Address</text>
+
+            <!-- Arrow -->
+            <line x1="125" y1="50" x2="155" y2="50" stroke="#1a3a5c" stroke-width="2" marker-end="url(#barr)"/>
+            <text x="140" y="44" text-anchor="middle" font-family="Trebuchet MS" font-size="9" fill="#1a3a5c" font-weight="700">@OneToOne</text>
+            <text x="140" y="64" text-anchor="middle" font-family="Trebuchet MS" font-size="8.5" fill="#C8102E">cascade=ALL</text>
+
+            <!-- Address -->
+            <rect x="155" y="10" width="115" height="80" rx="8" fill="#eff6ff" stroke="#1a3a5c" stroke-width="2"/>
+            <rect x="155" y="10" width="115" height="22" rx="8" fill="#1a3a5c"/>
+            <rect x="155" y="22" width="115" height="10" fill="#1a3a5c"/>
+            <text x="212" y="26" text-anchor="middle" font-family="Trebuchet MS" font-size="12" font-weight="700" fill="white">Address</text>
+            <text x="212" y="48" text-anchor="middle" font-family="Consolas" font-size="9" fill="#444">id: Long</text>
+            <text x="212" y="60" text-anchor="middle" font-family="Consolas" font-size="9" fill="#444">street1, city</text>
+            <text x="212" y="72" text-anchor="middle" font-family="Consolas" font-size="9" fill="#444">zipcode</text>
+            <text x="212" y="84" text-anchor="middle" font-family="Consolas" font-size="9" fill="#444">country</text>
+
+            <defs>
+              <marker id="barr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L7,3 z" fill="#1a3a5c"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+
+        <h3 class="blue" style="margin-top:14px">Your Task List</h3>
+        <ol>
+          <li>Declare both classes as entities</li>
+          <li>Set up <code>@OneToOne</code> with cascade PERSIST &amp; REMOVE</li>
+          <li>Persist 2 customers (only calling <code>em.persist(customer)</code>)</li>
+          <li>Check if a customer is in the persistence context</li>
+          <li>Delete a customer (only calling <code>em.remove(customer)</code>)</li>
+          <li>Check if the customer is still in the context</li>
+        </ol>
+      </div>
+      <div>
+        <h3 class="blue">Database Result</h3>
+        <div class="card card-blue" style="margin-bottom:8px">
+          <h4 style="color:#1a3a5c">CUSTOMER table</h4>
+          <p style="font-size:12px">ID, FIRSTNAME, LASTNAME, EMAIL, ADDRESS_FK</p>
+        </div>
+        <div class="card card-blue">
+          <h4 style="color:#1a3a5c">ADDRESS table</h4>
+          <p style="font-size:12px">ID, STREET1, CITY, ZIPCODE, COUNTRY</p>
+        </div>
+        <div class="info-box blue" style="margin-top:12px">
+          💡 When you remove a Customer, the linked Address should <strong>automatically be deleted too</strong> — that's cascade REMOVE in action.
+        </div>
+        <div class="card card-amber" style="margin-top:10px">
+          <h4>Tip: Create a new project</h4>
+          <p style="font-size:12.5px">You can build on Project 1's structure, or start fresh. Use a different persistence unit name and database if needed (e.g., <code>week3db2</code>).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 14 – P2 ADDRESS ENTITY ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header blue">
+    <h2>Project 2 — Address Entity</h2>
+    <span class="step-badge blue-step">Step 1</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3 class="blue">Address.java</h3>
+        <pre><span class="kw">package</span> entities;
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">Address</span> {
+
+  <span class="an">@Id</span>
+  <span class="an">@GeneratedValue</span>(strategy =
+    <span class="ty">GenerationType</span>.AUTO)
+  <span class="kw">private</span> <span class="ty">Long</span> id;
+
+  <span class="kw">private</span> <span class="ty">String</span> street1;
+  <span class="kw">private</span> <span class="ty">String</span> city;
+  <span class="kw">private</span> <span class="ty">String</span> zipcode;
+  <span class="kw">private</span> <span class="ty">String</span> country;
+
+  <span class="kw">public</span> <span class="ty">Address</span>() {}
+
+  <span class="kw">public</span> <span class="ty">Address</span>(
+    <span class="ty">String</span> street1, <span class="ty">String</span> city,
+    <span class="ty">String</span> zipcode, <span class="ty">String</span> country
+  ) {
+    <span class="kw">this</span>.street1 = street1;
+    <span class="kw">this</span>.city = city;
+    <span class="kw">this</span>.zipcode = zipcode;
+    <span class="kw">this</span>.country = country;
+  }
+  <span class="cm">// getters and setters...</span>
+}</pre>
+      </div>
+      <div>
+        <div class="card card-blue">
+          <h4 style="color:#1a3a5c">Address is the "inverse" side</h4>
+          <p style="font-size:12.5px">Address has no reference back to Customer. The Customer table holds the foreign key column (ADDRESS_FK) pointing to the Address.</p>
+        </div>
+        <div class="info-box blue" style="margin-top:12px">
+          No special relationship annotations are needed on Address — all the relationship configuration lives on the <strong>Customer</strong> side (the owning side).
+        </div>
+        <div class="card card-amber" style="margin-top:12px">
+          <h4>Don't forget:</h4>
+          <ul style="font-size:12.5px">
+            <li>Add <code>entities.Address</code> to your <code>persistence.xml</code></li>
+            <li>Generate getters &amp; setters (NetBeans: right-click → Insert Code → Getter and Setter)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 15 – P2 CUSTOMER ENTITY ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header blue">
+    <h2>Project 2 — Customer Entity</h2>
+    <span class="step-badge blue-step">Step 2</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3 class="blue">Customer.java</h3>
+        <pre><span class="kw">package</span> entities;
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">Customer</span> {
+
+  <span class="an">@Id</span>
+  <span class="an">@GeneratedValue</span>(strategy =
+    <span class="ty">GenerationType</span>.AUTO)
+  <span class="kw">private</span> <span class="ty">Long</span> id;
+
+  <span class="kw">private</span> <span class="ty">String</span> firstName;
+  <span class="kw">private</span> <span class="ty">String</span> lastName;
+  <span class="kw">private</span> <span class="ty">String</span> email;
+
+  <span class="an">@OneToOne</span>(cascade = {
+    <span class="ty">CascadeType</span>.PERSIST,
+    <span class="ty">CascadeType</span>.REMOVE
+  })
+  <span class="kw">private</span> <span class="ty">Address</span> address;
+
+  <span class="kw">public</span> <span class="ty">Customer</span>() {}
+  <span class="cm">// constructors, getters, setters...</span>
+}</pre>
+      </div>
+      <div>
+        <div class="card card-red">
+          <h4>🔑 The cascade attribute</h4>
+          <ul style="font-size:12.5px">
+            <li><code>CascadeType.PERSIST</code> — when you persist a Customer, JPA also persists the linked Address</li>
+            <li><code>CascadeType.REMOVE</code> — when you remove a Customer, JPA also removes the Address</li>
+          </ul>
+        </div>
+        <div class="info-box" style="margin-top:10px">
+          You could also write <code>cascade = CascadeType.ALL</code> to cover all cascade types, but using specific types is more precise and intentional.
+        </div>
+        <div class="card card-amber" style="margin-top:10px">
+          <h4>@OneToOne generates a FK column</h4>
+          <p style="font-size:12.5px">JPA adds an <code>ADDRESS_FK</code> column to the CUSTOMER table — the foreign key pointing to ADDRESS.ID. You don't need to configure this manually unless you want to customise the column name.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 16 – P2 MAIN CLASS ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header blue">
+    <h2>Project 2 — Main Class</h2>
+    <span class="step-badge blue-step">Step 3</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <pre><span class="ty">EntityManagerFactory</span> emf =
+  <span class="ty">Persistence</span>.createEntityManagerFactory(<span class="st">"Week3PU2"</span>);
+<span class="ty">EntityManager</span> em = emf.createEntityManager();
+<span class="ty">EntityTransaction</span> tx = em.getTransaction();
+
+tx.begin();
+
+<span class="cm">// Customer 1</span>
+<span class="ty">Address</span> a1 = <span class="kw">new</span> <span class="ty">Address</span>(
+  <span class="st">"10 George St"</span>, <span class="st">"Brisbane"</span>, <span class="st">"4000"</span>, <span class="st">"AU"</span>);
+<span class="ty">Customer</span> c1 = <span class="kw">new</span> <span class="ty">Customer</span>();
+c1.setFirstName(<span class="st">"Alice"</span>); c1.setLastName(<span class="st">"Smith"</span>);
+c1.setEmail(<span class="st">"alice@example.com"</span>);
+c1.setAddress(a1);
+em.persist(c1);  <span class="cm">// a1 auto-persisted!</span>
+
+<span class="cm">// Customer 2</span>
+<span class="ty">Address</span> a2 = <span class="kw">new</span> <span class="ty">Address</span>(
+  <span class="st">"5 Queen St"</span>, <span class="st">"Sydney"</span>, <span class="st">"2000"</span>, <span class="st">"AU"</span>);
+<span class="ty">Customer</span> c2 = <span class="kw">new</span> <span class="ty">Customer</span>();
+c2.setFirstName(<span class="st">"Bob"</span>); c2.setLastName(<span class="st">"Jones"</span>);
+c2.setEmail(<span class="st">"bob@example.com"</span>);
+c2.setAddress(a2);
+em.persist(c2);  <span class="cm">// a2 auto-persisted!</span>
+
+tx.commit();</pre>
+      </div>
+      <div>
+        <div class="card card-blue">
+          <h4 style="color:#1a3a5c">✅ What's happening</h4>
+          <ul style="font-size:12.5px">
+            <li>Only <code>em.persist(c1)</code> and <code>em.persist(c2)</code> are called</li>
+            <li>The <code>CascadeType.PERSIST</code> causes <code>a1</code> and <code>a2</code> to be persisted automatically</li>
+            <li>4 INSERT statements fire at commit: 2 for ADDRESS, 2 for CUSTOMER</li>
+          </ul>
+        </div>
+        <div class="info-box blue" style="margin-top:10px">
+          Because of the foreign key, JPA always inserts the Address <em>first</em>, then the Customer — so the FK column can be populated correctly.
+        </div>
+        <div class="card card-amber" style="margin-top:10px">
+          <h4>⚠️ Common mistake</h4>
+          <p style="font-size:12.5px">Forgetting to call <code>c1.setAddress(a1)</code> <em>before</em> <code>em.persist(c1)</code> means the cascade has nothing to propagate to!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 17 – P2 CONTAINS & REMOVE ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header blue">
+    <h2>Project 2 — Checking Context &amp; Removing</h2>
+    <span class="step-badge blue-step">Step 4</span>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3 class="blue">Check if managed, then remove</h3>
+        <pre><span class="cm">// Start a new transaction</span>
+tx.begin();
+
+<span class="cm">// Find customer 1</span>
+<span class="ty">Customer</span> found = em.find(
+  <span class="ty">Customer</span>.<span class="kw">class</span>, c1.getId()
+);
+
+<span class="cm">// Task 4: Is the entity managed?</span>
+<span class="kw">boolean</span> isManaged = em.contains(found);
+System.out.println(
+  <span class="st">"Customer in context: "</span> + isManaged
+);
+<span class="cm">// Expected: Customer in context: true</span>
+
+<span class="cm">// Task 5: Remove — cascade fires!</span>
+em.remove(found);
+<span class="cm">// Address will also be removed</span>
+
+tx.commit();
+
+<span class="cm">// Task 6: Is it still managed?</span>
+<span class="kw">boolean</span> afterRemove = em.contains(found);
+System.out.println(
+  <span class="st">"After remove: "</span> + afterRemove
+);
+<span class="cm">// Expected: After remove: false</span></pre>
+      </div>
+      <div>
+        <div class="card card-red">
+          <h4>em.contains() explained</h4>
+          <p style="font-size:12.5px"><code>em.contains(entity)</code> returns <code>true</code> if the entity is currently in the <strong>persistence context</strong> (i.e., MANAGED state). Once removed or detached, it returns <code>false</code>.</p>
+        </div>
+        <div class="success-box" style="margin-top:10px">
+          <strong>Expected console output:</strong><br><br>
+          <code>Customer in context: true</code><br>
+          <code>After remove: false</code>
+        </div>
+        <div class="info-box blue" style="margin-top:10px">
+          When you call <code>em.remove(found)</code>, the entity transitions to <strong>REMOVED</strong> state. At commit, JPA executes:
+          <ul style="font-size:12px; margin-top:6px">
+            <li>DELETE FROM CUSTOMER WHERE ID = ?</li>
+            <li>DELETE FROM ADDRESS WHERE ID = ? <em>(cascade!)</em></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 18 – P2 VERIFY ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header blue"><h2>Project 2 — Verify &amp; Troubleshoot</h2><span class="tag">Step 5</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3 class="blue">Verification SQL</h3>
+        <pre><span class="cm">-- After persisting 2 customers:</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> CUSTOMER;
+<span class="cm">-- Expect: 2 rows (Alice, Bob)</span>
+
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ADDRESS;
+<span class="cm">-- Expect: 2 rows (even though you
+-- only called persist on Customer!)</span>
+
+<span class="cm">-- After removing Customer 1:</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> CUSTOMER;
+<span class="cm">-- Expect: 1 row (only Bob)</span>
+
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ADDRESS;
+<span class="cm">-- Expect: 1 row (Alice's address
+-- was also deleted via cascade!)</span>
+
+<span class="cm">-- Verify the FK link</span>
+<span class="kw">SELECT</span> c.firstname, a.city
+<span class="kw">FROM</span> CUSTOMER c
+<span class="kw">JOIN</span> ADDRESS a
+  <span class="kw">ON</span> c.ADDRESS_FK = a.ID;</pre>
+      </div>
+      <div>
+        <h3 class="blue">Common Issues</h3>
+        <table>
+          <tr><th class="blue-th">Issue</th><th class="blue-th">Fix</th></tr>
+          <tr>
+            <td><code>Address not deleted</code> after remove</td>
+            <td>Check <code>CascadeType.REMOVE</code> is set on the <code>@OneToOne</code> in Customer</td>
+          </tr>
+          <tr>
+            <td>Two rows in Address but one in Customer</td>
+            <td>Normal if you removed one customer — cascade deleted its address correctly ✅</td>
+          </tr>
+          <tr>
+            <td><code>Detached entity passed to remove</code></td>
+            <td>Must call <code>em.find()</code> to get a managed instance first, then <code>em.remove()</code></td>
+          </tr>
+          <tr>
+            <td><code>em.contains()</code> returns false before remove</td>
+            <td>Entity may have been detached — check for <code>em.clear()</code> or transaction boundaries</td>
+          </tr>
+        </table>
+        <div class="success-box" style="margin-top:12px">
+          ✅ <strong>Project 2 complete when:</strong>
+          <ul style="font-size:12.5px; margin-top:6px">
+            <li>Only 2 em.persist() calls → 4 DB rows created</li>
+            <li>em.contains() returns true then false as expected</li>
+            <li>Removing 1 customer removes its address automatically</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 19 – QUIZ ══════════════════ -->
+<div class="slide quiz-slide slide-content">
+  <div class="slide-header" style="background:#2d0012"><h2>✏️ Check Your Understanding</h2></div>
+  <div class="slide-body" style="background:#1a0008">
+    <p class="quiz-q">In Project 1, you annotate <code>Item</code> with <code>@Inheritance(strategy = InheritanceType.JOINED)</code>. What annotation do you put on <code>Book</code>?</p>
+    <div class="quiz-opts" id="q1-opts">
+      <div class="quiz-opt" onclick="answer(this,'q1',false)"><span class="opt-l">A</span> <code>@Entity</code> and <code>@Inheritance(strategy = InheritanceType.JOINED)</code></div>
+      <div class="quiz-opt" onclick="answer(this,'q1',true)"><span class="opt-l">B</span> <code>@Entity</code> only — inheritance strategy is inherited from the root</div>
+      <div class="quiz-opt" onclick="answer(this,'q1',false)"><span class="opt-l">C</span> <code>@MappedSuperclass</code></div>
+      <div class="quiz-opt" onclick="answer(this,'q1',false)"><span class="opt-l">D</span> No annotation needed — JPA auto-detects subclasses</div>
+    </div>
+    <div id="q1-feedback" class="quiz-feedback"></div>
+
+    <p class="quiz-q" style="margin-top:24px">In Project 2, you only call <code>em.persist(customer)</code>. Why is the Address also persisted?</p>
+    <div class="quiz-opts" id="q2-opts">
+      <div class="quiz-opt" onclick="answer(this,'q2',false)"><span class="opt-l">A</span> JPA automatically persists all related objects by default</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',false)"><span class="opt-l">B</span> Address is persisted because it's listed in persistence.xml</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',true)"><span class="opt-l">C</span> <code>CascadeType.PERSIST</code> on the <code>@OneToOne</code> propagates the persist to Address</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',false)"><span class="opt-l">D</span> The no-arg constructor triggers automatic persistence</div>
+    </div>
+    <div id="q2-feedback" class="quiz-feedback"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 20 – EXTENSION ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red"><h2>Extension Challenges</h2><span class="tag">Finished Early?</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Project 1 Extensions</h3>
+        <div class="card card-amber" style="margin-bottom:10px">
+          <span class="badge badge-amber">Challenge 1</span>
+          <h4 style="margin-top:8px">Add a third subclass: Vinyl</h4>
+          <p style="font-size:13px">Create a <code>Vinyl</code> class extending <code>Item</code> with fields <code>rpm</code> (Integer) and <code>diameter</code> (Float). Persist a Vinyl entity.</p>
+        </div>
+        <div class="card card-amber" style="margin-bottom:10px">
+          <span class="badge badge-amber">Challenge 2</span>
+          <h4 style="margin-top:8px">Switch to Single-Table</h4>
+          <p style="font-size:13px">Change the strategy to <code>SINGLE_TABLE</code> on <code>Item</code>. Observe how the schema changes — only 1 table now with a DTYPE discriminator column.</p>
+        </div>
+        <div class="card card-amber">
+          <span class="badge badge-amber">Challenge 3</span>
+          <h4 style="margin-top:8px">Custom discriminator column</h4>
+          <p style="font-size:13px">Add <code>@DiscriminatorColumn(name="ITEM_TYPE")</code> to Item and <code>@DiscriminatorValue("BOOK")</code> to Book. Observe how the DTYPE column changes.</p>
+        </div>
+      </div>
+      <div>
+        <h3>Project 2 Extensions</h3>
+        <div class="card card-blue" style="margin-bottom:10px">
+          <span class="badge badge-blue">Challenge 4</span>
+          <h4 style="margin-top:8px">Add orphanRemoval</h4>
+          <p style="font-size:13px">Add <code>orphanRemoval = true</code> to the <code>@OneToOne</code>. Test that setting <code>customer.setAddress(null)</code> also deletes the Address row.</p>
+        </div>
+        <div class="card card-blue" style="margin-bottom:10px">
+          <span class="badge badge-blue">Challenge 5</span>
+          <h4 style="margin-top:8px">Add a One-to-Many relationship</h4>
+          <p style="font-size:13px">Add a <code>List&lt;Order&gt;</code> to Customer with <code>@OneToMany(cascade = CascadeType.ALL)</code>. Persist customers with multiple orders.</p>
+        </div>
+        <div class="card card-blue">
+          <span class="badge badge-blue">Challenge 6</span>
+          <h4 style="margin-top:8px">Test detach + merge</h4>
+          <p style="font-size:13px">After persisting, call <code>em.detach(c1)</code>, modify the email, then call <code>em.merge(c1)</code> in a new transaction. Verify the update lands in the DB.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 21 – SUMMARY ══════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header red"><h2>Lab Summary</h2><span class="tag">What You Learned</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>✅ Project 1 — Inheritance</h3>
+        <div class="card card-red">
+          <ul>
+            <li>Annotate the root class with <code>@Entity</code> + <code>@Inheritance(JOINED)</code></li>
+            <li>Subclasses only need <code>@Entity</code></li>
+            <li>JPA creates separate tables, linked by PK/FK</li>
+            <li>All entities must be listed in <code>persistence.xml</code></li>
+          </ul>
+        </div>
+        <h3 style="margin-top:14px">✅ Project 2 — Cascading</h3>
+        <div class="card card-red">
+          <ul>
+            <li><code>cascade = {CascadeType.PERSIST, CascadeType.REMOVE}</code> on the owning side</li>
+            <li>Persist/remove the parent → child follows automatically</li>
+            <li><code>em.contains()</code> checks managed state</li>
+            <li>Removed entities leave the persistence context</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <h3>🗝 Key Concepts to Remember</h3>
+        <div class="card" style="margin-bottom:10px">
+          <h4>Inheritance strategy lives on the root</h4>
+          <p style="font-size:13px">Only <code>Item</code> carries <code>@Inheritance</code>. Subclasses just extend and add their own fields.</p>
+        </div>
+        <div class="card" style="margin-bottom:10px">
+          <h4>Cascade is "opt-in"</h4>
+          <p style="font-size:13px">Without <code>cascade</code>, you must persist/remove every entity manually. With it, operations propagate automatically.</p>
+        </div>
+        <div class="card">
+          <h4>Persistence context = your safety net</h4>
+          <p style="font-size:13px">While a transaction is open, all managed entities are tracked. Changes are auto-flushed at commit. Once closed, you're working with plain Java objects again.</p>
+        </div>
+        <div class="info-box" style="margin-top:12px">
+          📁 Remember: complete sample projects are available on <strong>Moodle</strong> if you get stuck — but try your own version first!
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end #deck -->
+
+<div id="nav">
+  <button class="nav-btn" id="prev-btn" onclick="prevSlide()" disabled>← Previous</button>
+  <div id="slide-counter"><span class="curr" id="curr">1</span> / <span id="total"></span></div>
+  <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  document.getElementById('total').textContent = slides.length;
+
+  function updateProgress() {
+    const pct = ((current + 1) / slides.length) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('curr').textContent = current + 1;
+    document.getElementById('prev-btn').disabled = current === 0;
+    document.getElementById('next-btn').disabled = current === slides.length - 1;
+  }
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    updateProgress();
+    window.scrollTo(0, 0);
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  prevSlide();
+  });
+
+  const feedbacks = {
+    q1: {
+      correct: "✅ Correct! Only the root class (Item) needs @Inheritance. Subclasses like Book and CD just need @Entity and their own fields — the inheritance strategy is inherited automatically.",
+      wrong: "❌ Not quite. @Inheritance only goes on the root entity (Item). Book just needs @Entity. JPA knows it's part of the hierarchy because it extends Item."
+    },
+    q2: {
+      correct: "✅ Correct! CascadeType.PERSIST on the @OneToOne relationship in Customer tells JPA to propagate the persist operation to the linked Address entity. Without this, you'd get an error trying to persist a customer that references a transient (unpersisted) address.",
+      wrong: "❌ Remember: JPA does NOT persist related entities by default. It only does so when you explicitly set a CascadeType. Here, CascadeType.PERSIST on the @OneToOne is what triggers the Address to be saved."
+    }
+  };
+
+  function answer(el, qid, isCorrect) {
+    const opts = document.getElementById(qid + '-opts');
+    if (opts.dataset.answered) return;
+    opts.dataset.answered = 'true';
+    opts.querySelectorAll('.quiz-opt').forEach(o => o.style.pointerEvents = 'none');
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+    const fb = document.getElementById(qid + '-feedback');
+    fb.innerHTML = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+    fb.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>

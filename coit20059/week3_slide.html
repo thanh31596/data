@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 3 – Managing Persistent Objects</title>
+<style>
+  :root {
+    --red: #C8102E;
+    --red-dark: #9B0D22;
+    --red-light: #f7e8eb;
+    --red-mid: #e8c0c8;
+    --white: #ffffff;
+    --off-white: #fafafa;
+    --text: #1a1a1a;
+    --text-muted: #555;
+    --code-bg: #1e1e2e;
+    --code-text: #cdd6f4;
+    --border: #e0e0e0;
+    --shadow: 0 4px 24px rgba(200,16,46,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: #f0f0f0;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 0;
+  }
+  /* Progress Bar */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 4px;
+    background: var(--red); transition: width 0.3s ease; z-index: 1000;
+  }
+  /* Slide Container */
+  #deck {
+    width: 100%; max-width: 960px;
+    position: relative;
+  }
+  .slide {
+    display: none;
+    background: var(--white);
+    min-height: 580px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    flex-direction: column;
+  }
+  .slide.active { display: flex; }
+
+  /* ── SLIDE TYPES ── */
+
+  /* Title Slide */
+  .slide-title {
+    background: linear-gradient(135deg, var(--red-dark) 0%, var(--red) 60%, #e63050 100%);
+    color: white;
+    justify-content: center; align-items: center; text-align: center;
+    padding: 60px 80px;
+  }
+  .slide-title .week-badge {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 13px; letter-spacing: 3px; text-transform: uppercase;
+    background: rgba(255,255,255,0.2); padding: 6px 18px; border-radius: 20px;
+    display: inline-block; margin-bottom: 28px;
+  }
+  .slide-title h1 {
+    font-size: 42px; font-weight: 700; line-height: 1.2; margin-bottom: 20px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .slide-title .subtitle {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 17px; opacity: 0.88; line-height: 1.5;
+  }
+  .slide-title .parts-row {
+    display: flex; gap: 24px; margin-top: 36px; justify-content: center;
+  }
+  .slide-title .part-pill {
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 8px; padding: 12px 24px; font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+  }
+  .slide-title .part-pill span { font-size: 12px; opacity: 0.75; display: block; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* Section Divider */
+  .slide-section {
+    background: var(--red);
+    justify-content: center; align-items: center; text-align: center;
+    color: white; padding: 60px;
+  }
+  .slide-section .part-num {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 13px; letter-spacing: 4px; text-transform: uppercase;
+    opacity: 0.75; margin-bottom: 16px;
+  }
+  .slide-section h2 { font-size: 38px; font-weight: 700; margin-bottom: 20px; }
+  .slide-section .topics { 
+    font-family: 'Trebuchet MS', sans-serif; font-size: 15px; opacity: 0.88;
+    line-height: 1.8; margin-top: 12px;
+  }
+
+  /* Standard Content Slide */
+  .slide-content { padding: 0; }
+  .slide-header {
+    background: var(--red); color: white;
+    padding: 22px 48px 18px;
+    display: flex; align-items: baseline; gap: 14px;
+  }
+  .slide-header h2 { font-size: 24px; font-weight: 700; letter-spacing: 0.3px; }
+  .slide-header .tag {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    background: rgba(255,255,255,0.22); padding: 3px 10px; border-radius: 12px;
+  }
+  .slide-body { padding: 36px 48px; flex: 1; }
+
+  /* Layout helpers */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+  .two-col-60 { display: grid; grid-template-columns: 3fr 2fr; gap: 32px; align-items: start; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* Typography */
+  h3 { font-size: 17px; color: var(--red); margin-bottom: 10px; font-weight: 700; }
+  h4 { font-size: 14px; color: var(--text); margin-bottom: 8px; font-weight: 700; font-family: 'Trebuchet MS', sans-serif; }
+  p { font-family: 'Trebuchet MS', sans-serif; font-size: 14.5px; line-height: 1.7; color: var(--text); margin-bottom: 10px; }
+  ul { padding-left: 20px; margin-bottom: 10px; }
+  li { font-family: 'Trebuchet MS', sans-serif; font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 4px; }
+  li::marker { color: var(--red); }
+  strong { color: var(--red-dark); }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border-radius: 8px; padding: 16px 20px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px; line-height: 1.65; color: var(--code-text);
+    overflow-x: auto; margin: 10px 0;
+  }
+  .kw { color: #cba6f7; }   /* keyword */
+  .an { color: #a6e3a1; }   /* annotation */
+  .st { color: #f9e2af; }   /* string */
+  .cm { color: #6c7086; font-style: italic; }  /* comment */
+  .ty { color: #89dceb; }   /* type */
+  .nu { color: #fab387; }   /* number */
+
+  /* Concept cards */
+  .card {
+    background: var(--off-white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 12px;
+  }
+  .card-red { background: var(--red-light); border-color: var(--red-mid); }
+  .card h4 { color: var(--red-dark); margin-bottom: 6px; }
+
+  /* Info boxes */
+  .info-box {
+    background: var(--red-light); border-left: 4px solid var(--red);
+    border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0;
+    font-family: 'Trebuchet MS', sans-serif; font-size: 13.5px; line-height: 1.6;
+  }
+  .warn-box {
+    background: #fff8e1; border-left: 4px solid #f59e0b;
+    border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0;
+    font-family: 'Trebuchet MS', sans-serif; font-size: 13.5px;
+  }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-family: 'Trebuchet MS', sans-serif; font-size: 13px; }
+  th { background: var(--red); color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--off-white); }
+  .check { color: #16a34a; font-weight: 700; }
+  .cross { color: #dc2626; font-weight: 700; }
+  .warn { color: #d97706; font-weight: 700; }
+
+  /* Badge */
+  .badge {
+    display: inline-block; font-family: 'Trebuchet MS', sans-serif;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 12px; font-weight: 700; margin-bottom: 10px;
+  }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-amber { background: #fff3cd; color: #856404; }
+  .badge-green { background: #d4edda; color: #155724; }
+
+  /* Quiz */
+  .quiz-slide { background: #1a0008; color: white; }
+  .quiz-slide .slide-header { background: #2d0012; }
+  .quiz-slide .slide-body { background: #1a0008; }
+  .quiz-q { font-size: 18px; font-weight: 700; color: white; margin-bottom: 24px; line-height: 1.5; font-family: Georgia; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 12px; }
+  .quiz-opt {
+    background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 14px 20px;
+    font-family: 'Trebuchet MS', sans-serif; font-size: 14px; color: white;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 14px;
+  }
+  .quiz-opt:hover { background: rgba(200,16,46,0.3); border-color: var(--red); }
+  .quiz-opt.correct { background: rgba(22,163,74,0.3); border-color: #16a34a; }
+  .quiz-opt.wrong { background: rgba(220,38,38,0.25); border-color: #dc2626; }
+  .quiz-opt .opt-letter {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .quiz-feedback {
+    margin-top: 20px; padding: 14px 20px; border-radius: 10px;
+    font-family: 'Trebuchet MS', sans-serif; font-size: 14px; line-height: 1.6; display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(22,163,74,0.2); border: 1px solid #16a34a; color: #bbf7d0; }
+  .quiz-feedback.wrong { background: rgba(220,38,38,0.2); border: 1px solid #dc2626; color: #fecaca; }
+
+  /* Navigation */
+  #nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 32px; z-index: 999;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  }
+  .nav-btn {
+    background: var(--red); color: white; border: none;
+    padding: 10px 28px; border-radius: 8px; font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .nav-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
+  .nav-btn:disabled { background: #ccc; cursor: default; transform: none; }
+  #slide-counter {
+    font-family: 'Trebuchet MS', sans-serif; font-size: 14px; color: var(--text-muted);
+    text-align: center;
+  }
+  #slide-counter .current { color: var(--red); font-weight: 700; font-size: 18px; }
+
+  /* SVG diagrams */
+  .diagram-wrap { background: var(--off-white); border-radius: 10px; padding: 12px; border: 1px solid var(--border); }
+
+  /* Lifecycle state machine */
+  .lifecycle { display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap; gap: 10px; padding: 8px 0; }
+  .lc-state {
+    background: white; border: 2.5px solid var(--red);
+    border-radius: 10px; padding: 12px 16px; text-align: center;
+    font-family: 'Trebuchet MS', sans-serif; min-width: 100px;
+  }
+  .lc-state .name { font-size: 13px; font-weight: 700; color: var(--red); }
+  .lc-state .desc { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .lc-arrow { display: flex; flex-direction: column; align-items: center; font-family: 'Trebuchet MS', sans-serif; }
+  .lc-arrow .method { font-size: 11px; color: var(--red); font-weight: 700; margin-bottom: 2px; }
+  .lc-arrow .arr { font-size: 20px; color: var(--red); }
+
+  body { padding-bottom: 70px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="deck">
+
+<!-- ═══════════════════════════════════════ SLIDE 1 – TITLE ═══ -->
+<div class="slide slide-title active">
+  <div class="week-badge">Enterprise Computing · Week 3</div>
+  <h1>Managing Persistent Objects</h1>
+  <div class="subtitle">Relationship Mapping · Inheritance Strategies · EntityManager · Cascading</div>
+  <div class="parts-row">
+    <div class="part-pill">
+      <span>Part I</span>
+      Relationship &amp; Inheritance Mapping
+    </div>
+    <div class="part-pill">
+      <span>Part II</span>
+      Managing Persistent Objects
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 2 – OVERVIEW ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>What We Cover Today</h2></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Part I — Relationships &amp; Inheritance</h3>
+        <div class="card">
+          <h4>🔗 Many-to-Many Bidirectional</h4>
+          <p>Owner / inverse sides, join tables, @JoinTable</p>
+        </div>
+        <div class="card">
+          <h4>⚡ Fetching Strategies</h4>
+          <p>Eager vs. Lazy loading and performance impact</p>
+        </div>
+        <div class="card">
+          <h4>🌳 Inheritance Mapping</h4>
+          <p>Single-Table · Joined-Subclass · Mapped Superclass</p>
+        </div>
+      </div>
+      <div>
+        <h3>Part II — Managing Persistent Objects</h3>
+        <div class="card">
+          <h4>🎯 EntityManager</h4>
+          <p>Central service for all persistence operations</p>
+        </div>
+        <div class="card">
+          <h4>💾 Persistence Context</h4>
+          <p>First-level cache · lifecycle states · persistence.xml</p>
+        </div>
+        <div class="card">
+          <h4>🔄 CRUD + Cascading</h4>
+          <p>Persist, find, remove, merge, flush, cascade events</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 3 – PART I ═══ -->
+<div class="slide slide-section">
+  <div class="part-num">Part I</div>
+  <h2>Relationship &amp; Inheritance Mapping</h2>
+  <div class="topics">
+    Many-to-Many Bidirectional &nbsp;·&nbsp; Fetching Strategies &nbsp;·&nbsp; Inheritance Strategies
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 4 – M2M CONCEPT ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Many-to-Many Bidirectional</h2><span class="tag">Concept</span></div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <p><strong>When does it apply?</strong> When both entities hold a collection referencing the other.</p>
+        <div class="card card-red">
+          <h4>📀 Example: Artist &amp; CD Album</h4>
+          <ul>
+            <li>An <strong>Artist</strong> appears on <em>many</em> CDs</li>
+            <li>A <strong>CD</strong> features <em>many</em> Artists</li>
+          </ul>
+        </div>
+        <p>In the <strong>relational world</strong>, the only way to represent this is with a <strong>join table</strong>.</p>
+        <div class="info-box">
+          💡 JPA needs to know which entity <strong>owns</strong> the relationship. The owner controls the join table. The <em>inverse</em> side uses <code>mappedBy</code>.
+        </div>
+        <p>Here, <strong>Artist</strong> is the owner → Artist controls the join table mapping.</p>
+      </div>
+      <div>
+        <div class="diagram-wrap">
+          <svg viewBox="0 0 280 240" xmlns="http://www.w3.org/2000/svg" style="width:100%">
+            <!-- Artist box -->
+            <rect x="10" y="20" width="110" height="65" rx="8" fill="#f7e8eb" stroke="#C8102E" stroke-width="2"/>
+            <text x="65" y="40" text-anchor="middle" font-family="Trebuchet MS" font-size="13" font-weight="700" fill="#C8102E">Artist</text>
+            <text x="65" y="57" text-anchor="middle" font-family="Consolas" font-size="10" fill="#444">id: Long</text>
+            <text x="65" y="72" text-anchor="middle" font-family="Consolas" font-size="10" fill="#444">List&lt;CD&gt; cds</text>
+
+            <!-- Join table -->
+            <rect x="90" y="115" width="100" height="50" rx="6" fill="#fff3cd" stroke="#f59e0b" stroke-width="2"/>
+            <text x="140" y="133" text-anchor="middle" font-family="Trebuchet MS" font-size="11" font-weight="700" fill="#856404">ARTIST_CD</text>
+            <text x="140" y="148" text-anchor="middle" font-family="Consolas" font-size="9.5" fill="#555">artist_fk</text>
+            <text x="140" y="161" text-anchor="middle" font-family="Consolas" font-size="9.5" fill="#555">cd_fk</text>
+
+            <!-- CD box -->
+            <rect x="160" y="20" width="110" height="65" rx="8" fill="#f7e8eb" stroke="#C8102E" stroke-width="2"/>
+            <text x="215" y="40" text-anchor="middle" font-family="Trebuchet MS" font-size="13" font-weight="700" fill="#C8102E">CD</text>
+            <text x="215" y="57" text-anchor="middle" font-family="Consolas" font-size="10" fill="#444">id: Long</text>
+            <text x="215" y="72" text-anchor="middle" font-family="Consolas" font-size="10" fill="#444">List&lt;Artist&gt; artists</text>
+
+            <!-- Arrows -->
+            <line x1="65" y1="85" x2="120" y2="115" stroke="#C8102E" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="215" y1="85" x2="175" y2="115" stroke="#C8102E" stroke-width="1.5" marker-end="url(#arr)"/>
+            <!-- Owner label -->
+            <text x="30" y="105" font-family="Trebuchet MS" font-size="10" fill="#C8102E" font-weight="700">OWNER</text>
+            <text x="200" y="105" font-family="Trebuchet MS" font-size="10" fill="#666">inverse</text>
+            <defs>
+              <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#C8102E"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 5 – M2M CODE ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Many-to-Many Bidirectional</h2><span class="tag">Code</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Artist — Owner Side</h3>
+        <pre><span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">Artist</span> {
+
+  <span class="an">@ManyToMany</span>
+  <span class="an">@JoinTable</span>(
+    name = <span class="st">"ARTIST_CD"</span>,
+    joinColumns =
+      <span class="an">@JoinColumn</span>(name=<span class="st">"artist_fk"</span>),
+    inverseJoinColumns =
+      <span class="an">@JoinColumn</span>(name=<span class="st">"cd_fk"</span>)
+  )
+  <span class="kw">private</span> List&lt;<span class="ty">CD</span>&gt; appearsOnCDs;
+}</pre>
+        <div class="info-box">
+          <strong>@JoinTable</strong> names the join table and maps both foreign key columns. Only the <em>owner</em> configures this.
+        </div>
+      </div>
+      <div>
+        <h3>CD — Inverse Side</h3>
+        <pre><span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">CD</span> {
+
+  <span class="an">@ManyToMany</span>(
+    mappedBy = <span class="st">"appearsOnCDs"</span>
+  )
+  <span class="kw">private</span> List&lt;<span class="ty">Artist</span>&gt; artists;
+
+}</pre>
+        <div class="card card-red">
+          <h4>🔑 Key Rule</h4>
+          <p style="font-size:13px"><code>mappedBy</code> = the attribute name in the <strong>owning entity</strong>. CD is saying: "the other side already maps this."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 6 – FETCHING ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Fetching Strategies</h2><span class="tag">Eager vs Lazy</span></div>
+  <div class="slide-body">
+    <p>All relationship annotations accept a <code>fetch</code> attribute that controls <strong>when</strong> associated data is loaded.</p>
+    <div class="two-col" style="margin-top:16px">
+      <div class="card" style="border-left:4px solid #16a34a">
+        <h3 style="color:#16a34a">⚡ EAGER</h3>
+        <p>Load the related objects <strong>immediately</strong> when the parent entity is loaded. Everything arrives in one query.</p>
+        <pre style="font-size:11.5px"><span class="an">@OneToMany</span>(fetch = <span class="ty">FetchType</span>.EAGER)
+<span class="kw">private</span> List&lt;<span class="ty">OrderLine</span>&gt; lines;</pre>
+        <div class="warn-box" style="margin-top:8px; font-size:12.5px">⚠️ Can cause <strong>N+1 queries</strong> or heavy loads if collections are large</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--red)">
+        <h3>💤 LAZY</h3>
+        <p>Only load when you <strong>explicitly access</strong> the relationship. Nothing extra loaded at first.</p>
+        <pre style="font-size:11.5px"><span class="an">@OneToMany</span>(fetch = <span class="ty">FetchType</span>.LAZY)
+<span class="kw">private</span> List&lt;<span class="ty">OrderLine</span>&gt; lines;</pre>
+        <div class="info-box" style="margin-top:8px; font-size:12.5px">✅ Better performance — only fetch what you need, when you need it</div>
+      </div>
+    </div>
+    <h3 style="margin-top:20px">JPA Defaults</h3>
+    <table>
+      <tr><th>Annotation</th><th>Default Fetch</th><th>Rationale</th></tr>
+      <tr><td><code>@ManyToOne</code></td><td><span class="check">EAGER</span></td><td>Single object — cheap to load</td></tr>
+      <tr><td><code>@OneToOne</code></td><td><span class="check">EAGER</span></td><td>Single object — cheap to load</td></tr>
+      <tr><td><code>@OneToMany</code></td><td><span class="warn">LAZY</span></td><td>Could be a large collection</td></tr>
+      <tr><td><code>@ManyToMany</code></td><td><span class="warn">LAZY</span></td><td>Could be a large collection</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 7 – INHERITANCE OVERVIEW ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Inheritance Mapping</h2><span class="tag">Overview</span></div>
+  <div class="slide-body">
+    <p>OOP uses inheritance naturally. Relational databases don't. JPA bridges the gap with <strong>four strategies</strong>:</p>
+    <div class="three-col" style="margin-top:20px">
+      <div class="card card-red" style="text-align:center">
+        <div style="font-size:28px; margin-bottom:8px">📋</div>
+        <h4>Single-Table</h4>
+        <p style="font-size:13px">All classes → one flat table with a discriminator column</p>
+        <span class="badge badge-green">Default</span>
+      </div>
+      <div class="card card-red" style="text-align:center">
+        <div style="font-size:28px; margin-bottom:8px">🔗</div>
+        <h4>Joined-Subclass</h4>
+        <p style="font-size:13px">Each class gets its own table, joined by primary key</p>
+      </div>
+      <div class="card card-red" style="text-align:center">
+        <div style="font-size:28px; margin-bottom:8px">📄</div>
+        <h4>Table-per-Class</h4>
+        <p style="font-size:13px">Each <em>concrete</em> class gets its own complete table</p>
+        <span class="badge badge-amber">Optional</span>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px; border-left:4px solid #6366f1">
+      <h4 style="color:#4f46e5">🧬 Mapped Superclass</h4>
+      <p style="font-size:13.5px">Not a true strategy — the superclass is <strong>not an entity</strong>. It only shares state/mapping to its subclasses. Cannot be queried or participate in relationships.</p>
+    </div>
+    <div class="info-box">
+      The <code>@Inheritance(strategy = InheritanceType.XXX)</code> annotation is placed on the <strong>root entity</strong>.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 8 – SINGLE TABLE ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Single-Table Strategy</h2><span class="tag">InheritanceType.SINGLE_TABLE</span></div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <h3>How It Works</h3>
+        <p>All entities in the hierarchy share <strong>one table</strong>. A special <strong>discriminator column</strong> (DTYPE by default) identifies which class each row belongs to.</p>
+        <pre><span class="an">@Entity</span>
+<span class="an">@Inheritance</span>(strategy = <span class="ty">InheritanceType</span>.SINGLE_TABLE)
+<span class="cm">// @Inheritance can be omitted — it's the default</span>
+<span class="kw">public class</span> <span class="ty">Item</span> { ... }
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">Book</span> <span class="kw">extends</span> <span class="ty">Item</span> {
+  <span class="kw">private</span> <span class="ty">String</span> isbn;
+  <span class="kw">private</span> <span class="ty">Integer</span> nbOfPage;
+}
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">CD</span> <span class="kw">extends</span> <span class="ty">Item</span> {
+  <span class="kw">private</span> <span class="ty">Float</span> totalDuration;
+}</pre>
+        <div class="warn-box">
+          ⚠️ Child-specific columns <strong>must be nullable</strong> — a CD row has no ISBN, so that column is NULL.
+        </div>
+      </div>
+      <div>
+        <h3>Resulting Table: ITEM</h3>
+        <div class="diagram-wrap">
+          <table style="font-size:11.5px">
+            <tr><th>DTYPE</th><th>ID</th><th>TITLE</th><th>ISBN</th><th>DURATION</th></tr>
+            <tr><td style="color:#C8102E;font-weight:700">Book</td><td>1</td><td>Clean Code</td><td>978-...</td><td style="color:#999">NULL</td></tr>
+            <tr><td style="color:#C8102E;font-weight:700">CD</td><td>2</td><td>Kind of Blue</td><td style="color:#999">NULL</td><td>45.2</td></tr>
+            <tr><td style="color:#C8102E;font-weight:700">Book</td><td>3</td><td>Refactoring</td><td>978-...</td><td style="color:#999">NULL</td></tr>
+          </table>
+        </div>
+        <div class="card card-red" style="margin-top:12px">
+          <h4>Trade-offs</h4>
+          <ul style="font-size:12.5px">
+            <li>✅ Fast — no joins needed</li>
+            <li>✅ Simple schema</li>
+            <li>❌ Many nullable columns</li>
+            <li>❌ Poor data integrity</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 9 – JOINED SUBCLASS ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Joined-Subclass Strategy</h2><span class="tag">InheritanceType.JOINED</span></div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <h3>How It Works</h3>
+        <p>Each entity in the hierarchy maps to its <strong>own table</strong>. Subclass tables contain only their <em>own</em> columns + a FK back to the root table.</p>
+        <pre><span class="an">@Entity</span>
+<span class="an">@Inheritance</span>(strategy = <span class="ty">InheritanceType</span>.JOINED)
+<span class="kw">public class</span> <span class="ty">Item</span> {
+  <span class="an">@Id</span> <span class="kw">private</span> <span class="ty">Long</span> id;
+  <span class="kw">private</span> <span class="ty">String</span> title;
+  <span class="kw">private</span> <span class="ty">Float</span> price;
+}
+
+<span class="an">@Entity</span>
+<span class="kw">public class</span> <span class="ty">Book</span> <span class="kw">extends</span> <span class="ty">Item</span> {
+  <span class="kw">private</span> <span class="ty">String</span> isbn;
+  <span class="cm">// id inherited from ITEM table</span>
+}</pre>
+        <div class="info-box">
+          To reassemble a <code>Book</code>, JPA <strong>joins</strong> ITEM and BOOK tables on their primary key. Deeper hierarchies = more joins = potential performance cost.
+        </div>
+      </div>
+      <div>
+        <h3>Resulting Tables</h3>
+        <div class="diagram-wrap">
+          <p style="font-family:'Trebuchet MS';font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px">ITEM (root)</p>
+          <table style="font-size:11px;margin-bottom:10px">
+            <tr><th>ID (PK)</th><th>DTYPE</th><th>TITLE</th><th>PRICE</th></tr>
+            <tr><td>1</td><td>Book</td><td>Clean Code</td><td>49.99</td></tr>
+            <tr><td>2</td><td>CD</td><td>Kind of Blue</td><td>12.99</td></tr>
+          </table>
+          <p style="font-family:'Trebuchet MS';font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px">BOOK</p>
+          <table style="font-size:11px;margin-bottom:10px">
+            <tr><th>ID (FK→ITEM)</th><th>ISBN</th><th>NB_OF_PAGE</th></tr>
+            <tr><td>1</td><td>978-0132...</td><td>464</td></tr>
+          </table>
+          <p style="font-family:'Trebuchet MS';font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px">CD</p>
+          <table style="font-size:11px">
+            <tr><th>ID (FK→ITEM)</th><th>MUSIC_CO</th><th>DURATION</th></tr>
+            <tr><td>2</td><td>Columbia</td><td>46.4</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 10 – MAPPED SUPERCLASS ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Mapped Superclass</h2><span class="tag">@MappedSuperclass</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>What Makes It Different?</h3>
+        <div class="card card-red">
+          <h4>❌ NOT an entity</h4>
+          <p style="font-size:13px">The superclass has <code>@MappedSuperclass</code>, NOT <code>@Entity</code>. It has <strong>no table</strong> of its own and cannot be queried.</p>
+        </div>
+        <div class="card">
+          <h4>✅ Shares state &amp; mapping</h4>
+          <p style="font-size:13px">Fields and annotations (like <code>@Column</code>) in the superclass are <strong>inherited</strong> by subclass entities.</p>
+        </div>
+        <pre><span class="an">@MappedSuperclass</span>  <span class="cm">// NOT @Entity!</span>
+<span class="kw">public abstract class</span> <span class="ty">Item</span> {
+  <span class="an">@Id</span> <span class="kw">protected</span> <span class="ty">Long</span> id;
+  <span class="kw">protected</span> <span class="ty">String</span> title;
+  <span class="kw">protected</span> <span class="ty">Float</span> price;
+}
+
+<span class="an">@Entity</span>  <span class="cm">// Book IS an entity</span>
+<span class="kw">public class</span> <span class="ty">Book</span> <span class="kw">extends</span> <span class="ty">Item</span> {
+  <span class="kw">private</span> <span class="ty">String</span> isbn;
+}</pre>
+      </div>
+      <div>
+        <h3>Result: Only Subclass Tables</h3>
+        <div class="diagram-wrap">
+          <p style="font-family:'Trebuchet MS';font-size:11px;color:#4f46e5;font-weight:700;margin-bottom:4px">BOOK table (inherits Item's columns)</p>
+          <table style="font-size:11px;margin-bottom:14px">
+            <tr><th>ID</th><th>TITLE</th><th>PRICE</th><th>ISBN</th></tr>
+            <tr><td>1</td><td>Clean Code</td><td>49.99</td><td>978-0132...</td></tr>
+          </table>
+          <p style="font-family:'Trebuchet MS';font-size:11px;color:#4f46e5;font-weight:700;margin-bottom:4px">CD table (inherits Item's columns)</p>
+          <table style="font-size:11px">
+            <tr><th>ID</th><th>TITLE</th><th>PRICE</th><th>DURATION</th></tr>
+            <tr><td>1</td><td>Kind of Blue</td><td>12.99</td><td>46.4</td></tr>
+          </table>
+        </div>
+        <div class="warn-box" style="margin-top:12px">
+          ⚠️ <strong>Cannot</strong> use <code>@Table</code> on the superclass. No shared base table — each entity is fully independent.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 11 – STRATEGY COMPARISON ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Inheritance Strategy Comparison</h2><span class="tag">Decision Guide</span></div>
+  <div class="slide-body">
+    <table>
+      <tr>
+        <th>Strategy</th>
+        <th>Tables</th>
+        <th>Nullable cols</th>
+        <th>Query perf.</th>
+        <th>Best for</th>
+      </tr>
+      <tr>
+        <td><strong>Single-Table</strong><br><code style="font-size:11px">SINGLE_TABLE</code></td>
+        <td>1 (root)</td>
+        <td><span class="cross">Many NULLs</span></td>
+        <td><span class="check">Fast — no joins</span></td>
+        <td>Small hierarchies, read-heavy</td>
+      </tr>
+      <tr>
+        <td><strong>Joined-Subclass</strong><br><code style="font-size:11px">JOINED</code></td>
+        <td>1 per class</td>
+        <td><span class="check">None</span></td>
+        <td><span class="warn">Joins needed</span></td>
+        <td>Normalised schema, data integrity</td>
+      </tr>
+      <tr>
+        <td><strong>Table-per-Class</strong><br><code style="font-size:11px">TABLE_PER_CLASS</code></td>
+        <td>1 per concrete class</td>
+        <td><span class="check">None</span></td>
+        <td><span class="cross">UNION queries</span></td>
+        <td>Rarely used (optional)</td>
+      </tr>
+      <tr>
+        <td><strong>Mapped Superclass</strong><br><code style="font-size:11px">@MappedSuperclass</code></td>
+        <td>1 per concrete entity</td>
+        <td><span class="check">None</span></td>
+        <td><span class="check">Fast</span></td>
+        <td>Shared state, no polymorphic queries</td>
+      </tr>
+    </table>
+    <div class="info-box" style="margin-top:18px">
+      💡 <strong>Rule of thumb:</strong> Use <em>Joined-Subclass</em> when data integrity matters; <em>Single-Table</em> when performance is the priority and the hierarchy is shallow; <em>Mapped Superclass</em> when you don't need to query the parent type directly.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 12 – QUIZ 1 ═══ -->
+<div class="slide quiz-slide slide-content">
+  <div class="slide-header"><h2>✏️ Check Your Understanding — Part I</h2></div>
+  <div class="slide-body" style="background:#1a0008">
+    <p class="quiz-q">In a Many-to-Many bidirectional relationship, which entity controls the join table configuration?</p>
+    <div class="quiz-opts" id="q1-opts">
+      <div class="quiz-opt" onclick="answer(this,'q1',false)"><span class="opt-letter">A</span> The inverse entity, using <code>@JoinTable</code></div>
+      <div class="quiz-opt" onclick="answer(this,'q1',true)"><span class="opt-letter">B</span> The owning entity, using <code>@JoinTable</code> and <code>@JoinColumn</code></div>
+      <div class="quiz-opt" onclick="answer(this,'q1',false)"><span class="opt-letter">C</span> Both entities share the configuration equally</div>
+      <div class="quiz-opt" onclick="answer(this,'q1',false)"><span class="opt-letter">D</span> JPA auto-generates the join table — no annotation needed</div>
+    </div>
+    <div id="q1-feedback" class="quiz-feedback"></div>
+
+    <p class="quiz-q" style="margin-top:28px">Which inheritance strategy results in the MOST joins when querying a deep hierarchy?</p>
+    <div class="quiz-opts" id="q2-opts">
+      <div class="quiz-opt" onclick="answer(this,'q2',false)"><span class="opt-letter">A</span> Single-Table</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',true)"><span class="opt-letter">B</span> Joined-Subclass</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',false)"><span class="opt-letter">C</span> Table-per-Class</div>
+      <div class="quiz-opt" onclick="answer(this,'q2',false)"><span class="opt-letter">D</span> Mapped Superclass</div>
+    </div>
+    <div id="q2-feedback" class="quiz-feedback"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 13 – PART II ═══ -->
+<div class="slide slide-section">
+  <div class="part-num">Part II</div>
+  <h2>Managing Persistent Objects</h2>
+  <div class="topics">
+    EntityManager &nbsp;·&nbsp; Persistence Context &nbsp;·&nbsp; CRUD Operations &nbsp;·&nbsp; Cascading Events
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 14 – ENTITY MANAGER ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>The EntityManager</h2><span class="tag">Central Service</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <p>The <strong>EntityManager</strong> is the core service through which all persistence operations flow.</p>
+        <div class="card card-red">
+          <h4>What it does:</h4>
+          <ul>
+            <li>Creates, finds, updates, removes entities</li>
+            <li>Synchronises entity state with the database</li>
+            <li>Executes JPQL queries against entities</li>
+            <li>Provides locking for concurrent access</li>
+            <li>Manages the <em>persistence context</em></li>
+          </ul>
+        </div>
+        <div class="info-box">
+          📌 JPQL (Jakarta Persistence Query Language) looks like SQL but works with <strong>entity objects</strong>, not database tables directly.
+        </div>
+        <pre><span class="cm">// Example: JPQL vs SQL</span>
+<span class="cm">// SQL:   SELECT * FROM CUSTOMER</span>
+<span class="cm">// JPQL:</span>
+<span class="st">"SELECT c FROM Customer c"</span></pre>
+      </div>
+      <div>
+        <h3>Key Methods</h3>
+        <div class="card" style="margin-bottom:8px">
+          <h4><code>em.persist(entity)</code></h4>
+          <p style="font-size:12.5px">Insert a new entity into the database</p>
+        </div>
+        <div class="card" style="margin-bottom:8px">
+          <h4><code>em.find(Class, id)</code></h4>
+          <p style="font-size:12.5px">Look up an entity by its primary key</p>
+        </div>
+        <div class="card" style="margin-bottom:8px">
+          <h4><code>em.remove(entity)</code></h4>
+          <p style="font-size:12.5px">Delete entity from the database</p>
+        </div>
+        <div class="card" style="margin-bottom:8px">
+          <h4><code>em.merge(entity)</code></h4>
+          <p style="font-size:12.5px">Re-attach a detached entity</p>
+        </div>
+        <div class="card">
+          <h4><code>em.flush() / refresh()</code></h4>
+          <p style="font-size:12.5px">Force sync / reload from database</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 15 – ENTITY LIFECYCLE ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Entity Lifecycle States</h2><span class="tag">The Big Picture</span></div>
+  <div class="slide-body">
+    <p>An entity moves through <strong>four states</strong> during its lifetime. Understanding this is key to understanding persistence behaviour.</p>
+    <div class="lifecycle" style="margin: 20px 0;">
+      <div class="lc-state" style="border-color:#6366f1">
+        <div class="name" style="color:#6366f1">NEW</div>
+        <div class="desc">Created with <code>new</code><br>Not tracked by EM</div>
+      </div>
+      <div class="lc-arrow">
+        <div class="method">persist()</div>
+        <div class="arr">→</div>
+      </div>
+      <div class="lc-state" style="border-color:#16a34a">
+        <div class="name" style="color:#16a34a">MANAGED</div>
+        <div class="desc">In persistence context<br>Auto-synced to DB</div>
+      </div>
+      <div class="lc-arrow">
+        <div class="method">detach() / clear()</div>
+        <div class="arr">→</div>
+      </div>
+      <div class="lc-state" style="border-color:#d97706">
+        <div class="name" style="color:#d97706">DETACHED</div>
+        <div class="desc">No longer tracked<br>Changes not saved</div>
+      </div>
+      <div class="lc-arrow">
+        <div class="method">merge()</div>
+        <div class="arr">→</div>
+      </div>
+      <div class="lc-state" style="border-color:#16a34a">
+        <div class="name" style="color:#16a34a">MANAGED</div>
+        <div class="desc">(re-attached)</div>
+      </div>
+    </div>
+    <div style="text-align:center; margin-bottom:16px">
+      <span style="font-family:'Trebuchet MS';font-size:13px;color:var(--red);font-weight:700">remove() on MANAGED → </span>
+      <span class="lc-state" style="display:inline-block;border-color:#dc2626;padding:6px 14px">
+        <span class="name" style="color:#dc2626">REMOVED</span>
+      </span>
+      <span style="font-family:'Trebuchet MS';font-size:13px;color:#555"> → deleted at commit</span>
+    </div>
+    <div class="two-col">
+      <div class="info-box">
+        💡 When an entity is <strong>MANAGED</strong>, the EntityManager automatically detects changes to its fields and syncs them to the database at commit time — no explicit <code>update()</code> needed!
+      </div>
+      <div class="warn-box">
+        ⚠️ <strong>DETACHED</strong> entities are still accessible as Java objects, but changes are silently lost unless you call <code>em.merge()</code>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 16 – OBTAINING EM ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Obtaining an EntityManager</h2><span class="tag">Two Approaches</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Application-Managed</h3>
+        <p>Your code creates and controls the EntityManager.</p>
+        <pre><span class="ty">EntityManagerFactory</span> emf =
+  <span class="ty">Persistence</span>.createEntityManagerFactory(
+    <span class="st">"myPU"</span>
+  );
+<span class="ty">EntityManager</span> em = emf.createEntityManager();
+<span class="ty">EntityTransaction</span> tx = em.getTransaction();
+
+tx.begin();
+<span class="cm">// ... your operations ...</span>
+tx.commit();
+
+em.close();
+emf.close();</pre>
+        <div class="card card-red">
+          <h4>You must:</h4>
+          <ul style="font-size:12.5px">
+            <li>Manually <code>begin()</code> / <code>commit()</code> / <code>rollback()</code></li>
+            <li>Open and close the EM and factory</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <h3>Container-Managed</h3>
+        <p>The Jakarta EE container injects and manages the EM for you.</p>
+        <pre><span class="an">@Stateless</span>
+<span class="kw">public class</span> <span class="ty">CustomerService</span> {
+
+  <span class="an">@PersistenceContext</span>
+  <span class="kw">private</span> <span class="ty">EntityManager</span> em;
+
+  <span class="kw">public void</span> save(<span class="ty">Customer</span> c) {
+    em.persist(c);
+    <span class="cm">// No commit needed!</span>
+  }
+}</pre>
+        <div class="info-box">
+          The container handles transactions, commit, rollback, and EM lifecycle. <strong>Preferred in Jakarta EE apps.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 17 – PERSISTENCE CONTEXT ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Persistence Context</h2><span class="tag">First-Level Cache</span></div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <p>The <strong>Persistence Context</strong> is a set of <em>managed entity instances</em> associated with one transaction. Think of it as a <strong>first-level cache</strong>.</p>
+        <div class="card card-red">
+          <h4>Key rules:</h4>
+          <ul>
+            <li>Only <strong>one</strong> instance per primary key in a given context</li>
+            <li>Lives for the <strong>duration of a transaction</strong></li>
+            <li>Cleared when the transaction ends</li>
+          </ul>
+        </div>
+        <div class="info-box" style="margin-top:12px">
+          If you call <code>em.find(Book.class, 1L)</code> twice in one transaction, the database is only hit <strong>once</strong>. The second call returns the cached instance.
+        </div>
+        <pre><span class="cm">// Both users have their own context</span>
+<span class="cm">// User 1: loads Book ID=12 and ID=56</span>
+<span class="cm">// User 2: loads Book ID=12 and ID=34</span>
+<span class="cm">// ID=12 exists in BOTH contexts independently</span></pre>
+      </div>
+      <div>
+        <div class="diagram-wrap">
+          <svg viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg" style="width:100%">
+            <!-- Transaction box -->
+            <rect x="10" y="10" width="220" height="180" rx="10" fill="#f7e8eb" stroke="#C8102E" stroke-width="2" stroke-dasharray="6,3"/>
+            <text x="120" y="30" text-anchor="middle" font-family="Trebuchet MS" font-size="11" fill="#C8102E" font-weight="700">Persistence Context (Tx scope)</text>
+            <!-- Entity boxes -->
+            <rect x="25" y="40" width="80" height="44" rx="6" fill="white" stroke="#C8102E" stroke-width="1.5"/>
+            <text x="65" y="58" text-anchor="middle" font-family="Consolas" font-size="10" fill="#444">Book(id=12)</text>
+            <text x="65" y="72" text-anchor="middle" font-family="Consolas" font-size="10" fill="#888">MANAGED</text>
+
+            <rect x="135" y="40" width="80" height="44" rx="6" fill="white" stroke="#C8102E" stroke-width="1.5"/>
+            <text x="175" y="58" text-anchor="middle" font-family="Consolas" font-size="10" fill="#444">Book(id=56)</text>
+            <text x="175" y="72" text-anchor="middle" font-family="Consolas" font-size="10" fill="#888">MANAGED</text>
+
+            <rect x="80" y="110" width="80" height="44" rx="6" fill="white" stroke="#16a34a" stroke-width="1.5"/>
+            <text x="120" y="128" text-anchor="middle" font-family="Consolas" font-size="10" fill="#444">Book(id=34)</text>
+            <text x="120" y="142" text-anchor="middle" font-family="Consolas" font-size="10" fill="#888">MANAGED</text>
+
+            <text x="120" y="175" text-anchor="middle" font-family="Trebuchet MS" font-size="10" fill="#888">Cache cleared at tx end</text>
+
+            <!-- Database -->
+            <rect x="30" y="215" width="180" height="50" rx="8" fill="#fff3cd" stroke="#f59e0b" stroke-width="2"/>
+            <text x="120" y="237" text-anchor="middle" font-family="Trebuchet MS" font-size="12" font-weight="700" fill="#856404">MySQL Database</text>
+            <text x="120" y="253" text-anchor="middle" font-family="Trebuchet MS" font-size="10" fill="#666">Synced at commit</text>
+
+            <!-- Arrow down -->
+            <line x1="120" y1="195" x2="120" y2="215" stroke="#C8102E" stroke-width="1.5" marker-end="url(#arr2)"/>
+            <defs>
+              <marker id="arr2" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L7,3 z" fill="#C8102E"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 18 – PERSISTENCE.XML ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>The persistence.xml File</h2><span class="tag">Configuration</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <p>The <strong>persistence unit</strong> is defined in <code>src/main/resources/META-INF/persistence.xml</code>. It bridges the persistence context to the database.</p>
+        <pre><span class="cm">&lt;!-- Application-Managed (RESOURCE_LOCAL) --&gt;</span>
+&lt;persistence-unit
+  name=<span class="st">"myPU"</span>
+  transaction-type=<span class="st">"RESOURCE_LOCAL"</span>&gt;
+
+  &lt;class&gt;<span class="ty">entities.Book</span>&lt;/class&gt;
+  &lt;class&gt;<span class="ty">entities.CD</span>&lt;/class&gt;
+
+  &lt;properties&gt;
+    &lt;property name=<span class="st">"jakarta.persistence.jdbc.driver"</span>
+      value=<span class="st">"com.mysql.cj.jdbc.Driver"</span>/&gt;
+    &lt;property name=<span class="st">"jakarta.persistence.jdbc.url"</span>
+      value=<span class="st">"jdbc:mysql://localhost:3306/mydb"</span>/&gt;
+    &lt;property name=<span class="st">"jakarta.persistence.jdbc.user"</span>
+      value=<span class="st">"root"</span>/&gt;
+    &lt;property name=<span class="st">"jakarta.persistence.jdbc.password"</span>
+      value=<span class="st">"password"</span>/&gt;
+    &lt;property name=<span class="st">"eclipselink.ddl-generation"</span>
+      value=<span class="st">"create-tables"</span>/&gt;
+  &lt;/properties&gt;
+&lt;/persistence-unit&gt;</pre>
+      </div>
+      <div>
+        <div class="card card-red">
+          <h4>Key elements</h4>
+          <ul>
+            <li><strong>&lt;class&gt;</strong> — lists every entity class that can be managed</li>
+            <li><strong>transaction-type</strong> — <code>RESOURCE_LOCAL</code> (app-managed) or <code>JTA</code> (container-managed)</li>
+            <li><strong>jdbc.*</strong> — database connection details</li>
+            <li><strong>ddl-generation</strong> — controls whether tables are auto-created</li>
+          </ul>
+        </div>
+        <div class="info-box" style="margin-top:12px">
+          💡 In a container-managed (JTA) environment, you use a <code>&lt;jta-data-source&gt;</code> instead of raw JDBC properties — the container manages the connection pool.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 19 – PERSIST & FIND ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Persisting &amp; Finding Entities</h2><span class="tag">CRUD</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Persisting an Entity</h3>
+        <pre><span class="ty">EntityManager</span> em = ... ;
+<span class="ty">EntityTransaction</span> tx = em.getTransaction();
+tx.begin();
+
+<span class="ty">Customer</span> c = <span class="kw">new</span> <span class="ty">Customer</span>();
+c.setFirstName(<span class="st">"Alice"</span>);
+c.setEmail(<span class="st">"alice@example.com"</span>);
+
+em.persist(c); <span class="cm">// State: NEW → MANAGED</span>
+
+tx.commit();  <span class="cm">// SQL INSERT fires here</span></pre>
+        <div class="info-box" style="font-size:12.5px">
+          The INSERT doesn't happen immediately — it is batched until <strong>commit</strong> (or an explicit <code>flush()</code>). Until then, the entity exists only in the persistence context.
+        </div>
+      </div>
+      <div>
+        <h3>Finding by Primary Key</h3>
+        <pre><span class="cm">// find() — returns null if not found</span>
+<span class="ty">Customer</span> c = em.find(
+  <span class="ty">Customer</span>.<span class="kw">class</span>, <span class="nu">1L</span>
+);
+
+<span class="cm">// getReference() — returns a proxy</span>
+<span class="cm">// LazyLoadingException if accessed</span>
+<span class="cm">// after detachment!</span>
+<span class="ty">Customer</span> ref = em.getReference(
+  <span class="ty">Customer</span>.<span class="kw">class</span>, <span class="nu">1L</span>
+);</pre>
+        <div class="card card-red" style="margin-top:10px">
+          <h4>find() vs getReference()</h4>
+          <ul style="font-size:12.5px">
+            <li><strong>find()</strong> — loads full entity data immediately, returns <code>null</code> if missing</li>
+            <li><strong>getReference()</strong> — returns a lazy proxy; throws exception if data is needed after detachment</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 20 – REMOVE & ORPHAN ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Removing Entities &amp; Orphan Removal</h2><span class="tag">CRUD</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Removing an Entity</h3>
+        <pre><span class="ty">Customer</span> c = em.find(
+  <span class="ty">Customer</span>.<span class="kw">class</span>, <span class="nu">1L</span>
+);
+em.remove(c); <span class="cm">// MANAGED → REMOVED</span>
+tx.commit();  <span class="cm">// SQL DELETE fires</span></pre>
+        <div class="warn-box">
+          ⚠️ Without cascading, only the <code>Customer</code> row is deleted. The linked <code>Address</code> row becomes an <strong>orphan</strong> in the database!
+        </div>
+        <h3 style="margin-top:16px">Orphan Removal</h3>
+        <pre><span class="an">@OneToOne</span>(
+  cascade = <span class="ty">CascadeType</span>.ALL,
+  orphanRemoval = <span class="kw">true</span>
+)
+<span class="kw">private</span> <span class="ty">Address</span> address;</pre>
+      </div>
+      <div>
+        <div class="card card-red">
+          <h4>orphanRemoval = true triggers when:</h4>
+          <ul>
+            <li>The parent entity is <strong>removed</strong></li>
+            <li>The relationship is <strong>broken</strong> (e.g., <code>customer.setAddress(null)</code>)</li>
+          </ul>
+        </div>
+        <div class="diagram-wrap" style="margin-top:16px">
+          <svg viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg" style="width:100%">
+            <rect x="10" y="30" width="95" height="40" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+            <text x="57" y="48" text-anchor="middle" font-family="Trebuchet MS" font-size="11" font-weight="700" fill="#dc2626">Customer</text>
+            <text x="57" y="62" text-anchor="middle" font-family="Consolas" font-size="9" fill="#555">id=1, Alice</text>
+
+            <rect x="135" y="30" width="90" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+            <text x="180" y="48" text-anchor="middle" font-family="Trebuchet MS" font-size="11" font-weight="700" fill="#16a34a">Address</text>
+            <text x="180" y="62" text-anchor="middle" font-family="Consolas" font-size="9" fill="#555">id=1, 123 St</text>
+
+            <line x1="105" y1="50" x2="135" y2="50" stroke="#C8102E" stroke-width="2" stroke-dasharray="4,2"/>
+            <text x="120" y="44" text-anchor="middle" font-family="Trebuchet MS" font-size="9" fill="#C8102E">FK</text>
+
+            <text x="57" y="100" text-anchor="middle" font-family="Trebuchet MS" font-size="10" fill="#dc2626">❌ removed</text>
+            <text x="180" y="100" text-anchor="middle" font-family="Trebuchet MS" font-size="10" fill="#16a34a">✅ auto-removed</text>
+            <text x="180" y="112" text-anchor="middle" font-family="Trebuchet MS" font-size="9" fill="#555">(orphanRemoval)</text>
+
+            <text x="120" y="140" text-anchor="middle" font-family="Trebuchet MS" font-size="10" fill="#555">Without orphanRemoval → Address is orphaned</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 21 – DETACH MERGE FLUSH ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Detach, Merge &amp; Flush</h2><span class="tag">Advanced Operations</span></div>
+  <div class="slide-body">
+    <div class="three-col">
+      <div>
+        <h3>detach()</h3>
+        <p style="font-size:13.5px">Remove an entity from the persistence context. Changes after detach are <strong>not saved</strong>.</p>
+        <pre style="font-size:11.5px"><span class="ty">Customer</span> c = em.find(
+  <span class="ty">Customer</span>.<span class="kw">class</span>, <span class="nu">1L</span>
+);
+em.detach(c);
+c.setEmail(<span class="st">"new@x.com"</span>);
+<span class="cm">// ↑ change is lost!</span>
+tx.commit();</pre>
+        <p style="font-size:12.5px; color:var(--text-muted)">Use <code>em.contains(c)</code> to check if managed.</p>
+      </div>
+      <div>
+        <h3>merge()</h3>
+        <p style="font-size:13.5px">Re-attach a detached entity and copy its state back into the persistence context.</p>
+        <pre style="font-size:11.5px">em.clear(); <span class="cm">// detach all</span>
+c.setEmail(<span class="st">"new@x.com"</span>);
+
+<span class="cm">// Re-attach:</span>
+<span class="ty">Customer</span> managed =
+  em.merge(c);
+
+tx.commit();
+<span class="cm">// ↑ UPDATE fires</span></pre>
+        <div class="warn-box" style="font-size:12px">⚠️ <code>merge()</code> returns the <em>managed</em> copy. Use the returned instance!</div>
+      </div>
+      <div>
+        <h3>flush()</h3>
+        <p style="font-size:13.5px">Force immediate synchronisation with the DB <em>before</em> the transaction commits.</p>
+        <pre style="font-size:11.5px">em.persist(c);
+em.flush();
+<span class="cm">// SQL INSERT now</span>
+
+<span class="cm">// Still inside tx:</span>
+em.getTransaction()
+  .rollback();
+<span class="cm">// INSERT is undone!</span></pre>
+        <div class="info-box" style="font-size:12px">💡 Flush + rollback means the flush is reversed. The DB sees no change.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 22 – CASCADING ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Cascading Events</h2><span class="tag">Propagating Operations</span></div>
+  <div class="slide-body">
+    <div class="two-col-60">
+      <div>
+        <p>By default, EntityManager operations apply <strong>only</strong> to the entity you pass in. Cascading lets operations <em>propagate</em> to related entities automatically.</p>
+        <h3>Without Cascading</h3>
+        <pre><span class="cm">// Must persist BOTH manually:</span>
+<span class="ty">Address</span> a = <span class="kw">new</span> <span class="ty">Address</span>(...);
+<span class="ty">Customer</span> c = <span class="kw">new</span> <span class="ty">Customer</span>(...);
+c.setAddress(a);
+em.persist(a); <span class="cm">// explicit</span>
+em.persist(c); <span class="cm">// explicit</span></pre>
+        <h3>With CascadeType.PERSIST</h3>
+        <pre><span class="an">@OneToOne</span>(cascade = <span class="ty">CascadeType</span>.PERSIST)
+<span class="kw">private</span> <span class="ty">Address</span> address;
+
+<span class="cm">// Now only persist the Customer:</span>
+em.persist(c); <span class="cm">// Address auto-persisted!</span></pre>
+        <div class="info-box">
+          <code>CascadeType.ALL</code> covers all events: PERSIST, REMOVE, MERGE, REFRESH, DETACH.
+        </div>
+      </div>
+      <div>
+        <h3>CascadeType Options</h3>
+        <table>
+          <tr><th>Type</th><th>Propagates</th></tr>
+          <tr><td><code>PERSIST</code></td><td>persist() calls</td></tr>
+          <tr><td><code>REMOVE</code></td><td>remove() calls</td></tr>
+          <tr><td><code>MERGE</code></td><td>merge() calls</td></tr>
+          <tr><td><code>REFRESH</code></td><td>refresh() calls</td></tr>
+          <tr><td><code>DETACH</code></td><td>detach() calls</td></tr>
+          <tr><td><code style="color:var(--red)">ALL</code></td><td>All of the above</td></tr>
+        </table>
+        <div class="card card-red" style="margin-top:14px">
+          <h4>Works on:</h4>
+          <p style="font-size:12.5px"><code>@OneToOne</code>, <code>@OneToMany</code>, <code>@ManyToOne</code>, <code>@ManyToMany</code> — all relationship annotations have a <code>cascade</code> attribute.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 23 – QUIZ 2 ═══ -->
+<div class="slide quiz-slide slide-content">
+  <div class="slide-header"><h2>✏️ Check Your Understanding — Part II</h2></div>
+  <div class="slide-body" style="background:#1a0008">
+    <p class="quiz-q">You call <code>em.clear()</code> and then modify an entity. You call <code>tx.commit()</code>. What happens?</p>
+    <div class="quiz-opts" id="q3-opts">
+      <div class="quiz-opt" onclick="answer(this,'q3',false)"><span class="opt-letter">A</span> The modification is saved — EntityManager tracks all Java objects</div>
+      <div class="quiz-opt" onclick="answer(this,'q3',true)"><span class="opt-letter">B</span> The modification is lost — the entity was detached by <code>clear()</code></div>
+      <div class="quiz-opt" onclick="answer(this,'q3',false)"><span class="opt-letter">C</span> A <code>DetachedEntityException</code> is thrown at <code>commit()</code></div>
+      <div class="quiz-opt" onclick="answer(this,'q3',false)"><span class="opt-letter">D</span> The entity is automatically re-attached and saved</div>
+    </div>
+    <div id="q3-feedback" class="quiz-feedback"></div>
+
+    <p class="quiz-q" style="margin-top:24px">What does <code>orphanRemoval = true</code> do when you set <code>customer.setAddress(null)</code>?</p>
+    <div class="quiz-opts" id="q4-opts">
+      <div class="quiz-opt" onclick="answer(this,'q4',false)"><span class="opt-letter">A</span> Nothing — only triggers when the parent Customer is removed</div>
+      <div class="quiz-opt" onclick="answer(this,'q4',false)"><span class="opt-letter">B</span> Throws a NullPointerException</div>
+      <div class="quiz-opt" onclick="answer(this,'q4',true)"><span class="opt-letter">C</span> Automatically deletes the Address entity at flush/commit time</div>
+      <div class="quiz-opt" onclick="answer(this,'q4',false)"><span class="opt-letter">D</span> Sets the address FK to NULL in the database but keeps the Address row</div>
+    </div>
+    <div id="q4-feedback" class="quiz-feedback"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 24 – SUMMARY ═══ -->
+<div class="slide slide-content">
+  <div class="slide-header"><h2>Week 3 Summary</h2><span class="tag">Key Takeaways</span></div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Part I — Relationships &amp; Inheritance</h3>
+        <div class="card" style="margin-bottom:10px">
+          <h4>🔗 Many-to-Many Bidirectional</h4>
+          <p style="font-size:13px">Owner controls the join table via <code>@JoinTable</code>. Inverse side uses <code>mappedBy</code>.</p>
+        </div>
+        <div class="card" style="margin-bottom:10px">
+          <h4>⚡ Fetching</h4>
+          <p style="font-size:13px">EAGER = load now. LAZY = load on access. Collections default to LAZY. Single refs default to EAGER.</p>
+        </div>
+        <div class="card">
+          <h4>🌳 Inheritance Strategies</h4>
+          <p style="font-size:13px">Single-Table (fast, nullable cols) · Joined (normalised, joins needed) · Mapped Superclass (not an entity)</p>
+        </div>
+      </div>
+      <div>
+        <h3>Part II — Managing Persistent Objects</h3>
+        <div class="card" style="margin-bottom:10px">
+          <h4>🎯 EntityManager</h4>
+          <p style="font-size:13px">Central service for persist, find, remove, merge, flush, detach. Container or application managed.</p>
+        </div>
+        <div class="card" style="margin-bottom:10px">
+          <h4>💾 Persistence Context</h4>
+          <p style="font-size:13px">First-level cache. Entity states: NEW → MANAGED → DETACHED / REMOVED. Cleared at transaction end.</p>
+        </div>
+        <div class="card">
+          <h4>🔄 Cascading</h4>
+          <p style="font-size:13px">Propagate persist/remove/merge to related entities automatically. <code>CascadeType.ALL</code> for everything.</p>
+        </div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:16px; text-align:center">
+      🔬 <strong>Lab this week:</strong> Implement Joined-Subclass inheritance (Project 1) and Cascading Events with Customer/Address (Project 2)
+    </div>
+  </div>
+</div>
+
+</div><!-- end #deck -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button class="nav-btn" id="prev-btn" onclick="prevSlide()" disabled>← Previous</button>
+  <div id="slide-counter"><span class="current" id="curr">1</span> / <span id="total"></span></div>
+  <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  document.getElementById('total').textContent = slides.length;
+
+  function updateProgress() {
+    const pct = ((current + 1) / slides.length) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('curr').textContent = current + 1;
+    document.getElementById('prev-btn').disabled = current === 0;
+    document.getElementById('next-btn').disabled = current === slides.length - 1;
+  }
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    updateProgress();
+    window.scrollTo(0, 0);
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+  });
+
+  // Quiz logic
+  const feedbacks = {
+    q1: { correct: "✅ Correct! The <strong>owning entity</strong> (Artist) uses @JoinTable and @JoinColumn to define the join table and both foreign key columns. The inverse side simply uses mappedBy.", wrong: "❌ Not quite. Only the <strong>owning entity</strong> configures @JoinTable. The inverse side uses mappedBy to point to the owner's attribute." },
+    q2: { correct: "✅ Correct! In Joined-Subclass, each level requires a JOIN to assemble the complete entity. The deeper the hierarchy, the more joins — which can impact performance.", wrong: "❌ Not quite. The Joined-Subclass strategy requires a JOIN per level of hierarchy. Single-Table needs no joins at all." },
+    q3: { correct: "✅ Correct! <code>em.clear()</code> detaches ALL entities from the persistence context. Changes to detached entities are not tracked and not saved. Use <code>em.merge()</code> to re-attach.", wrong: "❌ Remember: <code>em.clear()</code> detaches all entities. Detached entities are not tracked — their changes are silently ignored at commit." },
+    q4: { correct: "✅ Correct! <code>orphanRemoval = true</code> removes the related entity not only when the parent is deleted, but also when the <strong>relationship is severed</strong> (set to null or removed from a collection).", wrong: "❌ orphanRemoval triggers in two cases: when the parent is removed, AND when the relationship is broken (e.g. set to null). The Address will be deleted." }
+  };
+
+  function answer(el, qid, isCorrect) {
+    const opts = document.getElementById(qid + '-opts');
+    if (opts.dataset.answered) return;
+    opts.dataset.answered = 'true';
+    opts.querySelectorAll('.quiz-opt').forEach(o => o.style.pointerEvents = 'none');
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+    const fb = document.getElementById(qid + '-feedback');
+    fb.innerHTML = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+    fb.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>
