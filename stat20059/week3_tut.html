@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 3 Exercises — Numerical Descriptive Measures</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #111; overflow: hidden; height: 100vh; }
+
+.deck { width: 100vw; height: 100vh; position: relative; }
+.slide { position: absolute; width: 100%; height: 100%; display: none; padding: 38px 54px 44px 54px; background: white; overflow: hidden; }
+.slide.active { display: flex; flex-direction: column; }
+.slide.dark { background: #1E2139; color: white; }
+
+#progress { position: fixed; top: 0; left: 0; height: 4px; background: #C0272D; transition: width 0.3s ease; z-index: 200; }
+#counter { position: fixed; bottom: 14px; right: 18px; font-size: 11px; color: #bbb; z-index: 200; background: rgba(0,0,0,0.3); padding: 2px 9px; border-radius: 10px; }
+.nav-btn { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(30,33,57,0.5); border: none; color: white; width: 36px; height: 64px; cursor: pointer; font-size: 22px; z-index: 200; border-radius: 5px; transition: background 0.2s; }
+.nav-btn:hover { background: rgba(192,39,45,0.75); }
+#prev { left: 6px; } #next { right: 6px; }
+
+/* ── Base types ── */
+.slide-title { font-size: 1.8rem; font-weight: 700; color: #C0272D; margin-bottom: 14px; line-height: 1.15; flex-shrink: 0; }
+.slide.dark .slide-title { color: #FFB3B5; }
+h2 { font-size: 0.9rem; font-weight: 700; color: #1E2139; margin-bottom: 6px; }
+p { font-size: 0.86rem; line-height: 1.6; color: #444; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 3px 11px; border-radius: 20px; margin-bottom: 12px; flex-shrink: 0;
+}
+.badge-q  { background: #fff3e0; color: #b87000; border: 1px solid #f0c060; }
+.badge-s  { background: #eaf5ee; color: #1a7a4a; border: 1px solid #88cc99; }
+.badge-ref { background: #e8eeff; color: #1a4fa8; border: 1px solid #99aaf0; }
+
+/* ── Context strip ── */
+.ctx { background: #1E2139; color: #bbb; padding: 7px 14px; border-radius: 6px; font-size: 0.78rem; margin-bottom: 12px; flex-shrink: 0; }
+.ctx strong { color: #FFB3B5; }
+
+/* ── Cards ── */
+.card { background: #f7f8fc; border-radius: 8px; padding: 11px 15px; border-left: 4px solid #C0272D; margin-bottom: 8px; }
+.card.green { border-left-color: #1a7a4a; }
+.card.blue  { border-left-color: #1a6fa8; }
+.card.amber { border-left-color: #b87000; }
+.card.grey  { border-left-color: #888; }
+
+/* ── Excel formula / step blocks ── */
+.xl-step {
+  background: #f0faf2; border: 1px solid #bbe0c5; border-radius: 7px;
+  padding: 10px 14px; margin-bottom: 8px;
+}
+.xl-step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; background: #1a7a4a; color: white;
+  border-radius: 50%; font-size: 0.68rem; font-weight: 800;
+  margin-right: 6px; flex-shrink: 0; float: left; margin-top: 1px;
+}
+.xl-step-body { overflow: hidden; font-size: 0.84rem; color: #333; line-height: 1.55; }
+code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  background: #dff0e6; color: #145c2e; padding: 1px 6px;
+  border-radius: 3px; font-size: 0.82rem;
+}
+.formula-block {
+  background: #1E2139; color: #a8f0c0;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.82rem; border-radius: 6px;
+  padding: 10px 14px; margin: 8px 0; line-height: 1.8;
+}
+.formula-block .comment { color: #5d8a6e; font-size: 0.76rem; }
+.formula-block .label   { color: #7cc4e8; }
+.formula-block .result  { color: #ffd77a; font-weight: 700; }
+
+/* ── Two-col ── */
+.two-col  { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; min-height: 0; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* ── Data table ── */
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+th { background: #1E2139; color: white; padding: 6px 10px; text-align: left; font-weight: 600; }
+td { padding: 5px 10px; border-bottom: 1px solid #eee; color: #333; }
+tr:nth-child(even) td { background: #f7f8fc; }
+tr.hl td { background: #fff0f0 !important; font-weight: 700; color: #C0272D; }
+tr.hlg td { background: #eaf5ee !important; font-weight: 700; color: #1a7a4a; }
+
+/* ── Lists ── */
+ul.clean { list-style: none; padding: 0; }
+ul.clean li { padding: 5px 0 5px 18px; position: relative; font-size: 0.84rem; color: #444; border-bottom: 1px solid #f0f0f0; line-height: 1.4; }
+ul.clean li::before { content: '—'; position: absolute; left: 0; color: #C0272D; font-weight: 700; }
+.req-list { list-style: none; padding: 0; counter-reset: qlist; }
+.req-list li { counter-increment: qlist; padding: 8px 0 8px 30px; position: relative; font-size: 0.86rem; color: #333; border-bottom: 1px solid #eee; line-height: 1.45; }
+.req-list li::before { content: counter(qlist, lower-alpha) ')'; position: absolute; left: 0; color: #b87000; font-weight: 700; font-size: 0.88rem; }
+
+/* ── Data strip ── */
+.data-strip { background: #f0f1f5; border-radius: 5px; padding: 8px 12px; font-family: monospace; font-size: 0.8rem; color: #333; line-height: 1.9; }
+.data-strip .out { background: #C0272D; color: white; padding: 1px 4px; border-radius: 3px; }
+
+/* ── Stats highlight ── */
+.stat-row { display: flex; gap: 12px; margin: 10px 0; }
+.stat-card { flex: 1; background: #f7f8fc; border-radius: 8px; padding: 10px 8px; text-align: center; }
+.stat-val  { font-size: 1.5rem; font-weight: 800; color: #C0272D; line-height: 1.1; }
+.stat-lbl  { font-size: 0.72rem; color: #666; margin-top: 2px; }
+
+/* ── Divider slide ── */
+.div-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+.div-num { font-size: 5rem; font-weight: 800; color: rgba(255,255,255,0.06); line-height: 1; }
+.div-title { font-size: 2.3rem; font-weight: 700; color: white; margin: 4px 0 10px; }
+.div-sub { font-size: 0.92rem; color: rgba(255,255,255,0.4); }
+
+/* ── Answer reveal ── */
+.ans-box {
+  background: #1a7a4a; color: white;
+  border-radius: 7px; padding: 9px 15px;
+  font-size: 0.88rem; font-weight: 600; margin-top: 6px;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.ans-label { font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase; opacity: 0.75; }
+
+/* ── XL spreadsheet visual ── */
+.xl-grid { border: 1.5px solid #bbb; border-radius: 5px; overflow: hidden; font-family: 'Consolas', monospace; font-size: 0.76rem; }
+.xl-row { display: grid; }
+.xl-hdr { background: #e0e3e8; border-bottom: 1px solid #bbb; }
+.xl-cell { padding: 3px 8px; border-right: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; color: #333; white-space: nowrap; overflow: hidden; }
+.xl-cell.col-a { background: #e0e3e8; color: #555; font-weight: 600; }
+.xl-cell.formula { background: #dff0e6; color: #145c2e; }
+.xl-cell.result-cell { background: #fff3e0; color: #7a4400; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="counter"></div>
+<button class="nav-btn" id="prev">&#8249;</button>
+<button class="nav-btn" id="next">&#8250;</button>
+
+<div class="deck">
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 1  TITLE
+══════════════════════════════════════════════ -->
+<div class="slide dark active">
+  <div class="div-wrap">
+    <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;">WEEK 3 EXERCISES · STATISTICS FOR ACCOUNTING</div>
+    <div class="div-title" style="font-size:2.6rem;line-height:1.2;">Numerical Descriptive<br>Measures — Excel Workshop</div>
+    <div class="div-sub" style="margin-top:8px;">5 applied problems with full step-by-step Excel solutions</div>
+    <div style="margin-top:28px;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;max-width:640px;">
+      <div style="background:rgba(184,112,0,0.2);border:1px solid rgba(184,112,0,0.4);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:800;color:#ffd77a;">Q1</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:3px;">Descriptive Profile + Outliers</div>
+      </div>
+      <div style="background:rgba(184,112,0,0.2);border:1px solid rgba(184,112,0,0.4);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:800;color:#ffd77a;">Q2</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:3px;">CV Dept. Comparison</div>
+      </div>
+      <div style="background:rgba(184,112,0,0.2);border:1px solid rgba(184,112,0,0.4);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:800;color:#ffd77a;">Q3</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:3px;">Payroll CAGR + Projection</div>
+      </div>
+      <div style="background:rgba(184,112,0,0.2);border:1px solid rgba(184,112,0,0.4);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:800;color:#ffd77a;">Q4</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:3px;">Correlation Sensitivity</div>
+      </div>
+      <div style="background:rgba(184,112,0,0.2);border:1px solid rgba(184,112,0,0.4);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:800;color:#ffd77a;">Q5</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:3px;">Grouped Freq. Approx.</div>
+      </div>
+    </div>
+    <div style="margin-top:18px;color:rgba(255,255,255,0.3);font-size:0.78rem;">Use ← → arrow keys to navigate &nbsp;·&nbsp; Work each problem before advancing to the solution</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 2  Q1 QUESTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-q">◆ Question 1 — Descriptive Statistics Profile &amp; Outlier Detection</div>
+  <div class="slide-title">Building a Complete Salary Profile</div>
+  <div class="ctx"><strong>Meridian Solutions</strong> has expanded to 25 staff. Annual salaries ($000) are listed below. The CFO has asked for a complete descriptive statistics report ahead of the compensation review.</div>
+  <div class="two-col">
+    <div>
+      <div class="data-strip">
+        42 &nbsp;44 &nbsp;45 &nbsp;47 &nbsp;48 &nbsp;50 &nbsp;51 &nbsp;52<br>
+        53 &nbsp;54 &nbsp;55 &nbsp;56 &nbsp;56 &nbsp;57 &nbsp;58 &nbsp;60<br>
+        62 &nbsp;64 &nbsp;65 &nbsp;68 &nbsp;70 &nbsp;72 &nbsp;75 &nbsp;78 &nbsp;<span class="out">135</span>
+      </div>
+      <p style="font-size:0.74rem;color:#888;margin-top:5px;"><span class="out" style="background:#C0272D;color:white;padding:1px 5px;border-radius:3px;font-size:0.72rem;">Red</span> = suspected outlier (CEO)</p>
+      <div style="margin-top:14px;">
+        <h2 style="margin-bottom:8px;">Required calculations:</h2>
+        <ol class="req-list">
+          <li>Calculate mean, median, and mode using Excel functions</li>
+          <li>Calculate Q₁, Q₂, Q₃ and IQR using <code>QUARTILE.INC</code></li>
+          <li>Calculate range, variance, and standard deviation</li>
+          <li>Using the <strong>IQR fence method</strong>, formally determine whether $135K is a statistical outlier<br><span style="font-size:0.78rem;color:#888;">Lower fence = Q₁ − 1.5 × IQR &nbsp;·&nbsp; Upper fence = Q₃ + 1.5 × IQR</span></li>
+          <li>Based on your results: which measure of centre should HR report to staff — and why?</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="card amber">
+        <h2>The IQR fence method — what is it?</h2>
+        <p style="font-size:0.82rem;">Tukey's fences define a principled rule for outliers. Any observation below the lower fence or above the upper fence is classified as a statistical outlier. This is the standard method used by Excel's boxplot feature and most statistical software.</p>
+      </div>
+      <div class="card blue" style="margin-top:10px;">
+        <h2>Challenge: part (e)</h2>
+        <p style="font-size:0.82rem;">Don't just say "use the median." Justify your answer quantitatively. Calculate both measures, then compute the <strong>trimmed mean</strong> (excluding the outlier) and compare all three. Which best represents typical staff pay?</p>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <h2>Hint: enter data in a single column</h2>
+        <p style="font-size:0.82rem;">Put each salary in cells <strong>A2:A26</strong> with the header "Salary" in A1. All subsequent formulas reference this named range. Sort the column first using <strong>Data → Sort</strong> to help verify quartile positions manually.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 3  Q1 SOLUTION A — CENTRAL TENDENCY + QUARTILES
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-s">✔ Solution 1A — Central Tendency, Quartiles &amp; Spread</div>
+  <div class="slide-title">Q1 Step-by-Step: Setting Up in Excel</div>
+  <div class="two-col">
+    <div>
+      <!-- Simulated Excel grid -->
+      <div style="font-size:0.72rem;color:#888;margin-bottom:4px;font-weight:600;">SPREADSHEET LAYOUT (cells C1:D12)</div>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a"></div><div class="xl-cell xl-hdr" style="font-weight:700;">C</div><div class="xl-cell xl-hdr" style="font-weight:700;">D</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">1</div><div class="xl-cell" style="font-weight:600;color:#1E2139;">Measure</div><div class="xl-cell" style="font-weight:600;color:#1E2139;">Formula / Result</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">2</div><div class="xl-cell">Mean</div><div class="xl-cell formula">=AVERAGE(A2:A26)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">3</div><div class="xl-cell">Median</div><div class="xl-cell formula">=MEDIAN(A2:A26)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">4</div><div class="xl-cell">Mode</div><div class="xl-cell formula">=MODE.SNGL(A2:A26)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">5</div><div class="xl-cell">Q1</div><div class="xl-cell formula">=QUARTILE.INC(A2:A26,1)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">6</div><div class="xl-cell">Q2 (Median)</div><div class="xl-cell formula">=QUARTILE.INC(A2:A26,2)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">7</div><div class="xl-cell">Q3</div><div class="xl-cell formula">=QUARTILE.INC(A2:A26,3)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">8</div><div class="xl-cell">IQR</div><div class="xl-cell formula">=D7-D5</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">9</div><div class="xl-cell">Range</div><div class="xl-cell formula">=MAX(A2:A26)-MIN(A2:A26)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">10</div><div class="xl-cell">Variance</div><div class="xl-cell formula">=VAR.S(A2:A26)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">11</div><div class="xl-cell">Std Dev</div><div class="xl-cell formula">=STDEV.S(A2:A26)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 90px 1fr;">
+          <div class="xl-cell col-a">12</div><div class="xl-cell">CV %</div><div class="xl-cell formula">=D11/D2*100</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h2 style="margin-bottom:8px;">Expected results</h2>
+      <div class="stat-row" style="flex-wrap:wrap;gap:8px;">
+        <div class="stat-card" style="border-top:3px solid #C0272D;min-width:80px;"><div class="stat-val" style="font-size:1.15rem;">60.68</div><div class="stat-lbl">Mean ($000)</div></div>
+        <div class="stat-card" style="border-top:3px solid #1a6fa8;min-width:80px;"><div class="stat-val" style="font-size:1.15rem;color:#1a6fa8;">56.00</div><div class="stat-lbl">Median ($000)</div></div>
+        <div class="stat-card" style="border-top:3px solid #1a7a4a;min-width:80px;"><div class="stat-val" style="font-size:1.15rem;color:#1a7a4a;">56.00</div><div class="stat-lbl">Mode ($000)</div></div>
+        <div class="stat-card" style="border-top:3px solid #888;min-width:80px;"><div class="stat-val" style="font-size:1.15rem;color:#888;">50.50</div><div class="stat-lbl">Q₁ ($000)</div></div>
+        <div class="stat-card" style="border-top:3px solid #b87000;min-width:80px;"><div class="stat-val" style="font-size:1.15rem;color:#b87000;">66.50</div><div class="stat-lbl">Q₃ ($000)</div></div>
+        <div class="stat-card" style="border-top:3px solid #1a6fa8;min-width:80px;"><div class="stat-val" style="font-size:1.15rem;color:#1a6fa8;">16.00</div><div class="stat-lbl">IQR ($000)</div></div>
+      </div>
+      <div class="stat-row" style="flex-wrap:wrap;gap:8px;margin-top:4px;">
+        <div class="stat-card" style="border-top:3px solid #C0272D;flex:1;"><div class="stat-val" style="font-size:1.1rem;">20.36</div><div class="stat-lbl">Std Dev ($000)</div></div>
+        <div class="stat-card" style="border-top:3px solid #C0272D;flex:1;"><div class="stat-val" style="font-size:1.1rem;">33.6%</div><div class="stat-lbl">CV</div></div>
+        <div class="stat-card" style="border-top:3px solid #555;flex:1;"><div class="stat-val" style="font-size:1.1rem;">93</div><div class="stat-lbl">Range ($000)</div></div>
+      </div>
+      <div class="card" style="margin-top:10px;border-left-color:#b87000;">
+        <h2>Note on function choice</h2>
+        <p style="font-size:0.82rem;"><code>VAR.S</code> and <code>STDEV.S</code> use the sample formula (divides by n−1). Use <code>VAR.P</code> / <code>STDEV.P</code> only if the 25 employees represent the entire workforce, not a sample.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 4  Q1 SOLUTION B — OUTLIER FENCES + INTERPRETATION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-s">✔ Solution 1B — IQR Fence Method &amp; Interpretation</div>
+  <div class="slide-title">Q1 Continued: Outlier Fences &amp; Which Measure to Report</div>
+  <div class="two-col">
+    <div>
+      <div style="font-size:0.72rem;color:#888;margin-bottom:4px;font-weight:600;">EXTEND YOUR SPREADSHEET (cells C14:D17)</div>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">14</div><div class="xl-cell" style="font-weight:600;color:#C0272D;">Lower Fence</div><div class="xl-cell formula">=D5 - 1.5*D8</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">15</div><div class="xl-cell" style="font-weight:600;color:#C0272D;">Upper Fence</div><div class="xl-cell formula">=D7 + 1.5*D8</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">16</div><div class="xl-cell">Min below fence?</div><div class="xl-cell formula">=IF(MIN(A2:A26)&lt;D14,"YES","NO")</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">17</div><div class="xl-cell">Max above fence?</div><div class="xl-cell formula">=IF(MAX(A2:A26)&gt;D15,"YES","NO")</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">18</div><div class="xl-cell">Trimmed Mean*</div><div class="xl-cell formula">=TRIMMEAN(A2:A26, 2/25)</div>
+        </div>
+      </div>
+      <p style="font-size:0.72rem;color:#888;margin-top:4px;">* <code>TRIMMEAN(array, 2/25)</code> excludes the 1 highest and 1 lowest values (≈ 4% trim for 25 values)</p>
+
+      <div class="formula-block" style="margin-top:12px;">
+<span class="label">Lower Fence</span> = 50.50 − 1.5 × 16 = <span class="result">26.50</span>
+<span class="label">Upper Fence</span> = 66.50 + 1.5 × 16 = <span class="result">90.50</span>
+
+<span class="comment">135 > 90.50  →  OUTLIER confirmed ✓</span>
+<span class="comment">42 > 26.50   →  Not an outlier</span>
+
+<span class="label">Trimmed Mean</span> = <span class="result">58.65</span> (excl. 42 and 135)
+      </div>
+    </div>
+    <div>
+      <h2 style="margin-bottom:10px;">Part (e) — Recommended answer</h2>
+      <div class="card green" style="margin-bottom:10px;">
+        <h2>Report the median ($56,000)</h2>
+        <p style="font-size:0.83rem;">The CEO salary ($135K) is a formal statistical outlier (above the $90.5K upper fence). The mean is inflated to $60,680 — overstating typical staff pay by $4,680 relative to the median. The trimmed mean ($58,650) falls between both, confirming the upward pull.</p>
+      </div>
+      <!-- Visual comparison -->
+      <svg viewBox="0 0 280 110" style="width:100%;max-height:110px;" xmlns="http://www.w3.org/2000/svg">
+        <!-- Scale: 50–70 → x = 30 + (val-50)/20 * 220 -->
+        <line x1="30" y1="75" x2="260" y2="75" stroke="#ddd" stroke-width="1.5"/>
+        <text x="30"  y="86" font-size="8" fill="#bbb" text-anchor="middle">50</text>
+        <text x="140" y="86" font-size="8" fill="#bbb" text-anchor="middle">60</text>
+        <text x="250" y="86" font-size="8" fill="#bbb" text-anchor="middle">70</text>
+        <!-- Fence zone shaded -->
+        <rect x="30" y="58" width="220" height="20" fill="#eaf5ee" opacity="0.5" rx="2"/>
+        <!-- Median: 56 → x=30+6/20*220=96 -->
+        <line x1="96" y1="50" x2="96" y2="78" stroke="#1a6fa8" stroke-width="2.8"/>
+        <text x="96" y="46" font-size="8.5" fill="#1a6fa8" font-weight="700" text-anchor="middle">Median 56</text>
+        <!-- Trimmed: 58.65 → x=30+8.65/20*220=125.15 -->
+        <line x1="125" y1="52" x2="125" y2="78" stroke="#b87000" stroke-width="2.2"/>
+        <text x="125" y="48" font-size="8" fill="#b87000" text-anchor="middle">Trimmed 58.65</text>
+        <!-- Mean: 60.68 → x=30+10.68/20*220=147.5 -->
+        <line x1="147.5" y1="54" x2="147.5" y2="78" stroke="#C0272D" stroke-width="2.8"/>
+        <text x="147.5" y="50" font-size="8.5" fill="#C0272D" font-weight="700" text-anchor="middle">Mean 60.68</text>
+        <text x="145" y="100" font-size="8" fill="#555" text-anchor="middle">← Mean shifted right by outlier</text>
+        <!-- Arrow showing direction of skew -->
+        <defs><marker id="ar2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0L7,2.5L0,5Z" fill="#C0272D"/></marker></defs>
+        <line x1="96" y1="90" x2="145" y2="90" stroke="#C0272D" stroke-width="1.2" marker-end="url(#ar2)"/>
+      </svg>
+      <div class="card amber" style="margin-top:6px;">
+        <h2>Communicating this to the board</h2>
+        <p style="font-size:0.82rem;">A complete report would state: <em>"Median salary is $56,000. One salary ($135,000) falls outside the IQR fence and is classified as a statistical outlier. The unadjusted mean ($60,680) should not be used as the representative measure."</em></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 5  Q2 QUESTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-q">◆ Question 2 — Coefficient of Variation: Department Comparison</div>
+  <div class="slide-title">Which Team Has More Consistent Pay?</div>
+  <div class="ctx"><strong>Meridian Solutions</strong> has two main teams. The CFO wants to know which team shows greater <em>relative</em> pay dispersion — a signal of inequitable banding structures.</div>
+  <div class="two-col">
+    <div>
+      <h2 style="margin-bottom:8px;">Finance Team — n = 8</h2>
+      <div class="data-strip">55 &nbsp;62 &nbsp;65 &nbsp;70 &nbsp;72 &nbsp;78 &nbsp;85 &nbsp;92</div>
+
+      <h2 style="margin-bottom:8px;margin-top:14px;">Operations Team — n = 10</h2>
+      <div class="data-strip">42 &nbsp;44 &nbsp;45 &nbsp;47 &nbsp;48 &nbsp;50 &nbsp;51 &nbsp;52 &nbsp;53 &nbsp;54</div>
+
+      <div style="margin-top:16px;">
+        <h2 style="margin-bottom:8px;">Required:</h2>
+        <ol class="req-list">
+          <li>For each team, calculate mean and standard deviation in Excel</li>
+          <li>Calculate CV (%) for each team</li>
+          <li>Without using CV, a colleague argues "Finance is more variable because its standard deviation is larger." Is this reasoning correct? Explain</li>
+          <li>Which team should HR investigate for internal pay equity? Why?</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="card amber">
+        <h2>The trap in this question</h2>
+        <p style="font-size:0.83rem;">Finance salaries are higher <em>and</em> more spread in absolute terms. But the question is about relative spread — whether the variation is large <em>compared to the team's own mean</em>. CV removes the unit scale and lets you compare apples to apples.</p>
+      </div>
+      <div class="card blue" style="margin-top:10px;">
+        <h2>When does CV matter most?</h2>
+        <p style="font-size:0.83rem;">CV is especially important when comparing distributions with very different means — like junior Operations staff vs senior Finance staff — or when comparing variables in entirely different units (e.g., salary vs hours worked).</p>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <h2>Pay equity context</h2>
+        <p style="font-size:0.82rem;">A higher CV within a team suggests salaries are not consistently banded. This can indicate ad-hoc salary negotiations, role overlap, or gender/tenure pay gaps. The team with the higher CV warrants deeper investigation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 6  Q2 SOLUTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-s">✔ Solution 2 — CV Comparison</div>
+  <div class="slide-title">Q2 Step-by-Step: Coefficient of Variation in Excel</div>
+  <div class="two-col">
+    <div>
+      <div style="font-size:0.72rem;color:#888;margin-bottom:4px;font-weight:600;">LAYOUT — Finance in B2:B9, Operations in D2:D11</div>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:32px 100px 110px 110px;">
+          <div class="xl-cell col-a">1</div><div class="xl-cell" style="font-weight:600;">Measure</div><div class="xl-cell" style="font-weight:600;color:#C0272D;">Finance (B)</div><div class="xl-cell" style="font-weight:600;color:#1a6fa8;">Operations (D)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 100px 110px 110px;">
+          <div class="xl-cell col-a">13</div><div class="xl-cell">Mean</div><div class="xl-cell formula">=AVERAGE(B2:B9)</div><div class="xl-cell formula">=AVERAGE(D2:D11)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 100px 110px 110px;">
+          <div class="xl-cell col-a">14</div><div class="xl-cell">Std Dev</div><div class="xl-cell formula">=STDEV.S(B2:B9)</div><div class="xl-cell formula">=STDEV.S(D2:D11)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 100px 110px 110px;">
+          <div class="xl-cell col-a">15</div><div class="xl-cell">CV (%)</div><div class="xl-cell formula">=B14/B13*100</div><div class="xl-cell formula">=D14/D13*100</div>
+        </div>
+      </div>
+      <div class="formula-block" style="margin-top:12px;">
+<span class="label">Finance:</span>  Mean = <span class="result">72.38</span>   SD = <span class="result">13.18</span>   CV = <span class="result">18.2%</span>
+<span class="label">Operations:</span> Mean = <span class="result">48.60</span>   SD = <span class="result">4.22</span>    CV = <span class="result"> 8.7%</span>
+
+<span class="comment">Finance CV (18.2%) > Operations CV (8.7%)</span>
+      </div>
+      <div class="card amber" style="margin-top:10px;">
+        <h2>Part (c) — Is the colleague correct?</h2>
+        <p style="font-size:0.83rem;"><strong>No.</strong> The colleague is comparing absolute variation. Finance's larger SD ($13.18K) partly reflects its higher mean ($72.38K). When we control for the level of pay using CV, Finance shows <em>more than twice</em> the relative dispersion. The absolute SD comparison is misleading here.</p>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 265 200" style="width:100%;" xmlns="http://www.w3.org/2000/svg">
+        <text x="132" y="14" font-size="10.5" fill="#333" font-weight="600" text-anchor="middle">CV vs Absolute Std Dev — Why They Disagree</text>
+        <!-- Two-bar comparison: SD first, then CV -->
+        <!-- SD bars: max 15, scale y = 145 - val/15*105 -->
+        <text x="75" y="150" font-size="8" fill="#555" text-anchor="middle" font-weight="600">Standard Deviation ($000)</text>
+        <line x1="20" y1="145" x2="130" y2="145" stroke="#ddd" stroke-width="1"/>
+        <line x1="20" y1="40" x2="20" y2="145" stroke="#ddd" stroke-width="1"/>
+        <!-- Finance SD 13.18: h = 13.18/15*105=92.3 -->
+        <rect x="35" y="53" width="35" height="92" fill="#C0272D" opacity="0.8" rx="3"/>
+        <text x="52.5" y="49" font-size="8.5" fill="#C0272D" text-anchor="middle" font-weight="700">13.18</text>
+        <text x="52.5" y="162" font-size="8" fill="#555" text-anchor="middle">Finance</text>
+        <!-- Ops SD 4.22: h=4.22/15*105=29.5 -->
+        <rect x="80" y="115.5" width="35" height="29.5" fill="#1a6fa8" opacity="0.8" rx="3"/>
+        <text x="97.5" y="111" font-size="8.5" fill="#1a6fa8" text-anchor="middle" font-weight="700">4.22</text>
+        <text x="97.5" y="162" font-size="8" fill="#555" text-anchor="middle">Operations</text>
+        <!-- ↓ misleading signal -->
+        <text x="75" y="178" font-size="8" fill="#C0272D" text-anchor="middle">→ Looks like Finance is "more variable"</text>
+
+        <!-- CV bars: max 20, x start 145 -->
+        <text x="208" y="150" font-size="8" fill="#555" text-anchor="middle" font-weight="600">CV (%)</text>
+        <line x1="153" y1="145" x2="263" y2="145" stroke="#ddd" stroke-width="1"/>
+        <line x1="153" y1="40" x2="153" y2="145" stroke="#ddd" stroke-width="1"/>
+        <!-- Finance CV 18.2: h=18.2/20*105=95.6 -->
+        <rect x="168" y="49" width="35" height="96" fill="#C0272D" opacity="0.8" rx="3"/>
+        <text x="185.5" y="45" font-size="8.5" fill="#C0272D" text-anchor="middle" font-weight="700">18.2%</text>
+        <text x="185.5" y="162" font-size="8" fill="#555" text-anchor="middle">Finance</text>
+        <!-- Ops CV 8.7: h=8.7/20*105=45.7 -->
+        <rect x="213" y="99" width="35" height="46" fill="#1a6fa8" opacity="0.8" rx="3"/>
+        <text x="230.5" y="95" font-size="8.5" fill="#1a6fa8" text-anchor="middle" font-weight="700">8.7%</text>
+        <text x="230.5" y="162" font-size="8" fill="#555" text-anchor="middle">Operations</text>
+        <text x="208" y="178" font-size="8" fill="#1a7a4a" text-anchor="middle">→ CV confirms: Finance is more dispersed</text>
+      </svg>
+      <div class="card green" style="margin-top:4px;">
+        <h2>Part (d) — HR should investigate Finance</h2>
+        <p style="font-size:0.82rem;">Finance CV of 18.2% is more than double Operations' 8.7%, suggesting inconsistent salary banding. Salaries range from $55K to $92K — a $37K gap. HR should review whether this reflects genuine role differentiation or ad-hoc negotiated increases.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 7  Q3 QUESTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-q">◆ Question 3 — Geometric Mean &amp; Payroll Projection</div>
+  <div class="slide-title">What Is Meridian's True Payroll Growth Rate?</div>
+  <div class="ctx"><strong>Meridian's total payroll budget</strong> has changed each year for the past five years. The board needs a single compound annual growth rate (CAGR) to assess payroll sustainability and project future costs.</div>
+  <div class="two-col">
+    <div>
+      <table style="margin-bottom:14px;">
+        <tr><th>Year</th><th>Payroll change</th><th>Growth factor (1 + R)</th></tr>
+        <tr><td>2020</td><td style="color:#1a7a4a;font-weight:700;">+8.0%</td><td>1.0800</td></tr>
+        <tr><td>2021</td><td style="color:#1a7a4a;font-weight:700;">+12.0%</td><td>1.1200</td></tr>
+        <tr><td>2022</td><td style="color:#C0272D;font-weight:700;">−5.0%</td><td>0.9500</td></tr>
+        <tr><td>2023</td><td style="color:#1a7a4a;font-weight:700;">+15.0%</td><td>1.1500</td></tr>
+        <tr><td>2024</td><td style="color:#1a7a4a;font-weight:700;">+6.0%</td><td>1.0600</td></tr>
+      </table>
+      <div>
+        <h2 style="margin-bottom:8px;">Required:</h2>
+        <ol class="req-list">
+          <li>Enter the five growth factors in a column. Use <code>GEOMEAN</code> to compute the geometric mean of the growth factors, then subtract 1 to get the CAGR</li>
+          <li>Separately calculate the <strong>arithmetic mean</strong> of the five annual rates (not the growth factors)</li>
+          <li>Current payroll (end of 2024): <strong>$1,400,000</strong>. Project payroll for end of <strong>2027</strong> using the geometric CAGR. Use a formula — not manual multiplication</li>
+          <li>Why must the geometric mean be used for this projection, not the arithmetic mean?</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="card amber">
+        <h2>Common mistake</h2>
+        <p style="font-size:0.83rem;">Students often apply <code>GEOMEAN</code> directly to the percentage rates (8%, 12%, −5%…). This is wrong — you cannot take the geometric mean of negative numbers. Always convert rates to <em>growth factors</em> (1 + R) first, then subtract 1 from the result.</p>
+      </div>
+      <div class="card blue" style="margin-top:10px;">
+        <h2>The projection formula</h2>
+        <p style="font-size:0.84rem;">If CAGR = Rg and current value = P₀, then the value in t years is:</p>
+        <div style="background:#f0f1f5;border-radius:5px;padding:8px;margin-top:6px;font-family:monospace;font-size:0.9rem;text-align:center;">P_t = P₀ × (1 + Rg)^t</div>
+        <p style="font-size:0.82rem;margin-top:6px;">In Excel: <code>=P0 * (1 + CAGR)^3</code> for a 3-year projection.</p>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <h2>Hint: verify your CAGR manually</h2>
+        <p style="font-size:0.82rem;">Check: 1.08 × 1.12 × 0.95 × 1.15 × 1.06 = ?<br>The product of all five growth factors should equal (1 + CAGR)⁵.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 8  Q3 SOLUTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-s">✔ Solution 3 — Geometric Mean &amp; Payroll Projection</div>
+  <div class="slide-title">Q3 Step-by-Step: GEOMEAN &amp; Future Value in Excel</div>
+  <div class="two-col">
+    <div>
+      <div style="font-size:0.72rem;color:#888;margin-bottom:4px;font-weight:600;">LAYOUT — Growth factors in B2:B6, rates in C2:C6</div>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">2</div><div class="xl-cell">Growth factors</div><div class="xl-cell" style="color:#555;">1.08, 1.12, 0.95, 1.15, 1.06 in B2:B6</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">3</div><div class="xl-cell">Annual rates</div><div class="xl-cell" style="color:#555;">0.08, 0.12, -0.05, 0.15, 0.06 in C2:C6</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">9</div><div class="xl-cell">CAGR (Geometric)</div><div class="xl-cell formula">=GEOMEAN(B2:B6)-1</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">10</div><div class="xl-cell">Arith. Mean Rate</div><div class="xl-cell formula">=AVERAGE(C2:C6)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">11</div><div class="xl-cell">Current Payroll</div><div class="xl-cell result-cell">1400000</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">12</div><div class="xl-cell">Projected (2027)</div><div class="xl-cell formula">=B11*(1+B9)^3</div>
+        </div>
+      </div>
+
+      <div class="formula-block" style="margin-top:12px;">
+<span class="comment">Manual verification:</span>
+1.08 × 1.12 × 0.95 × 1.15 × 1.06 = <span class="result">1.4008</span>
+CAGR = 1.4008^(1/5) − 1 = <span class="result">6.97%</span>
+
+<span class="label">Arithmetic Mean:</span> (8+12−5+15+6)/5 = <span class="result">7.20%</span>
+
+<span class="label">Projection:</span> 1,400,000 × (1.0697)³ = <span class="result">$1,713,840</span>
+      </div>
+    </div>
+    <div>
+      <div class="stat-row">
+        <div class="stat-card" style="border-top:3px solid #1a7a4a;flex:1;">
+          <div class="stat-val" style="color:#1a7a4a;font-size:1.3rem;">6.97%</div>
+          <div class="stat-lbl">Geometric CAGR ✓</div>
+        </div>
+        <div class="stat-card" style="border-top:3px solid #aaa;flex:1;opacity:0.6;">
+          <div class="stat-val" style="color:#888;font-size:1.3rem;">7.20%</div>
+          <div class="stat-lbl">Arithmetic Mean ✗</div>
+        </div>
+        <div class="stat-card" style="border-top:3px solid #C0272D;flex:1;">
+          <div class="stat-val" style="font-size:1.2rem;">$1.71M</div>
+          <div class="stat-lbl">2027 Projection</div>
+        </div>
+      </div>
+      <div class="card green" style="margin-top:10px;">
+        <h2>Part (d) — Why geometric, not arithmetic?</h2>
+        <p style="font-size:0.83rem;">The arithmetic mean treats each year's rate independently. But payroll compounds — a 15% rise in 2023 applies to a base already reduced 5% in 2022. The geometric mean correctly accounts for this compounding effect. Using the arithmetic rate of 7.2% would project $1,721,900 — overstating the budget by $8,060.</p>
+      </div>
+      <!-- Visualise divergence -->
+      <svg viewBox="0 0 270 100" style="width:100%;max-height:100px;margin-top:8px;" xmlns="http://www.w3.org/2000/svg">
+        <text x="135" y="13" font-size="9.5" fill="#333" font-weight="600" text-anchor="middle">Compound Error: Arithmetic vs Geometric</text>
+        <rect x="10" y="25" width="120" height="30" fill="#eaf5ee" rx="4" stroke="#1a7a4a" stroke-width="1"/>
+        <text x="70" y="35" font-size="8.5" fill="#1a7a4a" font-weight="700" text-anchor="middle">Geometric: $1,713,840</text>
+        <text x="70" y="48" font-size="8" fill="#1a7a4a" text-anchor="middle">← correct CAGR projection</text>
+        <rect x="140" y="25" width="120" height="30" fill="#fff3e0" rx="4" stroke="#b87000" stroke-width="1"/>
+        <text x="200" y="35" font-size="8.5" fill="#b87000" font-weight="700" text-anchor="middle">Arithmetic: $1,721,900</text>
+        <text x="200" y="48" font-size="8" fill="#b87000" text-anchor="middle">overstates by +$8,060</text>
+        <text x="135" y="80" font-size="8.5" fill="#555" text-anchor="middle">The gap grows every additional year into the future.</text>
+        <text x="135" y="93" font-size="8.5" fill="#888" text-anchor="middle">Over a 10-year projection the error would be substantial.</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 9  Q4 QUESTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-q">◆ Question 4 — Correlation &amp; Outlier Sensitivity Analysis</div>
+  <div class="slide-title">Does Training Really Reduce Payroll Errors?</div>
+  <div class="ctx"><strong>Meridian Solutions</strong> — 12 staff members. HR wants to justify a training budget increase by showing a strong link between compliance training hours and payroll processing errors.</div>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>ID</th><th>Training (hrs) X</th><th>Errors (annual) Y</th></tr>
+        <tr><td>A</td><td>12</td><td>15</td></tr>
+        <tr><td>B</td><td>18</td><td>12</td></tr>
+        <tr><td>C</td><td>25</td><td>8</td></tr>
+        <tr><td>D</td><td>30</td><td>5</td></tr>
+        <tr><td>E</td><td>15</td><td>14</td></tr>
+        <tr><td>F</td><td>22</td><td>10</td></tr>
+        <tr><td>G</td><td>28</td><td>6</td></tr>
+        <tr><td>H</td><td>10</td><td>17</td></tr>
+        <tr><td>I</td><td>20</td><td>11</td></tr>
+        <tr><td>J</td><td>35</td><td>3</td></tr>
+        <tr><td>K</td><td>8</td><td>19</td></tr>
+        <tr><td>L</td><td>32</td><td>4</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2 style="margin-bottom:8px;">Required:</h2>
+      <ol class="req-list">
+        <li>Calculate <strong>sample covariance</strong> using <code>COVARIANCE.S</code> and interpret the sign and magnitude</li>
+        <li>Calculate <strong>Pearson's r</strong> using <code>CORREL</code>. Classify the strength (weak / moderate / strong) and direction</li>
+        <li>Create a scatterplot in Excel (Insert → Scatter). Add a linear trendline. Does the visual confirm r?</li>
+        <li><strong>Sensitivity test:</strong> Remove employee J (35 hrs, 3 errors) — the highest-trained staff member. Recompute r using only the remaining 11 employees. By how much does r change? What does this tell you about J's influence on the result?</li>
+        <li>Should HR use this correlation as evidence to approve additional training budget? What caveats apply?</li>
+      </ol>
+      <div class="card" style="margin-top:10px;">
+        <h2>Hint: sensitivity test in Excel</h2>
+        <p style="font-size:0.82rem;">Rather than deleting data, enter a second <code>CORREL</code> formula referencing only rows A–I and K–L: <code>=CORREL(A2:A10,B2:B10)</code> and add row L separately using an array approach, or simply paste the 11 rows into a new column.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 10  Q4 SOLUTION A — CORREL + COVARIANCE
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-s">✔ Solution 4A — Covariance, Correlation &amp; Scatterplot</div>
+  <div class="slide-title">Q4 Step-by-Step: CORREL and COVARIANCE.S in Excel</div>
+  <div class="two-col">
+    <div>
+      <div style="font-size:0.72rem;color:#888;margin-bottom:4px;font-weight:600;">LAYOUT — Training in A2:A13, Errors in B2:B13</div>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">16</div><div class="xl-cell">Covariance</div><div class="xl-cell formula">=COVARIANCE.S(A2:A13,B2:B13)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">17</div><div class="xl-cell">Pearson's r</div><div class="xl-cell formula">=CORREL(A2:A13,B2:B13)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">18</div><div class="xl-cell">r² (R-squared)</div><div class="xl-cell formula">=B17^2</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 130px 1fr;">
+          <div class="xl-cell col-a">19</div><div class="xl-cell">r (excl. J)</div><div class="xl-cell formula">=CORREL(A2:A11,B2:B11) + row L</div>
+        </div>
+      </div>
+      <div class="formula-block" style="margin-top:12px;">
+<span class="label">Covariance (Sxy) =</span> <span class="result">−78.52</span>
+<span class="comment">Negative: as training ↑, errors ↓ (inverse)</span>
+<span class="comment">Magnitude hard to interpret (unit-dependent)</span>
+
+<span class="label">Pearson's r =</span> <span class="result">−0.9953</span>
+<span class="label">r² =</span> <span class="result">0.9907</span>
+<span class="comment">r² = 99.1% of error variation explained by training</span>
+
+<span class="label">r excluding J =</span> <span class="result">−0.9938</span>
+<span class="comment">Change in r = −0.0015 → J has minimal influence</span>
+      </div>
+    </div>
+    <div>
+      <div class="stat-row">
+        <div class="stat-card" style="border-top:3px solid #C0272D;">
+          <div class="stat-val">−78.52</div>
+          <div class="stat-lbl">Covariance (Sxy)</div>
+        </div>
+        <div class="stat-card" style="border-top:3px solid #C0272D;">
+          <div class="stat-val">−0.995</div>
+          <div class="stat-lbl">Pearson's r</div>
+        </div>
+        <div class="stat-card" style="border-top:3px solid #1a7a4a;">
+          <div class="stat-val" style="color:#1a7a4a;">99.1%</div>
+          <div class="stat-lbl">r² explained</div>
+        </div>
+      </div>
+      <!-- Scatterplot SVG -->
+      <svg viewBox="0 0 265 155" style="width:100%;max-height:155px;margin-top:10px;" xmlns="http://www.w3.org/2000/svg">
+        <text x="132" y="13" font-size="9.5" fill="#333" font-weight="600" text-anchor="middle">Training Hours vs Payroll Errors (n=12)</text>
+        <line x1="35" y1="20" x2="35" y2="130" stroke="#bbb" stroke-width="1.5"/>
+        <line x1="35" y1="130" x2="260" y2="130" stroke="#bbb" stroke-width="1.5"/>
+        <!-- x: 8-35, scale: 35+(val-8)/27*220 -->
+        <!-- y: 0-20, scale: 130 - val/20*110 -->
+        <text x="148" y="143" font-size="8" fill="#555" text-anchor="middle">Training Hours</text>
+        <text x="15" y="75" font-size="8" fill="#555" text-anchor="middle" transform="rotate(-90,15,75)">Errors</text>
+        <!-- Trend line approximate: from (8,19) to (35,3) -->
+        <!-- x8→35, y19=35+0/27*220=35; x35→35+27/27*220=255 -->
+        <!-- y for x=8: 130-19/20*110=25.5; y for x=35: 130-3/20*110=113.5 -->
+        <line x1="35" y1="25.5" x2="255" y2="113.5" stroke="#C0272D" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+        <!-- Points -->
+        <!-- K:8,19 → (35, 24.5) -->
+        <circle cx="35" cy="24.5" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- H:10,17 → (51.3, 36.8) -->
+        <circle cx="51.3" cy="36.8" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- A:12,15 → (67.6, 47.5) -->
+        <circle cx="67.6" cy="47.5" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- E:15,14 → (89.6, 53) -->
+        <circle cx="89.6" cy="53" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- B:18,12 → (113.9, 64) -->
+        <circle cx="113.9" cy="64" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- I:20,11 → (130.2, 69.5) -->
+        <circle cx="130.2" cy="69.5" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- F:22,10 → (146.4, 75) -->
+        <circle cx="146.4" cy="75" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- C:25,8 → (170.8, 86) -->
+        <circle cx="170.8" cy="86" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- G:28,6 → (195.1, 97) -->
+        <circle cx="195.1" cy="97" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- D:30,5 → (211.4, 102.5) -->
+        <circle cx="211.4" cy="102.5" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- L:32,4 → (227.8, 108) -->
+        <circle cx="227.8" cy="108" r="4.5" fill="#1a6fa8" opacity="0.85"/>
+        <!-- J:35,3 → (255, 113.5) highlighted -->
+        <circle cx="255" cy="113.5" r="5.5" fill="#b87000" stroke="#333" stroke-width="1"/>
+        <text x="253" y="108" font-size="7.5" fill="#b87000" text-anchor="end">J</text>
+        <!-- r label -->
+        <text x="180" y="36" font-size="11" fill="#C0272D" font-weight="800">r = −0.995</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 11  Q4 SOLUTION B — SENSITIVITY + INTERPRETATION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-s">✔ Solution 4B — Sensitivity Analysis &amp; Professional Interpretation</div>
+  <div class="slide-title">Q4 Continued: Does Employee J Drive the Result?</div>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:12px;">
+        <h2>Sensitivity result: J has minimal influence</h2>
+        <p style="font-size:0.84rem;">Removing J changes r from −0.9953 to −0.9938 — a difference of only 0.0015. This is <strong>negligible</strong>. The strong negative correlation is not an artefact of a single outlier; it is present throughout all 12 observations. Every point follows the trend closely (r² = 99.1%), confirming the relationship is genuine and consistent.</p>
+      </div>
+      <div class="card amber" style="margin-bottom:12px;">
+        <h2>When would sensitivity matter?</h2>
+        <p style="font-size:0.84rem;">Sensitivity analysis is most important when r is moderate (e.g., 0.6–0.8) and sample sizes are small. If removing one point shifts r by ±0.1 or more, the conclusion depends heavily on that observation. Always test — never assume.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h2>Part (e) — Should HR approve the training budget?</h2>
+        <p style="font-size:0.84rem;">The correlation provides <strong>strong statistical support</strong> but HR must communicate two important caveats:</p>
+        <ul class="clean" style="margin-top:8px;">
+          <li><strong>Correlation ≠ causation:</strong> We cannot conclude from r alone that training <em>caused</em> the error reduction. High-ability staff may both choose to train more and be less error-prone</li>
+          <li><strong>Sample size:</strong> n = 12 is small. A larger study would strengthen the business case</li>
+          <li><strong>Confounding variables:</strong> Role type, years of experience, and software used are not controlled for</li>
+          <li><strong>Correct framing:</strong> "Training hours are strongly negatively correlated with errors (r = −0.995, n = 12). This is consistent with training reducing errors, but further evidence is needed before establishing causation."</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 12  Q5 QUESTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-q">◆ Question 5 — Descriptive Measures from a Frequency Distribution</div>
+  <div class="slide-title">Analysing Invoice Data Without Raw Records</div>
+  <div class="ctx"><strong>Meridian is auditing a client's accounts payable.</strong> They receive a summary frequency table of 57 invoices — the individual amounts are not available. They must estimate key statistics from the grouped data.</div>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Invoice amount ($)</th><th>Frequency (f)</th><th>Midpoint (m)</th></tr>
+        <tr><td>0 – &lt;500</td><td>12</td><td>250</td></tr>
+        <tr><td>500 – &lt;1,000</td><td>18</td><td>750</td></tr>
+        <tr><td>1,000 – &lt;2,000</td><td>14</td><td>1,500</td></tr>
+        <tr><td>2,000 – &lt;5,000</td><td>8</td><td>3,500</td></tr>
+        <tr><td>5,000 – &lt;10,000</td><td>5</td><td>7,500</td></tr>
+        <tr class="hl"><td>Total</td><td>57</td><td>—</td></tr>
+      </table>
+      <div style="margin-top:14px;">
+        <h2 style="margin-bottom:8px;">Required:</h2>
+        <ol class="req-list">
+          <li>In Excel, add a column for <code>m × f</code> (midpoint × frequency). Sum these to get ∑(mf). Compute the approximate mean: x̄ ≈ ∑(mf) / n</li>
+          <li>Add a column for <code>f × (m − x̄)²</code>. Use this to compute the approximate variance and standard deviation</li>
+          <li>The actual mean from the raw data is <strong>$1,847</strong>. Compute the percentage approximation error</li>
+          <li>The last class (5,000–&lt;10,000) is very wide. Explain how this affects the accuracy of your estimates — and what you could do to improve it</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="card amber">
+        <h2>Why does this technique matter?</h2>
+        <p style="font-size:0.83rem;">In accounting practice you frequently receive data in aggregated form — ATO income tax statistics by bracket, general ledger balances by value range, insurance claims by severity band. This technique lets you extract meaningful statistics from published summaries without the raw data.</p>
+      </div>
+      <div class="card blue" style="margin-top:10px;">
+        <h2>The midpoint assumption</h2>
+        <p style="font-size:0.83rem;">By using the midpoint we assume values are uniformly distributed within each class. This works reasonably well for narrow, equal-width classes. Wide or open-ended classes introduce more error — and unequal class widths bias the midpoint assumption further.</p>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <h2>Hint: use absolute cell references</h2>
+        <p style="font-size:0.82rem;">When computing <code>f × (m − x̄)²</code>, lock the mean cell: <code>=C2*(B2-$G$2)^2</code>. This lets you copy the formula down without the mean reference shifting.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 13  Q5 SOLUTION
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-s">✔ Solution 5 — Frequency Distribution Approximation</div>
+  <div class="slide-title">Q5 Step-by-Step: Grouped Data Statistics in Excel</div>
+  <div class="two-col">
+    <div>
+      <div style="font-size:0.72rem;color:#888;margin-bottom:4px;font-weight:600;">LAYOUT — Freq in B2:B6, Midpoints in C2:C6</div>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:32px 60px 60px 68px 1fr;">
+          <div class="xl-cell col-a">1</div>
+          <div class="xl-cell" style="font-weight:600;">B: Freq</div>
+          <div class="xl-cell" style="font-weight:600;">C: Mid</div>
+          <div class="xl-cell" style="font-weight:600;color:#C0272D;">D: m×f</div>
+          <div class="xl-cell" style="font-weight:600;color:#1a6fa8;">E: f(m−x̄)²</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 60px 60px 68px 1fr;">
+          <div class="xl-cell col-a">2</div><div class="xl-cell">12</div><div class="xl-cell">250</div><div class="xl-cell formula">=B2*C2</div><div class="xl-cell formula">=B2*(C2-$G$2)^2</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 60px 60px 68px 1fr;">
+          <div class="xl-cell col-a">3</div><div class="xl-cell">18</div><div class="xl-cell">750</div><div class="xl-cell formula">=B3*C3</div><div class="xl-cell formula">=B3*(C3-$G$2)^2</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 60px 60px 68px 1fr;">
+          <div class="xl-cell col-a">4</div><div class="xl-cell">14</div><div class="xl-cell">1500</div><div class="xl-cell formula">=B4*C4</div><div class="xl-cell formula">=B4*(C4-$G$2)^2</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 60px 60px 68px 1fr;">
+          <div class="xl-cell col-a">5</div><div class="xl-cell">8</div><div class="xl-cell">3500</div><div class="xl-cell formula">=B5*C5</div><div class="xl-cell formula">=B5*(C5-$G$2)^2</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 60px 60px 68px 1fr;">
+          <div class="xl-cell col-a">6</div><div class="xl-cell">5</div><div class="xl-cell">7500</div><div class="xl-cell formula">=B6*C6</div><div class="xl-cell formula">=B6*(C6-$G$2)^2</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 60px 60px 68px 1fr;">
+          <div class="xl-cell col-a">8</div>
+          <div class="xl-cell" style="font-weight:600;">n=57</div>
+          <div class="xl-cell">—</div>
+          <div class="xl-cell formula">=SUM(D2:D6)</div>
+          <div class="xl-cell formula">=SUM(E2:E6)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">G2</div><div class="xl-cell">Approx. Mean</div><div class="xl-cell formula">=D8/57</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">G3</div><div class="xl-cell">Approx. Variance</div><div class="xl-cell formula">=E8/(57-1)</div>
+        </div>
+        <div class="xl-row" style="grid-template-columns:32px 120px 1fr;">
+          <div class="xl-cell col-a">G4</div><div class="xl-cell">Approx. Std Dev</div><div class="xl-cell formula">=SQRT(G3)</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="formula-block">
+<span class="comment">∑(m × f) workings:</span>
+250×12 + 750×18 + 1500×14 + 3500×8 + 7500×5
+= 3000 + 13500 + 21000 + 28000 + 37500
+= <span class="result">103,000</span>
+
+<span class="label">Approx. Mean</span>   = 103,000 / 57 = <span class="result">$1,807</span>
+<span class="label">Actual Mean</span>    = $1,847
+<span class="label">% Error</span>        = |1807−1847|/1847 × 100 = <span class="result">2.2%</span>
+
+<span class="label">Approx. Std Dev</span> ≈ <span class="result">$1,953</span>
+      </div>
+      <div class="card green" style="margin-top:10px;">
+        <h2>Part (d) — Wide final class impact</h2>
+        <p style="font-size:0.83rem;">The 5,000–&lt;10,000 class has a width of $5,000 — ten times wider than the first class. Using its midpoint of $7,500 introduces significant error when invoices cluster near one end. <strong>Fix:</strong> narrow the upper class (e.g., split into 5,000–7,500 and 7,500–10,000), or request the actual mean of that class from the client rather than assuming the midpoint.</p>
+      </div>
+      <div class="card amber" style="margin-top:8px;">
+        <h2>Audit implication</h2>
+        <p style="font-size:0.82rem;">A 2.2% approximation error is acceptable for initial analytical review. However, for final audit reporting, request the raw data. Frequency table summaries can mask clustering patterns that matter for materiality assessments.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 14  SECTION: EXCEL FUNCTION REFERENCE
+══════════════════════════════════════════════ -->
+<div class="slide dark">
+  <div class="div-wrap">
+    <div class="div-num">∑</div>
+    <div class="div-title">Excel Function Reference</div>
+    <div class="div-sub">All functions used across the five questions — one slide to rule them all</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 15  EXCEL FUNCTION CHEAT SHEET
+══════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="badge badge-ref">📋 Excel Reference — Week 3 Functions</div>
+  <div class="slide-title">Quick-Reference: Every Function Used This Week</div>
+  <div class="three-col" style="flex:1;min-height:0;">
+    <div>
+      <h2 class="sec-rule" style="color:#C0272D;border-color:#C0272D;">Central Tendency</h2>
+      <div class="xl-grid" style="margin-bottom:10px;">
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=AVERAGE(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=MEDIAN(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=MODE.SNGL(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=TRIMMEAN(range, %)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula">=GEOMEAN(range)−1</div></div>
+      </div>
+      <p style="font-size:0.75rem;color:#888;line-height:1.5;"><code>GEOMEAN</code> applied to growth factors (1+R). <code>TRIMMEAN</code> percent = 2k/n for k values trimmed each end.</p>
+
+      <h2 class="sec-rule" style="color:#C0272D;border-color:#C0272D;margin-top:14px;">Position</h2>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=QUARTILE.INC(range,1)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=QUARTILE.INC(range,2)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=QUARTILE.INC(range,3)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula">=PERCENTILE.INC(range,k)</div></div>
+      </div>
+    </div>
+    <div>
+      <h2 class="sec-rule" style="color:#1a6fa8;border-color:#1a6fa8;">Spread</h2>
+      <div class="xl-grid" style="margin-bottom:10px;">
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=VAR.S(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=STDEV.S(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=VAR.P(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=STDEV.P(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=MAX(range)−MIN(range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula">=Q3−Q1   <span style="color:#555;">[IQR]</span></div></div>
+      </div>
+      <p style="font-size:0.75rem;color:#888;line-height:1.5;">Use <code>.S</code> for samples (divides by n−1). Use <code>.P</code> only for entire populations. CV = <code>=STDEV.S/AVERAGE * 100</code>.</p>
+
+      <h2 class="sec-rule" style="color:#1a6fa8;border-color:#1a6fa8;margin-top:14px;">Outlier Fences</h2>
+      <div class="xl-grid">
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=Q1 − 1.5*IQR   <span style="color:#555;">[lower]</span></div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=Q3 + 1.5*IQR   <span style="color:#555;">[upper]</span></div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula">=IF(MAX(r)&gt;fence,"YES","NO")</div></div>
+      </div>
+    </div>
+    <div>
+      <h2 class="sec-rule" style="color:#1a7a4a;border-color:#1a7a4a;">Relationships</h2>
+      <div class="xl-grid" style="margin-bottom:10px;">
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=CORREL(x_range, y_range)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=COVARIANCE.S(x, y)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula">=COVARIANCE.P(x, y)</div></div>
+      </div>
+      <p style="font-size:0.75rem;color:#888;line-height:1.5;"><code>CORREL</code> always gives Pearson's r. Square it for R² (proportion of variance explained).</p>
+
+      <h2 class="sec-rule" style="color:#1a7a4a;border-color:#1a7a4a;margin-top:14px;">Grouped Data</h2>
+      <div class="xl-grid" style="margin-bottom:10px;">
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=SUMPRODUCT(m,f)/n</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula" style="border-bottom:1px solid #cce0d0;">=SUMPRODUCT(f,(m−x̄)^2)/(n−1)</div></div>
+        <div class="xl-row" style="grid-template-columns:1fr;"><div class="xl-cell formula">=SQRT(variance)</div></div>
+      </div>
+      <p style="font-size:0.75rem;color:#888;line-height:1.5;"><code>SUMPRODUCT</code> is the cleanest way to compute ∑(mf) and ∑f(m−x̄)² without adding helper columns.</p>
+
+      <div class="card amber" style="margin-top:12px;">
+        <h2>Sample vs Population — the rule</h2>
+        <p style="font-size:0.77rem;">If data = a <strong>sample</strong> drawn from a larger group → use <code>.S</code> (n−1 denominator)<br>If data = the <strong>entire population</strong> → use <code>.P</code> (N denominator)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+  const total = slides.length;
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+    document.getElementById('progress').style.width = ((cur + 1) / total * 100) + '%';
+    document.getElementById('counter').textContent = (cur + 1) + ' / ' + total;
+  }
+  document.getElementById('prev').addEventListener('click', () => goTo(cur - 1));
+  document.getElementById('next').addEventListener('click', () => goTo(cur + 1));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(cur + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(cur - 1);
+  });
+  goTo(0);
+</script>
+</body>
+</html>
