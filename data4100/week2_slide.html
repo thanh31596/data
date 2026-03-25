@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DATA4100 – Week 2: Statistical Methods & Visualisation</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C0392B;--red-light:#E74C3C;--red-bg:#FDEDEC;
+  --black:#1A1A1A;--gray-700:#4A4A4A;--gray-500:#7A7A7A;
+  --gray-200:#E8E8E8;--gray-100:#F7F7F7;--white:#FFFFFF;
+  --blue:#2471A3;--blue-bg:#EBF5FB;--yellow-bg:#FEF9E7;
+  --green:#1E8449;--green-bg:#E9F7EF;
+}
+html,body{width:100%;height:100%;font-family:'Lato',sans-serif;background:#111;overflow:hidden}
+
+/* ── PROGRESS ── */
+#progressBar{position:fixed;top:0;left:0;height:3px;background:var(--red);transition:width .35s ease;z-index:200}
+
+/* ── SLIDE CONTAINER ── */
+#deck{position:relative;width:100vw;height:100vh}
+
+/* ── SLIDE BASE ── */
+.slide{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  background:var(--white);display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transition:opacity .35s ease;
+  overflow:hidden;
+}
+.slide.active{opacity:1;pointer-events:all}
+.slide-top-bar{height:4px;background:var(--red);flex-shrink:0}
+
+/* ── HEADER ── */
+.slide-header{padding:20px 52px 12px;flex-shrink:0;border-bottom:1px solid var(--gray-200)}
+.slide-label{font-size:9px;font-weight:900;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:4px}
+.slide-title{font-family:'Libre Baskerville',serif;font-size:26px;font-weight:700;color:var(--red);line-height:1.15}
+.slide-subtitle{font-size:13px;font-weight:300;color:var(--gray-700);margin-top:3px}
+
+/* ── BODY ── */
+.slide-body{flex:1;padding:14px 52px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.two-col{flex-direction:row!important;gap:28px}
+.col{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-55{flex:0 0 55%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-45{flex:0 0 43%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-60{flex:0 0 58%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-40{flex:0 0 38%;display:flex;flex-direction:column;gap:8px;min-width:0}
+
+/* ── NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;height:40px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:200}
+.nav-info{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1.5px;font-family:'Lato',sans-serif}
+.nav-controls{display:flex;gap:10px;align-items:center}
+.nav-btn{background:none;border:1px solid rgba(255,255,255,.25);color:white;padding:4px 14px;font-size:11px;font-family:'Lato',sans-serif;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.nav-btn:hover{background:var(--red);border-color:var(--red)}
+.nav-counter{font-family:'Roboto Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);min-width:40px;text-align:center}
+
+/* ── TITLE SLIDE ── */
+.title-slide{justify-content:center;align-items:center}
+.title-slide .slide-top-bar{display:none}
+.title-inner{text-align:center;padding:20px 60px}
+.title-kicker{font-size:10px;font-weight:900;letter-spacing:3.5px;text-transform:uppercase;color:var(--gray-500);margin-bottom:10px}
+.title-main{font-family:'Libre Baskerville',serif;font-size:38px;font-weight:700;color:var(--red);line-height:1.1;margin-bottom:14px;max-width:680px}
+.title-rule{width:48px;height:2px;background:var(--red);margin:14px auto}
+.title-sub{font-size:14px;color:var(--gray-700);font-weight:300;max-width:500px;line-height:1.6}
+.title-meta{margin-top:24px;font-size:11px;color:var(--gray-500);letter-spacing:.5px}
+
+/* ── CALLOUT BOXES ── */
+.box{border-radius:3px;padding:10px 14px}
+.box-q{background:var(--yellow-bg);border-left:3px solid var(--red)}
+.box-i{background:var(--blue-bg);border-left:3px solid var(--blue)}
+.box-w{background:var(--red-bg);border-left:3px solid var(--red)}
+.box-g{background:var(--green-bg);border-left:3px solid var(--green)}
+.box-label{font-size:8.5px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.box-label.q{color:var(--red)}
+.box-label.i{color:var(--blue)}
+.box-label.w{color:var(--red)}
+.box-label.g{color:var(--green)}
+.box-text{font-size:12.5px;line-height:1.55;color:var(--black)}
+.box-text em{font-family:'Libre Baskerville',serif;font-style:italic}
+
+/* ── STEP LIST ── */
+.steps{display:flex;flex-direction:column;gap:9px}
+.step{display:flex;align-items:flex-start;gap:11px}
+.step-n{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--red);color:white;font-family:'Libre Baskerville',serif;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.step-t{font-size:13px;line-height:1.5;color:var(--black);padding-top:3px}
+.step-t strong{color:var(--red)}
+.step-t code{background:var(--gray-100);padding:1px 5px;font-family:'Roboto Mono',monospace;font-size:11px;border-radius:2px;border:1px solid var(--gray-200)}
+
+/* ── POWER BI PANEL ── */
+.pbi-panel{background:#F2F2F2;border:1px solid #D5D5D5;border-radius:4px;padding:8px 10px;font-size:11px}
+.pbi-panel-title{font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-500);margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid #D5D5D5}
+.pbi-selected{display:inline-block;background:#DEEBF7;border:2px solid #2E86C1;color:#1A5276;font-size:10px;font-weight:700;padding:2px 8px;border-radius:2px;margin-bottom:8px}
+.pbi-fg{margin-bottom:6px}
+.pbi-fl{font-size:9.5px;color:var(--gray-500);margin-bottom:2px;font-weight:400}
+.pbi-fv{background:white;border:1px solid #CCC;padding:3px 7px;border-radius:2px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--black)}
+.pbi-fv.empty{color:var(--gray-500);font-style:italic;font-size:10px}
+.pbi-x{color:#999;font-size:10px}
+
+/* ── CHART LABEL ── */
+.chart-lbl{font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-500);margin-bottom:5px}
+
+/* ── METHOD GRID ── */
+.method-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.method-card{border:1px solid var(--gray-200);border-radius:4px;padding:11px 12px;display:flex;gap:9px;align-items:flex-start}
+.method-badge{flex-shrink:0;background:var(--red);color:white;font-size:9px;font-weight:700;padding:2px 5px;border-radius:2px;letter-spacing:.5px;margin-top:1px;line-height:1.4}
+.method-title{font-size:12.5px;font-weight:700;color:var(--black);margin-bottom:2px}
+.method-charts{font-size:11px;color:var(--gray-700)}
+.method-fields{font-size:11px;color:var(--red);margin-top:2px}
+
+/* ── BULLET LIST ── */
+ul.bl{list-style:none;display:flex;flex-direction:column;gap:6px}
+ul.bl li{font-size:13px;color:var(--black);line-height:1.5;padding-left:14px;position:relative}
+ul.bl li::before{content:'';position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:50%;background:var(--red)}
+
+/* ── DATA TABLE ── */
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{background:var(--red);color:white;padding:7px 10px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.5px}
+.dt td{padding:6px 10px;border-bottom:1px solid var(--gray-200);color:var(--black);font-size:12px;vertical-align:top}
+.dt tr:nth-child(even) td{background:var(--gray-100)}
+
+/* ── FORMULA ── */
+.formula{background:var(--gray-100);border:1px solid var(--gray-200);border-radius:4px;padding:9px 13px;font-family:'Roboto Mono',monospace;font-size:12.5px;color:var(--black);line-height:1.6}
+.formula em{font-style:normal;color:var(--red);font-weight:700}
+
+/* ── STAT CARDS ── */
+.stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat-card{border:1px solid var(--gray-200);border-radius:4px;padding:14px;text-align:center}
+.stat-card-num{font-family:'Libre Baskerville',serif;font-size:36px;font-weight:700;color:var(--red);opacity:.2;line-height:1;margin-bottom:4px}
+.stat-card-title{font-size:14px;font-weight:700;color:var(--red);margin-bottom:5px}
+.stat-card-def{font-size:12px;color:var(--gray-700);line-height:1.5}
+
+/* ── QUESTION CARDS ── */
+.q-cards{display:flex;flex-direction:column;gap:8px}
+.q-card{background:var(--gray-100);border-radius:4px;padding:10px 14px;display:flex;gap:12px;align-items:flex-start}
+.q-num{font-family:'Libre Baskerville',serif;font-size:20px;font-weight:700;color:var(--red);opacity:.35;flex-shrink:0;line-height:1;width:28px}
+.q-text{font-size:13px;color:var(--black);line-height:1.5;font-weight:700}
+.q-tag{font-size:10px;color:var(--gray-500);font-weight:400;margin-top:2px}
+
+/* ── OUTCOME CARDS ── */
+.out-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.out-card{border:1px solid var(--gray-200);border-radius:4px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.out-n{font-family:'Libre Baskerville',serif;font-size:42px;font-weight:700;color:var(--red);opacity:.15;line-height:1;flex-shrink:0}
+.out-body {}
+.out-title{font-size:14px;font-weight:700;color:var(--black);margin-bottom:4px}
+.out-desc{font-size:12px;color:var(--gray-700);line-height:1.5}
+
+/* ── FIELD TAGS ── */
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.tag{background:var(--gray-100);border:1px solid var(--gray-200);border-radius:3px;padding:2px 8px;font-size:11px;color:var(--gray-700);font-family:'Roboto Mono',monospace}
+.tag.red{background:var(--red-bg);border-color:#F1948A;color:var(--red)}
+.tag.blue{background:var(--blue-bg);border-color:#AED6F1;color:var(--blue)}
+.tag.green{background:var(--green-bg);border-color:#A9DFBF;color:var(--green)}
+
+/* ── SUMMARY TABLE ── */
+.st{width:100%;border-collapse:collapse;font-size:12px}
+.st th{background:var(--red);color:white;padding:8px 11px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.5px}
+.st td{padding:7px 11px;border-bottom:1px solid var(--gray-200);vertical-align:middle}
+.st tr:nth-child(even) td{background:var(--gray-100)}
+.st td:first-child{font-style:italic;color:var(--gray-700);font-size:12px}
+.st td:nth-child(2){font-weight:700;color:var(--black)}
+.st td:nth-child(3){color:var(--red)}
+.st td:nth-child(4){font-family:'Roboto Mono',monospace;font-size:11px;color:var(--gray-700)}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--gray-200);flex-shrink:0}
+.section-label{font-size:9px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--gray-500);margin-bottom:6px}
+.red{color:var(--red);font-weight:700}
+small.note{font-size:11px;color:var(--gray-500);line-height:1.5;font-style:italic}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<nav class="nav">
+  <span class="nav-info">DATA4100 · WEEK 2 · STATISTICAL METHODS &amp; VISUALISATION</span>
+  <div class="nav-controls">
+    <button class="nav-btn" id="prevBtn">← PREV</button>
+    <span class="nav-counter" id="slideCounter">1 / 21</span>
+    <button class="nav-btn" id="nextBtn">NEXT →</button>
+  </div>
+</nav>
+
+<div id="deck">
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 1: TITLE -->
+<div class="slide title-slide">
+  <div class="title-inner">
+    <div class="title-kicker">DATA4100 · Week 2</div>
+    <div class="title-main">Statistical Methods for Summarising &amp; Visualising Data</div>
+    <div class="title-rule"></div>
+    <div class="title-sub">Turning retail data into decisions — hands-on with Power BI and Tableau using the Superstore dataset.</div>
+    <div class="title-meta">Kaplan Business School Australia</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 2: OUTCOMES -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Today's Workshop</div>
+    <div class="slide-title">Learning Outcomes &amp; Agenda</div>
+    <div class="slide-subtitle">Four things you will be able to do by the end of this session</div>
+  </div>
+  <div class="slide-body">
+    <div class="out-cards">
+      <div class="out-card">
+        <div class="out-n">1</div>
+        <div class="out-body">
+          <div class="out-title">Ask the Right Questions</div>
+          <div class="out-desc">Frame business problems as analytical questions using the Superstore case as context.</div>
+        </div>
+      </div>
+      <div class="out-card">
+        <div class="out-n">2</div>
+        <div class="out-body">
+          <div class="out-title">Choose the Right Chart</div>
+          <div class="out-desc">Use the chart-selection framework to match your data and question to the correct visualisation type.</div>
+        </div>
+      </div>
+      <div class="out-card">
+        <div class="out-n">3</div>
+        <div class="out-body">
+          <div class="out-title">Build Charts in Power BI</div>
+          <div class="out-desc">Create bar, stacked, pie, treemap, line, and scatter chart visuals step by step from a CSV file.</div>
+        </div>
+      </div>
+      <div class="out-card">
+        <div class="out-n">4</div>
+        <div class="out-body">
+          <div class="out-title">Interpret &amp; Communicate</div>
+          <div class="out-desc">Read chart outputs critically and explain what each visualisation means for the business.</div>
+        </div>
+      </div>
+    </div>
+    <div class="box box-q" style="margin-top:6px">
+      <div class="box-label q">Dataset</div>
+      <div class="box-text"><em>Superstore Sales — a fictional US retailer selling Furniture, Office Supplies, and Technology across four regions. Download from the Week 2 reading list on MyKBS → GitHub → Datasets → Superstore Dataset.csv</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 3: BUSINESS CASE -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Context</div>
+    <div class="slide-title">The Superstore Business Case</div>
+    <div class="slide-subtitle">What data do we have and what are we trying to find?</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col">
+      <div class="section-label">Your Role</div>
+      <p style="font-size:13px;color:var(--black);line-height:1.6"><strong>You are a Business Analyst</strong> at Superstore. Your mandate is to identify weaknesses and opportunities to enhance growth and profitability. Every chart you build should lead to a decision.</p>
+      <div class="divider"></div>
+      <div class="section-label">Dataset Columns</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">ORDER DETAILS</div>
+          <div class="tags"><span class="tag">order_id</span><span class="tag">order_date</span><span class="tag">ship_date</span><span class="tag">ship_mode</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">CUSTOMER &amp; PRODUCT</div>
+          <div class="tags"><span class="tag blue">customer</span><span class="tag blue">segment</span><span class="tag">manufactory</span><span class="tag">product_name</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">CATEGORISATION</div>
+          <div class="tags"><span class="tag blue">category</span><span class="tag blue">subcategory</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">GEOGRAPHY</div>
+          <div class="tags"><span class="tag green">region</span><span class="tag green">city</span><span class="tag green">state</span><span class="tag green">zip</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">FINANCIALS</div>
+          <div class="tags"><span class="tag red">sales</span><span class="tag red">profit</span><span class="tag red">quantity</span><span class="tag red">discount</span><span class="tag red">profit_margin</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="section-label">Preliminary Exploration in Excel</div>
+      <ul class="bl">
+        <li>Open the CSV in Excel first — scan the rows and columns before jumping into visualisation tools.</li>
+        <li>How many rows (orders) are there? What date range does the data cover?</li>
+        <li>Are there any blank cells, unusual values, or obvious data quality issues?</li>
+        <li>Which fields are numbers? Which are categories? Which are dates?</li>
+      </ul>
+      <div class="box box-i" style="margin-top:6px">
+        <div class="box-label i">Why This Matters</div>
+        <div class="box-text">A Business Analyst who understands the data structure before visualising it asks better questions and catches errors early. Never skip this step.</div>
+      </div>
+      <div class="box box-g" style="margin-top:6px">
+        <div class="box-label g">Key Data Fact</div>
+        <div class="box-text">The dataset spans <strong>January 2019 – December 2022</strong> and contains <strong>9,994 order rows</strong> across three product categories and four US regions.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 4: 5 QUESTIONS -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Business Questions</div>
+    <div class="slide-title">Five Questions Worth Answering</div>
+    <div class="slide-subtitle">Each question maps to a statistical method and a specific chart type</div>
+  </div>
+  <div class="slide-body">
+    <div class="q-cards">
+      <div class="q-card">
+        <div class="q-num">1</div>
+        <div><div class="q-text">How do sales and order volumes vary across the four regions — Central, East, South, West?</div><div class="q-tag">Method: Descriptive Statistics → Bar Chart / Map</div></div>
+      </div>
+      <div class="q-card">
+        <div class="q-num">2</div>
+        <div><div class="q-text">Which product subcategory performed best in terms of total sales?</div><div class="q-tag">Method: Descriptive Statistics → Bar Chart (sorted descending)</div></div>
+      </div>
+      <div class="q-card">
+        <div class="q-num">3</div>
+        <div><div class="q-text">What are the top-performing products in Furniture, Office Supplies, and Technology?</div><div class="q-tag">Method: Descriptive Statistics → Treemap / Clustered Bar</div></div>
+      </div>
+      <div class="q-card">
+        <div class="q-num">4</div>
+        <div><div class="q-text">Has sales performance improved over time — and what might the next 12 months look like?</div><div class="q-tag">Method: Time Series &amp; Forecasting → Line Chart + Forecast</div></div>
+      </div>
+      <div class="q-card">
+        <div class="q-num">5</div>
+        <div><div class="q-text">Does offering higher discounts actually increase profit — or does it destroy it?</div><div class="q-tag">Method: Correlation → Scatter Plot (Discount vs. Profit)</div></div>
+      </div>
+    </div>
+    <div class="box box-q" style="margin-top:4px">
+      <div class="box-label q">Activity</div>
+      <div class="box-text">In groups, add <strong>three more questions</strong> of your own. For each one, decide: which statistical method applies, and which chart type would you use?</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 5: METHODS OVERVIEW -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Overview</div>
+    <div class="slide-title">Six Statistical Methods, Six Visual Approaches</div>
+    <div class="slide-subtitle">Every method has a natural chart type — and a set of fields that suit it</div>
+  </div>
+  <div class="slide-body">
+    <div class="method-grid">
+      <div class="method-card">
+        <span class="method-badge">01</span>
+        <div>
+          <div class="method-title">Descriptive Statistics</div>
+          <div class="method-charts">Bar, Column, Stacked Bar, Pie, Donut, Treemap, Table</div>
+          <div class="method-fields">sales · profit · quantity · profit_margin per segment / region / category</div>
+        </div>
+      </div>
+      <div class="method-card">
+        <span class="method-badge">02</span>
+        <div>
+          <div class="method-title">Time Series &amp; Forecasting</div>
+          <div class="method-charts">Line Chart (continuous date axis), Forecast overlay</div>
+          <div class="method-fields">order_date + sales · profit · quantity</div>
+        </div>
+      </div>
+      <div class="method-card">
+        <span class="method-badge">03</span>
+        <div>
+          <div class="method-title">Correlation</div>
+          <div class="method-charts">Scatter Plot, Correlation Matrix, Heatmap</div>
+          <div class="method-fields">discount vs. profit · sales vs. quantity</div>
+        </div>
+      </div>
+      <div class="method-card">
+        <span class="method-badge">04</span>
+        <div>
+          <div class="method-title">Geographical Methods</div>
+          <div class="method-charts">Choropleth Map, Bubble Map, Filled Map</div>
+          <div class="method-fields">city · state · region + any financial metric</div>
+        </div>
+      </div>
+      <div class="method-card">
+        <span class="method-badge">05</span>
+        <div>
+          <div class="method-title">Regression</div>
+          <div class="method-charts">Scatter Plot with Trend Line (line of best fit)</div>
+          <div class="method-fields">discount → profit · quantity → sales</div>
+        </div>
+      </div>
+      <div class="method-card">
+        <span class="method-badge">06</span>
+        <div>
+          <div class="method-title">Distributions</div>
+          <div class="method-charts">Histogram, Density Plot, Box Plot</div>
+          <div class="method-fields">sales · profit · discount (shape of the data)</div>
+        </div>
+      </div>
+    </div>
+    <div class="box box-i" style="margin-top:4px">
+      <div class="box-label i">Key Insight</div>
+      <div class="box-text">Choosing the wrong chart doesn't just look bad — it misleads the audience. The next slide gives you a framework to always choose correctly.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 6: CHART SELECTION -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Framework</div>
+    <div class="slide-title">Which Chart Do I Need?</div>
+    <div class="slide-subtitle">Start with your purpose — the chart type follows from what you want to show</div>
+  </div>
+  <div class="slide-body" style="flex-direction:row;gap:20px">
+    <div style="flex:1;min-width:0">
+      <svg viewBox="0 0 480 360" width="100%" height="100%" style="max-height:320px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Root -->
+        <rect x="155" y="8" width="170" height="36" rx="4" fill="#C0392B"/>
+        <text x="240" y="30" text-anchor="middle" font-family="Lato,sans-serif" font-size="12" fill="white" font-weight="700">What would you like to show?</text>
+        <!-- Lines from root -->
+        <line x1="200" y1="44" x2="60" y2="88" stroke="#999" stroke-width="1"/>
+        <line x1="225" y1="44" x2="175" y2="88" stroke="#999" stroke-width="1"/>
+        <line x1="255" y1="44" x2="305" y2="88" stroke="#999" stroke-width="1"/>
+        <line x1="280" y1="44" x2="420" y2="88" stroke="#999" stroke-width="1"/>
+        <!-- Branch nodes -->
+        <rect x="12" y="88" width="96" height="32" rx="3" fill="#1A5276"/>
+        <text x="60" y="105" text-anchor="middle" font-family="Lato,sans-serif" font-size="11" fill="white" font-weight="700">Comparison</text>
+        <rect x="127" y="88" width="96" height="32" rx="3" fill="#1E8449"/>
+        <text x="175" y="105" text-anchor="middle" font-family="Lato,sans-serif" font-size="11" fill="white" font-weight="700">Relationship</text>
+        <rect x="257" y="88" width="96" height="32" rx="3" fill="#7D3C98"/>
+        <text x="305" y="105" text-anchor="middle" font-family="Lato,sans-serif" font-size="11" fill="white" font-weight="700">Distribution</text>
+        <rect x="372" y="88" width="96" height="32" rx="3" fill="#B7950B"/>
+        <text x="420" y="105" text-anchor="middle" font-family="Lato,sans-serif" font-size="11" fill="white" font-weight="700">Composition</text>
+        <!-- Comparison sub -->
+        <line x1="40" y1="120" x2="40" y2="148" stroke="#999" stroke-width="1"/>
+        <line x1="60" y1="120" x2="60" y2="148" stroke="#999" stroke-width="1"/>
+        <line x1="80" y1="120" x2="80" y2="148" stroke="#999" stroke-width="1"/>
+        <rect x="12" y="148" width="58" height="30" rx="3" fill="none" stroke="#1A5276" stroke-width="1.5"/>
+        <text x="41" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#1A5276">Bar Chart</text>
+        <rect x="35" y="148" width="60" height="30" rx="3" fill="none" stroke="#1A5276" stroke-width="1.5"/>
+        <text x="65" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#1A5276">Col. Chart</text>
+        <!-- Relationship sub -->
+        <line x1="155" y1="120" x2="155" y2="148" stroke="#999" stroke-width="1"/>
+        <line x1="195" y1="120" x2="195" y2="148" stroke="#999" stroke-width="1"/>
+        <rect x="125" y="148" width="62" height="30" rx="3" fill="none" stroke="#1E8449" stroke-width="1.5"/>
+        <text x="156" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#1E8449">Scatter</text>
+        <rect x="168" y="148" width="58" height="30" rx="3" fill="none" stroke="#1E8449" stroke-width="1.5"/>
+        <text x="197" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#1E8449">Bubble</text>
+        <!-- Distribution sub -->
+        <line x1="285" y1="120" x2="285" y2="148" stroke="#999" stroke-width="1"/>
+        <line x1="325" y1="120" x2="325" y2="148" stroke="#999" stroke-width="1"/>
+        <rect x="255" y="148" width="62" height="30" rx="3" fill="none" stroke="#7D3C98" stroke-width="1.5"/>
+        <text x="286" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#7D3C98">Histogram</text>
+        <rect x="298" y="148" width="58" height="30" rx="3" fill="none" stroke="#7D3C98" stroke-width="1.5"/>
+        <text x="327" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#7D3C98">Box Plot</text>
+        <!-- Composition sub -->
+        <line x1="400" y1="120" x2="400" y2="148" stroke="#999" stroke-width="1"/>
+        <line x1="440" y1="120" x2="440" y2="148" stroke="#999" stroke-width="1"/>
+        <rect x="370" y="148" width="56" height="30" rx="3" fill="none" stroke="#B7950B" stroke-width="1.5"/>
+        <text x="398" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#B7950B">Pie / Donut</text>
+        <rect x="410" y="148" width="58" height="30" rx="3" fill="none" stroke="#B7950B" stroke-width="1.5"/>
+        <text x="439" y="163" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#B7950B">Stacked Bar</text>
+
+        <!-- SVG mini charts -->
+        <!-- Bar chart mini -->
+        <rect x="15" y="200" width="12" height="40" rx="1" fill="#1A5276" opacity=".8"/>
+        <rect x="30" y="215" width="12" height="25" rx="1" fill="#1A5276" opacity=".8"/>
+        <rect x="45" y="225" width="12" height="15" rx="1" fill="#1A5276" opacity=".8"/>
+        <rect x="60" y="230" width="12" height="10" rx="1" fill="#1A5276" opacity=".8"/>
+        <text x="45" y="255" text-anchor="middle" font-family="Lato,sans-serif" font-size="9" fill="#777">Comparison</text>
+        <!-- Scatter mini -->
+        <circle cx="152" cy="240" r="3" fill="#1E8449" opacity=".8"/>
+        <circle cx="162" cy="232" r="3" fill="#1E8449" opacity=".8"/>
+        <circle cx="172" cy="228" r="3" fill="#1E8449" opacity=".8"/>
+        <circle cx="158" cy="244" r="3" fill="#1E8449" opacity=".8"/>
+        <circle cx="175" cy="222" r="3" fill="#1E8449" opacity=".8"/>
+        <circle cx="183" cy="218" r="3" fill="#1E8449" opacity=".8"/>
+        <line x1="148" y1="248" x2="188" y2="212" stroke="#1E8449" stroke-width="1" stroke-dasharray="3,2" opacity=".5"/>
+        <text x="168" y="258" text-anchor="middle" font-family="Lato,sans-serif" font-size="9" fill="#777">Relationship</text>
+        <!-- Histogram mini -->
+        <rect x="263" y="228" width="10" height="12" rx="1" fill="#7D3C98" opacity=".8"/>
+        <rect x="275" y="218" width="10" height="22" rx="1" fill="#7D3C98" opacity=".8"/>
+        <rect x="287" y="210" width="10" height="30" rx="1" fill="#7D3C98" opacity=".8"/>
+        <rect x="299" y="218" width="10" height="22" rx="1" fill="#7D3C98" opacity=".8"/>
+        <rect x="311" y="230" width="10" height="10" rx="1" fill="#7D3C98" opacity=".8"/>
+        <text x="292" y="258" text-anchor="middle" font-family="Lato,sans-serif" font-size="9" fill="#777">Distribution</text>
+        <!-- Pie mini -->
+        <path d="M420,230 L420,210 A20,20 0 0,1 437,240 Z" fill="#B7950B" opacity=".9"/>
+        <path d="M420,230 L437,240 A20,20 0 0,1 405,244 Z" fill="#D4AC0D" opacity=".9"/>
+        <path d="M420,230 L405,244 A20,20 0 0,1 403,218 Z" fill="#F9E79F" opacity=".9"/>
+        <path d="M420,230 L403,218 A20,20 0 0,1 420,210 Z" fill="#F0B27A" opacity=".9"/>
+        <text x="420" y="258" text-anchor="middle" font-family="Lato,sans-serif" font-size="9" fill="#777">Composition</text>
+
+        <!-- Time special note -->
+        <rect x="120" y="290" width="240" height="28" rx="3" fill="#FEF9E7" stroke="#C0392B" stroke-width="1"/>
+        <text x="240" y="305" text-anchor="middle" font-family="Lato,sans-serif" font-size="10" fill="#C0392B" font-weight="700">Over Time? → Add a Line Chart (any of the above)</text>
+      </svg>
+    </div>
+    <div style="flex:0 0 200px;display:flex;flex-direction:column;gap:8px">
+      <div class="section-label">Quick Answers</div>
+      <div class="box box-q">
+        <div class="box-label q">Nationalities at campus?</div>
+        <div class="box-text" style="font-size:11.5px">Pie or Bar Chart<br><em>→ Composition (parts of whole)</em></div>
+      </div>
+      <div class="box box-i">
+        <div class="box-label i">Attendance vs. grades?</div>
+        <div class="box-text" style="font-size:11.5px">Scatter Plot<br><em>→ Relationship between two numeric vars</em></div>
+      </div>
+      <div class="box box-g">
+        <div class="box-label g">Distribution of final grades?</div>
+        <div class="box-text" style="font-size:11.5px">Histogram<br><em>→ Distribution of one numeric var</em></div>
+      </div>
+      <div class="box box-w">
+        <div class="box-label w">Remember</div>
+        <div class="box-text" style="font-size:11.5px">This framework applies every time you build a new chart. Bookmark this slide.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 7: DESCRIPTIVE STATS -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Statistical Method 01</div>
+    <div class="slide-title">Descriptive Statistics: Mean, Median &amp; Mode</div>
+    <div class="slide-subtitle">Measures of location — where is the centre of the data?</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col">
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="stat-card-num">x̄</div>
+          <div class="stat-card-title">Mean (Average)</div>
+          <div class="stat-card-def">Sum all values ÷ count of values. Sensitive to extreme outliers — a single huge sale can pull it up.</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-num">M</div>
+          <div class="stat-card-title">Median</div>
+          <div class="stat-card-def">Middle value in an ordered list. If n is even, average the two middle values. Robust to outliers.</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-num">Mo</div>
+          <div class="stat-card-title">Mode</div>
+          <div class="stat-card-def">The most frequently occurring value. Useful for categories (e.g. most common ship mode).</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-label">Worked Example — 16 Arrival Times (minutes)</div>
+      <div class="formula">Data: 9 14 11 10 10 8 10 9 14 8 15 12 9 9 7 9<br>Ordered: <em>7 8 8 9 9 9 9 9 10 10 10 11 12 14 14 15</em><br><br>Mean   = 164 ÷ 16 = <em>10.25 min</em><br>Median = (9 + 10) ÷ 2 = <em>9.5 min</em>  (n is even)<br>Mode   = <em>9</em> (appears 5 times)</div>
+    </div>
+    <div class="col">
+      <div class="section-label">Excel / Power BI Commands</div>
+      <table class="dt">
+        <thead><tr><th>Statistic</th><th>Excel Formula</th><th>Power BI Aggregation</th></tr></thead>
+        <tbody>
+          <tr><td>Mean</td><td><code style="font-family:monospace;font-size:11px">=AVERAGE(A1:A100)</code></td><td>Average (default)</td></tr>
+          <tr><td>Median</td><td><code style="font-family:monospace;font-size:11px">=MEDIAN(A1:A100)</code></td><td>Median (from dropdown)</td></tr>
+          <tr><td>Mode</td><td><code style="font-family:monospace;font-size:11px">=MODE(A1:A100)</code></td><td>Not built-in — use DAX</td></tr>
+        </tbody>
+      </table>
+      <div class="box box-i" style="margin-top:4px">
+        <div class="box-label i">Bridge to Power BI</div>
+        <div class="box-text">We just calculated these by hand. Now we'll build a <strong>table visual</strong> in Power BI to verify — dragging <em>segment</em> to Rows and <em>Average of profit_margin</em> to Values. The table should show: Consumer 0.11 · Corporate 0.12 · Home Office 0.14.</div>
+      </div>
+      <div class="box box-w" style="margin-top:4px">
+        <div class="box-label w">Which should you use?</div>
+        <div class="box-text">For <strong>skewed data</strong> (like sales, which has expensive outliers), <strong>median</strong> is more representative than mean. Power BI lets you switch aggregation with one click.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 8: LOAD DATA -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Step 0</div>
+    <div class="slide-title">Loading the Superstore Dataset into Power BI</div>
+    <div class="slide-subtitle">Do this once at the start of every Power BI session</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-60">
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Open <strong>Power BI Desktop</strong>. On the splash screen, click <strong>"Get data from another source →"</strong></div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">In the <strong>Get Data</strong> dialog, select <strong>Text/CSV</strong> from the list on the right. Click <strong>Connect</strong>.</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Navigate to your <strong>Downloads</strong> folder, select <code>Superstore Dataset.csv</code>. The preview shows the first 200 rows. Confirm the delimiter is <strong>Comma</strong> and the file origin is <strong>UTF-8</strong>.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Click <strong>Load</strong> (not Transform Data). Your fields will now appear in the <strong>Data pane</strong> on the right side of the screen.</div></div>
+        <div class="step"><div class="step-n">5</div><div class="step-t">Click the <strong>Table icon</strong> (second icon on the left panel) to view the raw data and confirm it loaded correctly before building any charts.</div></div>
+      </div>
+      <div class="box box-w" style="margin-top:6px">
+        <div class="box-label w">Common Issue</div>
+        <div class="box-text">If <code>order_date</code> shows as <em>Text</em> rather than <em>Date</em>, Power BI won't recognise it as a date field. You'll fix this in the Time Series section of this workshop.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-label">What You Should See After Loading</div>
+      <svg viewBox="0 0 280 200" width="100%" style="max-height:180px;border:1px solid #E0E0E0;border-radius:4px;background:#FAFAFA" xmlns="http://www.w3.org/2000/svg">
+        <!-- Power BI table preview mockup -->
+        <rect x="0" y="0" width="280" height="22" fill="#C0392B"/>
+        <text x="8" y="14" font-family="Lato,sans-serif" font-size="9" fill="white" font-weight="700">Superstore Dataset.csv — Preview (first 200 rows)</text>
+        <!-- Column headers -->
+        <rect x="0" y="22" width="280" height="18" fill="#E8E8E8"/>
+        <text x="5" y="33" font-family="Roboto Mono,monospace" font-size="8" fill="#333">order_id</text>
+        <text x="65" y="33" font-family="Roboto Mono,monospace" font-size="8" fill="#333">order_date</text>
+        <text x="130" y="33" font-family="Roboto Mono,monospace" font-size="8" fill="#333">customer</text>
+        <text x="185" y="33" font-family="Roboto Mono,monospace" font-size="8" fill="#333">segment</text>
+        <text x="235" y="33" font-family="Roboto Mono,monospace" font-size="8" fill="#333">sales</text>
+        <!-- Rows -->
+        <text x="5" y="48" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">CA-2019-103800</text>
+        <text x="65" y="48" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">3/01/2019</text>
+        <text x="130" y="48" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">Darren P.</text>
+        <text x="185" y="48" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">Consumer</text>
+        <text x="235" y="48" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">261.96</text>
+        <rect x="0" y="52" width="280" height="15" fill="#F5F5F5"/>
+        <text x="5" y="62" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">CA-2019-112326</text>
+        <text x="65" y="62" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">4/01/2019</text>
+        <text x="130" y="62" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">Phillina O.</text>
+        <text x="185" y="62" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">Home Office</text>
+        <text x="235" y="62" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">731.94</text>
+        <text x="5" y="77" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">CA-2019-141817</text>
+        <text x="65" y="77" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">5/01/2019</text>
+        <text x="130" y="77" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">Mick Brown</text>
+        <text x="185" y="77" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">Consumer</text>
+        <text x="235" y="77" font-family="Roboto Mono,monospace" font-size="7.5" fill="#555">14.62</text>
+        <rect x="0" y="81" width="280" height="15" fill="#F5F5F5"/>
+        <text x="5" y="92" font-family="Roboto Mono,monospace" font-size="7.5" fill="#999">· · · 9,994 rows total · · ·</text>
+        <!-- Bottom buttons -->
+        <rect x="148" y="175" width="55" height="18" rx="2" fill="#C0392B"/>
+        <text x="175" y="187" text-anchor="middle" font-family="Lato,sans-serif" font-size="9" fill="white" font-weight="700">Load</text>
+        <rect x="210" y="175" width="62" height="18" rx="2" fill="none" stroke="#999" stroke-width="1"/>
+        <text x="241" y="187" text-anchor="middle" font-family="Lato,sans-serif" font-size="9" fill="#555">Transform</text>
+      </svg>
+      <div class="box box-g" style="margin-top:6px">
+        <div class="box-label g">After Loading</div>
+        <div class="box-text" style="font-size:11.5px">All column names appear in the <strong>Data pane</strong> (right side). You are now ready to build visuals by dragging fields onto the canvas.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 9: BAR CHART -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Chart 01</div>
+    <div class="slide-title">Bar Chart: Sales by Subcategory</div>
+    <div class="slide-subtitle">Comparison — which product subcategory generates the most revenue?</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="box box-q">
+        <div class="box-label q">Business Question</div>
+        <div class="box-text"><em>"Which subcategory should Superstore prioritise for marketing investment?"</em></div>
+      </div>
+      <div class="steps" style="margin-top:6px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Click on a blank area of the canvas. In the <strong>Visualizations</strong> pane (right), select the <strong>Clustered Column Chart</strong> icon (first row, second icon).</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">From the Data pane, drag <strong><code>subcategory</code></strong> to the <strong>X-axis</strong> field well.</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>sales</code></strong> to the <strong>Y-axis</strong> field well. Power BI will automatically use <em>Sum of sales</em>.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Click the <strong>Focus mode</strong> icon (square with arrow, top-right of the chart frame) for a full-screen view. Click <strong>Back to report</strong> to return.</div></div>
+      </div>
+      <div class="box box-i" style="margin-top:6px">
+        <div class="box-label i">Interpretation</div>
+        <div class="box-text"><strong>Phones</strong> and <strong>Chairs</strong> lead in sales (~$330K each). <strong>Fasteners</strong> and <strong>Labels</strong> are at the bottom (&lt;$15K). Sort the axis descending to make the ranking instantly readable: click the chart → the "..." menu → Sort descending.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="pbi-panel">
+        <div class="pbi-panel-title">Visualizations Config</div>
+        <div class="pbi-selected">Clustered Column Chart</div>
+        <div class="pbi-fg"><div class="pbi-fl">X-axis</div><div class="pbi-fv">subcategory <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Y-axis</div><div class="pbi-fv">Sum of sales <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Legend</div><div class="pbi-fv empty">Add data fields here</div></div>
+      </div>
+      <div class="chart-lbl" style="margin-top:8px">Output: Sum of Sales by Subcategory</div>
+      <svg viewBox="0 0 260 160" width="100%" style="max-height:155px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Y-axis labels -->
+        <text x="28" y="18" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">350K</text>
+        <text x="28" y="53" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">250K</text>
+        <text x="28" y="88" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">150K</text>
+        <text x="28" y="123" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">50K</text>
+        <!-- Grid lines -->
+        <line x1="30" y1="15" x2="258" y2="15" stroke="#EEE" stroke-width="1"/>
+        <line x1="30" y1="50" x2="258" y2="50" stroke="#EEE" stroke-width="1"/>
+        <line x1="30" y1="85" x2="258" y2="85" stroke="#EEE" stroke-width="1"/>
+        <line x1="30" y1="120" x2="258" y2="120" stroke="#EEE" stroke-width="1"/>
+        <!-- Bars: phones 330, chairs 328, storage 223, tables 206, binders 203, machines 189 -->
+        <!-- Scale: 350K = 105px height, 0=120, 350K=15 so 1K=0.3px -->
+        <rect x="34" y="21" width="18" height="99" rx="1" fill="#2471A3"/>
+        <rect x="54" y="22" width="18" height="98" rx="1" fill="#2471A3"/>
+        <rect x="74" y="53" width="18" height="67" rx="1" fill="#2471A3"/>
+        <rect x="94" y="58" width="18" height="62" rx="1" fill="#2471A3"/>
+        <rect x="114" y="59" width="18" height="61" rx="1" fill="#2471A3"/>
+        <rect x="134" y="63" width="18" height="57" rx="1" fill="#2471A3"/>
+        <rect x="154" y="72" width="18" height="48" rx="1" fill="#4A90D9"/>
+        <rect x="174" y="78" width="18" height="42" rx="1" fill="#4A90D9"/>
+        <rect x="194" y="82" width="18" height="38" rx="1" fill="#4A90D9"/>
+        <rect x="214" y="91" width="18" height="29" rx="1" fill="#82B4E0"/>
+        <rect x="234" y="112" width="18" height="8" rx="1" fill="#B8D4EC"/>
+        <!-- X labels -->
+        <text x="43" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 43 132)">Phones</text>
+        <text x="63" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 63 132)">Chairs</text>
+        <text x="83" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 83 132)">Storage</text>
+        <text x="103" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 103 132)">Tables</text>
+        <text x="123" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 123 132)">Binders</text>
+        <text x="143" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 143 132)">Machines</text>
+        <text x="163" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 163 132)">Bookcases</text>
+        <text x="183" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 183 132)">Accessories</text>
+        <text x="203" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 203 132)">Copiers</text>
+        <text x="223" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 223 132)">Appliances</text>
+        <text x="243" y="132" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="#555" transform="rotate(-40 243 132)">Fasteners</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 10: CLUSTERED & STACKED -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Charts 02 &amp; 03</div>
+    <div class="slide-title">Clustered &amp; Stacked Bar Charts</div>
+    <div class="slide-subtitle">Comparing multiple measures, and showing part-to-whole breakdowns</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col">
+      <div class="section-label">Clustered Bar — Quantity &amp; Profit by Category</div>
+      <div class="box box-q" style="padding:7px 12px">
+        <div class="box-text" style="font-size:12px"><em>"Does the category with most orders also generate the most profit?"</em></div>
+      </div>
+      <div class="steps" style="margin-top:5px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Select <strong>Clustered Column Chart</strong></div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>category</code></strong> → X-axis</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>quantity</code></strong> <em>and</em> <strong><code>profit</code></strong> → Y-axis (both)</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Two differently-coloured bars now appear per category. Click Focus mode.</div></div>
+      </div>
+      <div class="box box-i" style="margin-top:5px">
+        <div class="box-label i">Read the chart</div>
+        <div class="box-text" style="font-size:11.5px">Technology has <strong>high profit despite fewer orders</strong> than Office Supplies — higher-value items. Furniture has many orders but low profit margins.</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="section-label">Stacked Bar — Orders by Category &amp; Subcategory</div>
+      <div class="box box-q" style="padding:7px 12px">
+        <div class="box-text" style="font-size:12px"><em>"What's the product mix breakdown within each category?"</em></div>
+      </div>
+      <div class="steps" style="margin-top:5px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Click the <strong>Stacked Bar Chart</strong> icon (horizontal bars, first column)</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>category</code></strong> → Y-axis</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong>Count of <code>sales</code></strong> → X-axis</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Drag <strong><code>subcategory</code></strong> → Legend. Each colour = one subcategory.</div></div>
+      </div>
+      <div class="box box-w" style="margin-top:5px">
+        <div class="box-label w">Common Mistake</div>
+        <div class="box-text" style="font-size:11.5px">Don't add too many legend items. If you have more than 8 subcategories in one stack, the colours become impossible to distinguish. Use a filter or aggregate smaller categories into "Other".</div>
+      </div>
+      <svg viewBox="0 0 240 90" width="100%" style="max-height:85px;margin-top:4px" xmlns="http://www.w3.org/2000/svg">
+        <text x="0" y="14" font-family="Lato,sans-serif" font-size="8" fill="#555" font-weight="700">Office Supplies</text>
+        <rect x="80" y="4" width="90" height="14" rx="1" fill="#2471A3"/>
+        <rect x="170" y="4" width="30" height="14" rx="1" fill="#1E8449"/>
+        <rect x="200" y="4" width="25" height="14" rx="1" fill="#7D3C98"/>
+        <rect x="225" y="4" width="15" height="14" rx="1" fill="#B7950B"/>
+        <text x="0" y="38" font-family="Lato,sans-serif" font-size="8" fill="#555" font-weight="700">Furniture</text>
+        <rect x="80" y="27" width="45" height="14" rx="1" fill="#2471A3"/>
+        <rect x="125" y="27" width="40" height="14" rx="1" fill="#1E8449"/>
+        <rect x="165" y="27" width="30" height="14" rx="1" fill="#7D3C98"/>
+        <text x="0" y="62" font-family="Lato,sans-serif" font-size="8" fill="#555" font-weight="700">Technology</text>
+        <rect x="80" y="51" width="35" height="14" rx="1" fill="#2471A3"/>
+        <rect x="115" y="51" width="20" height="14" rx="1" fill="#B7950B"/>
+        <rect x="135" y="51" width="15" height="14" rx="1" fill="#7D3C98"/>
+        <text x="80" y="80" font-family="Lato,sans-serif" font-size="7" fill="#999">0K    1K    2K    3K    4K    5K    6K    7K</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 11: TREEMAP -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Chart 04</div>
+    <div class="slide-title">Treemap: Top Customers by Profit</div>
+    <div class="slide-subtitle">Who are the highest-value customers? Use filters to focus on the top tier.</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="box box-q">
+        <div class="box-label q">Business Question</div>
+        <div class="box-text"><em>"Which customers should Superstore focus retention efforts on?"</em></div>
+      </div>
+      <div class="steps" style="margin-top:6px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">In the Visualizations pane, select the <strong>Treemap</strong> icon (looks like nested squares).</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>customer</code></strong> → <strong>Category</strong> field well.</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>profit</code></strong> → <strong>Values</strong> field well. Each customer gets a rectangle — bigger = more profit.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t"><strong>Add a filter:</strong> In the <strong>Filters</strong> pane, find <em>Sum of profit</em>. Change the filter type to <strong>"is greater than"</strong>, type <code>1000</code>, and click <strong>Apply filter</strong>. This removes low-value customers from the view.</div></div>
+      </div>
+      <div class="box box-i" style="margin-top:6px">
+        <div class="box-label i">Interpretation</div>
+        <div class="box-text"><strong>Tamara Chand</strong> is the largest rectangle — the single highest-profit customer. The filter at &gt;$1,000 reveals roughly 20–30 customers worth targeting for loyalty programs.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="pbi-panel">
+        <div class="pbi-panel-title">Visualizations Config</div>
+        <div class="pbi-selected">Treemap</div>
+        <div class="pbi-fg"><div class="pbi-fl">Category</div><div class="pbi-fv">customer <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Details</div><div class="pbi-fv empty">Add data fields here</div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Values</div><div class="pbi-fv">Sum of profit <span class="pbi-x">×</span></div></div>
+        <div style="margin-top:8px;border-top:1px solid #CCC;padding-top:7px">
+          <div class="pbi-fl" style="color:#C0392B;font-weight:700">FILTER — Filters on this visual</div>
+          <div style="background:#FDEDEC;border:1px solid #F1948A;border-radius:3px;padding:5px 7px;margin-top:4px;font-size:10px;color:#C0392B">
+            Sum of profit<br>
+            <strong>is greater than → 1000</strong><br>
+            <em style="color:#999">Click "Apply filter"</em>
+          </div>
+        </div>
+      </div>
+      <div class="chart-lbl" style="margin-top:8px">Output: Top Customers by Profit (filtered)</div>
+      <svg viewBox="0 0 240 120" width="100%" style="max-height:115px" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="75" height="60" fill="#2471A3"/>
+        <text x="37" y="33" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Tamara Chand</text>
+        <rect x="76" y="0" width="50" height="60" fill="#1A5276"/>
+        <text x="101" y="33" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Hunter L.</text>
+        <rect x="127" y="0" width="42" height="60" fill="#2E86C1"/>
+        <text x="148" y="33" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Raymond B.</text>
+        <rect x="170" y="0" width="35" height="60" fill="#5DADE2"/>
+        <text x="187" y="33" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Sanjit C.</text>
+        <rect x="206" y="0" width="34" height="60" fill="#85C1E9"/>
+        <text x="223" y="33" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Adrian B.</text>
+        <rect x="0" y="61" width="48" height="59" fill="#1E8449"/>
+        <text x="24" y="93" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Tom A.</text>
+        <rect x="49" y="61" width="40" height="59" fill="#27AE60"/>
+        <text x="69" y="93" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Daniel R.</text>
+        <rect x="90" y="61" width="38" height="59" fill="#52BE80"/>
+        <text x="109" y="93" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="white">Greg T.</text>
+        <rect x="129" y="61" width="30" height="59" fill="#7D3C98"/>
+        <text x="144" y="93" text-anchor="middle" font-family="Lato,sans-serif" font-size="7" fill="white">Keith D.</text>
+        <rect x="160" y="61" width="28" height="59" fill="#A569BD"/>
+        <rect x="189" y="61" width="26" height="59" fill="#C39BD3"/>
+        <rect x="216" y="61" width="24" height="59" fill="#D7BDE2"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 12: TABLES + MATRICES -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Charts 05 &amp; 06</div>
+    <div class="slide-title">Tables &amp; Matrices</div>
+    <div class="slide-subtitle">Precise numerical summaries — great for verifying calculations and cross-tabulating categories</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col">
+      <div class="section-label">Table — Average Profit Margin by Segment</div>
+      <div class="box box-q" style="padding:7px 12px"><div class="box-text" style="font-size:12px"><em>"Which customer segment is most profitable per sale?"</em></div></div>
+      <div class="steps" style="margin-top:5px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Select the <strong>Table</strong> icon in the Visualizations pane.</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>segment</code></strong> → <strong>Columns</strong> (or the single Rows field)</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>profit_margin</code></strong> → <strong>Values</strong>. Click the dropdown arrow next to it and choose <strong>Average</strong>.</div></div>
+      </div>
+      <table class="dt" style="margin-top:6px">
+        <thead><tr><th>Segment</th><th>Avg Profit Margin</th></tr></thead>
+        <tbody>
+          <tr><td>Consumer</td><td>0.11</td></tr>
+          <tr><td>Corporate</td><td>0.12</td></tr>
+          <tr><td>Home Office</td><td>0.14 ← highest</td></tr>
+          <tr><td style="font-weight:700">Total</td><td style="font-weight:700">0.12</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <div class="section-label">Matrix — Avg Sales by Category × Subcategory</div>
+      <div class="box box-q" style="padding:7px 12px"><div class="box-text" style="font-size:12px"><em>"Which specific subcategory has the highest average transaction value?"</em></div></div>
+      <div class="steps" style="margin-top:5px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Select the <strong>Matrix</strong> icon (looks like a grid with +/- expand arrows).</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>category</code></strong> → <strong>Rows</strong></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>subcategory</code></strong> → <strong>Columns</strong></div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Drag <strong><code>sales</code></strong> → <strong>Values</strong>, set to <strong>Average</strong>. Use the horizontal slider at the bottom of the matrix to scroll and see all columns.</div></div>
+      </div>
+      <table class="dt" style="margin-top:6px;font-size:11px">
+        <thead><tr><th>Category</th><th>Chairs</th><th>Copiers</th><th>Phones</th></tr></thead>
+        <tbody>
+          <tr><td>Furniture</td><td>503.86</td><td>—</td><td>—</td></tr>
+          <tr><td>Office Supplies</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Technology</td><td>—</td><td>2,198.94</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <div class="box box-w" style="margin-top:5px">
+        <div class="box-label w">Blank Cells</div>
+        <div class="box-text" style="font-size:11.5px">Blank cells in a matrix don't mean zero — they mean that subcategory doesn't belong to that category. This is correct behaviour.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 13: PIE + DONUT -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Charts 07 &amp; 08</div>
+    <div class="slide-title">Pie Chart &amp; Donut Chart</div>
+    <div class="slide-subtitle">Parts-to-whole — use only when you have fewer than 6 categories and the total is meaningful</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col">
+      <div class="section-label">Pie Chart — Sales Count by Region</div>
+      <div class="box box-q" style="padding:7px 12px"><div class="box-text" style="font-size:12px"><em>"Is there a dominant region in terms of order volume?"</em></div></div>
+      <div class="steps" style="margin-top:5px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Select the <strong>Pie Chart</strong> icon.</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>region</code></strong> → <strong>Legend</strong></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>sales</code></strong> → <strong>Values</strong>, set to <strong>Count</strong>. Power BI calculates percentages automatically.</div></div>
+      </div>
+      <svg viewBox="0 0 200 130" width="100%" style="max-height:125px;margin-top:4px" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100,65 L100,20 A45,45 0 0,1 139,88 Z" fill="#2471A3"/>
+        <path d="M100,65 L139,88 A45,45 0 0,1 57,100 Z" fill="#1E8449"/>
+        <path d="M100,65 L57,100 A45,45 0 0,1 62,35 Z" fill="#B7950B"/>
+        <path d="M100,65 L62,35 A45,45 0 0,1 100,20 Z" fill="#C0392B"/>
+        <text x="118" y="50" font-family="Lato,sans-serif" font-size="9" fill="white" font-weight="700">East 32%</text>
+        <text x="105" y="95" font-family="Lato,sans-serif" font-size="9" fill="white" font-weight="700">West 28.5%</text>
+        <text x="52" y="80" font-family="Lato,sans-serif" font-size="8" fill="white" font-weight="700">South 23%</text>
+        <text x="65" y="43" font-family="Lato,sans-serif" font-size="8" fill="white" font-weight="700">Central 16%</text>
+        <text x="5" y="116" font-family="Lato,sans-serif" font-size="8" fill="#1A5276">■ East</text>
+        <text x="40" y="116" font-family="Lato,sans-serif" font-size="8" fill="#1E8449">■ West</text>
+        <text x="75" y="116" font-family="Lato,sans-serif" font-size="8" fill="#B7950B">■ South</text>
+        <text x="115" y="116" font-family="Lato,sans-serif" font-size="8" fill="#C0392B">■ Central</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="section-label">Donut Chart — Total Profit by Segment</div>
+      <div class="box box-q" style="padding:7px 12px"><div class="box-text" style="font-size:12px"><em>"Which customer segment generates the most total profit?"</em></div></div>
+      <div class="steps" style="margin-top:5px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Select the <strong>Donut Chart</strong> icon (next to pie chart).</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>segment</code></strong> → <strong>Legend</strong></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>profit</code></strong> → <strong>Values</strong>, set to <strong>Sum</strong>. A donut works the same as a pie but leaves room for a KPI label in the centre.</div></div>
+      </div>
+      <svg viewBox="0 0 200 130" width="100%" style="max-height:125px;margin-top:4px" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100,65 L100,22 A43,43 0 1,1 99.9,22 Z" fill="none" stroke="#E0E0E0" stroke-width="22"/>
+        <path d="M100,65 L100,22 A43,43 0 0,1 136,86 Z" fill="none" stroke="#2471A3" stroke-width="22"/>
+        <path d="M100,65 L136,86 A43,43 0 0,1 64,98 Z" fill="none" stroke="#1E8449" stroke-width="22"/>
+        <path d="M100,65 L64,98 A43,43 0 0,1 100,22 Z" fill="none" stroke="#C0392B" stroke-width="22"/>
+        <text x="100" y="60" text-anchor="middle" font-family="Libre Baskerville,serif" font-size="12" fill="#1A1A1A" font-weight="700">$286K</text>
+        <text x="100" y="73" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="#777">total profit</text>
+        <text x="5" y="120" font-family="Lato,sans-serif" font-size="8" fill="#2471A3">■ Consumer 46.8%</text>
+        <text x="75" y="120" font-family="Lato,sans-serif" font-size="8" fill="#1E8449">■ Corporate 32.1%</text>
+        <text x="155" y="120" font-family="Lato,sans-serif" font-size="8" fill="#C0392B">■ Home 21%</text>
+      </svg>
+      <div class="box box-w" style="margin-top:4px">
+        <div class="box-label w">Common Mistake</div>
+        <div class="box-text" style="font-size:11.5px">Don't use pie/donut charts when slices have similar sizes — humans are bad at comparing angles. Use a bar chart instead when differences are subtle.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 14: TIME SERIES CONCEPT -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Statistical Method 02</div>
+    <div class="slide-title">Time Series Analysis</div>
+    <div class="slide-subtitle">Tracking how a numerical measure changes at regular time intervals</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="section-label">Definition</div>
+      <p style="font-size:13.5px;color:var(--black);line-height:1.65">A <strong>time series</strong> is a set of observations of a quantitative variable taken at <strong>equally-spaced points in time</strong> — daily, monthly, quarterly, yearly.</p>
+      <div class="divider" style="margin:8px 0"></div>
+      <div class="section-label">What to Look For</div>
+      <ul class="bl">
+        <li><strong>Trend</strong> — Is the overall direction going up, down, or flat over the period?</li>
+        <li><strong>Seasonality</strong> — Does a pattern repeat at regular intervals (e.g., sales spike every November/December)?</li>
+        <li><strong>Outliers</strong> — Are there sudden spikes or drops that need explaining?</li>
+        <li><strong>Structural breaks</strong> — Did something change the baseline? (e.g. COVID-19 in March 2020)</li>
+      </ul>
+      <div class="box box-q" style="margin-top:6px">
+        <div class="box-label q">Superstore Context</div>
+        <div class="box-text"><em>"The dataset runs January 2019 – December 2022. Our line chart will show whether median sales are growing, and whether there are seasonal patterns worth forecasting."</em></div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="chart-lbl">Median Monthly Sales — Jan 2019 to Jul 2022</div>
+      <svg viewBox="0 0 260 175" width="100%" style="max-height:170px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Grid -->
+        <line x1="36" y1="15" x2="258" y2="15" stroke="#EEE" stroke-width="1"/>
+        <line x1="36" y1="50" x2="258" y2="50" stroke="#EEE" stroke-width="1"/>
+        <line x1="36" y1="85" x2="258" y2="85" stroke="#EEE" stroke-width="1"/>
+        <line x1="36" y1="120" x2="258" y2="120" stroke="#EEE" stroke-width="1"/>
+        <!-- Y labels -->
+        <text x="32" y="18" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">80</text>
+        <text x="32" y="53" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">65</text>
+        <text x="32" y="88" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">50</text>
+        <text x="32" y="123" text-anchor="end" font-family="Lato,sans-serif" font-size="8" fill="#999">35</text>
+        <!-- Line chart path approximating the time series from slide 39 -->
+        <polyline points="38,120 50,95 62,85 74,70 86,88 98,60 110,75 122,45 134,65 146,55 158,40 170,68 182,50 194,55 206,35 218,55 230,45 242,30 254,50" fill="none" stroke="#2471A3" stroke-width="2"/>
+        <!-- Data points -->
+        <circle cx="38" cy="120" r="2.5" fill="#2471A3"/>
+        <circle cx="122" cy="45" r="2.5" fill="#2471A3"/>
+        <circle cx="206" cy="35" r="3" fill="#C0392B" stroke="#C0392B"/>
+        <circle cx="254" cy="50" r="2.5" fill="#2471A3"/>
+        <!-- Annotation on peak -->
+        <text x="200" y="28" font-family="Lato,sans-serif" font-size="8" fill="#C0392B">Peak: ~80</text>
+        <!-- X labels -->
+        <text x="38" y="135" text-anchor="middle" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jan 19</text>
+        <text x="93" y="135" text-anchor="middle" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jul 19</text>
+        <text x="148" y="135" text-anchor="middle" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jan 21</text>
+        <text x="203" y="135" text-anchor="middle" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jan 22</text>
+        <text x="254" y="135" text-anchor="middle" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jul 22</text>
+        <text x="147" y="148" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="#777">order_date (monthly bins)</text>
+        <text x="10" y="68" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="#777" transform="rotate(-90 10 68)">Median Sales ($)</text>
+        <!-- Seasonal annotation -->
+        <rect x="45" y="155" width="170" height="16" rx="2" fill="#FEF9E7"/>
+        <text x="130" y="166" text-anchor="middle" font-family="Lato,sans-serif" font-size="8.5" fill="#C0392B">Noticeable spikes: Q3–Q4 each year (seasonal)</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 15: POWER BI DATES -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Time Series Setup</div>
+    <div class="slide-title">Preparing Date Data for Time Series Charts</div>
+    <div class="slide-subtitle">order_date loads as Text by default — you must convert it and create monthly bins before plotting</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="section-label">Part A — Change the Column Data Type</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Click the <strong>Table view</strong> icon on the left sidebar (looks like a grid).</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Click on the <strong><code>order_date</code></strong> column header to select it.</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">In the <strong>Column tools</strong> tab at the top, find the <strong>Data type</strong> dropdown (currently says "Text"). Change it to <strong>Date</strong>.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">The column will now show dates formatted as <em>Wednesday, 2 January 2019</em> etc. Power BI can now use this as a time axis.</div></div>
+      </div>
+      <div class="divider" style="margin:8px 0"></div>
+      <div class="section-label">Part B — Create Monthly Bins Column</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">5</div><div class="step-t">With <code>order_date</code> still selected, go to <strong>Column tools → Groups icon</strong> (looks like a binned histogram icon).</div></div>
+        <div class="step"><div class="step-n">6</div><div class="step-t">In the <strong>Groups</strong> dialog: Name it <code>order_date (bins)</code>, Group type = <strong>Bin</strong>, Bin size = <strong>1 Month</strong>. Click <strong>OK</strong>.</div></div>
+        <div class="step"><div class="step-n">7</div><div class="step-t">A new column <code>order_date (bins)</code> appears in your data. Each row now shows <em>January 2019</em>, <em>February 2019</em> etc. Use this for the line chart X axis.</div></div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-label">Before vs. After</div>
+      <table class="dt" style="font-size:11px">
+        <thead><tr><th>order_date (original)</th><th>order_date (bins)</th></tr></thead>
+        <tbody>
+          <tr><td>Wednesday, 2 January 2019</td><td>January 2019</td></tr>
+          <tr><td>Thursday, 3 January 2019</td><td>January 2019</td></tr>
+          <tr><td>Friday, 4 January 2019</td><td>January 2019</td></tr>
+          <tr><td>Sunday, 6 January 2019</td><td>January 2019</td></tr>
+          <tr><td>Monday, 11 February 2019</td><td>February 2019</td></tr>
+          <tr><td>Tuesday, 12 February 2019</td><td>February 2019</td></tr>
+        </tbody>
+      </table>
+      <div class="box box-g" style="margin-top:6px">
+        <div class="box-label g">Why Monthly Bins?</div>
+        <div class="box-text">Plotting every individual day produces a noisy, cluttered line. Grouping into months reveals the trend and seasonality clearly — the signal without the noise.</div>
+      </div>
+      <div class="pbi-panel" style="margin-top:6px">
+        <div class="pbi-panel-title">Groups Dialog Settings</div>
+        <div style="font-size:11px;color:#333;line-height:1.8">
+          Name: <strong>order_date (bins)</strong><br>
+          Field: order_date<br>
+          Group type: <strong>Bin</strong><br>
+          Bin type: Size of bins<br>
+          Bin size: <strong>1</strong> → <strong>Months</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 16: LINE CHART -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Chart 09</div>
+    <div class="slide-title">Line Chart: Median Sales Over Time</div>
+    <div class="slide-subtitle">Using the monthly bins column to visualise the time series</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="box box-q">
+        <div class="box-label q">Business Question</div>
+        <div class="box-text"><em>"Is Superstore's sales performance improving over time? Are there seasonal patterns?"</em></div>
+      </div>
+      <div class="steps" style="margin-top:6px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Back in <strong>Report view</strong>, click a blank canvas area. Select the <strong>Line Chart</strong> icon in Visualizations.</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>order_date (bins)</code></strong> (the new column you just created) → <strong>X-axis</strong>.</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>sales</code></strong> → <strong>Y-axis</strong>. Click the dropdown arrow next to it and change the aggregation from <em>Sum</em> to <strong>Median</strong>.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Click <strong>Focus mode</strong> to view full-screen. The X axis should show <em>Jan 2019 → Jul 2022</em>.</div></div>
+      </div>
+      <div class="box box-i" style="margin-top:6px">
+        <div class="box-label i">Read the chart</div>
+        <div class="box-text">Notice <strong>recurring spikes in Q3–Q4</strong> each year — the holiday season drives higher-value orders. The overall median is <em>relatively flat</em> (~$50–60), suggesting growth is in volume not ticket size. Hover over any point to see the exact month and value.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="pbi-panel">
+        <div class="pbi-panel-title">Visualizations Config</div>
+        <div class="pbi-selected">Line Chart</div>
+        <div class="pbi-fg"><div class="pbi-fl">X-axis</div><div class="pbi-fv">order_date (bins) <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Y-axis</div><div class="pbi-fv">Median of sales <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Secondary y-axis</div><div class="pbi-fv empty">Add data fields here</div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Legend</div><div class="pbi-fv empty">Add data fields here</div></div>
+      </div>
+      <div class="chart-lbl" style="margin-top:8px">Output: Median Sales over Time</div>
+      <svg viewBox="0 0 240 130" width="100%" style="max-height:125px" xmlns="http://www.w3.org/2000/svg">
+        <line x1="30" y1="10" x2="238" y2="10" stroke="#EEE" stroke-width="1"/>
+        <line x1="30" y1="40" x2="238" y2="40" stroke="#EEE" stroke-width="1"/>
+        <line x1="30" y1="70" x2="238" y2="70" stroke="#EEE" stroke-width="1"/>
+        <line x1="30" y1="100" x2="238" y2="100" stroke="#EEE" stroke-width="1"/>
+        <text x="27" y="13" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">80</text>
+        <text x="27" y="43" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">65</text>
+        <text x="27" y="73" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">50</text>
+        <text x="27" y="103" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">35</text>
+        <polyline points="32,100 42,79 52,72 62,57 72,74 82,46 92,62 102,32 112,52 122,42 132,25 142,55 152,38 162,43 172,21 182,43 192,33 202,18 212,40" fill="none" stroke="#2471A3" stroke-width="2"/>
+        <text x="35" y="112" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jan 2019</text>
+        <text x="120" y="112" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jan 2021</text>
+        <text x="198" y="112" font-family="Lato,sans-serif" font-size="7.5" fill="#555">Jul 2022</text>
+        <!-- Seasonal spike annotation -->
+        <path d="M92,46 L92,25 L130,25" stroke="#C0392B" stroke-width="1" stroke-dasharray="2,2" fill="none"/>
+        <text x="132" y="22" font-family="Lato,sans-serif" font-size="7.5" fill="#C0392B">Q4 spike</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 17: CORRELATION CONCEPT -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Statistical Method 03</div>
+    <div class="slide-title">Correlation: Does Discounting Hurt Profit?</div>
+    <div class="slide-subtitle">Measuring the strength and direction of the linear relationship between two variables</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="section-label">What Correlation Tells You</div>
+      <table class="dt">
+        <thead><tr><th>Value</th><th>Meaning</th><th>Chart Look</th></tr></thead>
+        <tbody>
+          <tr><td>r = +1.0</td><td>Perfect positive relationship</td><td>All points on a rising line</td></tr>
+          <tr><td>r = +0.5 to +0.9</td><td>Moderate to strong positive</td><td>Cloud of points rising left→right</td></tr>
+          <tr><td>r = 0</td><td>No linear relationship</td><td>Random scatter, no slope</td></tr>
+          <tr><td>r = −0.5 to −0.9</td><td>Moderate to strong negative</td><td>Cloud of points falling left→right</td></tr>
+          <tr><td>r = −1.0</td><td>Perfect negative relationship</td><td>All points on a falling line</td></tr>
+        </tbody>
+      </table>
+      <div class="section-label" style="margin-top:8px">Drawbacks of Correlation</div>
+      <ul class="bl">
+        <li><strong>Measures strength, not slope</strong> — high correlation doesn't tell you how much profit changes per unit of discount.</li>
+        <li><strong>Linear only</strong> — a curved (nonlinear) relationship can look like r ≈ 0.</li>
+        <li><strong>Two variables only</strong> — can't capture how three or more variables interact.</li>
+        <li><strong>Correlation ≠ Causation</strong> — discounts don't <em>cause</em> low profit; other factors matter too.</li>
+      </ul>
+    </div>
+    <div class="col-45">
+      <div class="chart-lbl">Discount vs. Profit — Scatter Plot</div>
+      <svg viewBox="0 0 240 160" width="100%" style="max-height:155px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Axes -->
+        <line x1="30" y1="10" x2="30" y2="130" stroke="#CCC" stroke-width="1"/>
+        <line x1="30" y1="130" x2="235" y2="130" stroke="#CCC" stroke-width="1"/>
+        <!-- Y labels -->
+        <text x="28" y="13" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">5K</text>
+        <text x="28" y="50" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">0</text>
+        <text x="28" y="92" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">-3K</text>
+        <text x="28" y="118" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">-5K</text>
+        <!-- X labels -->
+        <text x="35" y="142" font-family="Lato,sans-serif" font-size="7.5" fill="#999">0.0</text>
+        <text x="85" y="142" font-family="Lato,sans-serif" font-size="7.5" fill="#999">0.2</text>
+        <text x="135" y="142" font-family="Lato,sans-serif" font-size="7.5" fill="#999">0.4</text>
+        <text x="185" y="142" font-family="Lato,sans-serif" font-size="7.5" fill="#999">0.6</text>
+        <!-- Trend line (negative) -->
+        <line x1="35" y1="30" x2="225" y2="110" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="4,3" opacity=".7"/>
+        <!-- Scatter points - vertical clusters at 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8 discount levels -->
+        <!-- At 0 discount (high profit) -->
+        <circle cx="38" cy="25" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="40" cy="30" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="36" cy="35" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="42" cy="22" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="35" cy="42" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="38" cy="48" r="2.5" fill="#2471A3" opacity=".7"/>
+        <!-- At 0.1 discount -->
+        <circle cx="58" cy="35" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="60" cy="42" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="55" cy="28" r="2.5" fill="#2471A3" opacity=".7"/>
+        <!-- At 0.2 discount -->
+        <circle cx="88" cy="45" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="85" cy="50" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="90" cy="38" r="2.5" fill="#2471A3" opacity=".7"/>
+        <!-- At 0.3 discount -->
+        <circle cx="118" cy="55" r="2.5" fill="#5D9EC7" opacity=".7"/>
+        <circle cx="115" cy="65" r="2.5" fill="#5D9EC7" opacity=".7"/>
+        <circle cx="121" cy="48" r="2.5" fill="#5D9EC7" opacity=".7"/>
+        <!-- At 0.4 discount (near zero) -->
+        <circle cx="148" cy="48" r="2.5" fill="#E67E22" opacity=".7"/>
+        <circle cx="145" cy="52" r="2.5" fill="#E67E22" opacity=".7"/>
+        <circle cx="150" cy="58" r="2.5" fill="#E67E22" opacity=".7"/>
+        <!-- At 0.5 discount (negative) -->
+        <circle cx="178" cy="85" r="2.5" fill="#C0392B" opacity=".7"/>
+        <circle cx="175" cy="92" r="2.5" fill="#C0392B" opacity=".7"/>
+        <circle cx="180" cy="78" r="2.5" fill="#C0392B" opacity=".7"/>
+        <circle cx="183" cy="98" r="2.5" fill="#C0392B" opacity=".7"/>
+        <!-- At 0.8 discount (very negative) -->
+        <circle cx="208" cy="100" r="2.5" fill="#922B21" opacity=".8"/>
+        <circle cx="212" cy="112" r="2.5" fill="#922B21" opacity=".8"/>
+        <circle cx="205" cy="118" r="2.5" fill="#922B21" opacity=".8"/>
+        <!-- Zero profit line -->
+        <line x1="30" y1="50" x2="235" y2="50" stroke="#999" stroke-width=".5" stroke-dasharray="2,2"/>
+        <text x="237" y="52" font-family="Lato,sans-serif" font-size="7" fill="#999">$0</text>
+        <!-- Axis labels -->
+        <text x="132" y="155" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="#555">Discount</text>
+        <text x="10" y="75" text-anchor="middle" font-family="Lato,sans-serif" font-size="8" fill="#555" transform="rotate(-90 10 75)">Profit ($)</text>
+      </svg>
+      <div class="box box-i" style="margin-top:4px">
+        <div class="box-label i">Key Finding</div>
+        <div class="box-text" style="font-size:11.5px">Clear <strong>negative correlation</strong>: higher discounts = lower (or negative) profit. Orders with ≥50% discount regularly <strong>lose money</strong>. Superstore's discount strategy needs review.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 18: SCATTER IN POWER BI -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Power BI — Chart 10</div>
+    <div class="slide-title">Scatter Plot: Discount vs. Profit</div>
+    <div class="slide-subtitle">Visualising the correlation between two continuous variables</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="box box-q">
+        <div class="box-label q">Business Question</div>
+        <div class="box-text"><em>"Does increasing the discount rate cause Superstore to lose money?"</em></div>
+      </div>
+      <div class="steps" style="margin-top:6px">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Select the <strong>Scatter Chart</strong> icon in the Visualizations pane.</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong><code>discount</code></strong> → <strong>X-axis</strong></div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong><code>profit</code></strong> → <strong>Y-axis</strong></div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t"><strong>Important:</strong> Click the dropdown arrow next to each field and choose <strong>"Don't summarize"</strong>. This shows each individual order as a dot — not just the totals.</div></div>
+        <div class="step"><div class="step-n">5</div><div class="step-t">Optional: Drag <strong><code>category</code></strong> → <strong>Legend</strong> to colour-code by product category. Drag <strong><code>sales</code></strong> → <strong>Size</strong> to make larger orders appear as bigger dots.</div></div>
+      </div>
+      <div class="box box-w" style="margin-top:6px">
+        <div class="box-label w">Why "Don't Summarize"?</div>
+        <div class="box-text">If you leave the default "Sum", Power BI collapses all orders into one dot — you'd see nothing useful. "Don't Summarize" keeps every row as its own data point.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="pbi-panel">
+        <div class="pbi-panel-title">Visualizations Config</div>
+        <div class="pbi-selected">Scatter Chart</div>
+        <div class="pbi-fg"><div class="pbi-fl">X-axis</div><div class="pbi-fv">discount — Don't summarize <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Y-axis</div><div class="pbi-fv">profit — Don't summarize <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Legend (optional)</div><div class="pbi-fv">category <span class="pbi-x">×</span></div></div>
+        <div class="pbi-fg"><div class="pbi-fl">Size (optional)</div><div class="pbi-fv">sales <span class="pbi-x">×</span></div></div>
+      </div>
+      <div class="box box-i" style="margin-top:8px">
+        <div class="box-label i">What to Look For</div>
+        <div class="box-text">The cluster of red dots in the bottom-right confirms it: <strong>high-discount orders consistently generate negative profit</strong>. This is an actionable finding — recommend a maximum discount threshold.</div>
+      </div>
+      <div class="box box-g" style="margin-top:6px">
+        <div class="box-label g">Going Further</div>
+        <div class="box-text" style="font-size:11.5px">In Tableau, you can add a <strong>Trend Line</strong> via Analytics pane → Trend Line → Linear. This adds a line of best fit and shows the r² value.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 19: TABLEAU -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Tableau</div>
+    <div class="slide-title">Time Series &amp; Forecasting in Tableau</div>
+    <div class="slide-subtitle">Tableau's built-in exponential smoothing forecast extends your line chart into the future</div>
+  </div>
+  <div class="slide-body two-col">
+    <div class="col-55">
+      <div class="section-label">Part A — Build the Time Series</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Open the <strong>Superstore sample workbook</strong> (Start screen → Sample Workbooks → Superstore), or connect to the CSV via the left pane.</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Drag <strong>Order Date</strong> → <strong>Columns</strong>. Click the field pill and change to <strong>Continuous → Month</strong> (scroll down in the menu for the second "Month" option).</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Drag <strong>Segment</strong> and <strong>SUM(Sales)</strong> → <strong>Rows</strong>.</div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Drag <strong>Segment</strong> → the <strong>Colour</strong> box under Marks. You now have three separate coloured time-series lines (Consumer, Corporate, Home Office).</div></div>
+      </div>
+      <div class="divider" style="margin:7px 0"></div>
+      <div class="section-label">Part B — Add the Forecast</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">5</div><div class="step-t">Click the <strong>Analytics</strong> tab on the left panel (next to the Data tab).</div></div>
+        <div class="step"><div class="step-n">6</div><div class="step-t">Drag <strong>Forecast</strong> from the Model section and <strong>drop it onto the chart</strong>. A shaded extension appears beyond the last data point.</div></div>
+        <div class="step"><div class="step-n">7</div><div class="step-t">Right-click the forecast area → <strong>Forecast → Describe Forecast</strong> to see the model details (seasonal periods, trend, confidence intervals).</div></div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="chart-lbl">Forecast Chart — Sales by Segment</div>
+      <svg viewBox="0 0 240 160" width="100%" style="max-height:155px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Grid lines -->
+        <line x1="20" y1="15" x2="238" y2="15" stroke="#EEE" stroke-width="1"/>
+        <line x1="20" y1="55" x2="238" y2="55" stroke="#EEE" stroke-width="1"/>
+        <line x1="20" y1="95" x2="238" y2="95" stroke="#EEE" stroke-width="1"/>
+        <!-- Y labels -->
+        <text x="17" y="18" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">60K</text>
+        <text x="17" y="58" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">40K</text>
+        <text x="17" y="98" text-anchor="end" font-family="Lato,sans-serif" font-size="7.5" fill="#999">20K</text>
+        <!-- Vertical divider (actual vs forecast) -->
+        <line x1="170" y1="10" x2="170" y2="110" stroke="#CCC" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="162" y="8" text-anchor="end" font-family="Lato,sans-serif" font-size="7" fill="#999">Actual</text>
+        <text x="175" y="8" font-family="Lato,sans-serif" font-size="7" fill="#C0392B">Forecast</text>
+        <!-- Consumer line (blue) - actual -->
+        <polyline points="22,75 35,60 48,68 61,52 74,65 87,45 100,55 113,38 126,50 139,42 152,48 165,36" fill="none" stroke="#2471A3" stroke-width="2"/>
+        <!-- Consumer forecast -->
+        <polyline points="165,36 178,32 191,28 204,24 217,20 230,18" fill="none" stroke="#2471A3" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <!-- Confidence band -->
+        <path d="M165,36 L178,28 L191,20 L204,14 L217,9 L230,7 L230,29 L217,31 L204,34 L191,36 L178,36 Z" fill="#2471A3" opacity=".12"/>
+        <!-- Corporate line (orange) -->
+        <polyline points="22,88 35,80 48,85 61,74 74,80 87,68 100,75 113,65 126,70 139,62 152,68 165,55" fill="none" stroke="#E67E22" stroke-width="2"/>
+        <polyline points="165,55 178,52 191,49 204,46 217,44 230,42" fill="none" stroke="#E67E22" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <path d="M165,55 L178,48 L191,42 L204,37 L217,34 L230,32 L230,52 L217,54 L204,55 L191,56 L178,56 Z" fill="#E67E22" opacity=".12"/>
+        <!-- Labels -->
+        <text x="232" y="20" font-family="Lato,sans-serif" font-size="7.5" fill="#2471A3">Consumer</text>
+        <text x="232" y="44" font-family="Lato,sans-serif" font-size="7.5" fill="#E67E22">Corporate</text>
+        <!-- X axis labels -->
+        <text x="22" y="120" font-family="Lato,sans-serif" font-size="7.5" fill="#555">2019</text>
+        <text x="75" y="120" font-family="Lato,sans-serif" font-size="7.5" fill="#555">2020</text>
+        <text x="128" y="120" font-family="Lato,sans-serif" font-size="7.5" fill="#555">2021</text>
+        <text x="175" y="120" font-family="Lato,sans-serif" font-size="7.5" fill="#C0392B">2022</text>
+        <text x="218" y="120" font-family="Lato,sans-serif" font-size="7.5" fill="#C0392B">2023</text>
+      </svg>
+      <div class="box box-i" style="margin-top:5px">
+        <div class="box-label i">What the Shaded Area Means</div>
+        <div class="box-text" style="font-size:11.5px">The shaded confidence band = the 95% range of likely values. A <strong>wider band</strong> = more uncertainty. If the band is very wide, the forecast is unreliable — don't over-commit to it.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 20: COMMON MISTAKES -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Reference Card</div>
+    <div class="slide-title">Common Mistakes — One per Chart Type</div>
+    <div class="slide-subtitle">These are the errors that cost marks in assessments and credibility in professional reports</div>
+  </div>
+  <div class="slide-body">
+    <table class="dt">
+      <thead><tr><th>Chart Type</th><th>Common Mistake</th><th>Why It Matters</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Bar / Column</strong></td>
+          <td>Y-axis doesn't start at zero</td>
+          <td>Small differences appear huge — visually misleading</td>
+          <td>Always start bar charts at zero. Use a line chart if you need to zoom in.</td>
+        </tr>
+        <tr>
+          <td><strong>Pie / Donut</strong></td>
+          <td>More than 6 slices</td>
+          <td>Tiny slices are unreadable; angles are hard to compare</td>
+          <td>Aggregate small categories into "Other" or switch to a bar chart.</td>
+        </tr>
+        <tr>
+          <td><strong>Stacked Bar</strong></td>
+          <td>Too many legend colours</td>
+          <td>Viewers can't distinguish 12+ colours reliably</td>
+          <td>Limit to 6–8 segments or group smaller ones.</td>
+        </tr>
+        <tr>
+          <td><strong>Line Chart</strong></td>
+          <td>Connecting non-continuous data</td>
+          <td>Suggests a trend where there may be none</td>
+          <td>Use a line chart only for time series or naturally ordered data.</td>
+        </tr>
+        <tr>
+          <td><strong>Scatter Plot</strong></td>
+          <td>Forgetting "Don't Summarize"</td>
+          <td>You get one dot instead of thousands — no pattern visible</td>
+          <td>Always change aggregation to "Don't summarize" for both axes.</td>
+        </tr>
+        <tr>
+          <td><strong>Treemap</strong></td>
+          <td>Showing all records unfiltered</td>
+          <td>Hundreds of tiny equal boxes convey nothing</td>
+          <td>Apply a filter (e.g., profit &gt; $1,000) to focus on the meaningful tier.</td>
+        </tr>
+        <tr>
+          <td><strong>Forecast</strong></td>
+          <td>Over-trusting a wide confidence interval</td>
+          <td>Wide band = high uncertainty; decisions based on it can fail</td>
+          <td>Report the confidence interval alongside the forecast line. Note limitations.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SLIDE 21: SUMMARY -->
+<div class="slide">
+  <div class="slide-top-bar"></div>
+  <div class="slide-header">
+    <div class="slide-label">Summary</div>
+    <div class="slide-title">The Complete Picture: Question → Method → Chart → Tool</div>
+    <div class="slide-subtitle">Use this as a reference card for your dashboard assessment</div>
+  </div>
+  <div class="slide-body">
+    <table class="st">
+      <thead>
+        <tr><th>Business Question</th><th>Statistical Method</th><th>Chart Type</th><th>Tool</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>"Which subcategory has the highest sales?"</td>
+          <td>Descriptive Statistics</td>
+          <td>Bar Chart (sorted)</td>
+          <td>Power BI</td>
+        </tr>
+        <tr>
+          <td>"How do quantity and profit compare by category?"</td>
+          <td>Descriptive Statistics</td>
+          <td>Clustered Column Chart</td>
+          <td>Power BI</td>
+        </tr>
+        <tr>
+          <td>"What is the product mix within each category?"</td>
+          <td>Descriptive Statistics</td>
+          <td>Stacked Bar Chart</td>
+          <td>Power BI</td>
+        </tr>
+        <tr>
+          <td>"Who are the top-profit customers?"</td>
+          <td>Descriptive Statistics</td>
+          <td>Treemap + Filter</td>
+          <td>Power BI</td>
+        </tr>
+        <tr>
+          <td>"Which segment has the highest profit margin?"</td>
+          <td>Descriptive Statistics</td>
+          <td>Table / Matrix</td>
+          <td>Power BI</td>
+        </tr>
+        <tr>
+          <td>"What share of orders comes from each region?"</td>
+          <td>Descriptive Statistics</td>
+          <td>Pie / Donut Chart</td>
+          <td>Power BI</td>
+        </tr>
+        <tr>
+          <td>"Is sales performance growing? Any seasonality?"</td>
+          <td>Time Series</td>
+          <td>Line Chart (monthly bins)</td>
+          <td>Power BI / Tableau</td>
+        </tr>
+        <tr>
+          <td>"What will sales look like in the next 12 months?"</td>
+          <td>Forecasting</td>
+          <td>Line Chart + Forecast Band</td>
+          <td>Tableau</td>
+        </tr>
+        <tr>
+          <td>"Does discounting destroy profit?"</td>
+          <td>Correlation</td>
+          <td>Scatter Plot</td>
+          <td>Power BI / Tableau</td>
+        </tr>
+        <tr>
+          <td>"Which states/cities are high-growth opportunities?"</td>
+          <td>Geographical</td>
+          <td>Filled Map / Choropleth</td>
+          <td>Power BI / Tableau</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="box box-q" style="margin-top:6px">
+      <div class="box-label q">Dashboard Activity</div>
+      <div class="box-text">Pick <strong>three questions</strong> from this table. Build charts that answer them in Power BI. Give your dashboard a title that tells a story (e.g. <em>"Superstore Profitability — What's Working and What Isn't"</em>). Add slicers for Region and Year so your audience can explore.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const counter = document.getElementById('slideCounter');
+const bar = document.getElementById('progressBar');
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(n, slides.length - 1));
+  slides[cur].classList.add('active');
+  counter.textContent = (cur + 1) + ' / ' + slides.length;
+  bar.style.width = ((cur + 1) / slides.length * 100) + '%';
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => go(cur - 1));
+document.getElementById('nextBtn').addEventListener('click', () => go(cur + 1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(cur + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(cur - 1);
+});
+
+go(0);
+</script>
+</body>
+</html>

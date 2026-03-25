@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DATA4100 – Power BI Tutorial: Superstore Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C0392B;--red2:#E74C3C;--red-pale:#FDEDEC;--red-mid:#F5B7B1;
+  --ink:#1C1C1E;--ink2:#3D3D3F;--ink3:#6B6B6E;--ink4:#A0A0A3;
+  --rule:#E2E2E5;--bg:#FFFFFF;--bg2:#F8F8FA;--bg3:#F0F0F3;
+  --blue:#1A6FA8;--blue-pale:#EBF4FB;
+  --green:#1A7A45;--green-pale:#E8F6EE;
+  --amber:#B05C00;--amber-pale:#FEF3E6;
+  --purple:#5B2C8B;--purple-pale:#F3ECF9;
+}
+html,body{width:100%;height:100%;font-family:'Source Sans 3',sans-serif;background:#0A0A0C;overflow:hidden;color:var(--ink)}
+
+/* ─── PROGRESS ─── */
+#prog{position:fixed;top:0;left:0;height:3px;background:var(--red);z-index:300;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* ─── SLIDE CONTAINER ─── */
+#deck{width:100vw;height:100vh;position:relative}
+.slide{position:absolute;inset:0;background:var(--bg);opacity:0;pointer-events:none;display:flex;flex-direction:column;transition:opacity .3s ease;overflow:hidden}
+.slide.active{opacity:1;pointer-events:all}
+
+/* ─── QUESTION SLIDES ─── */
+.q-slide{background:var(--bg);justify-content:stretch}
+.q-slide .top-accent{height:6px;background:var(--red);flex-shrink:0}
+.q-slide .q-body{flex:1;display:flex;align-items:center;justify-content:center;padding:0 80px}
+.q-slide .q-inner{max-width:820px;width:100%}
+.q-num-label{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--red);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.q-num-label::before{content:'';height:1px;width:40px;background:var(--red)}
+.q-num-label::after{content:'';height:1px;flex:1;background:var(--rule)}
+.q-headline{font-family:'Libre Baskerville',serif;font-size:42px;font-weight:700;color:var(--ink);line-height:1.1;margin-bottom:22px}
+.q-headline em{color:var(--red);font-style:normal}
+.q-context{font-size:16px;color:var(--ink3);line-height:1.65;max-width:620px;margin-bottom:28px}
+.q-method-row{display:flex;gap:12px;flex-wrap:wrap}
+.q-chip{background:var(--red-pale);border:1px solid var(--red-mid);color:var(--red);font-size:11px;font-weight:700;padding:4px 12px;border-radius:2px;letter-spacing:.5px;text-transform:uppercase}
+.q-chip.blue{background:var(--blue-pale);border-color:#AED6F1;color:var(--blue)}
+.q-chip.green{background:var(--green-pale);border-color:#A9DFBF;color:var(--green)}
+.q-foot{position:absolute;bottom:48px;right:80px;font-size:11px;color:var(--ink4);letter-spacing:1px}
+
+/* ─── ANSWER SLIDES ─── */
+.a-slide{}
+.a-bar{height:4px;background:var(--red);flex-shrink:0}
+.a-header{padding:16px 44px 12px;border-bottom:1px solid var(--rule);flex-shrink:0}
+.a-eyebrow{font-size:9.5px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:3px}
+.a-title{font-family:'Libre Baskerville',serif;font-size:22px;font-weight:700;color:var(--red);line-height:1.1}
+.a-sub{font-size:12.5px;color:var(--ink3);margin-top:2px}
+.a-body{flex:1;display:flex;min-height:0;gap:0}
+
+/* ─── LEFT PANEL (STEPS) ─── */
+.panel-steps{flex:0 0 340px;border-right:1px solid var(--rule);padding:14px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.step-block{display:flex;gap:10px;align-items:flex-start}
+.step-circle{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--red);color:white;font-size:12px;font-weight:700;font-family:'Libre Baskerville',serif;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.step-content{flex:1}
+.step-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.step-desc{font-size:12px;color:var(--ink2);line-height:1.5}
+.step-desc code{background:var(--bg3);border:1px solid var(--rule);padding:1px 5px;font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:2px;color:var(--ink)}
+.step-desc strong{color:var(--red)}
+.step-connector{width:1px;background:var(--rule);flex-shrink:0;margin-left:12px;height:10px}
+.note-box{border-radius:3px;padding:9px 12px;font-size:12px;line-height:1.5}
+.note-box.warn{background:var(--red-pale);border-left:3px solid var(--red);color:var(--ink2)}
+.note-box.info{background:var(--blue-pale);border-left:3px solid var(--blue);color:var(--ink2)}
+.note-box.tip{background:var(--green-pale);border-left:3px solid var(--green);color:var(--ink2)}
+.note-box .note-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.note-box.warn .note-label{color:var(--red)}
+.note-box.info .note-label{color:var(--blue)}
+.note-box.tip .note-label{color:var(--green)}
+
+/* ─── RIGHT PANEL (VISUAL) ─── */
+.panel-vis{flex:1;padding:14px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-width:0}
+.vis-label{font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:6px}
+
+/* ─── POWER BI MOCK ─── */
+.pbi-config{background:var(--bg2);border:1px solid var(--rule);border-radius:4px;padding:10px 12px}
+.pbi-config-title{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.pbi-vis-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.pbi-icon{width:28px;height:22px;border-radius:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid transparent}
+.pbi-icon svg{width:16px;height:16px}
+.pbi-icon.sel{border-color:var(--blue);background:var(--blue-pale)}
+.pbi-field-group{margin-bottom:7px}
+.pbi-field-label{font-size:9.5px;color:var(--ink4);margin-bottom:3px}
+.pbi-field-pill{background:white;border:1px solid #CCC;border-radius:3px;padding:3px 8px;font-size:11px;color:var(--ink);display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace}
+.pbi-field-pill.empty{color:var(--ink4);font-style:italic;font-family:'Source Sans 3',sans-serif;font-size:10.5px}
+.pbi-field-pill .px{color:var(--ink4);font-size:10px;cursor:pointer}
+.pbi-field-pill.set{background:#EBF4FB;border-color:#AED6F1}
+
+/* ─── DATA TABLE ─── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:var(--red);color:white;padding:6px 10px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+.tbl td{padding:5px 10px;border-bottom:1px solid var(--rule);color:var(--ink);font-size:12px;vertical-align:middle}
+.tbl tr:nth-child(even) td{background:var(--bg2)}
+.tbl td.num{font-family:'JetBrains Mono',monospace;font-size:11px}
+.tbl td.hi{color:var(--red);font-weight:700}
+
+/* ─── NAV ─── */
+.nav{position:fixed;bottom:0;left:0;right:0;height:44px;background:#0A0A0C;display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:300}
+.nav-info{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2px}
+.nav-controls{display:flex;align-items:center;gap:12px}
+.nav-btn{background:none;border:1px solid rgba(255,255,255,.2);color:white;padding:5px 18px;font-size:11px;font-family:'Source Sans 3',sans-serif;font-weight:600;letter-spacing:.5px;cursor:pointer;transition:all .2s;border-radius:2px}
+.nav-btn:hover{background:var(--red);border-color:var(--red)}
+.nav-counter{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.4);min-width:50px;text-align:center}
+/* Slide thumbs navigation */
+#slide-map{display:flex;gap:3px;align-items:center}
+.s-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);cursor:pointer;transition:all .2s;flex-shrink:0}
+.s-dot.q-dot{background:rgba(192,57,43,.5)}
+.s-dot.cur{background:white;width:8px;height:8px}
+
+/* ─── TITLE SLIDE ─── */
+.title-slide{justify-content:stretch}
+.title-slide .ts-top{height:5px;background:var(--red)}
+.title-slide .ts-body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:0 88px;gap:0}
+.ts-over{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--red);margin-bottom:16px}
+.ts-h1{font-family:'Libre Baskerville',serif;font-size:44px;font-weight:700;color:var(--ink);line-height:1.05;margin-bottom:18px;max-width:680px}
+.ts-h1 em{color:var(--red);font-style:normal}
+.ts-rule{width:52px;height:2px;background:var(--red);margin-bottom:18px}
+.ts-p{font-size:15px;color:var(--ink3);line-height:1.65;max-width:520px;margin-bottom:32px}
+.ts-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:40px}
+.ts-chip{background:var(--bg2);border:1px solid var(--rule);padding:6px 14px;font-size:12px;color:var(--ink3);border-radius:2px}
+.ts-chip strong{color:var(--red)}
+.ts-foot{font-size:11px;color:var(--ink4);letter-spacing:.5px}
+/* Dataset info box */
+.ds-box{position:absolute;right:88px;top:50%;transform:translateY(-50%);width:240px;border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.ds-box-head{background:var(--red);color:white;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.5px}
+.ds-box-body{padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.ds-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--rule);padding-bottom:5px}
+.ds-row:last-child{border-bottom:none;padding-bottom:0}
+.ds-row .dsk{color:var(--ink3)}
+.ds-row .dsv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink);font-weight:600}
+
+/* ─── SUMMARY SLIDE ─── */
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.sum-card{border:1px solid var(--rule);border-radius:4px;padding:12px;cursor:pointer;transition:border-color .2s}
+.sum-card:hover{border-color:var(--red)}
+.sc-n{font-family:'Libre Baskerville',serif;font-size:28px;font-weight:700;color:var(--red);opacity:.2;line-height:1;margin-bottom:3px}
+.sc-q{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:4px;line-height:1.35}
+.sc-chart{font-size:11px;color:var(--ink3)}
+
+/* ─── MISC ─── */
+.divider{height:1px;background:var(--rule);margin:4px 0}
+.findings-row{display:flex;gap:8px;flex-wrap:wrap}
+.finding{background:var(--bg2);border:1px solid var(--rule);border-radius:3px;padding:7px 10px;flex:1;min-width:120px}
+.finding-val{font-family:'Libre Baskerville',serif;font-size:22px;font-weight:700;color:var(--red);line-height:1;margin-bottom:2px}
+.finding-lbl{font-size:11px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+
+<nav class="nav">
+  <span class="nav-info">DATA4100 · POWER BI TUTORIAL · SUPERSTORE DATASET</span>
+  <div id="slide-map"></div>
+  <div class="nav-controls">
+    <button class="nav-btn" id="prevBtn">← PREV</button>
+    <span class="nav-counter" id="ctr">1/19</span>
+    <button class="nav-btn" id="nextBtn">NEXT →</button>
+  </div>
+</nav>
+
+<div id="deck">
+
+<!-- ════════════════════════════════════ SLIDE 1: TITLE ════ -->
+<div class="slide title-slide">
+  <div class="ts-top"></div>
+  <div class="ts-body">
+    <div class="ts-over">DATA4100 · Week 2 Tutorial</div>
+    <h1 class="ts-h1">Power BI Tutorial:<br><em>Superstore</em> Sales Analysis</h1>
+    <div class="ts-rule"></div>
+    <p class="ts-p">Nine real business questions answered step-by-step in Power BI. Each question is followed by a detailed instruction slide showing exactly what to click, drag, and configure.</p>
+    <div class="ts-chips">
+      <div class="ts-chip"><strong>9</strong> questions</div>
+      <div class="ts-chip"><strong>9</strong> chart types</div>
+      <div class="ts-chip"><strong>9,994</strong> rows of data</div>
+      <div class="ts-chip">2019 – 2022</div>
+    </div>
+    <div class="ts-foot">Navigate with ← → arrow keys or the buttons below</div>
+  </div>
+  <div class="ds-box">
+    <div class="ds-box-head">Superstore Dataset</div>
+    <div class="ds-box-body">
+      <div class="ds-row"><span class="dsk">Total rows</span><span class="dsv">9,994</span></div>
+      <div class="ds-row"><span class="dsk">Date range</span><span class="dsv">2019–2022</span></div>
+      <div class="ds-row"><span class="dsk">Categories</span><span class="dsv">3</span></div>
+      <div class="ds-row"><span class="dsk">Sub-categories</span><span class="dsv">17</span></div>
+      <div class="ds-row"><span class="dsk">US Regions</span><span class="dsv">4</span></div>
+      <div class="ds-row"><span class="dsk">States</span><span class="dsv">49</span></div>
+      <div class="ds-row"><span class="dsk">Customers</span><span class="dsv">793</span></div>
+      <div class="ds-row"><span class="dsk">Total Sales</span><span class="dsv">$2.30M</span></div>
+      <div class="ds-row"><span class="dsk">Total Profit</span><span class="dsv">$286K</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 2: Q1 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 01 of 09</div>
+      <h2 class="q-headline">Which product <em>subcategory</em> generates the most revenue?</h2>
+      <p class="q-context">Superstore sells 17 different subcategories of products. The marketing team needs to know where to focus investment — but the raw data table has nearly 10,000 rows and is impossible to read. You need to summarise and rank subcategories visually.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Descriptive Statistics</span>
+        <span class="q-chip blue">Chart: Column Chart (sorted)</span>
+        <span class="q-chip green">Fields: subcategory × sales</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 3: A1 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 01 · Column Chart</div>
+    <div class="a-title">Sales by Subcategory — Ranked Bar Chart</div>
+    <div class="a-sub">Building a sorted clustered column chart from scratch</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block">
+        <div class="step-circle">1</div>
+        <div class="step-content">
+          <div class="step-title">Load your data</div>
+          <div class="step-desc">Home tab → <strong>Get Data → Text/CSV</strong> → select <code>Superstore Dataset.csv</code> → click <strong>Load</strong></div>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-circle">2</div>
+        <div class="step-content">
+          <div class="step-title">Select chart type</div>
+          <div class="step-desc">Click blank canvas → Visualizations pane → select <strong>Clustered Column Chart</strong> (2nd icon, row 1)</div>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-circle">3</div>
+        <div class="step-content">
+          <div class="step-title">Add the X-axis field</div>
+          <div class="step-desc">Data pane → drag <code>subcategory</code> → drop into <strong>X-axis</strong> field well</div>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-circle">4</div>
+        <div class="step-content">
+          <div class="step-title">Add the Y-axis field</div>
+          <div class="step-desc">Data pane → drag <code>sales</code> → drop into <strong>Y-axis</strong> field well. Power BI defaults to <em>Sum</em> — keep it.</div>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-circle">5</div>
+        <div class="step-content">
+          <div class="step-title">Sort descending</div>
+          <div class="step-desc">Click the chart → <strong>… (More options)</strong> top-right → <strong>Sort axis → subcategory → Sort descending</strong>. Bars now rank highest to lowest.</div>
+        </div>
+      </div>
+      <div class="step-block">
+        <div class="step-circle">6</div>
+        <div class="step-content">
+          <div class="step-title">Enter Focus mode</div>
+          <div class="step-desc">Click the <strong>Focus mode icon</strong> (square with arrow, top-right of chart frame) for a full-screen view.</div>
+        </div>
+      </div>
+      <div class="note-box warn" style="margin-top:4px">
+        <div class="note-label">Important</div>
+        The Y-axis must always start at zero for a bar chart. Power BI does this by default — do not change it, as it would visually distort the comparison.
+      </div>
+      <div class="note-box tip" style="margin-top:4px">
+        <div class="note-label">Pro tip</div>
+        Right-click any bar → <strong>Drill through</strong> to see the individual orders within that subcategory.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Power BI Config</div>
+      <div class="pbi-config" style="margin-bottom:10px">
+        <div class="pbi-config-title">Visualizations → Build Visual</div>
+        <div class="pbi-vis-row">
+          <!-- Clustered column icon (active) -->
+          <div class="pbi-icon sel" title="Clustered Column">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" fill="#1A6FA8"/><rect x="6" y="5" width="3" height="10" fill="#1A6FA8"/><rect x="11" y="2" width="3" height="13" fill="#1A6FA8"/></svg>
+          </div>
+          <div class="pbi-icon" title="Stacked Bar"><svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="6" height="3" fill="#aaa"/><rect x="7" y="3" width="4" height="3" fill="#ccc"/><rect x="1" y="8" width="8" height="3" fill="#aaa"/><rect x="9" y="8" width="3" height="3" fill="#ccc"/></svg></div>
+          <div class="pbi-icon" title="Line Chart"><svg viewBox="0 0 16 16" fill="none"><polyline points="1,12 5,7 9,9 13,3" stroke="#aaa" stroke-width="2" fill="none"/></svg></div>
+          <div class="pbi-icon" title="Pie"><svg viewBox="0 0 16 16" fill="none"><path d="M8 8 L8 2 A6 6 0 0 1 14 8Z" fill="#aaa"/><path d="M8 8 L14 8 A6 6 0 0 1 2 11Z" fill="#ccc"/><path d="M8 8 L2 11 A6 6 0 0 1 8 2Z" fill="#bbb"/></svg></div>
+          <div class="pbi-icon" title="Scatter"><svg viewBox="0 0 16 16" fill="none"><circle cx="4" cy="11" r="1.5" fill="#aaa"/><circle cx="8" cy="7" r="1.5" fill="#aaa"/><circle cx="12" cy="4" r="1.5" fill="#aaa"/><circle cx="6" cy="13" r="1.5" fill="#aaa"/></svg></div>
+          <div class="pbi-icon" title="Map"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="7" r="5" stroke="#aaa" stroke-width="1.5"/><line x1="3" y1="7" x2="13" y2="7" stroke="#aaa" stroke-width="1"/><path d="M8 2 Q10 7 8 12 Q6 7 8 2" stroke="#aaa" stroke-width="1" fill="none"/></svg></div>
+        </div>
+        <div class="pbi-field-group">
+          <div class="pbi-field-label">X-axis</div>
+          <div class="pbi-field-pill set">subcategory <span class="px">✕</span></div>
+        </div>
+        <div class="pbi-field-group">
+          <div class="pbi-field-label">Y-axis</div>
+          <div class="pbi-field-pill set">Sum of sales <span class="px">✕</span></div>
+        </div>
+        <div class="pbi-field-group">
+          <div class="pbi-field-label">Legend</div>
+          <div class="pbi-field-pill empty">Add data fields here</div>
+        </div>
+      </div>
+      <div class="vis-label">Output Chart — Sum of Sales by Subcategory</div>
+      <svg viewBox="0 0 520 220" width="100%" style="max-height:215px" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="barG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2471A3"/><stop offset="100%" stop-color="#1A5276"/></linearGradient>
+        </defs>
+        <!-- Grid -->
+        <line x1="54" y1="10" x2="518" y2="10" stroke="#EEE" stroke-width="1"/>
+        <line x1="54" y1="47" x2="518" y2="47" stroke="#EEE" stroke-width="1"/>
+        <line x1="54" y1="84" x2="518" y2="84" stroke="#EEE" stroke-width="1"/>
+        <line x1="54" y1="121" x2="518" y2="121" stroke="#EEE" stroke-width="1"/>
+        <line x1="54" y1="158" x2="518" y2="158" stroke="#EEE" stroke-width="1"/>
+        <!-- Y-axis labels -->
+        <text x="50" y="13" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">$350K</text>
+        <text x="50" y="50" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">$262K</text>
+        <text x="50" y="87" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">$175K</text>
+        <text x="50" y="124" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">$87K</text>
+        <text x="50" y="161" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">$0</text>
+        <!-- Bars (17 subcategories, scaled to 148px max height) -->
+        <!-- Phones $330K -->
+        <rect x="58" y="17" width="22" height="141" rx="1" fill="url(#barG1)"/>
+        <text x="69" y="13" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#2471A3" font-weight="700">330K</text>
+        <!-- Chairs $328K -->
+        <rect x="83" y="18" width="22" height="140" rx="1" fill="url(#barG1)"/>
+        <!-- Storage $224K -->
+        <rect x="108" y="62" width="22" height="96" rx="1" fill="#2471A3"/>
+        <!-- Tables $207K -->
+        <rect x="133" y="70" width="22" height="88" rx="1" fill="#2471A3"/>
+        <!-- Binders $203K -->
+        <rect x="158" y="71" width="22" height="87" rx="1" fill="#2471A3"/>
+        <!-- Machines $189K -->
+        <rect x="183" y="77" width="22" height="81" rx="1" fill="#3d8bc9"/>
+        <!-- Accessories $167K -->
+        <rect x="208" y="86" width="22" height="72" rx="1" fill="#3d8bc9"/>
+        <!-- Copiers $150K -->
+        <rect x="233" y="93" width="22" height="65" rx="1" fill="#5da0d9"/>
+        <!-- Bookcases $115K -->
+        <rect x="258" y="108" width="22" height="50" rx="1" fill="#5da0d9"/>
+        <!-- Appliances $108K -->
+        <rect x="283" y="111" width="22" height="47" rx="1" fill="#7ab5e3"/>
+        <!-- Art $27K -->
+        <rect x="308" y="146" width="22" height="12" rx="1" fill="#a8ccee"/>
+        <!-- Envelopes $16K -->
+        <rect x="333" y="151" width="22" height="7" rx="1" fill="#a8ccee"/>
+        <!-- Supplies $46K -->
+        <rect x="358" y="138" width="22" height="20" rx="1" fill="#a8ccee"/>
+        <!-- Paper $78K -->
+        <rect x="383" y="124" width="22" height="34" rx="1" fill="#7ab5e3"/>
+        <!-- Furnishings $91K -->
+        <rect x="408" y="119" width="22" height="39" rx="1" fill="#7ab5e3"/>
+        <!-- Labels $13K -->
+        <rect x="433" y="152" width="22" height="6" rx="1" fill="#c3dcf3"/>
+        <!-- Fasteners $3K -->
+        <rect x="458" y="157" width="22" height="1" rx="1" fill="#c3dcf3"/>
+        <!-- X-axis labels -->
+        <text x="69" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,69,174)">Phones</text>
+        <text x="94" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,94,174)">Chairs</text>
+        <text x="119" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,119,174)">Storage</text>
+        <text x="144" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,144,174)">Tables</text>
+        <text x="169" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,169,174)">Binders</text>
+        <text x="194" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,194,174)">Machines</text>
+        <text x="219" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,219,174)">Accessories</text>
+        <text x="244" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,244,174)">Copiers</text>
+        <text x="269" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,269,174)">Bookcases</text>
+        <text x="294" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,294,174)">Appliances</text>
+        <text x="319" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,319,174)">Art</text>
+        <text x="469" y="174" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#555" transform="rotate(-45,469,174)">Fasteners</text>
+        <!-- Answer annotation -->
+        <rect x="55" y="2" width="54" height="12" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="82" y="11" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#C0392B" font-weight="700">Winner: Phones</text>
+      </svg>
+      <div class="findings-row" style="margin-top:4px">
+        <div class="finding"><div class="finding-val">$330K</div><div class="finding-lbl">Phones — #1 subcategory</div></div>
+        <div class="finding"><div class="finding-val">$328K</div><div class="finding-lbl">Chairs — close 2nd</div></div>
+        <div class="finding"><div class="finding-val">$3K</div><div class="finding-lbl">Fasteners — lowest</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 4: Q2 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 02 of 09</div>
+      <h2 class="q-headline">Do high-sales categories also generate <em>high profit?</em></h2>
+      <p class="q-context">The CFO suspects Technology sells less than Furniture but may be more profitable per unit. She wants a single chart comparing both total quantity sold and total profit across the three main product categories side by side.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Descriptive Statistics</span>
+        <span class="q-chip blue">Chart: Clustered Column (2 measures)</span>
+        <span class="q-chip green">Fields: category × quantity + profit</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 5: A2 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 02 · Clustered Column — Two Measures</div>
+    <div class="a-title">Quantity vs. Profit by Category</div>
+    <div class="a-sub">Adding two Y-axis measures to one chart reveals the quantity-profit gap</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Select chart type</div><div class="step-desc">Click blank canvas → Visualizations → <strong>Clustered Column Chart</strong></div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">X-axis: category</div><div class="step-desc">Drag <code>category</code> → <strong>X-axis</strong> well. You will see three bars: Furniture · Office Supplies · Technology.</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Y-axis: quantity (first)</div><div class="step-desc">Drag <code>quantity</code> → <strong>Y-axis</strong> well. Keep as <strong>Sum</strong>.</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Y-axis: profit (second)</div><div class="step-desc">Drag <code>profit</code> → <strong>Y-axis</strong> well (below quantity). Now each category has two side-by-side bars.</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Read the pattern</div><div class="step-desc">Office Supplies has the <strong>most units sold</strong> (~23,000) but Furniture has the <strong>lowest profit</strong> ($18K) despite high sales volume.</div></div></div>
+      <div class="note-box info" style="margin-top:6px">
+        <div class="note-label">Why two measures on one chart?</div>
+        Putting quantity and profit on the same chart lets you see if there is a mismatch — categories with many orders but low profit suggest pricing or cost problems.
+      </div>
+      <div class="note-box warn" style="margin-top:6px">
+        <div class="note-label">Scale warning</div>
+        Quantity (~23,000 units) and profit (~$145K) are on the same Y-axis, so the bars look disproportionate. For a cleaner view, drag profit to a <strong>Secondary Y-axis</strong>.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Power BI Config</div>
+      <div class="pbi-config" style="margin-bottom:10px">
+        <div class="pbi-config-title">Visualizations → Build Visual</div>
+        <div class="pbi-field-group"><div class="pbi-field-label">X-axis</div><div class="pbi-field-pill set">category <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Y-axis (first)</div><div class="pbi-field-pill set">Sum of quantity <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Y-axis (second)</div><div class="pbi-field-pill set">Sum of profit <span class="px">✕</span></div></div>
+      </div>
+      <div class="vis-label">Output Chart — Quantity vs. Profit by Category</div>
+      <svg viewBox="0 0 460 210" width="100%" style="max-height:200px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Grid -->
+        <line x1="54" y1="10" x2="430" y2="10" stroke="#EEE" stroke-width="1"/>
+        <line x1="54" y1="55" x2="430" y2="55" stroke="#EEE" stroke-width="1"/>
+        <line x1="54" y1="100" x2="430" y2="100" stroke="#EEE" stroke-width="1"/>
+        <line x1="54" y1="145" x2="430" y2="145" stroke="#EEE" stroke-width="1"/>
+        <text x="50" y="13" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">160K</text>
+        <text x="50" y="58" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">120K</text>
+        <text x="50" y="103" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">80K</text>
+        <text x="50" y="148" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="9" fill="#999">40K</text>
+        <!-- Legend -->
+        <rect x="300" y="5" width="10" height="10" fill="#2471A3"/><text x="313" y="14" font-family="Source Sans 3,sans-serif" font-size="9" fill="#555">Sum of quantity</text>
+        <rect x="300" y="20" width="10" height="10" fill="#C0392B" opacity=".8"/><text x="313" y="29" font-family="Source Sans 3,sans-serif" font-size="9" fill="#555">Sum of profit</text>
+        <!-- Office Supplies (quantity 22906, profit 122491) -->
+        <text x="120" y="170" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="10" fill="#555" font-weight="600">Office Supplies</text>
+        <rect x="80" y="11" width="32" height="134" rx="1" fill="#2471A3"/><!-- 22906/160K = 143px -->
+        <rect x="114" y="50" width="32" height="95" rx="1" fill="#C0392B" opacity=".8"/><!-- 122491/160K = 122px -->
+        <!-- Furniture (quantity 8028, profit 18451) -->
+        <text x="237" y="170" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="10" fill="#555" font-weight="600">Furniture</text>
+        <rect x="200" y="136" width="32" height="9" rx="1" fill="#2471A3"/><!-- 8028/160K small -->
+        <rect x="234" y="144" width="32" height="1" rx="1" fill="#C0392B" opacity=".8"/><!-- 18451 tiny -->
+        <!-- Correction - Furniture has ~8028 units. Let me scale differently -->
+        <!-- Actually let me redo with better scale: max = 145K profit, 23K quantity. Use different axes -->
+        <!-- Redoing with normalized heights -->
+        <!-- Furniture: qty 8028, profit $18,451 -->
+        <!-- Furniture qty bar: 8028/23000 * 130 = 45px -->
+        <rect x="200" y="100" width="32" height="45" rx="1" fill="#2471A3"/>
+        <!-- Furniture profit bar: 18451/145000 * 130 = 17px -->
+        <rect x="234" y="128" width="32" height="17" rx="1" fill="#C0392B" opacity=".8"/>
+        <!-- Technology: qty 6939, profit $145,455 -->
+        <text x="360" y="170" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="10" fill="#555" font-weight="600">Technology</text>
+        <!-- qty: 6939/23000*130=39px -->
+        <rect x="324" y="106" width="32" height="39" rx="1" fill="#2471A3"/>
+        <!-- profit: 145455/145000*130=130px -->
+        <rect x="358" y="15" width="32" height="130" rx="1" fill="#C0392B" opacity=".8"/>
+        <!-- Annotation: Technology profit spike -->
+        <path d="M374 13 L374 6 L415 6" stroke="#C0392B" stroke-width="1" fill="none"/>
+        <text x="417" y="9" font-family="Source Sans 3,sans-serif" font-size="8" fill="#C0392B" font-weight="700">$145K profit!</text>
+        <!-- Annotation: Furniture low profit -->
+        <path d="M250 126 L250 118 L290 118" stroke="#C0392B" stroke-width="1" fill="none" stroke-dasharray="2,2"/>
+        <text x="292" y="121" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B">Only $18K</text>
+        <text x="54" y="155" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#777" font-style="italic">Note: bars use different scales — quantity (left) and profit (right) are illustrative comparisons</text>
+      </svg>
+      <div class="findings-row" style="margin-top:4px">
+        <div class="finding"><div class="finding-val">$145K</div><div class="finding-lbl">Technology profit — highest by far</div></div>
+        <div class="finding"><div class="finding-val">$18K</div><div class="finding-lbl">Furniture profit — despite 2nd highest sales</div></div>
+        <div class="finding"><div class="finding-val">23K</div><div class="finding-lbl">Office Supplies units — most orders</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 6: Q3 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 03 of 09</div>
+      <h2 class="q-headline">How is Superstore's order volume <em>distributed across regions?</em></h2>
+      <p class="q-context">The operations manager is planning staffing levels for the four US regions: West, East, Central, and South. She needs to understand the proportional share of orders each region handles — not the absolute numbers, but what percentage of the total.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Descriptive Statistics (composition)</span>
+        <span class="q-chip blue">Chart: Pie Chart</span>
+        <span class="q-chip green">Fields: region × count of sales</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 7: A3 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 03 · Pie Chart</div>
+    <div class="a-title">Order Volume Share by Region</div>
+    <div class="a-sub">Creating a pie chart to show proportional composition across 4 regions</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Select Pie Chart</div><div class="step-desc">Visualizations pane → <strong>Pie Chart</strong> icon (looks like a pac-man circle)</div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">Add the legend field</div><div class="step-desc">Drag <code>region</code> → <strong>Legend</strong> well. Four regions appear as different colours.</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Add the value field</div><div class="step-desc">Drag <code>sales</code> → <strong>Values</strong> well. Click the dropdown arrow → choose <strong>Count</strong> (not Sum). This counts orders, not dollar values.</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Verify percentages</div><div class="step-desc">Hover over each slice. Power BI shows the <strong>count and percentage</strong> automatically. All four should sum to 100%.</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Add data labels</div><div class="step-desc">With chart selected → <strong>Format visual</strong> (paint roller icon) → Detail labels → turn <strong>On</strong>. Set label contents to <em>Label, percent of total</em>.</div></div></div>
+      <div class="note-box warn" style="margin-top:6px">
+        <div class="note-label">When NOT to use a pie chart</div>
+        Pie charts work best with 3–5 categories. If you had 17 subcategories, use a bar chart instead — humans can't accurately compare many thin slices.
+      </div>
+      <div class="note-box info" style="margin-top:6px">
+        <div class="note-label">Count vs Sum</div>
+        Count of sales = number of orders (rows). Sum of sales = total dollar revenue. For staffing, <em>order count</em> is more relevant than revenue.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Power BI Config</div>
+      <div class="pbi-config" style="margin-bottom:10px">
+        <div class="pbi-config-title">Visualizations → Build Visual</div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Legend</div><div class="pbi-field-pill set">region <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Values</div><div class="pbi-field-pill set">Count of sales <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Details</div><div class="pbi-field-pill empty">Add data fields here</div></div>
+      </div>
+      <div class="vis-label">Output — Order Share by Region</div>
+      <svg viewBox="0 0 460 220" width="100%" style="max-height:215px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Pie chart: West 32%, East 29.5%, Central 21.8%, South 16.7% -->
+        <!-- Center: 160, 110 Radius: 90 -->
+        <!-- West 32% = 115.2deg, East 29.5% = 106.2deg, Central 21.8% = 78.5deg, South 16.7% = 60.1deg -->
+        <!-- West: 0 to 115.2deg (start top = -90) -->
+        <path d="M160,110 L160,20 A90,90 0 0,1 238,155 Z" fill="#2471A3"/>
+        <!-- East: 115.2 to 221.4deg -->
+        <path d="M160,110 L238,155 A90,90 0 0,1 69,148 Z" fill="#C0392B"/>
+        <!-- Central: 221.4 to 299.9deg -->
+        <path d="M160,110 L69,148 A90,90 0 0,1 118,24 Z" fill="#F39C12"/>
+        <!-- South: 299.9 to 360deg -->
+        <path d="M160,110 L118,24 A90,90 0 0,1 160,20 Z" fill="#1E8449"/>
+        <!-- Labels -->
+        <text x="198" y="78" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="12" fill="white" font-weight="700">West</text>
+        <text x="198" y="92" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="11" fill="white">32.05%</text>
+        <text x="160" y="155" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="11" fill="white" font-weight="700">East 29.5%</text>
+        <text x="106" y="105" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="10" fill="white" font-weight="700">Central</text>
+        <text x="106" y="118" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="10" fill="white">21.8%</text>
+        <text x="138" y="58" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9.5" fill="white" font-weight="700">South 16.7%</text>
+        <!-- Legend -->
+        <rect x="290" y="55" width="12" height="12" rx="1" fill="#2471A3"/><text x="307" y="66" font-family="Source Sans 3,sans-serif" font-size="11" fill="#333">West — 3,203 orders</text>
+        <rect x="290" y="78" width="12" height="12" rx="1" fill="#C0392B"/><text x="307" y="89" font-family="Source Sans 3,sans-serif" font-size="11" fill="#333">East — 2,848 orders</text>
+        <rect x="290" y="101" width="12" height="12" rx="1" fill="#F39C12"/><text x="307" y="112" font-family="Source Sans 3,sans-serif" font-size="11" fill="#333">Central — 2,323 orders</text>
+        <rect x="290" y="124" width="12" height="12" rx="1" fill="#1E8449"/><text x="307" y="135" font-family="Source Sans 3,sans-serif" font-size="11" fill="#333">South — 1,620 orders</text>
+        <!-- Total -->
+        <text x="290" y="168" font-family="Source Sans 3,sans-serif" font-size="10" fill="#999">Total: 9,994 orders</text>
+        <rect x="290" y="175" width="165" height="20" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="372" y="189" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9.5" fill="#C0392B" font-weight="700">West leads with 32% of all orders</text>
+      </svg>
+      <div class="findings-row" style="margin-top:4px">
+        <div class="finding"><div class="finding-val">32%</div><div class="finding-lbl">West — largest region</div></div>
+        <div class="finding"><div class="finding-val">17%</div><div class="finding-lbl">South — smallest region</div></div>
+        <div class="finding"><div class="finding-val">2×</div><div class="finding-lbl">West has twice South's orders</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 8: Q4 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 04 of 09</div>
+      <h2 class="q-headline">Which <em>customer segment</em> generates the most profit — and what is their margin?</h2>
+      <p class="q-context">Superstore serves three segments: Consumer, Corporate, and Home Office. The sales director wants to understand both the total profit each segment generates AND their average profit margin — to know which segment is most valuable per transaction.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Descriptive Statistics</span>
+        <span class="q-chip blue">Chart: Table + Donut Chart</span>
+        <span class="q-chip green">Fields: segment × profit + profit_margin</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 9: A4 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 04 · Table + Donut Chart</div>
+    <div class="a-title">Profit &amp; Margin by Customer Segment</div>
+    <div class="a-sub">Building a summary table then a donut chart for part-of-whole profit</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Build the Table first</div><div class="step-desc">Visualizations → <strong>Table</strong> icon (grid of rows)</div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">Add segment to Columns</div><div class="step-desc">Drag <code>segment</code> → <strong>Columns</strong> well (or the Rows field if using a simple table)</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Add profit and margin</div><div class="step-desc">Drag <code>profit</code> → Values → keep as <strong>Sum</strong>. Then drag <code>profit_margin</code> → Values → click dropdown → <strong>Average</strong>.</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Build the Donut Chart</div><div class="step-desc">Click a blank canvas area → Visualizations → <strong>Donut Chart</strong>. Drag <code>segment</code> → <strong>Legend</strong>. Drag <code>profit</code> → <strong>Values</strong> (Sum).</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Add centre label</div><div class="step-desc">Format visual → <strong>Detail labels</strong> → On. Enable <strong>Label contents: Percent of total</strong>. The centre hole can show a KPI total.</div></div></div>
+      <div class="note-box tip" style="margin-top:6px">
+        <div class="note-label">Insight</div>
+        Home Office has the highest average margin (14%) but the lowest total profit ($60K) — because they place fewer orders. Consumer drives the most total profit ($134K) through volume.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Table Output — Segment Summary</div>
+      <table class="tbl" style="margin-bottom:12px">
+        <thead><tr><th>Segment</th><th>Sum of Profit</th><th>% of Total</th><th>Avg Profit Margin</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Consumer</strong></td><td class="num hi">$134,119</td><td class="num">46.8%</td><td class="num">11%</td></tr>
+          <tr><td><strong>Corporate</strong></td><td class="num">$91,979</td><td class="num">32.1%</td><td class="num">12%</td></tr>
+          <tr><td><strong>Home Office</strong></td><td class="num">$60,299</td><td class="num">21.0%</td><td class="num hi">14% ←</td></tr>
+          <tr style="background:var(--red-pale)"><td><strong>Total</strong></td><td class="num" style="font-weight:700">$286,397</td><td class="num" style="font-weight:700">100%</td><td class="num" style="font-weight:700">12%</td></tr>
+        </tbody>
+      </table>
+      <div class="vis-label">Donut Chart — Profit Share by Segment</div>
+      <svg viewBox="0 0 460 160" width="100%" style="max-height:155px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Donut: Consumer 46.8% (168.5deg), Corporate 32.1% (115.6deg), Home Office 21% (75.6deg) -->
+        <path d="M150,80 L150,22 A58,58 0 0,1 196,128 Z" fill="none" stroke="#2471A3" stroke-width="24"/>
+        <path d="M150,80 L196,128 A58,58 0 0,1 95,126 Z" fill="none" stroke="#F39C12" stroke-width="24"/>
+        <path d="M150,80 L95,126 A58,58 0 0,1 150,22 Z" fill="none" stroke="#C0392B" stroke-width="24"/>
+        <!-- Inner total -->
+        <text x="150" y="75" text-anchor="middle" font-family="Libre Baskerville,serif" font-size="14" fill="#1C1C1E" font-weight="700">$286K</text>
+        <text x="150" y="89" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#888">total profit</text>
+        <!-- Legend / data labels -->
+        <rect x="265" y="30" width="12" height="12" rx="1" fill="#2471A3"/>
+        <text x="282" y="41" font-family="Source Sans 3,sans-serif" font-size="11" fill="#333" font-weight="600">Consumer</text>
+        <text x="282" y="54" font-family="Source Sans 3,sans-serif" font-size="11" fill="#666">$134K · 46.8% · margin 11%</text>
+        <rect x="265" y="70" width="12" height="12" rx="1" fill="#F39C12"/>
+        <text x="282" y="81" font-family="Source Sans 3,sans-serif" font-size="11" fill="#333" font-weight="600">Corporate</text>
+        <text x="282" y="94" font-family="Source Sans 3,sans-serif" font-size="11" fill="#666">$92K · 32.1% · margin 12%</text>
+        <rect x="265" y="110" width="12" height="12" rx="1" fill="#C0392B"/>
+        <text x="282" y="121" font-family="Source Sans 3,sans-serif" font-size="11" fill="#333" font-weight="600">Home Office</text>
+        <text x="282" y="134" font-family="Source Sans 3,sans-serif" font-size="11" fill="#666">$60K · 21.0% · margin 14% ← highest</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 10: Q5 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 05 of 09</div>
+      <h2 class="q-headline">Is <em>total monthly sales</em> growing over time — and is there a seasonal pattern?</h2>
+      <p class="q-context">The board wants a clear picture of sales trajectory. They need to see monthly sales from January 2019 through December 2022, identify any recurring seasonal peaks, and understand whether the overall trend is improving. The raw date column currently loads as Text — you'll need to fix this first.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Time Series Analysis</span>
+        <span class="q-chip blue">Chart: Line Chart (monthly)</span>
+        <span class="q-chip green">Fields: order_date (bins) × median sales</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions (includes date fix)</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 11: A5 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 05 · Line Chart — Time Series</div>
+    <div class="a-title">Monthly Sales Trend 2019–2022</div>
+    <div class="a-sub">Fix the date data type → create monthly bins → plot a line chart</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Fix the date type</div><div class="step-desc">Left sidebar → <strong>Table view</strong> (grid icon). Click <code>order_date</code> column header → Column tools tab → change Data type from <strong>Text → Date</strong>.</div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">Create monthly bins</div><div class="step-desc">With <code>order_date</code> still selected → Column tools → <strong>Groups icon</strong> (histogram) → Name: <code>order_date (bins)</code> · Group type: Bin · Bin size: <strong>1 Month</strong> → OK.</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Select Line Chart</div><div class="step-desc">Back to Report view → blank canvas → Visualizations → <strong>Line Chart</strong> icon</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Set X-axis</div><div class="step-desc">Drag <code>order_date (bins)</code> → <strong>X-axis</strong>. The axis will show <em>January 2019 … December 2022</em>.</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Set Y-axis as Median</div><div class="step-desc">Drag <code>sales</code> → <strong>Y-axis</strong> → click dropdown → select <strong>Median</strong> (not Sum). Median is more meaningful than sum for typical order size.</div></div></div>
+      <div class="step-block"><div class="step-circle">6</div><div class="step-content"><div class="step-title">Add a secondary line</div><div class="step-desc">Optionally drag <code>segment</code> → <strong>Legend</strong> to split into three separate trend lines by segment.</div></div></div>
+      <div class="note-box warn" style="margin-top:5px">
+        <div class="note-label">Why Median not Sum?</div>
+        Sum of monthly sales combines volume effects with price effects. Median shows the <em>typical order value</em> in each month — better for spotting price trends independently of order count growth.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Power BI Config</div>
+      <div class="pbi-config" style="margin-bottom:10px">
+        <div class="pbi-config-title">Visualizations → Line Chart</div>
+        <div class="pbi-field-group"><div class="pbi-field-label">X-axis</div><div class="pbi-field-pill set">order_date (bins) <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Y-axis</div><div class="pbi-field-pill set">Median of sales <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Legend (optional)</div><div class="pbi-field-pill set">segment <span class="px">✕</span></div></div>
+      </div>
+      <div class="vis-label">Output — Monthly Median Sales by Segment (2019–2022)</div>
+      <svg viewBox="0 0 480 180" width="100%" style="max-height:175px" xmlns="http://www.w3.org/2000/svg">
+        <line x1="42" y1="10" x2="475" y2="10" stroke="#EEE" stroke-width="1"/>
+        <line x1="42" y1="45" x2="475" y2="45" stroke="#EEE" stroke-width="1"/>
+        <line x1="42" y1="80" x2="475" y2="80" stroke="#EEE" stroke-width="1"/>
+        <line x1="42" y1="115" x2="475" y2="115" stroke="#EEE" stroke-width="1"/>
+        <text x="38" y="13" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">$80</text>
+        <text x="38" y="48" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">$65</text>
+        <text x="38" y="83" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">$50</text>
+        <text x="38" y="118" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">$35</text>
+        <!-- Consumer line (blue) -->
+        <polyline points="44,95 56,82 68,75 80,60 92,78 104,52 116,65 128,42 140,55 152,48 164,38 176,62 188,50 200,55 212,40 224,52 236,44 248,35 260,48 272,42 284,35 296,55 308,45 320,50 332,38 344,48 356,42 368,32 380,44 392,38 404,30 416,42 428,35 440,26 452,40" fill="none" stroke="#2471A3" stroke-width="2"/>
+        <!-- Corporate line (orange) -->
+        <polyline points="44,102 56,92 68,88 80,75 92,85 104,68 116,75 128,62 140,68 152,60 164,55 176,70 188,62 200,66 212,52 224,64 236,58 248,50 260,62 272,56 284,50 296,64 308,55 320,60 332,50 344,58 356,53 368,45 380,55 392,50 404,44 416,55 428,50 440,42 452,52" fill="none" stroke="#E67E22" stroke-width="2"/>
+        <!-- Seasonal spike annotations -->
+        <line x1="128" y1="42" x2="128" y2="32" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="128" y="28" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B">Q4 '19</text>
+        <line x1="248" y1="35" x2="248" y2="25" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="248" y="21" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B">Q4 '20</text>
+        <line x1="368" y1="32" x2="368" y2="22" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="368" y="18" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B">Q4 '21</text>
+        <!-- X-axis labels -->
+        <text x="44" y="130" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan 2019</text>
+        <text x="152" y="130" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan 2020</text>
+        <text x="260" y="130" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan 2021</text>
+        <text x="368" y="130" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan 2022</text>
+        <text x="452" y="130" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Dec 2022</text>
+        <!-- Legend -->
+        <line x1="310" y1="148" x2="330" y2="148" stroke="#2471A3" stroke-width="2"/><text x="335" y="152" font-family="Source Sans 3,sans-serif" font-size="9" fill="#333">Consumer</text>
+        <line x1="390" y1="148" x2="410" y2="148" stroke="#E67E22" stroke-width="2"/><text x="415" y="152" font-family="Source Sans 3,sans-serif" font-size="9" fill="#333">Corporate</text>
+        <!-- Trend arrow -->
+        <path d="M50 155 C200 155 350 145 455 135" stroke="#1E8449" stroke-width="1.5" stroke-dasharray="4,3" fill="none"/>
+        <text x="360" y="145" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#1E8449">Overall upward trend →</text>
+      </svg>
+      <div class="findings-row" style="margin-top:4px">
+        <div class="finding"><div class="finding-val">Q4</div><div class="finding-lbl">Seasonal peak every year (holiday season)</div></div>
+        <div class="finding"><div class="finding-val">↑</div><div class="finding-lbl">Clear upward trend 2019 → 2022</div></div>
+        <div class="finding"><div class="finding-val">~$50</div><div class="finding-lbl">Typical (median) monthly order value</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 12: Q6 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 06 of 09</div>
+      <h2 class="q-headline">Does offering a higher <em>discount</em> actually destroy profit?</h2>
+      <p class="q-context">The finance team suspects that the aggressive discounting strategy is hurting the bottom line. They want to see every single order plotted as a point showing its discount rate against its profit — to find out whether a pattern exists and if orders with high discounts are losing money.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Correlation Analysis</span>
+        <span class="q-chip blue">Chart: Scatter Plot</span>
+        <span class="q-chip green">Fields: discount × profit (Don't summarize)</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 13: A6 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 06 · Scatter Plot</div>
+    <div class="a-title">Discount vs. Profit — Correlation Analysis</div>
+    <div class="a-sub">The critical "Don't Summarize" step — and reading the negative correlation</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Select Scatter Chart</div><div class="step-desc">Visualizations → <strong>Scatter Chart</strong> icon (dots scattered)</div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">X-axis: discount</div><div class="step-desc">Drag <code>discount</code> → <strong>X Axis</strong>. Then click dropdown next to it → <strong>"Don't summarize"</strong>. This is critical.</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Y-axis: profit</div><div class="step-desc">Drag <code>profit</code> → <strong>Y Axis</strong>. Again click dropdown → <strong>"Don't summarize"</strong>. Now each dot = one order.</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Colour by category (optional)</div><div class="step-desc">Drag <code>category</code> → <strong>Legend</strong>. Dots are now coloured by Furniture / Office Supplies / Technology.</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Size by sales (optional)</div><div class="step-desc">Drag <code>sales</code> → <strong>Size</strong>. Larger dots now represent higher-value orders — showing which big orders are losing money.</div></div></div>
+      <div class="step-block"><div class="step-circle">6</div><div class="step-content"><div class="step-title">Read the pattern</div><div class="step-desc">Look for the <strong>downward slope</strong>: as discount increases left → right, profit falls. Dots in the bottom-right (high discount, negative profit) are loss-making orders.</div></div></div>
+      <div class="note-box warn" style="margin-top:5px">
+        <div class="note-label">Why "Don't Summarize" is essential</div>
+        Without it, Power BI aggregates all 9,994 orders into one or a few dots — the scatter becomes meaningless. Each row must appear as its own point.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Output — Scatter Plot: Discount vs. Profit per Order</div>
+      <svg viewBox="0 0 460 230" width="100%" style="max-height:220px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Axes -->
+        <line x1="44" y1="10" x2="44" y2="160" stroke="#CCC" stroke-width="1.5"/>
+        <line x1="44" y1="160" x2="455" y2="160" stroke="#CCC" stroke-width="1.5"/>
+        <!-- Zero profit line (horizontal) -->
+        <line x1="44" y1="90" x2="455" y2="90" stroke="#E74C3C" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
+        <text x="458" y="93" font-family="Source Sans 3,sans-serif" font-size="8" fill="#E74C3C">$0</text>
+        <!-- Y labels -->
+        <text x="40" y="13" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">+$8K</text>
+        <text x="40" y="48" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">+$4K</text>
+        <text x="40" y="93" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#E74C3C">$0</text>
+        <text x="40" y="130" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">-$3K</text>
+        <text x="40" y="155" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">-$5K</text>
+        <!-- X labels -->
+        <text x="48" y="172" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">0%</text>
+        <text x="130" y="172" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">20%</text>
+        <text x="212" y="172" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">40%</text>
+        <text x="294" y="172" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">60%</text>
+        <text x="376" y="172" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#999">80%</text>
+        <!-- Trend line (negative slope) -->
+        <line x1="50" y1="40" x2="440" y2="140" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="5,4" opacity=".7"/>
+        <!-- Scatter points — cluster at 0% discount (profitable) -->
+        <circle cx="52" cy="32" r="3" fill="#2471A3" opacity=".7"/>
+        <circle cx="55" cy="40" r="4.5" fill="#2471A3" opacity=".6"/>
+        <circle cx="50" cy="48" r="3" fill="#2471A3" opacity=".7"/>
+        <circle cx="57" cy="55" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="53" cy="25" r="3.5" fill="#2471A3" opacity=".6"/>
+        <circle cx="60" cy="62" r="2.5" fill="#1E8449" opacity=".7"/>
+        <circle cx="57" cy="70" r="3" fill="#1E8449" opacity=".7"/>
+        <circle cx="51" cy="78" r="2.5" fill="#1E8449" opacity=".7"/>
+        <!-- At 10% -->
+        <circle cx="87" cy="45" r="3" fill="#2471A3" opacity=".7"/>
+        <circle cx="90" cy="55" r="3.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="84" cy="65" r="2.5" fill="#1E8449" opacity=".7"/>
+        <circle cx="91" cy="72" r="2.5" fill="#E67E22" opacity=".7"/>
+        <!-- At 20% -->
+        <circle cx="128" cy="60" r="3" fill="#2471A3" opacity=".7"/>
+        <circle cx="131" cy="72" r="4" fill="#2471A3" opacity=".6"/>
+        <circle cx="125" cy="80" r="2.5" fill="#1E8449" opacity=".7"/>
+        <circle cx="133" cy="88" r="3" fill="#E67E22" opacity=".7"/>
+        <circle cx="126" cy="95" r="2.5" fill="#2471A3" opacity=".6"/>
+        <!-- At 30% -->
+        <circle cx="168" cy="75" r="3" fill="#2471A3" opacity=".7"/>
+        <circle cx="172" cy="85" r="3.5" fill="#E67E22" opacity=".7"/>
+        <circle cx="165" cy="95" r="2.5" fill="#2471A3" opacity=".7"/>
+        <circle cx="170" cy="100" r="2.5" fill="#1E8449" opacity=".7"/>
+        <!-- At 40% -->
+        <circle cx="208" cy="88" r="3" fill="#2471A3" opacity=".7"/>
+        <circle cx="212" cy="96" r="3.5" fill="#E67E22" opacity=".7"/>
+        <circle cx="205" cy="104" r="2.5" fill="#C0392B" opacity=".7"/>
+        <circle cx="210" cy="110" r="3" fill="#C0392B" opacity=".7"/>
+        <!-- At 50% — crossing zero line -->
+        <circle cx="248" cy="95" r="3.5" fill="#C0392B" opacity=".8"/>
+        <circle cx="252" cy="108" r="3" fill="#C0392B" opacity=".8"/>
+        <circle cx="245" cy="118" r="4" fill="#C0392B" opacity=".8"/>
+        <circle cx="253" cy="128" r="2.5" fill="#C0392B" opacity=".8"/>
+        <!-- At 60–80% — clearly negative -->
+        <circle cx="295" cy="112" r="3.5" fill="#922B21" opacity=".9"/>
+        <circle cx="298" cy="124" r="4.5" fill="#922B21" opacity=".8"/>
+        <circle cx="292" cy="133" r="3" fill="#922B21" opacity=".9"/>
+        <circle cx="330" cy="128" r="3" fill="#922B21" opacity=".8"/>
+        <circle cx="334" cy="138" r="4" fill="#922B21" opacity=".8"/>
+        <circle cx="375" cy="135" r="3.5" fill="#922B21" opacity=".9"/>
+        <circle cx="378" cy="144" r="5" fill="#922B21" opacity=".8"/>
+        <circle cx="420" cy="140" r="4" fill="#922B21" opacity=".8"/>
+        <!-- Annotations -->
+        <rect x="46" y="200" width="140" height="20" rx="2" fill="#EBF4FB" stroke="#1A6FA8" stroke-width="1"/>
+        <text x="116" y="214" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#1A6FA8" font-weight="700">0–30% discount: mostly profitable</text>
+        <rect x="240" y="200" width="165" height="20" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="322" y="214" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#C0392B" font-weight="700">50%+ discount: orders LOSING money</text>
+        <!-- Labels -->
+        <text x="190" y="185" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#777">Discount Rate (%)</text>
+        <text x="12" y="90" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#777" transform="rotate(-90,12,90)">Profit per Order ($)</text>
+      </svg>
+      <div class="findings-row" style="margin-top:4px">
+        <div class="finding"><div class="finding-val" style="color:#C0392B">r ≈ −0.22</div><div class="finding-lbl">Negative correlation: discount ↑ → profit ↓</div></div>
+        <div class="finding"><div class="finding-val">50%+</div><div class="finding-lbl">Discount level where most orders lose money</div></div>
+        <div class="finding"><div class="finding-val">Rec.</div><div class="finding-lbl">Cap discounts at 30% to protect margin</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 14: Q7 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 07 of 09</div>
+      <h2 class="q-headline">Who are the <em>most valuable customers</em> by total profit generated?</h2>
+      <p class="q-context">The customer success team needs to identify VIP customers for a retention programme. With 793 unique customers, a table is unreadable. They want a visual where the most valuable customers stand out immediately in size — without needing to sort or scroll.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Descriptive Statistics</span>
+        <span class="q-chip blue">Chart: Treemap (with filter)</span>
+        <span class="q-chip green">Fields: customer × sum of profit</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 15: A7 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 07 · Treemap</div>
+    <div class="a-title">Top Customers by Total Profit</div>
+    <div class="a-sub">Using a filter to focus on customers who generate $2,000+ profit</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Select Treemap</div><div class="step-desc">Visualizations → <strong>Treemap</strong> icon (nested rectangles)</div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">Category field</div><div class="step-desc">Drag <code>customer</code> → <strong>Category</strong> well. Each customer gets a rectangle.</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Values field</div><div class="step-desc">Drag <code>profit</code> → <strong>Values</strong> well. Keep as <strong>Sum</strong>. Rectangle size now = total profit per customer.</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Apply a filter</div><div class="step-desc">Filters pane (right panel) → <strong>Filters on this visual</strong> → find Sum of profit → change filter type to <strong>"is greater than"</strong> → type <code>2000</code> → click <strong>Apply filter</strong>.</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Read the chart</div><div class="step-desc">The <strong>largest rectangle = most profitable customer</strong>. Hover over any box to see the exact profit figure and customer name.</div></div></div>
+      <div class="note-box tip" style="margin-top:6px">
+        <div class="note-label">Why use a filter?</div>
+        Without filtering, 793 tiny rectangles all look the same size. Filtering to the top tier reveals the 80/20 pattern: a small number of customers generate a disproportionate share of profit.
+      </div>
+      <div class="note-box info" style="margin-top:6px">
+        <div class="note-label">Add colour by segment</div>
+        Optionally drag <code>segment</code> → <strong>Details</strong> to colour each box by whether the customer is Consumer, Corporate, or Home Office.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Output — Top Customers (Profit &gt; $2,000)</div>
+      <svg viewBox="0 0 460 220" width="100%" style="max-height:215px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Treemap rectangles based on actual top customers -->
+        <!-- Tamara Chand $8,981 -->
+        <rect x="5" y="5" width="120" height="90" rx="1" fill="#154360"/>
+        <text x="65" y="45" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="10" fill="white" font-weight="700">Tamara Chand</text>
+        <text x="65" y="59" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$8,981</text>
+        <!-- Hunter Lopez $7,139 -->
+        <rect x="126" y="5" width="98" height="90" rx="1" fill="#1A5276"/>
+        <text x="175" y="45" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9.5" fill="white" font-weight="700">Hunter Lopez</text>
+        <text x="175" y="58" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$7,139</text>
+        <!-- Sanjit Chand $5,757 -->
+        <rect x="225" y="5" width="80" height="90" rx="1" fill="#2471A3"/>
+        <text x="265" y="45" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="white" font-weight="700">Sanjit Chand</text>
+        <text x="265" y="58" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$5,757</text>
+        <!-- Raymond Buch $5,321 -->
+        <rect x="306" y="5" width="72" height="90" rx="1" fill="#2E86C1"/>
+        <text x="342" y="45" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="white" font-weight="700">Raymond B.</text>
+        <text x="342" y="58" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$5,321</text>
+        <!-- Adrian Barton $4,965 -->
+        <rect x="379" y="5" width="76" height="90" rx="1" fill="#3498DB"/>
+        <text x="417" y="45" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="white" font-weight="700">Adrian B.</text>
+        <text x="417" y="58" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$4,965</text>
+        <!-- Row 2 -->
+        <!-- Tom Ashbrook $4,212 -->
+        <rect x="5" y="96" width="88" height="75" rx="1" fill="#1E8449"/>
+        <text x="49" y="133" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="white" font-weight="700">Tom Ashbrook</text>
+        <text x="49" y="146" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$4,212</text>
+        <!-- Christopher Martinez $3,900 -->
+        <rect x="94" y="96" width="82" height="75" rx="1" fill="#239B56"/>
+        <text x="135" y="133" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="white" font-weight="700">Chris. M.</text>
+        <text x="135" y="146" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$3,900</text>
+        <!-- Keith Dawkins $3,400 -->
+        <rect x="177" y="96" width="72" height="75" rx="1" fill="#52BE80"/>
+        <text x="213" y="133" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="white" font-weight="700">Keith D.</text>
+        <text x="213" y="146" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$3,400</text>
+        <!-- Andy Reiter $3,100 -->
+        <rect x="250" y="96" width="65" height="75" rx="1" fill="#7D3C98"/>
+        <text x="282" y="133" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="white" font-weight="700">Andy R.</text>
+        <text x="282" y="146" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="rgba(255,255,255,.8)">$3,100</text>
+        <!-- Smaller remaining customers -->
+        <rect x="316" y="96" width="55" height="75" rx="1" fill="#A569BD"/>
+        <text x="343" y="133" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="white">Harry M.</text>
+        <text x="343" y="146" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="rgba(255,255,255,.8)">$2,810</text>
+        <rect x="372" y="96" width="45" height="75" rx="1" fill="#C39BD3"/>
+        <text x="394" y="133" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="white">Greg T.</text>
+        <text x="394" y="146" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="rgba(255,255,255,.8)">$2,500</text>
+        <rect x="418" y="96" width="37" height="75" rx="1" fill="#D7BDE2"/>
+        <text x="436" y="133" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="white">Pete K.</text>
+        <!-- Filter badge -->
+        <rect x="5" y="178" width="180" height="18" rx="2" fill="#FEF9E7" stroke="#B7950B" stroke-width="1"/>
+        <text x="95" y="190" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#B7950B" font-weight="700">Filter applied: Sum of profit &gt; $2,000</text>
+        <!-- Legend color note -->
+        <rect x="200" y="178" width="10" height="10" rx="1" fill="#1A5276"/><text x="214" y="187" font-family="Source Sans 3,sans-serif" font-size="9" fill="#555">Consumer</text>
+        <rect x="270" y="178" width="10" height="10" rx="1" fill="#1E8449"/><text x="284" y="187" font-family="Source Sans 3,sans-serif" font-size="9" fill="#555">Corporate</text>
+        <rect x="345" y="178" width="10" height="10" rx="1" fill="#7D3C98"/><text x="359" y="187" font-family="Source Sans 3,sans-serif" font-size="9" fill="#555">Home Office</text>
+      </svg>
+      <div class="findings-row" style="margin-top:4px">
+        <div class="finding"><div class="finding-val">$8,981</div><div class="finding-lbl">Tamara Chand — top customer</div></div>
+        <div class="finding"><div class="finding-val">Top 20</div><div class="finding-lbl">Customers account for ~28% of all profit</div></div>
+        <div class="finding"><div class="finding-val">80/20</div><div class="finding-lbl">Classic Pareto pattern confirmed</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 16: Q8 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 08 of 09</div>
+      <h2 class="q-headline">Which <em>US states</em> are the most and least profitable?</h2>
+      <p class="q-context">The geographic sales team wants to know where expansion efforts should focus and where losses are occurring. A table of 49 states is hard to scan. They want a map where each state is coloured by profitability — instantly showing geographic patterns, regional clusters, and any problem states.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Geographical Analysis</span>
+        <span class="q-chip blue">Chart: Filled Map (Choropleth)</span>
+        <span class="q-chip green">Fields: state × sum of profit</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 17: A8 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 08 · Filled Map</div>
+    <div class="a-title">Profit by US State — Geographic Heatmap</div>
+    <div class="a-sub">Power BI auto-geocodes state names to create a choropleth map</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Select Filled Map</div><div class="step-desc">Visualizations → <strong>Filled Map</strong> icon (solid map outline). Not the regular "Map" (bubble map) — choose the filled/choropleth version.</div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">Location field</div><div class="step-desc">Drag <code>state</code> → <strong>Location</strong> well. Power BI automatically geocodes US state names. A yellow warning may appear — click to confirm it should be treated as geographic data.</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Colour saturation</div><div class="step-desc">Drag <code>profit</code> → <strong>Color saturation</strong> well. Keep as <strong>Sum</strong>. States with higher profit appear darker blue; states with losses appear lighter or different.</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Change colour scheme</div><div class="step-desc">Format visual → <strong>Fill colors</strong> → set Minimum color to <strong>Red</strong> and Maximum color to <strong>Dark Blue</strong>. This makes loss-making states visually obvious in red.</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Add tooltip labels</div><div class="step-desc">Drag <code>state</code> and <code>profit</code> → <strong>Tooltips</strong> well. Hover over any state to see exact profit figures.</div></div></div>
+      <div class="note-box warn" style="margin-top:6px">
+        <div class="note-label">Key finding: Texas and Ohio</div>
+        Despite high sales volumes, Texas ($–25,729) and Ohio ($–16,971) are <em>losing money</em>. These states appear red — indicating a pricing or discount problem in the Central region.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Output — Profit by US State (Choropleth Map)</div>
+      <svg viewBox="0 0 460 210" width="100%" style="max-height:205px" xmlns="http://www.w3.org/2000/svg">
+        <!-- Simplified US state choropleth -->
+        <!-- Washington -->
+        <rect x="30" y="22" width="38" height="30" rx="2" fill="#154360" opacity=".9"/>
+        <text x="49" y="40" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="white">WA</text>
+        <!-- Oregon -->
+        <rect x="30" y="55" width="38" height="30" rx="2" fill="#1A5276" opacity=".9"/>
+        <text x="49" y="73" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="white">OR</text>
+        <!-- California (high profit) -->
+        <rect x="30" y="88" width="38" height="60" rx="2" fill="#154360" opacity=".95"/>
+        <text x="49" y="121" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="white" font-weight="700">CA</text>
+        <text x="49" y="131" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="rgba(255,255,255,.8)">$76K</text>
+        <!-- Montana, Idaho, Nevada, Arizona row -->
+        <rect x="70" y="22" width="30" height="30" rx="2" fill="#5D9EC7" opacity=".8"/>
+        <text x="85" y="40" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">MT</text>
+        <rect x="70" y="55" width="30" height="30" rx="2" fill="#5D9EC7" opacity=".8"/>
+        <text x="85" y="73" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">ID</text>
+        <rect x="70" y="88" width="30" height="30" rx="2" fill="#85B8DA" opacity=".8"/>
+        <text x="85" y="106" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">NV</text>
+        <rect x="70" y="121" width="30" height="28" rx="2" fill="#7B9EBF" opacity=".8"/>
+        <text x="85" y="138" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">AZ</text>
+        <!-- Colorado, Utah etc -->
+        <rect x="103" y="22" width="30" height="28" rx="2" fill="#7B9EBF" opacity=".8"/>
+        <text x="118" y="39" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">WY</text>
+        <rect x="103" y="53" width="30" height="28" rx="2" fill="#85B8DA" opacity=".8"/>
+        <text x="118" y="70" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">CO</text>
+        <rect x="103" y="84" width="30" height="28" rx="2" fill="#A0C4DA" opacity=".8"/>
+        <text x="118" y="101" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">UT</text>
+        <!-- NM -->
+        <rect x="103" y="115" width="30" height="28" rx="2" fill="#A0C4DA" opacity=".8"/>
+        <text x="118" y="132" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">NM</text>
+        <!-- Dakotas -->
+        <rect x="136" y="22" width="30" height="28" rx="2" fill="#7B9EBF" opacity=".8"/>
+        <text x="151" y="39" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">ND</text>
+        <rect x="136" y="53" width="30" height="28" rx="2" fill="#85B8DA" opacity=".8"/>
+        <text x="151" y="70" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">SD</text>
+        <!-- Nebraska, Kansas -->
+        <rect x="136" y="84" width="30" height="28" rx="2" fill="#A0C4DA" opacity=".8"/>
+        <text x="151" y="101" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">NE</text>
+        <rect x="136" y="115" width="30" height="28" rx="2" fill="#B8D0E0" opacity=".8"/>
+        <text x="151" y="132" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">KS</text>
+        <!-- Oklahoma, Texas (LOSS) -->
+        <rect x="136" y="146" width="30" height="28" rx="2" fill="#E8B4A0" opacity=".9"/>
+        <text x="151" y="163" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="#8B0000">OK</text>
+        <rect x="136" y="177" width="64" height="28" rx="2" fill="#C0392B" opacity=".9"/>
+        <text x="168" y="195" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="white" font-weight="700">TX -$25K</text>
+        <!-- Minnesota, Iowa, Missouri, Arkansas -->
+        <rect x="169" y="22" width="30" height="28" rx="2" fill="#5D9EC7" opacity=".8"/>
+        <text x="184" y="39" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">MN</text>
+        <rect x="169" y="53" width="30" height="28" rx="2" fill="#7B9EBF" opacity=".8"/>
+        <text x="184" y="70" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">IA</text>
+        <rect x="169" y="84" width="30" height="28" rx="2" fill="#D4E8F0" opacity=".8"/>
+        <text x="184" y="101" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="#555">MO</text>
+        <!-- Illinois, Indiana, Ohio, Michigan -->
+        <rect x="202" y="22" width="28" height="28" rx="2" fill="#5D9EC7" opacity=".8"/>
+        <text x="216" y="39" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">WI</text>
+        <rect x="202" y="53" width="28" height="28" rx="2" fill="#5D9EC7" opacity=".8"/>
+        <text x="216" y="70" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">IL</text>
+        <!-- Ohio - BIG LOSS -->
+        <rect x="233" y="53" width="28" height="28" rx="2" fill="#E74C3C" opacity=".9"/>
+        <text x="247" y="68" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white" font-weight="700">OH -17K</text>
+        <!-- Michigan -->
+        <rect x="233" y="22" width="28" height="28" rx="2" fill="#85B8DA" opacity=".8"/>
+        <text x="247" y="39" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">MI</text>
+        <!-- Pennsylvania -->
+        <rect x="264" y="53" width="32" height="28" rx="2" fill="#154360" opacity=".9"/>
+        <text x="280" y="68" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white" font-weight="700">PA $34K</text>
+        <!-- New York -->
+        <rect x="299" y="40" width="34" height="28" rx="2" fill="#154360" opacity=".95"/>
+        <text x="316" y="57" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="white" font-weight="700">NY $74K</text>
+        <!-- New England -->
+        <rect x="336" y="22" width="24" height="22" rx="2" fill="#1A5276" opacity=".9"/>
+        <text x="348" y="36" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">MA</text>
+        <rect x="362" y="22" width="20" height="22" rx="2" fill="#5D9EC7" opacity=".8"/>
+        <text x="372" y="36" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6" fill="white">CT</text>
+        <!-- Virginia, NC, SC, GA, FL -->
+        <rect x="280" y="84" width="28" height="24" rx="2" fill="#2471A3" opacity=".8"/>
+        <text x="294" y="99" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">VA</text>
+        <rect x="280" y="111" width="28" height="24" rx="2" fill="#2471A3" opacity=".8"/>
+        <text x="294" y="126" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">NC</text>
+        <rect x="280" y="138" width="28" height="24" rx="2" fill="#5D9EC7" opacity=".8"/>
+        <text x="294" y="153" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="6.5" fill="white">SC</text>
+        <!-- Florida  -->
+        <rect x="264" y="155" width="35" height="48" rx="2" fill="#2471A3" opacity=".85"/>
+        <text x="281" y="182" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="white" font-weight="700">FL $30K</text>
+        <!-- Colour scale legend -->
+        <defs>
+          <linearGradient id="mapLegGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#C0392B"/>
+            <stop offset="50%" stop-color="#BDC3C7"/>
+            <stop offset="100%" stop-color="#154360"/>
+          </linearGradient>
+        </defs>
+        <rect x="395" y="80" width="60" height="12" rx="1" fill="url(#mapLegGrad)"/>
+        <text x="395" y="105" font-family="Source Sans 3,sans-serif" font-size="8" fill="#C0392B">Loss</text>
+        <text x="427" y="105" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#999">0</text>
+        <text x="456" y="105" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8" fill="#154360">Profit</text>
+        <!-- Annotation boxes -->
+        <rect x="395" y="120" width="60" height="24" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="425" y="131" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B" font-weight="700">TX: -$25,729</text>
+        <text x="425" y="141" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B">OH: -$16,971</text>
+        <rect x="395" y="152" width="60" height="24" rx="2" fill="#EBF4FB" stroke="#1A5276" stroke-width="1"/>
+        <text x="425" y="163" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#1A5276" font-weight="700">CA: +$76,381</text>
+        <text x="425" y="173" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#1A5276">NY: +$74,038</text>
+      </svg>
+      <div class="findings-row" style="margin-top:4px">
+        <div class="finding"><div class="finding-val" style="color:#154360">$76K</div><div class="finding-lbl">California — most profitable state</div></div>
+        <div class="finding"><div class="finding-val" style="color:#C0392B">−$26K</div><div class="finding-lbl">Texas — biggest loss-making state</div></div>
+        <div class="finding"><div class="finding-val">Problem</div><div class="finding-lbl">Central region: TX, OH, IL all losing money</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 18: Q9 ════ -->
+<div class="slide q-slide">
+  <div class="top-accent"></div>
+  <div class="q-body">
+    <div class="q-inner">
+      <div class="q-num-label">Question 09 of 09</div>
+      <h2 class="q-headline">What is the <em>average sale value</em> for each combination of category and subcategory?</h2>
+      <p class="q-context">The pricing team wants a cross-tabulation showing the average transaction value for every category–subcategory combination. They need to see which specific product types command the highest average order value — to guide upsell strategies. A matrix (pivot table) is the right tool.</p>
+      <div class="q-method-row">
+        <span class="q-chip">Method: Descriptive Statistics</span>
+        <span class="q-chip blue">Chart: Matrix (Pivot Table)</span>
+        <span class="q-chip green">Fields: category (rows) × subcategory (columns) × avg sales</span>
+      </div>
+    </div>
+  </div>
+  <div class="q-foot">→ Next slide: Step-by-step instructions</div>
+</div>
+
+<!-- ════════════════════════════════════ SLIDE 19: A9 ════ -->
+<div class="slide a-slide">
+  <div class="a-bar"></div>
+  <div class="a-header">
+    <div class="a-eyebrow">Answer 09 · Matrix (Pivot Table)</div>
+    <div class="a-title">Average Sale Value by Category × Subcategory</div>
+    <div class="a-sub">Building a cross-tabulation matrix and applying conditional formatting</div>
+  </div>
+  <div class="a-body">
+    <div class="panel-steps">
+      <div class="step-block"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Select Matrix</div><div class="step-desc">Visualizations → <strong>Matrix</strong> icon (grid with expandable rows — looks like a pivot table). Not the plain Table icon.</div></div></div>
+      <div class="step-block"><div class="step-circle">2</div><div class="step-content"><div class="step-title">Rows: category</div><div class="step-desc">Drag <code>category</code> → <strong>Rows</strong> well. You see: Furniture / Office Supplies / Technology as expandable row headers.</div></div></div>
+      <div class="step-block"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Columns: subcategory</div><div class="step-desc">Drag <code>subcategory</code> → <strong>Columns</strong> well. 17 subcategory columns appear across the top.</div></div></div>
+      <div class="step-block"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Values: average sales</div><div class="step-desc">Drag <code>sales</code> → <strong>Values</strong> well → click dropdown → <strong>Average</strong>. Blank cells are expected — e.g. Furniture will not have a Binders column.</div></div></div>
+      <div class="step-block"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Add conditional formatting</div><div class="step-desc">Click the matrix → <strong>Format visual</strong> → <strong>Cell elements</strong> → Values → <strong>Background color → On</strong>. Choose a white-to-red diverging scale. High values glow red.</div></div></div>
+      <div class="step-block"><div class="step-circle">6</div><div class="step-content"><div class="step-title">Scroll columns</div><div class="step-desc">Use the <strong>horizontal scrollbar</strong> at the bottom of the matrix to navigate across all 17 subcategory columns.</div></div></div>
+      <div class="note-box tip" style="margin-top:5px">
+        <div class="note-label">Key insight</div>
+        Copiers average $2,199 per sale — by far the highest. Fasteners average just $14. This pricing range of 150× tells you which products are worth prioritising in sales conversations.
+      </div>
+    </div>
+    <div class="panel-vis">
+      <div class="vis-label">Power BI Config</div>
+      <div class="pbi-config" style="margin-bottom:8px">
+        <div class="pbi-config-title">Visualizations → Matrix</div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Rows</div><div class="pbi-field-pill set">category <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Columns</div><div class="pbi-field-pill set">subcategory <span class="px">✕</span></div></div>
+        <div class="pbi-field-group"><div class="pbi-field-label">Values</div><div class="pbi-field-pill set">Average of sales <span class="px">✕</span></div></div>
+      </div>
+      <div class="vis-label">Output Matrix — Average Sale Value ($) with Conditional Formatting</div>
+      <table class="tbl" style="font-size:11px">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Bookcases</th>
+            <th>Chairs</th>
+            <th>Copiers</th>
+            <th>Furnishings</th>
+            <th>Phones</th>
+            <th>Accessories</th>
+            <th>Binders</th>
+            <th>Paper</th>
+            <th>Total Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Furniture</strong></td>
+            <td class="num" style="background:#F5B7B1">503.86</td>
+            <td class="num" style="background:#E74C3C;color:white;font-weight:700">532.33</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="background:#FDEDEC">91.67</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num hi">348.55</td>
+          </tr>
+          <tr>
+            <td><strong>Office Supplies</strong></td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="background:#F8D7DA">57.13</td>
+            <td class="num" style="background:#FDEDEC">33.56</td>
+            <td class="num">18.92</td>
+            <td class="num hi">29.41</td>
+          </tr>
+          <tr>
+            <td><strong>Technology</strong></td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="background:#7B241C;color:white;font-weight:700">2,198.94</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="background:#F5B7B1">215.97</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num" style="color:#aaa">—</td>
+            <td class="num hi">456.12</td>
+          </tr>
+          <tr style="background:var(--red-pale)">
+            <td><strong>Grand Total</strong></td>
+            <td class="num" style="font-weight:700">503.86</td>
+            <td class="num" style="font-weight:700">532.33</td>
+            <td class="num hi" style="font-weight:700">2,198.94</td>
+            <td class="num" style="font-weight:700">91.67</td>
+            <td class="num" style="font-weight:700">215.97</td>
+            <td class="num" style="font-weight:700">57.13</td>
+            <td class="num" style="font-weight:700">33.56</td>
+            <td class="num" style="font-weight:700">18.92</td>
+            <td class="num hi" style="font-weight:700">278.13</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note-box info" style="margin-top:8px">
+        <div class="note-label">How to read blank cells</div>
+        Blank cells (—) are correct. They mean that subcategory does not belong to that category (e.g. Copiers are Technology, not Furniture). Power BI leaves these blank rather than showing zero.
+      </div>
+      <div class="findings-row" style="margin-top:6px">
+        <div class="finding"><div class="finding-val">$2,199</div><div class="finding-lbl">Copiers — highest avg sale value</div></div>
+        <div class="finding"><div class="finding-val">$19</div><div class="finding-lbl">Paper — lowest avg sale value</div></div>
+        <div class="finding"><div class="finding-val">115×</div><div class="finding-lbl">Range between highest and lowest subcategory</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<script>
+const slides=document.querySelectorAll('.slide');
+const total=slides.length;
+let cur=0;
+
+// Build slide map dots
+const map=document.getElementById('slide-map');
+slides.forEach((s,i)=>{
+  const d=document.createElement('div');
+  d.className='s-dot'+(s.classList.contains('q-slide')?' q-dot':'');
+  d.title='Slide '+(i+1);
+  d.addEventListener('click',()=>go(i));
+  map.appendChild(d);
+});
+
+function go(n){
+  slides[cur].classList.remove('active');
+  const dots=map.querySelectorAll('.s-dot');
+  dots[cur].classList.remove('cur');
+  cur=Math.max(0,Math.min(n,total-1));
+  slides[cur].classList.add('active');
+  dots[cur].classList.add('cur');
+  document.getElementById('ctr').textContent=(cur+1)+'/'+total;
+  document.getElementById('prog').style.width=((cur+1)/total*100)+'%';
+}
+
+document.getElementById('prevBtn').addEventListener('click',()=>go(cur-1));
+document.getElementById('nextBtn').addEventListener('click',()=>go(cur+1));
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')go(cur+1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(cur-1);
+});
+go(0);
+</script>
+</body>
+</html>
