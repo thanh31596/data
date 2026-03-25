@@ -1246,6 +1246,10 @@
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
+  // Make canvas natively focusable
+  canvas.setAttribute('tabindex', '0');
+  canvas.style.outline = 'none';
+
   function resize() {
     const W = canvas.clientWidth;
     const H = canvas.clientHeight;
@@ -1261,19 +1265,28 @@
   let score = 0, lives = 3, gameOver = false;
   let focused = false;
 
-  const P = { x: 0.5, y: 0.5, vx: 0, vy: 0, r: 0.03 };
+  // fx/fy = persistent facing direction (updated while moving, kept when stopped)
+  const P = { x: 0.5, y: 0.5, vx: 0, vy: 0, r: 0.03, fx: 0, fy: -1 };
   const bullets = [];
   const targets = [];
-  const FIRE_RATE = 320;
+  const FIRE_RATE = 280;
   let lastFire = 0;
 
   const keys = {};
+  const GAME_KEYS = new Set(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD']);
+
+  // Always preventDefault for game keys — the browser processes scroll
+  // before JS can check our focused flag, so the check must happen here
   window.addEventListener('keydown', e => {
+    if (GAME_KEYS.has(e.code)) e.preventDefault();
     keys[e.code] = true;
-    if (focused) e.preventDefault();
-  });
+  }, { passive: false });
+
   window.addEventListener('keyup', e => { keys[e.code] = false; });
-  canvas.addEventListener('click', () => { focused = true; });
+
+  // Click → give canvas real browser focus AND set our flag
+  canvas.addEventListener('click', () => { focused = true; canvas.focus(); });
+  canvas.addEventListener('focus', () => { focused = true; });
   canvas.addEventListener('blur',  () => { focused = false; });
 
   function spawnTarget() {
@@ -1337,7 +1350,7 @@
       ctx.fillStyle = '#aaa';
       ctx.font = Math.round(W * 0.025) + 'px Arial';
       ctx.fillText('Click to restart', W/2, H*0.68);
-      canvas.onclick = () => { score=0; lives=3; gameOver=false; bullets.length=0; targets.length=0; P.x=0.5;P.y=0.5;P.vx=0;P.vy=0; for(let i=0;i<4;i++) spawnTarget(); canvas.onclick=()=>{focused=true;}; };
+      canvas.onclick = () => { score=0; lives=3; gameOver=false; bullets.length=0; targets.length=0; P.x=0.5;P.y=0.5;P.vx=0;P.vy=0;P.fx=0;P.fy=-1; for(let i=0;i<4;i++) spawnTarget(); focused=true; canvas.focus(); };
       return;
     }
 
@@ -1362,24 +1375,36 @@
 
     // ── Player movement ─────────────────────────────
     if (!gameOver) {
-      const acc = 0.0006;
-      const friction = 0.88;
-      if (keys['ArrowLeft']  || keys['KeyA']) P.vx -= acc * dt;
-      if (keys['ArrowRight'] || keys['KeyD']) P.vx += acc * dt;
-      if (keys['ArrowUp']    || keys['KeyW']) P.vy -= acc * dt;
-      if (keys['ArrowDown']  || keys['KeyS']) P.vy += acc * dt;
-      P.vx *= friction; P.vy *= friction;
-      P.x = Math.max(P.r, Math.min(1 - P.r, P.x + P.vx * dt));
-      P.y = Math.max(P.r, Math.min(1 - P.r, P.y + P.vy * dt));
+      const SPEED = 0.00045;   // units per ms — tune this one number to change feel
+      let moveX = 0, moveY = 0;
+      if (keys['ArrowLeft']  || keys['KeyA']) moveX -= 1;
+      if (keys['ArrowRight'] || keys['KeyD']) moveX += 1;
+      if (keys['ArrowUp']    || keys['KeyW']) moveY -= 1;
+      if (keys['ArrowDown']  || keys['KeyS']) moveY += 1;
 
-      // Shooting
+      // Normalise diagonal so speed is equal in all directions
+      if (moveX !== 0 || moveY !== 0) {
+        const len = Math.sqrt(moveX * moveX + moveY * moveY);
+        moveX /= len;
+        moveY /= len;
+        // Update facing direction
+        P.fx = moveX;
+        P.fy = moveY;
+      }
+
+      // Move by fixed amount — no accumulation, no drift
+      const nx = P.x + moveX * SPEED * dt;
+      const ny = P.y + moveY * SPEED * dt;
+
+      // Clamp and zero velocity on wall hit (prevents corner sticking)
+      P.x = Math.max(P.r, Math.min(1 - P.r, nx));
+      P.y = Math.max(P.r, Math.min(1 - P.r, ny));
+
+      // Shoot in last-known facing direction
       if (keys['Space'] && ts - lastFire > FIRE_RATE) {
         lastFire = ts;
-        const speed = 0.0016;
-        const bvx = P.vx !== 0 || P.vy !== 0 ? (P.vx > 0 ? 1 : P.vx < 0 ? -1 : 0) : 0;
-        const bvy = P.vy !== 0 ? (P.vy > 0 ? 1 : -1) : (bvx === 0 ? -1 : 0);
-        const blen = Math.sqrt(bvx*bvx + bvy*bvy) || 1;
-        bullets.push({ x: P.x, y: P.y, vx: (bvx/blen)*speed, vy: (bvy/blen)*speed });
+        const speed = 0.0018;
+        bullets.push({ x: P.x, y: P.y, vx: P.fx * speed, vy: P.fy * speed });
       }
     }
 
@@ -1469,6 +1494,19 @@
     ctx.strokeStyle = 'rgba(255,255,255,0.2)';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.stroke();
+
+    // ── Facing indicator (shows shoot direction) ─────
+    ctx.strokeStyle = '#ffe066';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(px + P.fx * pr * 0.5, py + P.fy * pr * 0.5);
+    ctx.lineTo(px + P.fx * pr * 1.5, py + P.fy * pr * 1.5);
+    ctx.stroke();
+    // Arrowhead dot
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath();
+    ctx.arc(px + P.fx * pr * 1.6, py + P.fy * pr * 1.6, pr * 0.22, 0, Math.PI*2);
+    ctx.fill();
 
     // ── Particles ─────────────────────────────────────
     for (let i = particles.length - 1; i >= 0; i--) {
