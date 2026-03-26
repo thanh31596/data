@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CP3501 Week 8 – Collaborative Filtering</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --red: #c0272d;
+    --red-dark: #8b1a1e;
+    --red-light: #fdf2f2;
+    --black: #1a1a1a;
+    --grey: #555;
+    --light-grey: #f5f5f5;
+    --border: #e0e0e0;
+    --code-bg: #f0f0f0;
+    --blue: #1a5fa8;
+    --green: #1a7a3a;
+    --amber: #b35a00;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* ── Navigation ── */
+  #nav-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: white;
+    border-bottom: 2px solid var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  #nav-bar .nav-left { font-size: 13px; color: var(--grey); font-weight: 500; }
+  #nav-bar .nav-title { font-size: 14px; font-weight: 700; color: var(--red); }
+  #nav-bar .nav-right { display: flex; align-items: center; gap: 10px; }
+  #nav-bar button {
+    background: var(--red); color: white; border: none;
+    padding: 6px 16px; border-radius: 4px; cursor: pointer;
+    font-size: 13px; font-family: inherit; font-weight: 600;
+    transition: background 0.15s;
+  }
+  #nav-bar button:hover { background: var(--red-dark); }
+  #nav-bar button:disabled { background: #ccc; cursor: not-allowed; }
+  #slide-counter { font-size: 13px; color: var(--grey); min-width: 70px; text-align: center; }
+
+  /* ── Slide Wrapper ── */
+  #slides-container { margin-top: 70px; width: 100%; max-width: 960px; }
+
+  .slide {
+    display: none;
+    background: white;
+    border: 1px solid var(--border);
+    border-top: 5px solid var(--red);
+    border-radius: 4px;
+    min-height: 580px;
+    padding: 44px 52px 60px;
+    position: relative;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+    animation: fadeSlide 0.25s ease;
+  }
+  .slide.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Footer ── */
+  .slide::after {
+    content: 'jcu.edu.au';
+    position: absolute;
+    bottom: 14px; left: 52px;
+    font-size: 11px; color: #999;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+    width: calc(100% - 104px);
+  }
+
+  /* ── Typography ── */
+  h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 36px; font-weight: 700;
+    color: var(--red); margin-bottom: 6px;
+    line-height: 1.15;
+  }
+  h2 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 28px; font-weight: 600;
+    color: var(--red); margin-bottom: 22px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--red);
+    line-height: 1.2;
+  }
+  h3 { font-size: 16px; font-weight: 700; color: var(--black); margin-bottom: 8px; }
+  p  { font-size: 16px; color: var(--grey); line-height: 1.65; margin-bottom: 10px; }
+  ul { list-style: none; padding-left: 0; }
+  ul li {
+    font-size: 15.5px; color: var(--black);
+    padding: 5px 0 5px 22px;
+    position: relative; line-height: 1.5;
+  }
+  ul li::before {
+    content: '▸';
+    position: absolute; left: 0;
+    color: var(--red); font-size: 13px; top: 7px;
+  }
+  ul li.sub { padding-left: 40px; color: var(--grey); font-size: 14.5px; }
+  ul li.sub::before { content: '–'; color: #aaa; top: 6px; left: 22px; }
+  strong { color: var(--black); font-weight: 700; }
+
+  /* ── Title Slide ── */
+  .slide-title {
+    justify-content: center;
+    border-top: 8px solid var(--red);
+    text-align: left;
+  }
+  .slide-title .week-tag {
+    display: inline-block;
+    background: var(--red); color: white;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+    padding: 4px 12px; border-radius: 2px; margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .slide-title h1 { font-size: 44px; color: var(--red); margin-bottom: 12px; }
+  .slide-title .subtitle {
+    font-size: 20px; color: var(--grey); font-weight: 300;
+    font-family: 'Source Serif 4', serif; font-style: italic;
+    margin-bottom: 28px;
+  }
+  .slide-title .meta {
+    font-size: 13px; color: #aaa; border-top: 1px solid var(--border);
+    padding-top: 16px; display: flex; gap: 24px;
+  }
+
+  /* ── Two-Column ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; flex: 1; }
+  .two-col-65 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; flex: 1; }
+  .col { display: flex; flex-direction: column; }
+
+  /* ── Callout Boxes ── */
+  .box {
+    border-left: 4px solid var(--red);
+    background: var(--red-light);
+    padding: 14px 18px; border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+  }
+  .box.blue  { border-color: var(--blue);  background: #eef4fc; }
+  .box.green { border-color: var(--green); background: #eef7f1; }
+  .box.amber { border-color: var(--amber); background: #fdf5eb; }
+  .box p, .box li { font-size: 14.5px; }
+  .box-title { font-size: 12px; font-weight: 700; text-transform: uppercase;
+               letter-spacing: 1px; color: var(--red); margin-bottom: 6px; }
+  .box.blue  .box-title { color: var(--blue); }
+  .box.green .box-title { color: var(--green); }
+  .box.amber .box-title { color: var(--amber); }
+
+  /* ── Code ── */
+  pre, code {
+    font-family: 'Source Code Pro', monospace;
+    background: var(--code-bg);
+    border-radius: 4px;
+  }
+  pre {
+    padding: 16px 20px; font-size: 13.5px;
+    line-height: 1.6; margin: 12px 0;
+    border-left: 3px solid var(--red);
+    overflow-x: auto;
+  }
+  code { padding: 1px 5px; font-size: 13px; }
+  .c-comment { color: #888; }
+  .c-kw      { color: #8b1a1e; font-weight: 600; }
+  .c-str     { color: #1a7a3a; }
+  .c-fn      { color: #1a5fa8; }
+  .c-num     { color: #b35a00; }
+
+  /* ── Math formula ── */
+  .formula {
+    background: var(--light-grey); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 24px; text-align: center;
+    font-family: 'Source Serif 4', serif; font-size: 18px;
+    color: var(--black); margin: 14px 0; letter-spacing: 0.5px;
+  }
+
+  /* ── Progress bar ── */
+  #progress-bar {
+    position: fixed; top: 50px; left: 0; height: 3px;
+    background: var(--red); transition: width 0.3s;
+    z-index: 999;
+  }
+
+  /* ── Quiz ── */
+  .quiz-block {
+    background: #fffbf0; border: 1px solid #f0d080;
+    border-radius: 8px; padding: 20px 24px; margin-top: 16px;
+  }
+  .quiz-block .q-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: #b35a00; margin-bottom: 10px;
+  }
+  .quiz-block .q-text { font-size: 15px; font-weight: 600; color: var(--black); margin-bottom: 14px; }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border: 1px solid #ddd;
+    border-radius: 6px; cursor: pointer; font-size: 14.5px;
+    transition: background 0.15s; background: white;
+    font-family: inherit;
+    text-align: left;
+    color: var(--black);
+  }
+  .quiz-option:hover { background: #fdf5e0; border-color: #c0a040; }
+  .quiz-option.correct { background: #eef7f1; border-color: var(--green); color: var(--green); font-weight: 600; }
+  .quiz-option.incorrect { background: #fdf2f2; border-color: var(--red); color: var(--red); }
+  .quiz-feedback { margin-top: 10px; font-size: 14px; font-style: italic; color: var(--grey); display: none; }
+  .quiz-reset { margin-top: 10px; font-size: 12px; color: var(--blue); cursor: pointer; text-decoration: underline; display: none; }
+
+  /* ── SVG diagrams ── */
+  .diagram-wrap { display: flex; justify-content: center; margin: 12px 0; }
+  svg text { font-family: 'DM Sans', sans-serif; }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 10px 0; }
+  th { background: var(--red); color: white; padding: 9px 14px; text-align: center; font-weight: 600; }
+  td { padding: 8px 14px; text-align: center; border-bottom: 1px solid var(--border); color: var(--black); }
+  td.user-col { font-weight: 700; text-align: left; color: var(--red); }
+  td.missing { color: #bbb; font-style: italic; }
+  tr:nth-child(even) td { background: var(--light-grey); }
+  tr.highlight td { background: #fdf5e0; }
+</style>
+</head>
+<body>
+
+<div id="nav-bar">
+  <span class="nav-left">CP3501 – Deep Learning</span>
+  <span class="nav-title">Week 8: Collaborative Filtering</span>
+  <div class="nav-right">
+    <button id="btn-prev" onclick="changeSlide(-1)">&#8592; Prev</button>
+    <span id="slide-counter">1 / 20</span>
+    <button id="btn-next" onclick="changeSlide(1)">Next &#8594;</button>
+  </div>
+</div>
+<div id="progress-bar"></div>
+
+<div id="slides-container">
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 1 – Title -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide slide-title active">
+  <div class="week-tag">Week 8 &nbsp;·&nbsp; Lesson 7</div>
+  <h1>Collaborative Filtering</h1>
+  <div class="subtitle">Teaching machines to predict what you will like next</div>
+  <p style="max-width:580px;">We move beyond structured tabular data into the world of <strong>recommendation systems</strong> — one of the most commercially impactful applications of deep learning.</p>
+  <div class="meta">
+    <span>CP3501 – Deep Learning</span>
+    <span>James Cook University</span>
+    <span>Semester 1, 2025</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 2 – Recap -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Recap: Where We Have Been</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>Weeks 1–6</h3>
+      <ul>
+        <li>Transfer learning with images (ResNet, FastAI)</li>
+        <li>ML fundamentals — loss, metrics, overfitting</li>
+        <li>Gradient descent — the engine of learning</li>
+        <li>NLP with Transformers (Hugging Face)</li>
+        <li>Tabular deep learning (Titanic)</li>
+      </ul>
+      <div class="box blue" style="margin-top:16px;">
+        <div class="box-title">Week 7</div>
+        <p>Embeddings — turning discrete categories into dense numeric vectors. This is the key idea we build on today.</p>
+      </div>
+    </div>
+    <div class="col">
+      <h3>The common thread</h3>
+      <div class="box green">
+        <div class="box-title">Build It → Understand It → Apply It</div>
+        <ul>
+          <li>We always start with working code</li>
+          <li>Then we open the hood</li>
+          <li>Then we reason about design choices</li>
+        </ul>
+      </div>
+      <div class="box amber" style="margin-top:12px;">
+        <div class="box-title">Today</div>
+        <p>Collaborative Filtering — a domain where embeddings are the entire model, not just a preprocessing step.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 3 – What is a Recommender System? -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>What is a Recommender System?</h2>
+  <p>A recommender system predicts a user's <strong>preference or rating</strong> for items they have not yet encountered.</p>
+
+  <div class="diagram-wrap">
+    <svg width="820" height="160" viewBox="0 0 820 160">
+      <!-- User -->
+      <rect x="10" y="40" width="140" height="80" rx="6" fill="#fdf2f2" stroke="#c0272d" stroke-width="1.5"/>
+      <text x="80" y="73" text-anchor="middle" font-size="13" font-weight="700" fill="#c0272d">User</text>
+      <text x="80" y="92" text-anchor="middle" font-size="12" fill="#555">Past ratings,</text>
+      <text x="80" y="108" text-anchor="middle" font-size="12" fill="#555">clicks, history</text>
+
+      <!-- Arrow -->
+      <line x1="150" y1="80" x2="220" y2="80" stroke="#999" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- Model box -->
+      <rect x="220" y="30" width="160" height="100" rx="6" fill="#eef4fc" stroke="#1a5fa8" stroke-width="1.5"/>
+      <text x="300" y="67" text-anchor="middle" font-size="13" font-weight="700" fill="#1a5fa8">Recommender</text>
+      <text x="300" y="85" text-anchor="middle" font-size="13" font-weight="700" fill="#1a5fa8">Model</text>
+      <text x="300" y="108" text-anchor="middle" font-size="11" fill="#888">(learns from all users)</text>
+
+      <!-- Arrow -->
+      <line x1="380" y1="80" x2="450" y2="80" stroke="#999" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- Items -->
+      <rect x="450" y="10" width="120" height="44" rx="5" fill="#eef7f1" stroke="#1a7a3a" stroke-width="1.5"/>
+      <text x="510" y="35" text-anchor="middle" font-size="13" fill="#1a7a3a" font-weight="600">Item A</text>
+      <text x="510" y="50" text-anchor="middle" font-size="12" fill="#1a7a3a">predicted: ★4.5</text>
+
+      <rect x="450" y="62" width="120" height="44" rx="5" fill="#fdf5eb" stroke="#b35a00" stroke-width="1.5"/>
+      <text x="510" y="87" text-anchor="middle" font-size="13" fill="#b35a00" font-weight="600">Item B</text>
+      <text x="510" y="102" text-anchor="middle" font-size="12" fill="#b35a00">predicted: ★2.1</text>
+
+      <rect x="450" y="116" width="120" height="34" rx="5" fill="#f5f5f5" stroke="#ccc" stroke-width="1.5"/>
+      <text x="510" y="138" text-anchor="middle" font-size="12" fill="#aaa">Item C  ★?</text>
+
+      <!-- Arrow to recommend -->
+      <line x1="570" y1="34" x2="640" y2="34" stroke="#999" stroke-width="1.5" marker-end="url(#arr)"/>
+      <rect x="640" y="15" width="160" height="50" rx="5" fill="#c0272d"/>
+      <text x="720" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="white">Recommend</text>
+      <text x="720" y="56" text-anchor="middle" font-size="12" fill="#fdd">top-ranked items</text>
+
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#999"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <h3>Real-world examples</h3>
+      <ul>
+        <li>Netflix — "Because you watched..."</li>
+        <li>Spotify — Discover Weekly playlist</li>
+        <li>Amazon — "Customers also bought"</li>
+        <li>YouTube — next video autoplay</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Two main families</h3>
+      <ul>
+        <li><strong>Content-based</strong> — use item features (genre, director…)</li>
+        <li><strong>Collaborative Filtering</strong> — use patterns across many users</li>
+        <li class="sub">No item features needed — just the rating data</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 4 – The Rating Matrix -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>The Rating Matrix</h2>
+  <p>Collaborative filtering starts with a <strong>user–item rating matrix</strong>. Each cell is a known rating; most cells are unknown.</p>
+
+  <div style="overflow-x:auto; margin-bottom:16px;">
+    <table>
+      <thead>
+        <tr>
+          <th style="background:#555;">User \ Movie</th>
+          <th>Inception</th>
+          <th>Toy Story</th>
+          <th>The Matrix</th>
+          <th>Frozen</th>
+          <th>Interstellar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="user-col">Alice</td><td>5</td><td class="missing">?</td><td>4</td><td class="missing">?</td><td>5</td></tr>
+        <tr class="highlight"><td class="user-col">Bob</td><td class="missing">?</td><td>5</td><td class="missing">?</td><td>4</td><td class="missing">?</td></tr>
+        <tr><td class="user-col">Carol</td><td>3</td><td>4</td><td class="missing">?</td><td>5</td><td>2</td></tr>
+        <tr><td class="user-col">Dave</td><td class="missing">?</td><td class="missing">?</td><td>5</td><td class="missing">?</td><td>4</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="box">
+        <div class="box-title">The core problem</div>
+        <p>Given the known ratings (numbers), predict the missing ones (<em>?</em>). This is a <strong>matrix completion</strong> problem.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box amber">
+        <div class="box-title">Key insight</div>
+        <p>Alice and Dave both love Sci-Fi (Inception, The Matrix, Interstellar). So Alice's rating for The Matrix is a good signal for Dave's missing ratings too.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 5 – The Sparsity Problem -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>The Sparsity Problem</h2>
+  <div class="two-col-65">
+    <div class="col">
+      <p>In reality the matrix is <strong>extremely sparse</strong>. Netflix has ~200M users and ~15,000 titles. Each user rates a tiny fraction.</p>
+
+      <div class="box">
+        <div class="box-title">Sparsity example</div>
+        <ul>
+          <li>200,000,000 users × 15,000 titles = 3 trillion possible ratings</li>
+          <li>A user who rates 50 movies fills only 0.00033% of their row</li>
+          <li class="sub">Over 99.99% of the matrix is empty!</li>
+        </ul>
+      </div>
+
+      <div class="box green" style="margin-top:12px;">
+        <div class="box-title">Why CF still works</div>
+        <p>Even sparse data contains strong <em>patterns</em>. Users who agree on rated items tend to agree on unrated ones too.</p>
+      </div>
+    </div>
+    <div class="col">
+      <!-- Sparsity visualisation -->
+      <div class="diagram-wrap">
+        <svg width="260" height="260" viewBox="0 0 260 260">
+          <rect x="20" y="20" width="220" height="220" rx="4" fill="#f9f9f9" stroke="#ddd"/>
+          <text x="130" y="14" text-anchor="middle" font-size="11" fill="#888">Users →</text>
+          <text x="8" y="135" text-anchor="middle" font-size="11" fill="#888" transform="rotate(-90,8,135)">Items →</text>
+
+          <!-- Sparse dots -->
+          <script>
+            /* generated statically below */
+          </script>
+          <!-- 40 random "known" cells in a 20x20 grid to represent sparsity -->
+          <rect x="30" y="30" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="64" y="42" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="97" y="30" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="130" y="53" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="42" y="64" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="185" y="30" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="218" y="42" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="30" y="97" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="75" y="108" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="163" y="75" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="108" y="97" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="218" y="86" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="53" y="130" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="141" y="120" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="196" y="130" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="30" y="163" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="86" y="152" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="174" y="163" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="218" y="174" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="42" y="196" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="119" y="185" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="207" y="207" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="152" y="218" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="64" y="218" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <rect x="97" y="207" width="9" height="9" rx="1" fill="#c0272d" opacity="0.9"/>
+          <!-- Legend -->
+          <rect x="30" y="240" width="9" height="9" rx="1" fill="#c0272d"/>
+          <text x="45" y="249" font-size="11" fill="#555">Known rating (~2% of cells)</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 6 – Quiz 1 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Check Your Understanding</h2>
+
+  <div class="quiz-block" id="q1">
+    <div class="q-label">Knowledge Check 1</div>
+    <div class="q-text">Collaborative Filtering makes predictions based on:</div>
+    <div class="quiz-options">
+      <button class="quiz-option" onclick="checkAnswer(this,'q1',false,'Content-based filtering uses item features, not CF.')">The content features of each item (genre, cast, description)</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q1',true,'Correct! CF uses the collective rating behaviour of many users — no item features needed.')">The rating patterns shared across many users</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q1',false,'Demographics alone cannot drive CF — ratings are the signal.')">The demographic profile of individual users (age, location)</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q1',false,'Popularity-based methods ignore user-specific patterns; CF does not.')">The most popular items in the system</button>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+    <div class="quiz-reset" id="q1-rst" onclick="resetQuiz('q1')">Try again</div>
+  </div>
+
+  <div class="quiz-block" id="q2" style="margin-top:20px;">
+    <div class="q-label">Knowledge Check 2</div>
+    <div class="q-text">In a user–item rating matrix, most cells are empty. What does each empty cell represent?</div>
+    <div class="quiz-options">
+      <button class="quiz-option" onclick="checkAnswer(this,'q2',false,'We do not assume a zero; we simply have no information.')">A rating of zero — the user disliked the item</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q2',true,'Correct! An empty cell means the user has not rated that item yet — it is unknown, not zero.')">An unknown rating — the user has not interacted with that item</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q2',false,'We do not remove rows with missing data; CF is designed to handle sparsity.')">A data error — rows with missing values should be dropped</button>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+    <div class="quiz-reset" id="q2-rst" onclick="resetQuiz('q2')">Try again</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 7 – Matrix Factorisation Intuition -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Matrix Factorisation: The Core Idea</h2>
+  <p>We decompose the rating matrix <strong>R</strong> into two smaller matrices: one for users, one for items.</p>
+
+  <!-- Diagram -->
+  <div class="diagram-wrap">
+    <svg width="780" height="150" viewBox="0 0 780 150">
+      <!-- R -->
+      <rect x="10" y="20" width="120" height="110" rx="5" fill="#fdf2f2" stroke="#c0272d" stroke-width="1.5"/>
+      <text x="70" y="50" text-anchor="middle" font-size="22" font-weight="700" fill="#c0272d">R</text>
+      <text x="70" y="75" text-anchor="middle" font-size="12" fill="#888">users × items</text>
+      <text x="70" y="93" text-anchor="middle" font-size="11" fill="#bbb">(sparse, large)</text>
+      <text x="70" y="115" text-anchor="middle" font-size="11" fill="#888">e.g. 200M × 15K</text>
+
+      <!-- ≈ sign -->
+      <text x="148" y="82" font-size="28" fill="#999">≈</text>
+
+      <!-- U -->
+      <rect x="175" y="20" width="110" height="110" rx="5" fill="#eef4fc" stroke="#1a5fa8" stroke-width="1.5"/>
+      <text x="230" y="52" text-anchor="middle" font-size="22" font-weight="700" fill="#1a5fa8">U</text>
+      <text x="230" y="75" text-anchor="middle" font-size="12" fill="#888">User Embeddings</text>
+      <text x="230" y="93" text-anchor="middle" font-size="11" fill="#888">users × k factors</text>
+      <text x="230" y="115" text-anchor="middle" font-size="11" fill="#bbb">e.g. 200M × 50</text>
+
+      <!-- × sign -->
+      <text x="298" y="82" font-size="24" fill="#999">×</text>
+
+      <!-- V^T -->
+      <rect x="320" y="20" width="110" height="110" rx="5" fill="#eef7f1" stroke="#1a7a3a" stroke-width="1.5"/>
+      <text x="375" y="52" text-anchor="middle" font-size="22" font-weight="700" fill="#1a7a3a">Vᵀ</text>
+      <text x="375" y="75" text-anchor="middle" font-size="12" fill="#888">Item Embeddings</text>
+      <text x="375" y="93" text-anchor="middle" font-size="11" fill="#888">k factors × items</text>
+      <text x="375" y="115" text-anchor="middle" font-size="11" fill="#bbb">e.g. 50 × 15K</text>
+
+      <!-- Explanation boxes -->
+      <rect x="460" y="10" width="300" height="130" rx="6" fill="#fffbf0" stroke="#f0d080" stroke-width="1.5"/>
+      <text x="480" y="35" font-size="12" font-weight="700" fill="#b35a00">Key insight</text>
+      <text x="480" y="57" font-size="13" fill="#444">k = number of latent factors</text>
+      <text x="480" y="78" font-size="13" fill="#444">(e.g. k = 50, much smaller</text>
+      <text x="480" y="96" font-size="13" fill="#444">than users or items)</text>
+      <text x="480" y="118" font-size="12" fill="#888">Each factor captures some</text>
+      <text x="480" y="134" font-size="12" fill="#888">hidden preference pattern</text>
+    </svg>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="box blue">
+        <div class="box-title">User embedding row</div>
+        <p>A vector of k numbers that encodes Alice's taste profile across k hidden dimensions.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box green">
+        <div class="box-title">Item embedding column</div>
+        <p>A vector of k numbers encoding how much a movie "contains" each hidden dimension.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 8 – Latent Factors -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Latent Factors: What Do They Capture?</h2>
+  <p>We never label the latent dimensions — the model discovers them automatically. But after training we can <em>interpret</em> what they seem to represent.</p>
+
+  <div class="diagram-wrap">
+    <svg width="820" height="180" viewBox="0 0 820 180">
+      <!-- Factor axis labels (hypothetical) -->
+      <rect x="0" y="0" width="820" height="180" rx="6" fill="#f9f9f9" stroke="#ddd"/>
+
+      <!-- Factor 1: Sci-Fi vs Family -->
+      <text x="20" y="22" font-size="12" font-weight="700" fill="#c0272d">Factor 1: Sci-Fi / Action ←→ Family / Animation</text>
+      <!-- Scale bar -->
+      <line x1="20" y1="35" x2="800" y2="35" stroke="#ddd" stroke-width="1"/>
+      <circle cx="120" cy="35" r="6" fill="#1a5fa8" opacity="0.8"/><text x="120" y="55" text-anchor="middle" font-size="10" fill="#1a5fa8">Inception</text>
+      <circle cx="200" cy="35" r="6" fill="#1a5fa8" opacity="0.8"/><text x="200" y="55" text-anchor="middle" font-size="10" fill="#1a5fa8">Matrix</text>
+      <circle cx="620" cy="35" r="6" fill="#1a7a3a" opacity="0.8"/><text x="620" y="55" text-anchor="middle" font-size="10" fill="#1a7a3a">Frozen</text>
+      <circle cx="700" cy="35" r="6" fill="#1a7a3a" opacity="0.8"/><text x="700" y="55" text-anchor="middle" font-size="10" fill="#1a7a3a">Toy Story</text>
+      <text x="20" y="35" text-anchor="start" dy="-6" font-size="9" fill="#999">−</text>
+      <text x="800" y="35" text-anchor="end" dy="-6" font-size="9" fill="#999">+</text>
+
+      <!-- Factor 2: Serious vs Light -->
+      <text x="20" y="88" font-size="12" font-weight="700" fill="#c0272d">Factor 2: Dark / Serious ←→ Light-hearted / Fun</text>
+      <line x1="20" y1="102" x2="800" y2="102" stroke="#ddd" stroke-width="1"/>
+      <circle cx="90" cy="102" r="6" fill="#1a5fa8" opacity="0.8"/><text x="90" y="122" text-anchor="middle" font-size="10" fill="#1a5fa8">Requiem</text>
+      <circle cx="180" cy="102" r="6" fill="#1a5fa8" opacity="0.8"/><text x="180" y="122" text-anchor="middle" font-size="10" fill="#1a5fa8">Inception</text>
+      <circle cx="560" cy="102" r="6" fill="#1a7a3a" opacity="0.8"/><text x="560" y="122" text-anchor="middle" font-size="10" fill="#1a7a3a">Toy Story</text>
+      <circle cx="660" cy="102" r="6" fill="#1a7a3a" opacity="0.8"/><text x="660" y="122" text-anchor="middle" font-size="10" fill="#1a7a3a">Shrek</text>
+      <text x="20" y="102" text-anchor="start" dy="-6" font-size="9" fill="#999">−</text>
+      <text x="800" y="102" text-anchor="end" dy="-6" font-size="9" fill="#999">+</text>
+
+      <text x="20" y="162" font-size="11" fill="#888" font-style="italic">…and k−2 more factors discovered automatically. The model is never told what these axes mean.</text>
+    </svg>
+  </div>
+
+  <div class="box">
+    <div class="box-title">The magic of latent factors</div>
+    <p>Each user gets a k-dimensional vector. Each item gets a k-dimensional vector. A user who scores high on "Sci-Fi" will be matched with movies that also score high on "Sci-Fi" — even though neither label was ever given to the model.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 9 – The Dot Product -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Predicting Ratings: The Dot Product</h2>
+  <p>To predict how much user <em>u</em> will like item <em>i</em>, we compute the <strong>dot product</strong> of their embedding vectors.</p>
+
+  <div class="formula">
+    r̂<sub>ui</sub> &nbsp;=&nbsp; <strong>u</strong><sub>u</sub> · <strong>v</strong><sub>i</sub> &nbsp;=&nbsp; Σ<sub>k</sub> u<sub>uk</sub> × v<sub>ik</sub>
+  </div>
+
+  <div class="diagram-wrap">
+    <svg width="760" height="110" viewBox="0 0 760 110">
+      <!-- User vector -->
+      <rect x="10" y="20" width="44" height="44" rx="4" fill="#eef4fc" stroke="#1a5fa8" stroke-width="1.5"/>
+      <text x="32" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#1a5fa8">0.8</text>
+      <rect x="58" y="20" width="44" height="44" rx="4" fill="#eef4fc" stroke="#1a5fa8" stroke-width="1.5"/>
+      <text x="80" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#1a5fa8">−0.3</text>
+      <rect x="106" y="20" width="44" height="44" rx="4" fill="#eef4fc" stroke="#1a5fa8" stroke-width="1.5"/>
+      <text x="128" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#1a5fa8">0.6</text>
+      <text x="80" y="80" text-anchor="middle" font-size="11" fill="#888">Alice (user vector)</text>
+      <text x="80" y="96" text-anchor="middle" font-size="11" fill="#1a5fa8">k = 3 factors</text>
+
+      <!-- Dot multiply -->
+      <text x="170" y="50" font-size="28" fill="#999">·</text>
+
+      <!-- Item vector -->
+      <rect x="196" y="20" width="44" height="44" rx="4" fill="#eef7f1" stroke="#1a7a3a" stroke-width="1.5"/>
+      <text x="218" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#1a7a3a">0.7</text>
+      <rect x="244" y="20" width="44" height="44" rx="4" fill="#eef7f1" stroke="#1a7a3a" stroke-width="1.5"/>
+      <text x="266" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#1a7a3a">0.5</text>
+      <rect x="292" y="20" width="44" height="44" rx="4" fill="#eef7f1" stroke="#1a7a3a" stroke-width="1.5"/>
+      <text x="314" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#1a7a3a">0.9</text>
+      <text x="255" y="80" text-anchor="middle" font-size="11" fill="#888">Inception (item vector)</text>
+      <text x="255" y="96" text-anchor="middle" font-size="11" fill="#1a7a3a">k = 3 factors</text>
+
+      <!-- = sign -->
+      <text x="356" y="50" font-size="22" fill="#999">=</text>
+
+      <!-- Calculation -->
+      <text x="378" y="34" font-size="13" fill="#555">(0.8×0.7) + (−0.3×0.5) + (0.6×0.9)</text>
+      <text x="378" y="56" font-size="13" fill="#555">= 0.56 − 0.15 + 0.54</text>
+      <text x="378" y="78" font-size="15" font-weight="700" fill="#c0272d">= 0.95  →  predicted ★4.75</text>
+    </svg>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="box blue">
+        <div class="box-title">High dot product</div>
+        <p>User and item point in similar directions — they share common "tastes". High predicted rating.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box amber">
+        <div class="box-title">Low (or negative) dot product</div>
+        <p>User and item point in different directions — mismatched preferences. Low predicted rating.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 10 – Learning the Embeddings -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Learning Embeddings via Gradient Descent</h2>
+  <p>The embedding values are just <strong>learnable parameters</strong> — exactly like weights in a neural network.</p>
+
+  <div class="two-col">
+    <div class="col">
+      <h3>Training loop</h3>
+      <ul>
+        <li><strong>Forward:</strong> look up user embedding + item embedding → dot product → predicted rating</li>
+        <li><strong>Loss:</strong> compare prediction to actual rating (MSE)</li>
+        <li><strong>Backward:</strong> compute gradients w.r.t. embedding values</li>
+        <li><strong>Update:</strong> nudge embeddings to reduce loss</li>
+      </ul>
+      <div class="formula" style="font-size:15px; margin-top:14px;">
+        Loss = MSE = (1/N) Σ (r<sub>ui</sub> − r̂<sub>ui</sub>)²
+      </div>
+    </div>
+    <div class="col">
+      <div class="box green">
+        <div class="box-title">What gets learned?</div>
+        <ul>
+          <li>All user embedding vectors (U matrix)</li>
+          <li>All item embedding vectors (V matrix)</li>
+          <li class="sub">No other model weights — this is the whole model</li>
+        </ul>
+      </div>
+      <div class="box" style="margin-top:12px;">
+        <div class="box-title">Number of parameters</div>
+        <p>If there are <em>n</em> users, <em>m</em> items and <em>k</em> factors:</p>
+        <p><strong>n×k + m×k</strong> parameters total</p>
+        <p style="font-size:13px;color:#888;">e.g. 1000 users, 500 items, k=50 → 75,000 params</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 11 – Bias Terms -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Adding Bias Terms</h2>
+  <p>Some users always rate high (generous). Some movies always rate low (niche). We capture this with <strong>bias terms</strong>.</p>
+
+  <div class="formula">
+    r̂<sub>ui</sub> &nbsp;=&nbsp; <strong>u</strong><sub>u</sub> · <strong>v</strong><sub>i</sub> &nbsp;+&nbsp; b<sub>u</sub> &nbsp;+&nbsp; b<sub>i</sub>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <h3>User bias b<sub>u</sub></h3>
+      <ul>
+        <li>Alice tends to give 4–5 stars → high b<sub>u</sub></li>
+        <li>Bob tends to give 1–2 stars → low b<sub>u</sub></li>
+        <li class="sub">Captures overall generosity / harshness</li>
+      </ul>
+      <h3 style="margin-top:14px;">Item bias b<sub>i</sub></h3>
+      <ul>
+        <li>The Godfather gets high ratings from everyone → high b<sub>i</sub></li>
+        <li>A niche documentary gets lower average ratings → lower b<sub>i</sub></li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="box">
+        <div class="box-title">Why bias matters</div>
+        <p>Without bias, a generous user would need abnormally large embedding values just to account for their rating habit — confusing the latent factor signal.</p>
+      </div>
+      <div class="box green" style="margin-top:12px;">
+        <div class="box-title">FastAI handles this automatically</div>
+        <p><code>collab_learner(dls, n_factors=50, y_range=(0,5.5), use_nn=False)</code> includes bias by default.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 12 – FastAI: Data Loading -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>FastAI: Loading the MovieLens Dataset</h2>
+  <p>FastAI includes the MovieLens 100K dataset — 100,000 ratings from 943 users on 1,682 movies. Perfect for in-class training.</p>
+
+  <pre><span class="c-kw">from</span> fastai.collab <span class="c-kw">import</span> *
+<span class="c-kw">from</span> fastai.tabular.all <span class="c-kw">import</span> *
+
+<span class="c-comment"># Load the MovieLens dataset (built-in, no internet needed)</span>
+path = untar_data(URLs.ML_SAMPLE)   <span class="c-comment"># small 100-sample version</span>
+<span class="c-comment"># OR for the full dataset:</span>
+path = untar_data(URLs.ML_100k)
+
+<span class="c-comment"># The ratings file: userId, movieId, rating, timestamp</span>
+ratings = pd.read_csv(path/<span class="c-str">'u.data'</span>, delimiter=<span class="c-str">'\t'</span>,
+                      header=<span class="c-num">None</span>,
+                      names=[<span class="c-str">'user'</span>, <span class="c-str">'movie'</span>, <span class="c-str">'rating'</span>, <span class="c-str">'timestamp'</span>])
+ratings.head()</pre>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="box blue">
+        <div class="box-title">What we need</div>
+        <ul>
+          <li>A column of user IDs</li>
+          <li>A column of item IDs</li>
+          <li>A column of ratings (our target)</li>
+          <li class="sub">That is all CF needs — no item features!</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <div class="box-title">Note on Colab</div>
+        <p><code>URLs.ML_SAMPLE</code> is the safest option for in-class use — it downloads quickly and trains in seconds.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 13 – FastAI: DataLoaders -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>FastAI: Building the DataLoader</h2>
+
+  <pre><span class="c-comment"># CollabDataLoaders handles the embedding index lookup for you</span>
+dls = CollabDataLoaders.from_df(
+    ratings,
+    user_name=<span class="c-str">'user'</span>,        <span class="c-comment"># column of user IDs</span>
+    item_name=<span class="c-str">'movie'</span>,       <span class="c-comment"># column of item IDs</span>
+    rating_name=<span class="c-str">'rating'</span>,    <span class="c-comment"># column of ratings (target)</span>
+    valid_pct=<span class="c-num">0.2</span>,           <span class="c-comment"># 20% validation split</span>
+    seed=<span class="c-num">42</span>
+)
+
+dls.show_batch()   <span class="c-comment"># preview: user, movie, rating rows</span></pre>
+
+  <div class="box blue">
+    <div class="box-title">What CollabDataLoaders does internally</div>
+    <ul>
+      <li>Assigns a <strong>contiguous integer index</strong> to each unique user ID</li>
+      <li>Assigns a <strong>contiguous integer index</strong> to each unique movie ID</li>
+      <li>These indices are used to look up the embedding row for each user/item</li>
+      <li class="sub">The original IDs (e.g. userId=874) are not used directly — the index is</li>
+    </ul>
+  </div>
+
+  <div class="formula" style="font-size:14px; margin-top:10px;">
+    Embedding lookup: <strong>E[index]</strong> → returns the k-dimensional vector for that user/item
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 14 – FastAI: Training -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>FastAI: Training the Collaborative Filter</h2>
+
+  <pre><span class="c-comment"># Create a matrix factorisation learner (dot-product model)</span>
+learn = collab_learner(
+    dls,
+    n_factors=<span class="c-num">50</span>,        <span class="c-comment"># k = 50 latent dimensions</span>
+    y_range=(<span class="c-num">0</span>, <span class="c-num">5.5</span>),    <span class="c-comment"># clamp predictions to valid rating range</span>
+    wd=<span class="c-num">0.1</span>              <span class="c-comment"># weight decay (L2 regularisation)</span>
+)
+
+<span class="c-comment"># Find a good learning rate</span>
+learn.lr_find()
+
+<span class="c-comment"># Train with 1-cycle policy</span>
+learn.fit_one_cycle(<span class="c-num">5</span>, <span class="c-num">5e-3</span>, wd=<span class="c-num">0.1</span>)</pre>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="box">
+        <div class="box-title">y_range explained</div>
+        <p>Applies a <strong>sigmoid</strong> scaled to (0, 5.5). This prevents predicting ratings below 0 or far above 5. We use 5.5 not 5.0 to avoid the sigmoid saturating at the boundary.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box green">
+        <div class="box-title">Weight decay</div>
+        <p>Prevents embedding values from growing too large — a key regularisation technique for CF. Without it, the model can memorise training ratings.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 15 – Quiz 2 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Check Your Understanding</h2>
+
+  <div class="quiz-block" id="q3">
+    <div class="q-label">Knowledge Check 3</div>
+    <div class="q-text">What is <code>n_factors</code> in <code>collab_learner</code>?</div>
+    <div class="quiz-options">
+      <button class="quiz-option" onclick="checkAnswer(this,'q3',false,'n_factors controls the embedding size, not the number of training epochs.')">The number of training epochs</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q3',true,'Correct! n_factors is k — the dimensionality of each user and item embedding vector.')">The number of latent dimensions k in each embedding vector</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q3',false,'That would be the number of users, stored internally by the DataLoader.')">The total number of users in the dataset</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q3',false,'The learning rate is set separately in fit_one_cycle.')">The learning rate for gradient descent</button>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+    <div class="quiz-reset" id="q3-rst" onclick="resetQuiz('q3')">Try again</div>
+  </div>
+
+  <div class="quiz-block" id="q4" style="margin-top:20px;">
+    <div class="q-label">Knowledge Check 4</div>
+    <div class="q-text">Why do we set <code>y_range=(0, 5.5)</code> rather than <code>(0, 5.0)</code> when ratings go from 0 to 5?</div>
+    <div class="quiz-options">
+      <button class="quiz-option" onclick="checkAnswer(this,'q4',false,'The extra 0.5 is not for error tolerance — it is to prevent saturation.')">To allow a 0.5 margin of error in predictions</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q4',false,'A sigmoid can produce values at the boundary — the issue is gradient saturation, not impossibility.')">Because sigmoid can never output exactly 0.0 or 5.0</button>
+      <button class="quiz-option" onclick="checkAnswer(this,'q4',true,'Correct! At the boundaries, sigmoid gradients approach zero (saturation). Using 5.5 keeps predictions in a region where gradients are still non-zero, aiding learning.')">To avoid sigmoid saturation — near the boundary, gradients vanish and learning stalls</button>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+    <div class="quiz-reset" id="q4-rst" onclick="resetQuiz('q4')">Try again</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 16 – Interpreting Embeddings -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Interpreting Learned Embeddings</h2>
+  <p>After training, we can extract and analyse the embedding vectors to understand what the model has learned.</p>
+
+  <pre><span class="c-comment"># Extract item (movie) embeddings</span>
+movie_emb = learn.model.i_weight.weight   <span class="c-comment"># shape: (n_movies, n_factors)</span>
+
+<span class="c-comment"># Find the most "extreme" movies on the first principal component</span>
+movie_pca = movie_emb.pca(<span class="c-num">3</span>)    <span class="c-comment"># reduce to 3D for visualisation</span>
+fac0, fac1, fac2 = movie_pca.t()
+
+<span class="c-comment"># Plot: movies with highest / lowest values on factor 0</span>
+idxs = fac0.argsort()
+[learn.dls.classes[<span class="c-str">'title'</span>][i] <span class="c-kw">for</span> i <span class="c-kw">in</span> idxs[:<span class="c-num">5</span>]]     <span class="c-comment"># lowest</span>
+[learn.dls.classes[<span class="c-str">'title'</span>][i] <span class="c-kw">for</span> i <span class="c-kw">in</span> idxs[-<span class="c-num">5</span>:]]    <span class="c-comment"># highest</span></pre>
+
+  <div class="box">
+    <div class="box-title">What you typically find</div>
+    <ul>
+      <li>Factor extremes often align with recognisable genres or quality levels</li>
+      <li>Movies close together in embedding space tend to be recommended interchangeably</li>
+      <li class="sub">This is latent factor <em>discovery</em> — no labels were ever given</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 17 – Deep Learning CF -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Neural Collaborative Filtering</h2>
+  <p>Instead of a simple dot product, we can concatenate the embeddings and pass them through a <strong>neural network</strong>.</p>
+
+  <div class="diagram-wrap">
+    <svg width="760" height="175" viewBox="0 0 760 175">
+      <!-- User emb -->
+      <rect x="10" y="60" width="120" height="50" rx="5" fill="#eef4fc" stroke="#1a5fa8" stroke-width="1.5"/>
+      <text x="70" y="81" text-anchor="middle" font-size="13" font-weight="700" fill="#1a5fa8">User</text>
+      <text x="70" y="97" text-anchor="middle" font-size="12" fill="#888">Embedding</text>
+      <text x="70" y="112" text-anchor="middle" font-size="11" fill="#bbb">k dims</text>
+
+      <!-- Item emb -->
+      <rect x="10" y="120" width="120" height="50" rx="5" fill="#eef7f1" stroke="#1a7a3a" stroke-width="1.5"/>
+      <text x="70" y="141" text-anchor="middle" font-size="13" font-weight="700" fill="#1a7a3a">Item</text>
+      <text x="70" y="157" text-anchor="middle" font-size="12" fill="#888">Embedding</text>
+      <text x="70" y="172" text-anchor="middle" font-size="11" fill="#bbb">k dims</text>
+
+      <!-- Concat -->
+      <line x1="130" y1="85" x2="190" y2="115" stroke="#aaa" stroke-width="1.5"/>
+      <line x1="130" y1="145" x2="190" y2="115" stroke="#aaa" stroke-width="1.5"/>
+      <rect x="190" y="95" width="80" height="40" rx="4" fill="#fffbf0" stroke="#f0d080" stroke-width="1.5"/>
+      <text x="230" y="118" text-anchor="middle" font-size="12" font-weight="600" fill="#b35a00">concat</text>
+      <text x="230" y="146" text-anchor="middle" font-size="10" fill="#aaa">2k dims</text>
+
+      <!-- Hidden 1 -->
+      <line x1="270" y1="115" x2="320" y2="115" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <rect x="320" y="85" width="80" height="60" rx="4" fill="#f0f0ff" stroke="#7070cc" stroke-width="1.5"/>
+      <text x="360" y="112" text-anchor="middle" font-size="12" font-weight="600" fill="#5050aa">Linear</text>
+      <text x="360" y="128" text-anchor="middle" font-size="12" fill="#5050aa">+ ReLU</text>
+      <text x="360" y="155" text-anchor="middle" font-size="10" fill="#aaa">128 units</text>
+
+      <!-- Hidden 2 -->
+      <line x1="400" y1="115" x2="450" y2="115" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <rect x="450" y="85" width="80" height="60" rx="4" fill="#f0f0ff" stroke="#7070cc" stroke-width="1.5"/>
+      <text x="490" y="112" text-anchor="middle" font-size="12" font-weight="600" fill="#5050aa">Linear</text>
+      <text x="490" y="128" text-anchor="middle" font-size="12" fill="#5050aa">+ ReLU</text>
+      <text x="490" y="155" text-anchor="middle" font-size="10" fill="#aaa">64 units</text>
+
+      <!-- Output -->
+      <line x1="530" y1="115" x2="580" y2="115" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <rect x="580" y="93" width="100" height="44" rx="4" fill="#fdf2f2" stroke="#c0272d" stroke-width="1.5"/>
+      <text x="630" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#c0272d">Sigmoid</text>
+      <text x="630" y="130" text-anchor="middle" font-size="12" fill="#c0272d">→ rating</text>
+      <text x="630" y="152" text-anchor="middle" font-size="10" fill="#aaa">scaled 0–5.5</text>
+
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#aaa"/>
+        </marker>
+      </defs>
+
+      <text x="380" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#555">Neural CF Architecture</text>
+    </svg>
+  </div>
+
+  <pre><span class="c-comment"># Switch to neural CF with use_nn=True</span>
+learn_nn = collab_learner(dls, use_nn=<span class="c-kw">True</span>,
+                          emb_szs={<span class="c-str">'userId'</span>: <span class="c-num">50</span>, <span class="c-str">'movieId'</span>: <span class="c-num">50</span>},
+                          layers=[<span class="c-num">128</span>, <span class="c-num">64</span>],  <span class="c-comment"># MLP hidden layer sizes</span>
+                          y_range=(<span class="c-num">0</span>, <span class="c-num">5.5</span>))</pre>
+
+  <div class="box amber">
+    <div class="box-title">Dot product vs neural CF</div>
+    <p>The dot product model is simpler and often competitive. Neural CF adds capacity to learn non-linear interaction patterns, but needs more data and careful tuning.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 18 – Cold Start Problem -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Limitations: The Cold Start Problem</h2>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="box" style="margin-bottom:14px;">
+        <div class="box-title">New user cold start</div>
+        <p>A brand-new user has no ratings. Their embedding is random (or zeroed). The model cannot make good predictions yet.</p>
+        <p style="font-size:13px; color:#888; margin-top:8px;">Solutions: ask for initial ratings ("onboarding"), use demographic fallback, or use popular-item heuristics.</p>
+      </div>
+      <div class="box amber">
+        <div class="box-title">New item cold start</div>
+        <p>A newly added movie has no ratings. No embedding can be learned. The model will never recommend it — even if it is excellent.</p>
+        <p style="font-size:13px; color:#888; margin-top:8px;">Solutions: use content features to bootstrap, or hybrid content + CF approaches.</p>
+      </div>
+    </div>
+    <div class="col">
+      <!-- Diagram -->
+      <div class="diagram-wrap">
+        <svg width="300" height="280" viewBox="0 0 300 280">
+          <rect x="0" y="0" width="300" height="280" rx="6" fill="#f9f9f9" stroke="#ddd"/>
+          <text x="150" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#555">Has ratings?</text>
+
+          <!-- Decision diamond -->
+          <polygon points="150,40 220,80 150,120 80,80" fill="white" stroke="#c0272d" stroke-width="1.5"/>
+          <text x="150" y="84" text-anchor="middle" font-size="12" fill="#c0272d">New user/item?</text>
+
+          <!-- No branch -->
+          <line x1="80" y1="80" x2="30" y2="140" stroke="#1a7a3a" stroke-width="1.5" marker-end="url(#arr3)"/>
+          <text x="44" y="118" font-size="11" fill="#1a7a3a">No</text>
+          <rect x="5" y="140" width="110" height="50" rx="5" fill="#eef7f1" stroke="#1a7a3a" stroke-width="1.5"/>
+          <text x="60" y="163" text-anchor="middle" font-size="12" font-weight="700" fill="#1a7a3a">Use learned</text>
+          <text x="60" y="179" text-anchor="middle" font-size="12" fill="#1a7a3a">embedding</text>
+
+          <!-- Yes branch -->
+          <line x1="220" y1="80" x2="265" y2="140" stroke="#c0272d" stroke-width="1.5" marker-end="url(#arr3)"/>
+          <text x="248" y="118" font-size="11" fill="#c0272d">Yes</text>
+          <rect x="185" y="140" width="110" height="50" rx="5" fill="#fdf2f2" stroke="#c0272d" stroke-width="1.5"/>
+          <text x="240" y="163" text-anchor="middle" font-size="12" font-weight="700" fill="#c0272d">Cold Start</text>
+          <text x="240" y="179" text-anchor="middle" font-size="12" fill="#c0272d">Problem!</text>
+
+          <!-- Fallback options -->
+          <line x1="240" y1="190" x2="240" y2="218" stroke="#aaa" stroke-width="1" marker-end="url(#arr3)"/>
+          <rect x="185" y="218" width="110" height="52" rx="4" fill="#fffbf0" stroke="#f0d080" stroke-width="1.5"/>
+          <text x="240" y="236" text-anchor="middle" font-size="11" fill="#b35a00">Hybrid model</text>
+          <text x="240" y="252" text-anchor="middle" font-size="11" fill="#b35a00">or popularity</text>
+          <text x="240" y="268" text-anchor="middle" font-size="11" fill="#b35a00">heuristic</text>
+
+          <defs>
+            <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#aaa"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 19 – Ethics -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Ethics in Recommender Systems</h2>
+  <p>Recommender systems operate at massive scale — their design decisions affect millions of people.</p>
+
+  <div class="two-col">
+    <div class="col">
+      <h3>Filter bubbles</h3>
+      <ul>
+        <li>CF amplifies existing preferences — users see more of what they already like</li>
+        <li>Can reinforce narrow worldviews, limit exposure to diverse content</li>
+        <li class="sub">Related: news recommendation and political polarisation</li>
+      </ul>
+      <h3 style="margin-top:14px;">Popularity bias</h3>
+      <ul>
+        <li>Popular items accumulate more ratings → better embeddings → more recommendations</li>
+        <li>Niche content is systematically under-recommended</li>
+        <li class="sub">Disadvantages new creators and minority-interest content</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="box amber">
+        <div class="box-title">Engagement vs wellbeing</div>
+        <p>Optimising for clicks or watch-time is not the same as optimising for user wellbeing. Models can learn to exploit psychological biases (outrage, fear) because they drive engagement metrics.</p>
+      </div>
+      <div class="box" style="margin-top:12px;">
+        <div class="box-title">Privacy</div>
+        <p>CF requires storing detailed behavioural data about every user. Even "anonymous" IDs can be re-identified from rating patterns.</p>
+      </div>
+      <div class="box green" style="margin-top:12px;">
+        <div class="box-title">SLO4 link</div>
+        <p>Always document what your recommendation objective optimises, and what harms may result from that choice.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 20 – Summary -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <h2>Week 8 Summary</h2>
+
+  <div class="two-col">
+    <div class="col">
+      <h3>Key concepts today</h3>
+      <ul>
+        <li><strong>Collaborative Filtering</strong> — predict ratings from shared user-item patterns</li>
+        <li><strong>Rating matrix</strong> — sparse, most values unknown</li>
+        <li><strong>Matrix factorisation</strong> — decompose into user × item embeddings</li>
+        <li><strong>Latent factors</strong> — hidden dimensions learned from data</li>
+        <li><strong>Dot product</strong> — similarity between user and item embeddings</li>
+        <li><strong>Bias terms</strong> — capture global generosity / quality effects</li>
+        <li><strong>Neural CF</strong> — replace dot product with an MLP</li>
+        <li><strong>Cold start</strong> — the fundamental limitation of CF</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>FastAI tools used</h3>
+      <div class="box blue">
+        <ul>
+          <li><code>CollabDataLoaders.from_df()</code></li>
+          <li><code>collab_learner()</code></li>
+          <li><code>learn.model.i_weight.weight</code></li>
+          <li><code>use_nn=True</code> for neural CF</li>
+        </ul>
+      </div>
+
+      <div class="box green" style="margin-top:12px;">
+        <div class="box-title">Next up — Practical Workshop</div>
+        <p>You will train a CF model on MovieLens, inspect the learned embeddings, and compare dot-product vs neural CF performance.</p>
+      </div>
+      <div class="box amber" style="margin-top:12px;">
+        <div class="box-title">Coming up — Week 9</div>
+        <p>Convolutional Neural Networks — how spatial structure in images is captured by learned filters.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end slides-container -->
+
+<script>
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+
+  function showSlide(n) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[n].classList.add('active');
+    document.getElementById('slide-counter').textContent = (n+1) + ' / ' + total;
+    document.getElementById('btn-prev').disabled = (n === 0);
+    document.getElementById('btn-next').disabled = (n === total - 1);
+    const pct = ((n + 1) / total * 100).toFixed(1);
+    document.getElementById('progress-bar').style.width = pct + '%';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function changeSlide(dir) {
+    current = Math.max(0, Math.min(total - 1, current + dir));
+    showSlide(current);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+  });
+
+  // ── Quiz logic ──
+  function checkAnswer(btn, qid, correct, feedback) {
+    const block = document.getElementById(qid);
+    const allBtns = block.querySelectorAll('.quiz-option');
+    allBtns.forEach(b => b.disabled = true);
+    btn.classList.add(correct ? 'correct' : 'incorrect');
+    const fb = document.getElementById(qid + '-fb');
+    fb.textContent = feedback;
+    fb.style.display = 'block';
+    if (!correct) {
+      document.getElementById(qid + '-rst').style.display = 'inline';
+    }
+  }
+
+  function resetQuiz(qid) {
+    const block = document.getElementById(qid);
+    block.querySelectorAll('.quiz-option').forEach(b => {
+      b.disabled = false;
+      b.classList.remove('correct', 'incorrect');
+    });
+    document.getElementById(qid + '-fb').style.display  = 'none';
+    document.getElementById(qid + '-rst').style.display = 'none';
+  }
+
+  showSlide(0);
+</script>
+</body>
+</html>
