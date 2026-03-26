@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 8 Games — Counting & Combinatorics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── ROOT ──────────────────────────────────────── */
+:root {
+  --bg:       #0d0f14;
+  --surface:  #161922;
+  --card:     #1e2330;
+  --border:   #2a3045;
+  --red:      #e8454a;
+  --orange:   #f5893a;
+  --yellow:   #f5c842;
+  --green:    #3dd68c;
+  --blue:     #4a9eff;
+  --purple:   #b97fff;
+  --text:     #e8eaf0;
+  --muted:    #7a859e;
+  --radius:   12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── HEADER ──────────────────────────────────── */
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-badge {
+  background: var(--red);
+  color: white;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+}
+.nav-tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.nav-tab:hover { border-color: var(--blue); color: var(--blue); }
+.nav-tab.active { background: var(--red); border-color: var(--red); color: white; }
+
+/* ─── LAYOUT ──────────────────────────────────── */
+.page { display: none; padding: 36px 40px; max-width: 1100px; margin: 0 auto; }
+.page.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.game-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.game-subtitle {
+  color: var(--muted);
+  font-size: 15px;
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+.btn.secondary:hover { border-color: var(--blue); color: var(--blue); }
+.btn.green { background: var(--green); color: #0d1a12; }
+.btn.blue { background: var(--blue); color: white; }
+
+.big-number {
+  font-family: 'DM Mono', monospace;
+  font-size: 48px;
+  font-weight: 500;
+  line-height: 1;
+}
+.formula-tag {
+  display: inline-block;
+  background: rgba(74,158,255,0.12);
+  border: 1px solid rgba(74,158,255,0.3);
+  color: var(--blue);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  margin: 4px 2px;
+}
+
+/* ─── GAME 1: MULTIPLICATIVE PRINCIPLE ────────── */
+.choice-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.choice-btn {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.choice-btn:hover { border-color: var(--yellow); }
+.choice-btn.selected { border-color: var(--yellow); background: rgba(245,200,66,0.1); color: var(--yellow); }
+
+.mult-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  margin: 12px 0;
+}
+.mult-bubble {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  text-align: center;
+  min-width: 70px;
+  transition: all 0.3s;
+}
+.mult-bubble.lit { border-color: var(--yellow); background: rgba(245,200,66,0.08); }
+.mult-bubble .num { font-family: 'DM Mono', monospace; font-size: 24px; color: var(--yellow); }
+.mult-bubble .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.mult-op { font-family: 'DM Mono', monospace; font-size: 22px; color: var(--muted); }
+
+.outfit-preview {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.outfit-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.outfit-card.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(61,214,140,0.06);
+}
+
+/* ─── GAME 2: PIGEONHOLE ─────────────────────── */
+.room-container {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 20px 0;
+}
+.room {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 120px;
+}
+.room-bin {
+  width: 110px;
+  min-height: 60px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 4px;
+  gap: 3px;
+  transition: border-color 0.3s;
+  position: relative;
+}
+.room-bin.overflow {
+  border-color: var(--red);
+  background: rgba(232,69,74,0.08);
+  animation: pulse-red 0.6s ease;
+}
+@keyframes pulse-red {
+  0%,100% { box-shadow: none; }
+  50% { box-shadow: 0 0 20px rgba(232,69,74,0.4); }
+}
+.room-roof {
+  width: 126px;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 20px solid var(--border);
+  transition: border-bottom-color 0.3s;
+}
+.room-bin.overflow ~ .room-roof,
+.room.overflow .room-roof { border-bottom-color: var(--red); }
+.room-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.room-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+}
+.room-bin.overflow .room-count { color: var(--red); }
+
+.student-token {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--blue);
+  border: 2px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: grab;
+  transition: transform 0.15s;
+  animation: popIn 0.2s ease;
+}
+.student-token:hover { transform: scale(1.2); }
+@keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+.student-token.computing { background: var(--red); }
+
+.pigeon-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.pigeon-slider { accent-color: var(--blue); width: 180px; }
+.pigeon-verdict {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  line-height: 1.6;
+  min-height: 50px;
+  transition: all 0.3s;
+}
+.pigeon-verdict.triggered { border-color: var(--red); background: rgba(232,69,74,0.07); }
+
+/* ─── GAME 3: P vs C ─────────────────────────── */
+.selector-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  min-height: 80px;
+}
+.person-token {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.person-token:hover { border-color: var(--blue); }
+.person-token.picked { border-color: var(--green); background: rgba(61,214,140,0.1); color: var(--green); }
+.person-token.picked.ranked-1 { border-color: #f5c842; background: rgba(245,200,66,0.1); color: #f5c842; }
+.person-token.picked.ranked-2 { border-color: #aaa; background: rgba(170,170,170,0.1); color: #aaa; }
+.person-token.picked.ranked-3 { border-color: #cd7f32; background: rgba(205,127,50,0.1); color: #cd7f32; }
+
+.pvc-result-box {
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.pvc-result-box .r-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 42px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.pvc-result-box .r-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.pvc-result-box.pmode { border-color: var(--orange); }
+.pvc-result-box.pmode .r-num { color: var(--orange); }
+.pvc-result-box.cmode { border-color: var(--purple); }
+.pvc-result-box.cmode .r-num { color: var(--purple); }
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--border);
+  color: var(--muted);
+}
+
+/* ─── GAME 4: PROBABILITY ─────────────────────── */
+.draw-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 70px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.draw-ball {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  transition: all 0.3s;
+  cursor: default;
+}
+.draw-ball.computing { background: var(--red); color: white; border: 2px solid rgba(255,255,255,0.2); }
+.draw-ball.other { background: var(--surface); color: var(--text); border: 2px solid var(--border); }
+.draw-ball.drawn { transform: scale(1.25); box-shadow: 0 0 16px rgba(245,200,66,0.6); border-color: var(--yellow); z-index: 2; }
+
+.prob-bars {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  height: 100px;
+  margin: 8px 0;
+}
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.bar-track {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 4px 4px 0 0;
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.bar-fill {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.4s ease;
+  min-height: 2px;
+}
+.bar-fill.red-bar { background: var(--red); }
+.bar-fill.blue-bar { background: var(--blue); }
+.bar-fill.theory { background: var(--yellow); opacity: 0.5; }
+.bar-label { font-size: 11px; color: var(--muted); text-align: center; }
+.bar-val { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
+
+.draw-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 80px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.draw-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.draw-dot.c { background: var(--red); }
+.draw-dot.o { background: var(--blue); }
+
+.prob-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+}
+.prob-stat .val {
+  font-family: 'DM Mono', monospace;
+  font-size: 26px;
+  font-weight: 500;
+}
+.prob-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* ─── TOAST ──────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--card);
+  border: 1px solid var(--green);
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+  z-index: 999;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ─── INSIGHT BOX ─────────────────────────────── */
+.insight {
+  background: rgba(74,158,255,0.07);
+  border: 1px solid rgba(74,158,255,0.25);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.insight strong { color: var(--blue); }
+.insight .math {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  background: rgba(74,158,255,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--blue);
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="logo">
+    <span class="logo-badge">Week 8</span>
+    Counting &amp; Combinatorics — Interactive Games
+  </div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage(0)">🎨 Multiply</button>
+    <button class="nav-tab" onclick="showPage(1)">🐦 Pigeonhole</button>
+    <button class="nav-tab" onclick="showPage(2)">⚖️ P vs C</button>
+    <button class="nav-tab" onclick="showPage(3)">🎰 Probability</button>
+  </nav>
+</header>
+
+<!-- ══════════════════════════════════════════════
+     GAME 1: MULTIPLICATIVE PRINCIPLE
+     ══════════════════════════════════════════════ -->
+<div class="page active" id="page-0">
+  <h1 class="game-title">🎨 Game 1 — The Multiplicative Principle</h1>
+  <p class="game-subtitle">
+    Design your hackathon T-shirt by choosing one option from each category.<br>
+    Watch how each new choice <em>multiplies</em> the total number of outcomes.
+  </p>
+
+  <div class="two-col">
+    <div>
+      <!-- COLOUR -->
+      <div class="card">
+        <div class="card-title">Step 1 — Shirt Colour</div>
+        <div class="choice-row" id="colour-row">
+          <button class="choice-btn" onclick="pick('colour',0,'🔴 Red',this)">🔴 Red</button>
+          <button class="choice-btn" onclick="pick('colour',1,'🔵 Blue',this)">🔵 Blue</button>
+          <button class="choice-btn" onclick="pick('colour',2,'🟢 Green',this)">🟢 Green</button>
+          <button class="choice-btn" onclick="pick('colour',3,'⚫ Black',this)">⚫ Black</button>
+        </div>
+      </div>
+      <!-- SIZE -->
+      <div class="card">
+        <div class="card-title">Step 2 — Size</div>
+        <div class="choice-row" id="size-row">
+          <button class="choice-btn" onclick="pick('size',0,'S',this)">S — Small</button>
+          <button class="choice-btn" onclick="pick('size',1,'M',this)">M — Medium</button>
+          <button class="choice-btn" onclick="pick('size',2,'L',this)">L — Large</button>
+        </div>
+      </div>
+      <!-- LOGO -->
+      <div class="card">
+        <div class="card-title">Step 3 — Logo</div>
+        <div class="choice-row" id="logo-row">
+          <button class="choice-btn" onclick="pick('logo',0,'🦊 Fox',this)">🦊 Fox</button>
+          <button class="choice-btn" onclick="pick('logo',1,'🐙 Octopus',this)">🐙 Octopus</button>
+          <button class="choice-btn" onclick="pick('logo',2,'🤖 Robot',this)">🤖 Robot</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <!-- LIVE COUNTER -->
+      <div class="card" style="text-align:center;">
+        <div class="card-title">Total Combinations</div>
+        <div class="mult-display" id="mult-display" style="justify-content:center; flex-direction:column; align-items:center; gap:8px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
+            <div class="mult-bubble" id="mb-colour"><div class="num" id="mn-colour">4</div><div class="lbl">Colours</div></div>
+            <div class="mult-op">×</div>
+            <div class="mult-bubble" id="mb-size"><div class="num" id="mn-size">3</div><div class="lbl">Sizes</div></div>
+            <div class="mult-op">×</div>
+            <div class="mult-bubble" id="mb-logo"><div class="num" id="mn-logo">3</div><div class="lbl">Logos</div></div>
+            <div class="mult-op">=</div>
+            <div class="mult-bubble" id="mb-total" style="border-color:var(--yellow); background:rgba(245,200,66,0.08);">
+              <div class="num" id="mn-total" style="color:var(--yellow);">36</div>
+              <div class="lbl">Total</div>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:13px; color:var(--muted); margin-top:4px;">Your selection:</p>
+        <div style="font-family:'DM Mono',monospace; font-size:15px; margin:8px 0; color:var(--green); min-height:22px;" id="selection-display">— pick one from each row —</div>
+      </div>
+
+      <!-- ADD/REMOVE OPTION BUTTONS -->
+      <div class="card">
+        <div class="card-title">Experiment — Add / Remove Options</div>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">See how the total changes when options are added or removed from each step.</p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span style="font-size:13px; width:90px;">Colours:</span>
+            <button class="btn secondary" style="padding:5px 12px; font-size:12px;" onclick="changeCount('colour',-1)">− Remove</button>
+            <button class="btn secondary" style="padding:5px 12px; font-size:12px;" onclick="changeCount('colour',+1)">+ Add</button>
+            <span style="font-family:'DM Mono',monospace; font-size:14px; color:var(--yellow);" id="lbl-colour">4</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span style="font-size:13px; width:90px;">Sizes:</span>
+            <button class="btn secondary" style="padding:5px 12px; font-size:12px;" onclick="changeCount('size',-1)">− Remove</button>
+            <button class="btn secondary" style="padding:5px 12px; font-size:12px;" onclick="changeCount('size',+1)">+ Add</button>
+            <span style="font-family:'DM Mono',monospace; font-size:14px; color:var(--yellow);" id="lbl-size">3</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span style="font-size:13px; width:90px;">Logos:</span>
+            <button class="btn secondary" style="padding:5px 12px; font-size:12px;" onclick="changeCount('logo',-1)">− Remove</button>
+            <button class="btn secondary" style="padding:5px 12px; font-size:12px;" onclick="changeCount('logo',+1)">+ Add</button>
+            <span style="font-family:'DM Mono',monospace; font-size:14px; color:var(--yellow);" id="lbl-logo">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <strong>Key idea:</strong> Each independent choice <em>multiplies</em> the total. Adding just 1 extra colour takes us from
+        <span class="math">4×3×3=36</span> to <span class="math">5×3×3=45</span> — a jump of 9, not 1.
+        This is why passwords get exponentially stronger with each extra character type allowed.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     GAME 2: PIGEONHOLE
+     ══════════════════════════════════════════════ -->
+<div class="page" id="page-1">
+  <h1 class="game-title">🐦 Game 2 — Pigeonhole Principle</h1>
+  <p class="game-subtitle">
+    Distribute students into hackathon rooms. The principle says: if you have more students than rooms,
+    at least one room <em>must</em> be overcrowded — no matter how cleverly you arrange them.
+  </p>
+
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">Controls</div>
+        <div class="pigeon-controls">
+          <label style="font-size:14px;">Students: <strong id="student-count-lbl" style="color:var(--blue);">13</strong></label>
+          <input type="range" class="pigeon-slider" id="student-slider" min="1" max="30" value="13" oninput="updatePigeonSlider()">
+          <label style="font-size:14px;">Rooms: <strong id="room-count-lbl" style="color:var(--purple);">3</strong></label>
+          <input type="range" class="pigeon-slider" id="room-slider" min="1" max="8" value="3" oninput="updatePigeonSlider()">
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" onclick="distributePigeons()">🎲 Distribute randomly</button>
+          <button class="btn secondary" onclick="packPigeons()">📦 Pack evenly</button>
+          <button class="btn secondary" onclick="resetPigeons()">↺ Reset</button>
+        </div>
+      </div>
+
+      <div class="card" style="text-align:center;">
+        <div class="card-title">Rooms</div>
+        <div class="room-container" id="room-container"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">Pigeonhole Verdict</div>
+        <div class="pigeon-verdict" id="pigeon-verdict">
+          Set the sliders and click <strong>Distribute</strong> to see the principle in action.
+        </div>
+        <div style="margin-top:14px; display:flex; gap:16px; flex-wrap:wrap;">
+          <div class="prob-stat">
+            <div class="val" id="ph-students" style="color:var(--blue);">13</div>
+            <div class="lbl">Students</div>
+          </div>
+          <div class="prob-stat">
+            <div class="val" id="ph-rooms" style="color:var(--purple);">3</div>
+            <div class="lbl">Rooms</div>
+          </div>
+          <div class="prob-stat">
+            <div class="val" id="ph-ceil" style="color:var(--yellow);">—</div>
+            <div class="lbl">⌈n/k⌉ guarantee</div>
+          </div>
+          <div class="prob-stat">
+            <div class="val" id="ph-actual" style="color:var(--red);">—</div>
+            <div class="lbl">Actual max</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Can you beat the principle?</div>
+        <p style="font-size:13.5px; color:var(--muted); line-height:1.7; margin-bottom:12px;">
+          Try dragging the sliders so there are <strong>more students than rooms</strong>. No matter how you distribute them,
+          the principle guarantees at least one room has ⌈students/rooms⌉ people. Click distribute many times — does the guarantee always hold?
+        </p>
+        <div class="insight">
+          <strong>Formula:</strong> With <span class="math">n</span> students and <span class="math">k</span> rooms,
+          at least one room holds ≥ <span class="math">⌈n/k⌉</span> students. This is unavoidable — it's a mathematical certainty, not a probability.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     GAME 3: P vs C
+     ══════════════════════════════════════════════ -->
+<div class="page" id="page-2">
+  <h1 class="game-title">⚖️ Game 3 — Permutations vs Combinations</h1>
+  <p class="game-subtitle">
+    Select people from the hackathon pool below. Toggle between <strong>Award Mode</strong> (order matters — Gold, Silver, Bronze)
+    and <strong>Committee Mode</strong> (order doesn't matter). See how the count changes!
+  </p>
+
+  <div class="card">
+    <div class="card-title">Mode</div>
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <button class="btn" id="award-mode-btn" onclick="setMode('award')" style="background:var(--orange);">🥇 Award Mode — P(n,r)</button>
+      <button class="btn secondary" id="committee-mode-btn" onclick="setMode('committee')">👥 Committee Mode — C(n,r)</button>
+    </div>
+    <div id="mode-explanation" class="insight" style="margin-bottom:14px;">
+      <strong>Award Mode:</strong> You're assigning Gold, Silver, Bronze — order matters!
+      Picking Alice 1st, Bob 2nd is <em>different</em> from Bob 1st, Alice 2nd.
+      Use <span class="math">P(n,r) = n!/(n−r)!</span>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">Hackathon Teams — click to select (pick up to 3)</div>
+        <div class="selector-pool" id="person-pool"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Your Selection</div>
+        <div id="selection-slots" style="display:flex; gap:10px; flex-wrap:wrap; min-height:50px; align-items:center;">
+          <span style="color:var(--muted); font-size:13px;">No one selected yet</span>
+        </div>
+        <button class="btn secondary" style="margin-top:12px; font-size:12px;" onclick="clearPVC()">✕ Clear selection</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="text-align:center;">
+        <div class="card-title">Pool size (n) and selection size (r)</div>
+        <div style="display:flex; gap:16px; justify-content:center; align-items:center; margin-bottom:16px;">
+          <div>
+            <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Pool (n)</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="btn secondary" style="padding:4px 10px;" onclick="changePool(-1)">−</button>
+              <span style="font-family:'DM Mono',monospace; font-size:22px;" id="pool-n">10</span>
+              <button class="btn secondary" style="padding:4px 10px;" onclick="changePool(+1)">+</button>
+            </div>
+          </div>
+          <div style="font-size:28px; color:var(--muted);">→</div>
+          <div>
+            <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Select (r)</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="btn secondary" style="padding:4px 10px;" onclick="changeR(-1)">−</button>
+              <span style="font-family:'DM Mono',monospace; font-size:22px;" id="pool-r">3</span>
+              <button class="btn secondary" style="padding:4px 10px;" onclick="changeR(+1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="pvc-award-box" class="pvc-result-box pmode" style="margin-bottom:12px;">
+          <div class="r-label">P(n,r) — ordered (Award)</div>
+          <div class="r-num" id="pnr-val">720</div>
+          <div style="font-family:'DM Mono',monospace; font-size:13px; color:var(--muted); margin-top:4px;" id="pnr-formula">P(10,3) = 10×9×8</div>
+        </div>
+
+        <div id="pvc-committee-box" class="pvc-result-box cmode">
+          <div class="r-label">C(n,r) — unordered (Committee)</div>
+          <div class="r-num" id="cnr-val">120</div>
+          <div style="font-family:'DM Mono',monospace; font-size:13px; color:var(--muted); margin-top:4px;" id="cnr-formula">C(10,3) = 720 / 3!</div>
+        </div>
+
+        <div style="margin-top:12px; background:var(--surface); border-radius:8px; padding:10px 16px; border:1px solid var(--border);">
+          <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Why is P always bigger?</div>
+          <div style="font-family:'DM Mono',monospace; font-size:13px;" id="ratio-display">P / C = 3! = 6 orderings per group</div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <strong>Key question to ask yourself:</strong> "Does swapping two chosen people give a <em>different</em> result?" 
+        If YES (awards) → use <span class="math">P(n,r)</span>. If NO (committees) → use <span class="math">C(n,r)</span>. 
+        C is always P divided by <span class="math">r!</span> because we don't care about the internal ordering.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     GAME 4: PROBABILITY LAB
+     ══════════════════════════════════════════════ -->
+<div class="page" id="page-3">
+  <h1 class="game-title">🎰 Game 4 — Probability Lab</h1>
+  <p class="game-subtitle">
+    The hackathon draws 1 student at random for a prize. There are 12 🔴 Computing students and 18 🔵 others.
+    Run the draw and watch the <em>experimental</em> probability converge to the <em>theoretical</em> value.
+  </p>
+
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">The Pool (30 students)</div>
+        <div class="draw-pool" id="draw-pool"></div>
+        <div style="display:flex; gap:8px; margin-top:12px; align-items:center; flex-wrap:wrap;">
+          <button class="btn" onclick="runDraw(1)">🎲 Draw 1</button>
+          <button class="btn blue" onclick="runDraw(10)">⚡ Draw 10</button>
+          <button class="btn blue" onclick="runDraw(100)">💨 Draw 100</button>
+          <button class="btn secondary" onclick="resetDraw()">↺ Reset</button>
+        </div>
+        <div style="font-size:13px; color:var(--muted); margin-top:10px;" id="last-draw-msg">No draw yet.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Draw History</div>
+        <div class="draw-history" id="draw-history"></div>
+        <div style="font-size:12px; color:var(--muted); margin-top:8px;">
+          🔴 = Computing student won &nbsp;|&nbsp; 🔵 = Other student won
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">Results after <span id="trial-count">0</span> draws</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px;">
+          <div class="prob-stat">
+            <div class="val" id="wins-computing" style="color:var(--red);">0</div>
+            <div class="lbl">🔴 Computing wins</div>
+          </div>
+          <div class="prob-stat">
+            <div class="val" id="wins-other" style="color:var(--blue);">0</div>
+            <div class="lbl">🔵 Other wins</div>
+          </div>
+          <div class="prob-stat">
+            <div class="val" id="exp-prob" style="color:var(--yellow);">—</div>
+            <div class="lbl">Experimental P(C)</div>
+          </div>
+        </div>
+
+        <!-- BAR CHART -->
+        <div class="card-title" style="margin-bottom:10px;">Experimental vs Theoretical</div>
+        <div class="prob-bars">
+          <div class="bar-col">
+            <div class="bar-track"><div class="bar-fill red-bar" id="bar-exp" style="height:0%;"></div></div>
+            <div class="bar-val" id="bar-exp-val">0%</div>
+            <div class="bar-label">Experimental<br>P(Computing)</div>
+          </div>
+          <div class="bar-col">
+            <div class="bar-track"><div class="bar-fill theory" style="height:40%;"></div></div>
+            <div class="bar-val">40%</div>
+            <div class="bar-label">Theoretical<br>P = 12/30</div>
+          </div>
+          <div class="bar-col">
+            <div class="bar-track"><div class="bar-fill blue-bar" id="bar-other" style="height:0%;"></div></div>
+            <div class="bar-val" id="bar-other-val">0%</div>
+            <div class="bar-label">Experimental<br>P(Other)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHALLENGE QUESTION -->
+      <div class="card">
+        <div class="card-title">🔢 Challenge — Team Draw</div>
+        <p style="font-size:13.5px; color:var(--muted); margin-bottom:12px; line-height:1.6;">
+          What if we draw a <strong>3-person committee</strong> instead of 1 person? 
+          What's the probability all 3 are Computing students?
+        </p>
+        <button class="btn green" onclick="calcTeamProb()">Calculate</button>
+        <div id="team-prob-result" style="margin-top:12px; font-size:14px; line-height:1.8; display:none;">
+          <div style="font-family:'DM Mono',monospace; color:var(--green); font-size:15px;" id="team-prob-formula"></div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <strong>Law of Large Numbers:</strong> As the number of trials grows, the experimental probability gets closer to the theoretical value.
+        With just 10 draws you'll see big swings; with 100+ draws the bars converge.
+        Theoretical probability = <span class="math">12/30 = 0.4</span> for a Computing student winning.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   NAVIGATION
+   ══════════════════════════════════════ */
+const pages = document.querySelectorAll('.page');
+const tabs  = document.querySelectorAll('.nav-tab');
+function showPage(i) {
+  pages.forEach((p,j) => { p.classList.toggle('active', i===j); });
+  tabs.forEach((t,j)  => { t.classList.toggle('active', i===j); });
+}
+
+function showToast(msg, col='var(--green)') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = col;
+  t.style.color = col;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ══════════════════════════════════════
+   GAME 1 — MULTIPLICATIVE PRINCIPLE
+   ══════════════════════════════════════ */
+const G1 = { colour: { count:4, picked: null }, size: { count:3, picked: null }, logo: { count:3, picked: null } };
+
+function pick(cat, idx, label, btn) {
+  document.querySelectorAll(`#${cat}-row .choice-btn`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  G1[cat].picked = label;
+  updateMultDisplay();
+}
+
+function updateMultDisplay() {
+  ['colour','size','logo'].forEach(cat => {
+    document.getElementById(`mn-${cat}`).textContent = G1[cat].count;
+    document.getElementById(`lbl-${cat}`).textContent = G1[cat].count;
+    const mb = document.getElementById(`mb-${cat}`);
+    mb.classList.toggle('lit', G1[cat].picked !== null);
+  });
+  const total = G1.colour.count * G1.size.count * G1.logo.count;
+  document.getElementById('mn-total').textContent = total;
+  const c = G1.colour.picked, s = G1.size.picked, l = G1.logo.picked;
+  const disp = document.getElementById('selection-display');
+  disp.textContent = (c && s && l) ? `${c} + ${s} + ${l}` : (c||s||l) ? 'Keep picking...' : '— pick one from each row —';
+  if (c && s && l) showToast(`Your T-shirt: ${c} ${s} ${l} ✔`);
+}
+
+function changeCount(cat, delta) {
+  G1[cat].count = Math.max(1, Math.min(10, G1[cat].count + delta));
+  updateMultDisplay();
+}
+
+/* ══════════════════════════════════════
+   GAME 2 — PIGEONHOLE
+   ══════════════════════════════════════ */
+let pigeonDist = [];
+
+function updatePigeonSlider() {
+  const s = +document.getElementById('student-slider').value;
+  const r = +document.getElementById('room-slider').value;
+  document.getElementById('student-count-lbl').textContent = s;
+  document.getElementById('room-count-lbl').textContent = r;
+  document.getElementById('ph-students').textContent = s;
+  document.getElementById('ph-rooms').textContent = r;
+  const ceil = Math.ceil(s/r);
+  document.getElementById('ph-ceil').textContent = ceil;
+  renderRooms(r, []);
+  document.getElementById('pigeon-verdict').className = 'pigeon-verdict';
+  document.getElementById('pigeon-verdict').innerHTML = `Set up: <strong>${s}</strong> students into <strong>${r}</strong> rooms. The pigeonhole principle guarantees at least one room gets ≥ <strong>${ceil}</strong> students. Click <em>Distribute</em> to see it happen.`;
+}
+
+function renderRooms(numRooms, dist) {
+  const con = document.getElementById('room-container');
+  con.innerHTML = '';
+  const names = ['Lab A','Lab B','Hall','Studio','Lab C','Seminar','Lounge','Garden'];
+  for (let i = 0; i < numRooms; i++) {
+    const count = dist[i] || 0;
+    const s = +document.getElementById('student-slider').value;
+    const r = +document.getElementById('room-slider').value;
+    const ceil = Math.ceil(s/r);
+    const over = count >= ceil && s > r;
+    const room = document.createElement('div');
+    room.className = 'room' + (over ? ' overflow' : '');
+    room.innerHTML = `
+      <div class="room-roof"></div>
+      <div class="room-bin${over ? ' overflow' : ''}">
+        ${Array.from({length:count}, (_,k) => `<div class="student-token" title="Student ${k+1}">👤</div>`).join('')}
+      </div>
+      <div class="room-label">${names[i]}</div>
+      <div class="room-count">${count}</div>`;
+    con.appendChild(room);
+  }
+}
+
+function distributePigeons() {
+  const s = +document.getElementById('student-slider').value;
+  const r = +document.getElementById('room-slider').value;
+  const dist = Array(r).fill(0);
+  for (let i = 0; i < s; i++) dist[Math.floor(Math.random() * r)]++;
+  pigeonDist = dist;
+  renderRooms(r, dist);
+  const maxRoom = Math.max(...dist);
+  const ceil = Math.ceil(s/r);
+  document.getElementById('ph-actual').textContent = maxRoom;
+  const v = document.getElementById('pigeon-verdict');
+  if (s > r) {
+    v.className = 'pigeon-verdict triggered';
+    v.innerHTML = `✔ Principle confirmed! The largest room has <strong style="color:var(--red)">${maxRoom}</strong> students — at least the guaranteed <strong>${ceil}</strong>. No matter how many times you click, this guarantee always holds when ${s} > ${r}.`;
+    showToast(`Largest room: ${maxRoom} students — ≥ ${ceil} as guaranteed!`, 'var(--yellow)');
+  } else {
+    v.className = 'pigeon-verdict';
+    v.innerHTML = `With <strong>${s}</strong> students and <strong>${r}</strong> rooms, students ≤ rooms so every room can hold at most 1. The principle still holds — try setting students &gt; rooms!`;
+  }
+}
+
+function packPigeons() {
+  const s = +document.getElementById('student-slider').value;
+  const r = +document.getElementById('room-slider').value;
+  const dist = Array(r).fill(0);
+  for (let i = 0; i < s; i++) dist[i % r]++;
+  pigeonDist = dist;
+  renderRooms(r, dist);
+  const maxRoom = Math.max(...dist);
+  document.getElementById('ph-actual').textContent = maxRoom;
+  const v = document.getElementById('pigeon-verdict');
+  v.className = 'pigeon-verdict triggered';
+  v.innerHTML = `Even with <em>perfectly even</em> packing, the maximum room has <strong style="color:var(--red)">${maxRoom}</strong> students — still ≥ ⌈${s}/${r}⌉ = <strong>${Math.ceil(s/r)}</strong>. The principle is unavoidable!`;
+}
+
+function resetPigeons() {
+  const r = +document.getElementById('room-slider').value;
+  renderRooms(r, []);
+  document.getElementById('ph-actual').textContent = '—';
+  document.getElementById('pigeon-verdict').className = 'pigeon-verdict';
+  document.getElementById('pigeon-verdict').innerHTML = 'Click <strong>Distribute</strong> to run the experiment.';
+}
+
+// init
+updatePigeonSlider();
+
+
+/* ══════════════════════════════════════
+   GAME 3 — P vs C
+   ══════════════════════════════════════ */
+const NAMES = ['Alice','Bob','Carol','Dave','Eve','Frank','Grace','Hana','Ivan','Jules','Kai','Luna'];
+let pvcMode = 'award';
+let pvcN = 10, pvcR = 3;
+let pvcPicked = [];
+
+function factorial(n) { let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function pnr(n,r) { if(r>n) return 0; let r2=1; for(let i=n;i>n-r;i--) r2*=i; return r2; }
+function cnr(n,r) { if(r>n) return 0; return Math.round(pnr(n,r)/factorial(r)); }
+
+function buildPool() {
+  const pool = document.getElementById('person-pool');
+  pool.innerHTML = '';
+  for (let i = 0; i < pvcN; i++) {
+    const name = NAMES[i] || `T${i+1}`;
+    const btn = document.createElement('div');
+    btn.className = 'person-token';
+    btn.id = `person-${i}`;
+    btn.textContent = `🧑‍💻 ${name}`;
+    btn.onclick = () => togglePerson(i, name);
+    pool.appendChild(btn);
+  }
+  pvcPicked = [];
+  updatePVCDisplay();
+}
+
+function togglePerson(idx, name) {
+  const el = document.getElementById(`person-${idx}`);
+  const alreadyIdx = pvcPicked.findIndex(p => p.idx === idx);
+  if (alreadyIdx >= 0) {
+    pvcPicked.splice(alreadyIdx, 1);
+    el.className = 'person-token';
+  } else {
+    if (pvcPicked.length >= pvcR) {
+      showToast(`You can only pick ${pvcR} people for this selection.`, 'var(--orange)');
+      return;
+    }
+    pvcPicked.push({idx, name});
+    el.className = 'person-token picked';
+    if (pvcMode === 'award') {
+      const rank = pvcPicked.length;
+      el.classList.add(`ranked-${rank}`);
+    }
+  }
+  updatePVCDisplay();
+}
+
+function clearPVC() {
+  pvcPicked = [];
+  buildPool();
+}
+
+function updatePVCDisplay() {
+  // Update picked tokens display
+  const slots = document.getElementById('selection-slots');
+  if (pvcPicked.length === 0) {
+    slots.innerHTML = '<span style="color:var(--muted); font-size:13px;">No one selected yet</span>';
+  } else {
+    const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+    slots.innerHTML = pvcPicked.map((p,i) => {
+      const badge = pvcMode === 'award' ? medals[i] : '✔';
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">${badge} ${p.name}</div>`;
+    }).join('');
+  }
+
+  // Update counts
+  const p = pnr(pvcN, pvcR);
+  const c = cnr(pvcN, pvcR);
+  document.getElementById('pnr-val').textContent = p.toLocaleString();
+  document.getElementById('cnr-val').textContent = c.toLocaleString();
+  document.getElementById('pool-n').textContent = pvcN;
+  document.getElementById('pool-r').textContent = pvcR;
+
+  // Formula strings
+  let pFormula = `P(${pvcN},${pvcR}) = `;
+  let terms = [];
+  for (let i=pvcN; i>pvcN-pvcR; i--) terms.push(i);
+  pFormula += terms.join('×');
+  document.getElementById('pnr-formula').textContent = pFormula;
+  document.getElementById('cnr-formula').textContent = `C(${pvcN},${pvcR}) = ${p.toLocaleString()} / ${pvcR}! = ${c.toLocaleString()}`;
+  document.getElementById('ratio-display').textContent = `P / C = ${pvcR}! = ${factorial(pvcR)} orderings per group`;
+}
+
+function setMode(mode) {
+  pvcMode = mode;
+  const aBtn = document.getElementById('award-mode-btn');
+  const cBtn = document.getElementById('committee-mode-btn');
+  const exp  = document.getElementById('mode-explanation');
+  if (mode === 'award') {
+    aBtn.style.background = 'var(--orange)'; aBtn.style.color = 'white'; aBtn.style.borderColor = 'var(--orange)';
+    cBtn.className = 'btn secondary';
+    exp.innerHTML = '<strong>Award Mode:</strong> You\'re assigning Gold, Silver, Bronze — order matters! Picking Alice 1st then Bob 2nd is <em>different</em> from Bob 1st, Alice 2nd. Use <span class="math">P(n,r) = n!/(n−r)!</span>';
+  } else {
+    cBtn.style.background = 'var(--purple)'; cBtn.style.color = 'white'; cBtn.style.borderColor = 'var(--purple)';
+    aBtn.style.background = ''; aBtn.className = 'btn secondary';
+    exp.innerHTML = '<strong>Committee Mode:</strong> You\'re picking a group — order does NOT matter! Alice+Bob+Carol is the same committee regardless of order. Use <span class="math">C(n,r) = n!/(r!(n−r)!)</span>';
+  }
+  clearPVC();
+}
+
+function changePool(d) { pvcN = Math.max(pvcR, Math.min(12, pvcN + d)); buildPool(); }
+function changeR(d)    { pvcR = Math.max(1, Math.min(pvcN, Math.min(5, pvcR + d))); buildPool(); }
+
+buildPool();
+
+
+/* ══════════════════════════════════════
+   GAME 4 — PROBABILITY LAB
+   ══════════════════════════════════════ */
+const TOTAL = 30, COMPUTING = 12, OTHER = 18;
+let drawStats = { computing: 0, other: 0, total: 0 };
+
+function buildDrawPool() {
+  const pool = document.getElementById('draw-pool');
+  pool.innerHTML = '';
+  for (let i = 0; i < COMPUTING; i++) {
+    const b = document.createElement('div');
+    b.className = 'draw-ball computing';
+    b.id = `ball-${i}`;
+    b.textContent = `C${i+1}`;
+    pool.appendChild(b);
+  }
+  for (let i = 0; i < OTHER; i++) {
+    const b = document.createElement('div');
+    b.className = 'draw-ball other';
+    b.id = `ball-${COMPUTING+i}`;
+    b.textContent = `O${i+1}`;
+    pool.appendChild(b);
+  }
+}
+
+function runDraw(n) {
+  // Remove previous highlighted
+  document.querySelectorAll('.draw-ball.drawn').forEach(b => b.classList.remove('drawn'));
+
+  for (let d = 0; d < n; d++) {
+    const idx = Math.floor(Math.random() * TOTAL);
+    const isComputing = idx < COMPUTING;
+    if (isComputing) drawStats.computing++;
+    else             drawStats.other++;
+    drawStats.total++;
+
+    if (d === n - 1) {
+      // Highlight last draw
+      document.getElementById(`ball-${idx}`).classList.add('drawn');
+      const msg = isComputing ? `🔴 Computing student C${idx+1} won!` : `🔵 Other student O${idx-COMPUTING+1} won.`;
+      document.getElementById('last-draw-msg').textContent = msg;
+      // Add dot
+      const dot = document.createElement('div');
+      dot.className = 'draw-dot ' + (isComputing ? 'c' : 'o');
+      document.getElementById('draw-history').prepend(dot);
+    }
+
+    if (n === 1 || d === n-1) {
+      // bulk update for fast draws
+    }
+  }
+
+  // If large batch, add remaining dots at once
+  if (n > 1) {
+    const hist = document.getElementById('draw-history');
+    hist.innerHTML = '';
+    const maxDots = Math.min(drawStats.total, 200);
+    // We don't store all history for large n, just approximate
+    const cFrac = drawStats.computing / drawStats.total;
+    for (let i = 0; i < maxDots; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'draw-dot ' + (i / maxDots < cFrac ? 'c' : 'o');
+      hist.appendChild(dot);
+    }
+  }
+
+  updateDrawDisplay();
+}
+
+function updateDrawDisplay() {
+  const { computing, other, total } = drawStats;
+  document.getElementById('wins-computing').textContent = computing;
+  document.getElementById('wins-other').textContent = other;
+  document.getElementById('trial-count').textContent = total;
+  if (total > 0) {
+    const ep = computing / total;
+    document.getElementById('exp-prob').textContent = ep.toFixed(3);
+    document.getElementById('bar-exp').style.height = `${ep * 100}%`;
+    document.getElementById('bar-exp-val').textContent = `${(ep*100).toFixed(1)}%`;
+    const op = other / total;
+    document.getElementById('bar-other').style.height = `${op * 100}%`;
+    document.getElementById('bar-other-val').textContent = `${(op*100).toFixed(1)}%`;
+  }
+}
+
+function resetDraw() {
+  drawStats = { computing: 0, other: 0, total: 0 };
+  document.querySelectorAll('.draw-ball.drawn').forEach(b => b.classList.remove('drawn'));
+  document.getElementById('draw-history').innerHTML = '';
+  document.getElementById('last-draw-msg').textContent = 'No draw yet.';
+  document.getElementById('wins-computing').textContent = 0;
+  document.getElementById('wins-other').textContent = 0;
+  document.getElementById('trial-count').textContent = 0;
+  document.getElementById('exp-prob').textContent = '—';
+  document.getElementById('bar-exp').style.height = '0%';
+  document.getElementById('bar-other').style.height = '0%';
+  document.getElementById('bar-exp-val').textContent = '0%';
+  document.getElementById('bar-other-val').textContent = '0%';
+  document.getElementById('team-prob-result').style.display = 'none';
+}
+
+function calcTeamProb() {
+  const fav = cnr(12, 3);
+  const total = cnr(30, 3);
+  const prob = (fav / total).toFixed(4);
+  const res = document.getElementById('team-prob-result');
+  res.style.display = 'block';
+  document.getElementById('team-prob-formula').innerHTML =
+    `P(all 3 Computing) = C(12,3) / C(30,3)<br>= ${fav} / ${total}<br>≈ <strong style="color:var(--yellow)">${prob}</strong> (about ${(prob*100).toFixed(1)}%)`;
+  showToast(`P(all Computing team) ≈ ${prob}`, 'var(--yellow)');
+}
+
+buildDrawPool();
+</script>
+</body>
+</html>
