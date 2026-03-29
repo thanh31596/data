@@ -1,0 +1,3131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JPA Bookstore – NetBeans & MySQL Workbench</title>
+<style>
+  :root {
+    --red: #c0392b;
+    --red-dark: #96281b;
+    --red-light: #fadbd8;
+    --red-mid: #e74c3c;
+    --white: #ffffff;
+    --off-white: #fdfcfc;
+    --gray-light: #f5f0f0;
+    --gray-mid: #e8e0e0;
+    --gray-text: #666;
+    --dark: #1a0a0a;
+    --code-bg: #1e1e1e;
+    --code-fg: #d4d4d4;
+    --amber: #e67e22;
+    --amber-light: #fef9f0;
+    --green: #27ae60;
+    --green-light: #eafaf1;
+    --blue: #2980b9;
+    --blue-light: #eaf4fb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: var(--gray-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* ── PROGRESS BAR ── */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 4px;
+    background: var(--red);
+    transition: width 0.35s ease;
+    z-index: 100;
+  }
+
+  /* ── SLIDE WRAPPER ── */
+  #slide-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .slide {
+    display: none;
+    width: 960px;
+    max-width: 98vw;
+    min-height: 580px;
+    background: var(--white);
+    border-radius: 4px;
+    box-shadow: 0 4px 32px rgba(192,57,43,0.10), 0 1px 4px rgba(0,0,0,0.08);
+    overflow: hidden;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+  }
+  .slide.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+  /* ── SLIDE HEADER ── */
+  .slide-header {
+    background: var(--red);
+    color: var(--white);
+    padding: 22px 36px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .slide-header .icon { font-size: 2rem; line-height: 1; margin-top: 2px; }
+  .slide-header .titles { flex: 1; }
+  .slide-header .section-label {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+  }
+  .slide-header h2 {
+    font-family: 'Georgia', serif;
+    font-size: 1.5rem;
+    font-weight: normal;
+    line-height: 1.25;
+  }
+  .slide-counter {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.75rem;
+    opacity: 0.75;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+
+  /* ── SLIDE BODY ── */
+  .slide-body {
+    flex: 1;
+    padding: 28px 36px 24px;
+    overflow-y: auto;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--dark);
+  }
+
+  /* ── TITLE SLIDE ── */
+  .title-slide .slide-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 18px;
+    padding: 40px 48px;
+  }
+  .title-slide .big-icon { font-size: 4rem; }
+  .title-slide h1 {
+    font-family: 'Georgia', serif;
+    font-size: 2rem;
+    color: var(--red);
+    font-weight: normal;
+    line-height: 1.3;
+  }
+  .title-slide .subtitle {
+    font-size: 1rem;
+    color: var(--gray-text);
+    max-width: 560px;
+  }
+  .title-slide .tag-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .tag {
+    background: var(--red-light);
+    color: var(--red-dark);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.78rem;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .tag.blue { background: var(--blue-light); color: var(--blue); }
+  .tag.green { background: var(--green-light); color: var(--green); }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider .slide-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+    background: var(--gray-light);
+  }
+  .section-divider .part-num {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--red);
+  }
+  .section-divider h1 {
+    font-family: 'Georgia', serif;
+    font-size: 2.2rem;
+    color: var(--dark);
+    font-weight: normal;
+  }
+  .section-divider .desc { color: var(--gray-text); max-width: 500px; font-size: 0.95rem; }
+  .section-divider .steps-preview {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .step-chip {
+    background: var(--white);
+    border: 1.5px solid var(--red-light);
+    color: var(--red-dark);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.78rem;
+  }
+
+  /* ── CONTENT ELEMENTS ── */
+  h3 { color: var(--red); font-size: 1.05rem; margin-bottom: 8px; font-family: 'Trebuchet MS', sans-serif; font-weight: bold; }
+  p { margin-bottom: 10px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  .info-box {
+    border-left: 4px solid var(--red);
+    background: var(--gray-light);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 14px;
+    font-size: 0.9rem;
+  }
+  .info-box.blue { border-left-color: var(--blue); background: var(--blue-light); }
+  .info-box.green { border-left-color: var(--green); background: var(--green-light); }
+  .info-box.amber { border-left-color: var(--amber); background: var(--amber-light); }
+
+  .card {
+    border: 1.5px solid var(--gray-mid);
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: var(--off-white);
+  }
+  .card .card-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .card h4 { color: var(--red); font-family: 'Trebuchet MS', sans-serif; font-size: 0.9rem; margin-bottom: 4px; }
+
+  ol, ul { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 5px; font-size: 0.9rem; }
+  li strong { color: var(--red-dark); }
+
+  /* ── STEP SEQUENCE ── */
+  .step-list { list-style: none; padding: 0; }
+  .step-list li {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    background: var(--red);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .code-block .lang-badge {
+    position: absolute;
+    top: 6px; right: 10px;
+    background: var(--red);
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: 'Trebuchet MS', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .kw { color: #569cd6; }   /* keyword */
+  .st { color: #ce9178; }   /* string */
+  .cm { color: #6a9955; }   /* comment */
+  .an { color: #dcdcaa; }   /* annotation */
+  .tp { color: #4ec9b0; }   /* type */
+  .nm { color: #9cdcfe; }   /* name/variable */
+  .nu { color: #b5cea8; }   /* number */
+  .xml-tag { color: #569cd6; }
+  .xml-attr { color: #9cdcfe; }
+  .xml-val { color: #ce9178; }
+
+  /* ── DIAGRAM ── */
+  .diagram-box {
+    border: 2px solid var(--red-light);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--gray-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .diag-node {
+    background: var(--white);
+    border: 2px solid var(--red);
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--red-dark);
+    text-align: center;
+  }
+  .diag-arrow { color: var(--red); font-size: 1.2rem; font-weight: bold; }
+  .diag-db {
+    background: var(--blue-light);
+    border: 2px solid var(--blue);
+    color: var(--blue);
+  }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 14px; }
+  th { background: var(--red); color: white; padding: 8px 12px; text-align: left; font-family: 'Trebuchet MS', sans-serif; font-size: 0.8rem; }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--gray-mid); }
+  tr:nth-child(even) td { background: var(--gray-light); }
+
+  /* ── QUIZ ── */
+  .quiz-q {
+    background: var(--gray-light);
+    border-left: 4px solid var(--red);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 16px;
+    font-weight: bold;
+    font-size: 0.95rem;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .quiz-opt {
+    background: var(--white);
+    border: 1.5px solid var(--gray-mid);
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    transition: all 0.2s;
+    font-family: 'Georgia', serif;
+  }
+  .quiz-opt:hover { border-color: var(--red); background: var(--red-light); }
+  .quiz-opt.correct { background: var(--green-light); border-color: var(--green); color: #1a5e35; }
+  .quiz-opt.wrong { background: #fdecea; border-color: #e74c3c; color: #7b241c; }
+  .quiz-feedback {
+    display: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    margin-bottom: 12px;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: var(--green-light); color: #1a5e35; border-left: 4px solid var(--green); }
+  .quiz-feedback.wrong-fb { background: #fdecea; color: #7b241c; border-left: 4px solid #e74c3c; }
+
+  /* ── CHECKLIST ── */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1.5px solid var(--gray-mid);
+    background: var(--white);
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .checklist li:hover { border-color: var(--red); }
+  .checklist li.checked { background: var(--green-light); border-color: var(--green); }
+  .check-box {
+    width: 20px; height: 20px;
+    border: 2px solid var(--gray-mid);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .checklist li.checked .check-box { background: var(--green); border-color: var(--green); color: white; }
+
+  /* ── NAV BAR ── */
+  #nav-bar {
+    position: fixed;
+    bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--white);
+    padding: 8px 16px;
+    border-radius: 40px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+    z-index: 50;
+  }
+  .nav-btn {
+    background: none;
+    border: 1.5px solid var(--gray-mid);
+    border-radius: 20px;
+    padding: 6px 18px;
+    cursor: pointer;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.82rem;
+    color: var(--dark);
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-btn:disabled:hover { background: none; color: var(--dark); border-color: var(--gray-mid); }
+  #slide-num {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.8rem;
+    color: var(--gray-text);
+    min-width: 60px;
+    text-align: center;
+  }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block;
+    background: var(--amber);
+    color: white;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .badge.red { background: var(--red); }
+  .badge.blue { background: var(--blue); }
+  .badge.green { background: var(--green); }
+
+  /* ── TERMINAL BLOCK ── */
+  .terminal {
+    background: #0d1117;
+    color: #58a6ff;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+  .terminal .prompt { color: #3fb950; }
+  .terminal .out { color: #e6edf3; }
+  .terminal .err { color: #f85149; }
+
+  /* ── VERTICAL STEPS ── */
+  .v-steps { position: relative; padding-left: 30px; }
+  .v-steps::before {
+    content: '';
+    position: absolute;
+    left: 10px; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--red-light);
+  }
+  .v-step { position: relative; margin-bottom: 16px; }
+  .v-step::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 6px;
+    width: 10px; height: 10px;
+    background: var(--red);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--red);
+  }
+  .v-step h4 { font-family: 'Trebuchet MS', sans-serif; font-size: 0.9rem; color: var(--red); margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="slide-container">
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 – TITLE
+═══════════════════════════════════════════════════════ -->
+<div class="slide title-slide active">
+  <div class="slide-header">
+    <div class="titles">
+      <div class="section-label">Enterprise Computing · Jakarta EE</div>
+      <h2>JPA Bookstore Project</h2>
+    </div>
+    <div class="slide-counter">1 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="big-icon">📚</div>
+    <h1>Building a Bookstore with JPA,<br>NetBeans & MySQL</h1>
+    <p class="subtitle">A complete, step-by-step guide — from installation to a working
+    persistent bookstore application.</p>
+    <div class="tag-row">
+      <span class="tag">Part 1 · Installation</span>
+      <span class="tag">Part 2 · Preparation</span>
+      <span class="tag">Part 3 · Project Build</span>
+      <span class="tag blue">NetBeans IDE</span>
+      <span class="tag green">MySQL Workbench</span>
+    </div>
+    <p style="font-size:0.82rem;color:var(--gray-text)">Use ← → arrow keys or the buttons below to navigate</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 – LEARNING GOALS
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🎯</div>
+    <div class="titles">
+      <div class="section-label">Overview</div>
+      <h2>What You Will Learn</h2>
+    </div>
+    <div class="slide-counter">2 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Learning Outcomes</h3>
+        <ol>
+          <li>Install and configure all required tools</li>
+          <li>Set up a MySQL bookstore database</li>
+          <li>Create a <strong>Jakarta EE JPA project</strong> in NetBeans</li>
+          <li>Map a <code>Book</code> entity to a database table</li>
+          <li>Perform <strong>CRUD operations</strong> using JPA</li>
+          <li>Verify results in MySQL Workbench</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Tools You Will Use</h3>
+        <div class="card" style="margin-bottom:10px">
+          <div class="card-icon">☕</div>
+          <h4>Java JDK 21</h4>
+          <p style="font-size:0.82rem">Runtime + compiler for all Java code</p>
+        </div>
+        <div class="card" style="margin-bottom:10px">
+          <div class="card-icon">🛠️</div>
+          <h4>Apache NetBeans 21+</h4>
+          <p style="font-size:0.82rem">IDE with built-in JPA & GlassFish support</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🐬</div>
+          <h4>MySQL 8 + Workbench</h4>
+          <p style="font-size:0.82rem">Database server + visual query tool</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 – SECTION DIVIDER: PART 1
+═══════════════════════════════════════════════════════ -->
+<div class="slide section-divider">
+  <div class="slide-header">
+    <div class="titles">
+      <div class="section-label">Part 1 of 3</div>
+      <h2>Installation &amp; Setup</h2>
+    </div>
+    <div class="slide-counter">3 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="part-num">Part 1 · Installation</div>
+    <h1>Install Your Tools</h1>
+    <p class="desc">Four components must be installed before you write a single line of code.
+    We'll do them in the right order.</p>
+    <div class="steps-preview">
+      <span class="step-chip">① JDK 21</span>
+      <span class="step-chip">② NetBeans IDE</span>
+      <span class="step-chip">③ MySQL Server 8</span>
+      <span class="step-chip">④ MySQL Workbench</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 – INSTALL JDK
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">☕</div>
+    <div class="titles">
+      <div class="section-label">Part 1 · Installation</div>
+      <h2>Step 1 · Install Java JDK 21</h2>
+    </div>
+    <div class="slide-counter">4 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Download</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Go to <strong>https://adoptium.net</strong> (Eclipse Temurin — free &amp; open source)</div></li>
+          <li><span class="step-num">2</span><div>Select <strong>Java 21 (LTS)</strong>, your OS, and click <em>Latest Release</em></div></li>
+          <li><span class="step-num">3</span><div>Run the installer — tick <em>"Set JAVA_HOME"</em> and <em>"Add to PATH"</em> checkboxes</div></li>
+        </ol>
+        <h3 style="margin-top:14px">Verify Installation</h3>
+        <div class="terminal">
+          <span class="prompt">$ </span>java -version<br>
+          <span class="out">openjdk version "21.0.x" 2024-xx-xx</span><br>
+          <span class="prompt">$ </span>javac -version<br>
+          <span class="out">javac 21.0.x</span>
+        </div>
+      </div>
+      <div>
+        <div class="info-box green">
+          <strong>✅ LTS = Long Term Support</strong><br>
+          Always use an LTS version (11, 17, 21) for course work — they receive patches for years.
+        </div>
+        <div class="info-box amber">
+          <strong>⚠️ Windows Users</strong><br>
+          After install, open <em>System Properties → Environment Variables</em> and confirm
+          <code>JAVA_HOME</code> points to your JDK folder (e.g., <code>C:\Program Files\Eclipse Adoptium\jdk-21</code>).
+        </div>
+        <div class="info-box blue">
+          <strong>🍎 macOS / Linux</strong><br>
+          The installer sets paths automatically. Alternatively use <em>Homebrew</em>:
+          <code>brew install --cask temurin@21</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 5 – INSTALL NETBEANS
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🛠️</div>
+    <div class="titles">
+      <div class="section-label">Part 1 · Installation</div>
+      <h2>Step 2 · Install Apache NetBeans 21</h2>
+    </div>
+    <div class="slide-counter">5 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Download &amp; Install</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Visit <strong>https://netbeans.apache.org/front/main/download</strong></div></li>
+          <li><span class="step-num">2</span><div>Download the <strong>Apache NetBeans 21</strong> installer for your OS</div></li>
+          <li><span class="step-num">3</span><div>Run the installer — accept the default path, ensure it detects JDK 21</div></li>
+          <li><span class="step-num">4</span><div>Launch NetBeans; dismiss the "Getting Started" tab</div></li>
+        </ol>
+        <h3 style="margin-top:14px">Enable Required Plugins</h3>
+        <div class="info-box">
+          Go to <strong>Tools → Plugins → Available Plugins</strong><br>
+          Search for and install: <em>"Jakarta EE"</em> and <em>"GlassFish"</em> bundles if not already present.
+        </div>
+      </div>
+      <div>
+        <h3>Add GlassFish / Payara Server</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Download <strong>GlassFish 7</strong> from <em>https://glassfish.org</em> (ZIP)</div></li>
+          <li><span class="step-num">2</span><div>Extract to a stable folder (e.g., <code>C:\servers\glassfish7</code>)</div></li>
+          <li><span class="step-num">3</span><div>In NetBeans: <em>Window → Services → Servers → Add Server</em></div></li>
+          <li><span class="step-num">4</span><div>Choose <em>GlassFish Server</em> → browse to the extracted folder</div></li>
+        </ol>
+        <div class="info-box green">
+          <strong>💡 Alternative: Payara 6</strong><br>
+          Payara is a production-ready GlassFish fork — works identically and is also free.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 6 – INSTALL MYSQL
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🐬</div>
+    <div class="titles">
+      <div class="section-label">Part 1 · Installation</div>
+      <h2>Step 3 · Install MySQL Server 8 + Workbench</h2>
+    </div>
+    <div class="slide-counter">6 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>MySQL Installer (Windows — easiest)</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Go to <strong>https://dev.mysql.com/downloads/installer</strong></div></li>
+          <li><span class="step-num">2</span><div>Download <em>mysql-installer-community-8.x.x.msi</em></div></li>
+          <li><span class="step-num">3</span><div>Choose <strong>Developer Default</strong> setup (installs Server + Workbench + Connector/J)</div></li>
+          <li><span class="step-num">4</span><div>Set root password — <strong>write it down!</strong> You'll need it for JPA config</div></li>
+          <li><span class="step-num">5</span><div>Keep default port <strong>3306</strong></div></li>
+        </ol>
+      </div>
+      <div>
+        <h3>macOS / Linux</h3>
+        <div class="terminal">
+          <span class="prompt"># macOS (Homebrew)</span><br>
+          <span class="prompt">$ </span>brew install mysql<br>
+          <span class="prompt">$ </span>brew services start mysql<br>
+          <span class="prompt">$ </span>mysql_secure_installation<br><br>
+          <span class="prompt"># Ubuntu/Debian</span><br>
+          <span class="prompt">$ </span>sudo apt install mysql-server<br>
+          <span class="prompt">$ </span>sudo mysql_secure_installation
+        </div>
+        <div class="info-box">
+          <strong>Then install Workbench separately:</strong><br>
+          <strong>macOS:</strong> <code>brew install --cask mysqlworkbench</code><br>
+          <strong>Linux:</strong> Download .deb/.rpm from <em>dev.mysql.com/downloads/workbench</em>
+        </div>
+      </div>
+    </div>
+    <div class="info-box green">
+      <strong>✅ Verify MySQL is running</strong> — open MySQL Workbench, click the <em>Local Instance</em> tile, enter your root password. If the schema list loads, you're ready.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 7 – INSTALL CONNECTOR/J
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🔌</div>
+    <div class="titles">
+      <div class="section-label">Part 1 · Installation</div>
+      <h2>Step 4 · MySQL Connector/J (JDBC Driver)</h2>
+    </div>
+    <div class="slide-counter">7 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">
+      <strong>What is Connector/J?</strong> It is the official JDBC driver that lets your Java application
+      communicate with MySQL. JPA sits on top of JDBC, so this driver is essential.
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>Option A — Maven (Recommended)</h3>
+        <p style="font-size:0.85rem">If your project uses Maven (pom.xml), add this dependency — Maven downloads the driver automatically:</p>
+        <div class="code-block">
+          <span class="lang-badge">XML / pom.xml</span>
+<span class="xml-tag">&lt;dependency&gt;</span>
+  <span class="xml-tag">&lt;groupId&gt;</span>com.mysql<span class="xml-tag">&lt;/groupId&gt;</span>
+  <span class="xml-tag">&lt;artifactId&gt;</span>mysql-connector-j<span class="xml-tag">&lt;/artifactId&gt;</span>
+  <span class="xml-tag">&lt;version&gt;</span>8.3.0<span class="xml-tag">&lt;/version&gt;</span>
+<span class="xml-tag">&lt;/dependency&gt;</span></div>
+      </div>
+      <div>
+        <h3>Option B — Manual JAR</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Download <em>mysql-connector-j-8.x.x.jar</em> from <em>dev.mysql.com/downloads/connector/j</em></div></li>
+          <li><span class="step-num">2</span><div>In NetBeans project: right-click <strong>Libraries → Add JAR/Folder</strong></div></li>
+          <li><span class="step-num">3</span><div>Browse to and select the downloaded JAR</div></li>
+        </ol>
+        <div class="info-box amber">
+          <strong>Also add to GlassFish!</strong><br>
+          Copy the JAR into <code>glassfish7/glassfish/domains/domain1/lib/</code> for server-managed connections.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 8 – SECTION DIVIDER: PART 2
+═══════════════════════════════════════════════════════ -->
+<div class="slide section-divider">
+  <div class="slide-header">
+    <div class="titles">
+      <div class="section-label">Part 2 of 3</div>
+      <h2>What to Prepare</h2>
+    </div>
+    <div class="slide-counter">8 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="part-num">Part 2 · Preparation</div>
+    <h1>Prepare Your Environment</h1>
+    <p class="desc">Before writing JPA code you need a database, a schema, a table, and
+    the correct project structure in NetBeans.</p>
+    <div class="steps-preview">
+      <span class="step-chip">① Create MySQL DB</span>
+      <span class="step-chip">② Create books table</span>
+      <span class="step-chip">③ New Maven project</span>
+      <span class="step-chip">④ persistence.xml</span>
+      <span class="step-chip">⑤ JDBC pool in GlassFish</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 9 – CREATE DATABASE IN WORKBENCH
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🗄️</div>
+    <div class="titles">
+      <div class="section-label">Part 2 · Preparation</div>
+      <h2>Create the Bookstore Database (Workbench)</h2>
+    </div>
+    <div class="slide-counter">9 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Using MySQL Workbench GUI</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Open Workbench → double-click <strong>Local instance (root)</strong></div></li>
+          <li><span class="step-num">2</span><div>In <em>Navigator → Schemas</em>, right-click → <strong>Create Schema</strong></div></li>
+          <li><span class="step-num">3</span><div>Name it <code>bookstoredb</code>, charset <code>utf8mb4</code>, collation <code>utf8mb4_unicode_ci</code></div></li>
+          <li><span class="step-num">4</span><div>Click <strong>Apply → Apply → Finish</strong></div></li>
+        </ol>
+      </div>
+      <div>
+        <h3>OR — Run SQL directly</h3>
+        <div class="code-block">
+          <span class="lang-badge">SQL</span>
+<span class="kw">CREATE DATABASE</span> bookstoredb
+  <span class="kw">CHARACTER SET</span> utf8mb4
+  <span class="kw">COLLATE</span> utf8mb4_unicode_ci;
+
+<span class="kw">USE</span> bookstoredb;
+
+<span class="cm">-- Verify</span>
+<span class="kw">SHOW DATABASES</span>;
+        </div>
+        <div class="info-box green">
+          <strong>✅ You should see</strong> <code>bookstoredb</code> in the result. Keep this connection open — you'll use Workbench to inspect data throughout the project.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 10 – CREATE BOOKS TABLE
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">📋</div>
+    <div class="titles">
+      <div class="section-label">Part 2 · Preparation</div>
+      <h2>Create the books Table</h2>
+    </div>
+    <div class="slide-counter">10 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>SQL — Create Table</h3>
+        <div class="code-block">
+          <span class="lang-badge">SQL</span>
+<span class="kw">USE</span> bookstoredb;
+
+<span class="kw">CREATE TABLE</span> books (
+  id        <span class="tp">INT</span>          <span class="kw">AUTO_INCREMENT PRIMARY KEY</span>,
+  title     <span class="tp">VARCHAR</span>(<span class="nu">255</span>) <span class="kw">NOT NULL</span>,
+  author    <span class="tp">VARCHAR</span>(<span class="nu">150</span>) <span class="kw">NOT NULL</span>,
+  isbn      <span class="tp">VARCHAR</span>(<span class="nu">20</span>)  <span class="kw">UNIQUE</span>,
+  price     <span class="tp">DECIMAL</span>(<span class="nu">8</span>,<span class="nu">2</span>),
+  stock_qty <span class="tp">INT</span>          <span class="kw">DEFAULT</span> <span class="nu">0</span>
+);
+
+<span class="cm">-- Seed a test row</span>
+<span class="kw">INSERT INTO</span> books (title, author, isbn, price, stock_qty)
+<span class="kw">VALUES</span> (<span class="st">'Clean Code'</span>, <span class="st">'Robert C. Martin'</span>,
+        <span class="st">'978-0132350884'</span>, <span class="nu">49.99</span>, <span class="nu">10</span>);
+        </div>
+      </div>
+      <div>
+        <h3>Table Structure</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+          <tr><td><code>id</code></td><td>INT</td><td>Auto PK — maps to <code>@Id @GeneratedValue</code></td></tr>
+          <tr><td><code>title</code></td><td>VARCHAR(255)</td><td>Required</td></tr>
+          <tr><td><code>author</code></td><td>VARCHAR(150)</td><td>Required</td></tr>
+          <tr><td><code>isbn</code></td><td>VARCHAR(20)</td><td>Unique constraint</td></tr>
+          <tr><td><code>price</code></td><td>DECIMAL(8,2)</td><td>Maps to <code>BigDecimal</code></td></tr>
+          <tr><td><code>stock_qty</code></td><td>INT</td><td>Maps to <code>int</code></td></tr>
+        </table>
+        <div class="info-box">
+          <strong>💡 JPA will manage this table for you</strong> — once your entity is configured,
+          you can also let JPA <em>generate</em> the table by setting
+          <code>hibernate.hbm2ddl.auto = create</code> in persistence.xml.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 11 – NEW MAVEN PROJECT WIZARD
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🆕</div>
+    <div class="titles">
+      <div class="section-label">Part 2 · Preparation</div>
+      <h2>Step A · Create the Maven Project in NetBeans</h2>
+    </div>
+    <div class="slide-counter">11 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue" style="margin-bottom:14px">
+      <strong>What is Maven?</strong> Maven is a build tool that automatically downloads the libraries (JARs) your project needs. When you create a <em>Maven project</em>, NetBeans generates a <code>pom.xml</code> file — your project's shopping list of dependencies.
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>New Project Wizard — Exact Steps</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span>
+            <div>In the top menu bar click <strong>File → New Project…</strong><br>
+            <em>(or press Ctrl+Shift+N on Windows / Cmd+Shift+N on Mac)</em><br>
+            A dialog box appears.</div>
+          </li>
+          <li><span class="step-num">2</span>
+            <div>In the <strong>Categories</strong> panel on the <em>left</em>, scroll down and click <strong>Java with Maven</strong>.<br>
+            <span style="color:var(--amber);font-weight:bold">⚠️ Do NOT choose plain "Java" — that uses the older Ant build system.</span></div>
+          </li>
+          <li><span class="step-num">3</span>
+            <div>In the <strong>Projects</strong> panel on the <em>right</em>, click <strong>Java Application</strong>.<br>
+            Then click <strong>Next &gt;</strong></div>
+          </li>
+          <li><span class="step-num">4</span>
+            <div>Fill in the <em>Name and Location</em> screen exactly as shown opposite →<br>
+            Then click <strong>Finish</strong>.</div>
+          </li>
+        </ol>
+        <div class="info-box amber" style="margin-top:10px">
+          <strong>⚠️ Delete the auto-generated App.java</strong><br>
+          NetBeans creates a file called <code>App.java</code> inside <code>com.bookstore</code>.<br>
+          Right-click it in the Projects panel → <strong>Delete</strong>.<br>
+          You will write your own <code>Main.java</code> later.
+        </div>
+      </div>
+      <div>
+        <h3>Wizard Fields — What to Type</h3>
+        <table>
+          <tr><th>Field</th><th>What to enter</th></tr>
+          <tr><td><strong>Project Name</strong></td><td><code>BookstoreJPA</code></td></tr>
+          <tr><td><strong>Project Location</strong></td><td>Any folder (e.g. your Desktop)</td></tr>
+          <tr><td><strong>Group Id</strong></td><td><code>com.bookstore</code></td></tr>
+          <tr><td><strong>Artifact Id</strong></td><td><code>BookstoreJPA</code> (auto-filled)</td></tr>
+          <tr><td><strong>Version</strong></td><td>Leave as <code>1.0-SNAPSHOT</code></td></tr>
+        </table>
+        <h3 style="margin-top:14px">What you see after Finish</h3>
+        <div class="info-box green">
+          In the <strong>Projects</strong> panel on the left you will see:<br>
+          <div style="font-family:monospace;font-size:0.8rem;margin-top:6px;line-height:1.9">
+            📁 <strong>BookstoreJPA</strong><br>
+            &nbsp;&nbsp;📁 Source Packages&nbsp;&nbsp;&nbsp;&nbsp;<em style="font-family:Georgia;font-size:0.78rem;color:var(--gray-text)">← your .java files go here</em><br>
+            &nbsp;&nbsp;📁 Other Sources&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em style="font-family:Georgia;font-size:0.78rem;color:var(--gray-text)">← persistence.xml goes here</em><br>
+            &nbsp;&nbsp;📁 Dependencies&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em style="font-family:Georgia;font-size:0.78rem;color:var(--gray-text)">← Maven JARs appear here</em><br>
+            &nbsp;&nbsp;📁 Project Files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em style="font-family:Georgia;font-size:0.78rem;color:var(--gray-text)">← contains pom.xml</em>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 12 – CREATE PACKAGES & META-INF FOLDER
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">📂</div>
+    <div class="titles">
+      <div class="section-label">Part 2 · Preparation</div>
+      <h2>Step B · Create Java Packages &amp; the META-INF Folder</h2>
+    </div>
+    <div class="slide-counter">12 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue" style="margin-bottom:12px">
+      <strong>What is a Java Package?</strong> A package is simply a <strong>named folder</strong> for organising your <code>.java</code> files. The name <code>com.bookstore.entity</code> tells Java to create nested folders: <code>com/</code> → inside it <code>bookstore/</code> → inside it <code>entity/</code>. Keeping entity classes, DAO classes, and the main class in separate packages is standard professional practice.
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>① Create package <code>com.bookstore.entity</code></h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span>
+            <div>In the <em>Projects</em> panel, find <strong>Source Packages</strong> under your project and <strong>right-click</strong> it.</div>
+          </li>
+          <li><span class="step-num">2</span>
+            <div>From the context menu choose <strong>New → Java Package…</strong></div>
+          </li>
+          <li><span class="step-num">3</span>
+            <div>In the <strong>Package Name</strong> field type:<br>
+            <code style="font-size:0.95rem">com.bookstore.entity</code><br>
+            Click <strong>Finish</strong>.</div>
+          </li>
+        </ol>
+        <h3 style="margin-top:14px">② Create package <code>com.bookstore.dao</code></h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span>
+            <div>Right-click <strong>Source Packages</strong> again → <strong>New → Java Package…</strong></div>
+          </li>
+          <li><span class="step-num">2</span>
+            <div>Package Name: <code>com.bookstore.dao</code><br>
+            Click <strong>Finish</strong>.</div>
+          </li>
+        </ol>
+        <div class="info-box green" style="margin-top:10px">
+          <strong>✅ You should now see</strong> under Source Packages:<br>
+          📦 <code>com.bookstore</code><br>
+          📦 <code>com.bookstore.dao</code><br>
+          📦 <code>com.bookstore.entity</code>
+        </div>
+      </div>
+      <div>
+        <h3>③ Create the META-INF folder &amp; persistence.xml</h3>
+        <div class="info-box amber" style="margin-bottom:10px">
+          <strong>Why META-INF?</strong> JPA <em>always</em> looks for <code>persistence.xml</code> inside a folder named <code>META-INF</code> on the Java classpath. In a Maven project the classpath root is <code>src/main/resources/</code>, so you must create the folder there — not inside <code>src/main/java/</code>.
+        </div>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span>
+            <div>In the <em>Projects</em> panel expand <strong>Other Sources</strong><br>
+            → then expand <strong>src/main/resources</strong></div>
+          </li>
+          <li><span class="step-num">2</span>
+            <div>Right-click <strong>src/main/resources</strong> → <strong>New → Folder…</strong></div>
+          </li>
+          <li><span class="step-num">3</span>
+            <div>Folder Name: <code>META-INF</code><br>
+            <em>(all capital letters, hyphen between META and INF)</em><br>
+            Click <strong>Finish</strong>.</div>
+          </li>
+          <li><span class="step-num">4</span>
+            <div>Right-click the new <strong>META-INF</strong> folder → <strong>New → XML Document…</strong><br>
+            File Name: <code>persistence</code>&nbsp; (NetBeans adds <code>.xml</code>)<br>
+            Click <strong>Finish</strong>. Replace the generated XML content with the config from the next slide.</div>
+          </li>
+        </ol>
+        <div class="info-box green">
+          <strong>✅ Complete project structure</strong>
+          <div style="font-family:monospace;font-size:0.78rem;margin-top:6px;line-height:1.8">
+            📁 Source Packages<br>
+            &nbsp;&nbsp;📦 com.bookstore &nbsp;&nbsp;&nbsp;← Main.java<br>
+            &nbsp;&nbsp;📦 com.bookstore.dao &nbsp;&nbsp;← BookDAO.java<br>
+            &nbsp;&nbsp;📦 com.bookstore.entity← Book.java<br>
+            📁 Other Sources<br>
+            &nbsp;&nbsp;📁 src/main/resources<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;📁 META-INF<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;📄 persistence.xml
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 12 – POM.XML DEPENDENCIES
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">📦</div>
+    <div class="titles">
+      <div class="section-label">Part 2 · Preparation</div>
+      <h2>Configure pom.xml — Dependencies</h2>
+    </div>
+    <div class="slide-counter">13 / 33</div>
+  </div>
+  <div class="slide-body">
+    <h3>Complete pom.xml</h3>
+    <div class="code-block" style="font-size:0.74rem">
+      <span class="lang-badge">XML / pom.xml</span>
+<span class="xml-tag">&lt;project&gt;</span>
+  <span class="xml-tag">&lt;modelVersion&gt;</span>4.0.0<span class="xml-tag">&lt;/modelVersion&gt;</span>
+  <span class="xml-tag">&lt;groupId&gt;</span>com.bookstore<span class="xml-tag">&lt;/groupId&gt;</span>
+  <span class="xml-tag">&lt;artifactId&gt;</span>BookstoreJPA<span class="xml-tag">&lt;/artifactId&gt;</span>
+  <span class="xml-tag">&lt;version&gt;</span>1.0<span class="xml-tag">&lt;/version&gt;</span>
+  <span class="xml-tag">&lt;packaging&gt;</span>jar<span class="xml-tag">&lt;/packaging&gt;</span>
+
+  <span class="xml-tag">&lt;properties&gt;</span>
+    <span class="xml-tag">&lt;maven.compiler.source&gt;</span>21<span class="xml-tag">&lt;/maven.compiler.source&gt;</span>
+    <span class="xml-tag">&lt;maven.compiler.target&gt;</span>21<span class="xml-tag">&lt;/maven.compiler.target&gt;</span>
+  <span class="xml-tag">&lt;/properties&gt;</span>
+
+  <span class="xml-tag">&lt;dependencies&gt;</span>
+    <span class="cm">&lt;!-- Jakarta Persistence API --&gt;</span>
+    <span class="xml-tag">&lt;dependency&gt;</span>
+      <span class="xml-tag">&lt;groupId&gt;</span>jakarta.persistence<span class="xml-tag">&lt;/groupId&gt;</span>
+      <span class="xml-tag">&lt;artifactId&gt;</span>jakarta.persistence-api<span class="xml-tag">&lt;/artifactId&gt;</span>
+      <span class="xml-tag">&lt;version&gt;</span>3.1.0<span class="xml-tag">&lt;/version&gt;</span>
+    <span class="xml-tag">&lt;/dependency&gt;</span>
+    <span class="cm">&lt;!-- Hibernate as JPA provider --&gt;</span>
+    <span class="xml-tag">&lt;dependency&gt;</span>
+      <span class="xml-tag">&lt;groupId&gt;</span>org.hibernate.orm<span class="xml-tag">&lt;/groupId&gt;</span>
+      <span class="xml-tag">&lt;artifactId&gt;</span>hibernate-core<span class="xml-tag">&lt;/artifactId&gt;</span>
+      <span class="xml-tag">&lt;version&gt;</span>6.4.1.Final<span class="xml-tag">&lt;/version&gt;</span>
+    <span class="xml-tag">&lt;/dependency&gt;</span>
+    <span class="cm">&lt;!-- MySQL JDBC Driver --&gt;</span>
+    <span class="xml-tag">&lt;dependency&gt;</span>
+      <span class="xml-tag">&lt;groupId&gt;</span>com.mysql<span class="xml-tag">&lt;/groupId&gt;</span>
+      <span class="xml-tag">&lt;artifactId&gt;</span>mysql-connector-j<span class="xml-tag">&lt;/artifactId&gt;</span>
+      <span class="xml-tag">&lt;version&gt;</span>8.3.0<span class="xml-tag">&lt;/version&gt;</span>
+    <span class="xml-tag">&lt;/dependency&gt;</span>
+  <span class="xml-tag">&lt;/dependencies&gt;</span>
+<span class="xml-tag">&lt;/project&gt;</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 13 – PERSISTENCE.XML
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">⚙️</div>
+    <div class="titles">
+      <div class="section-label">Part 2 · Preparation</div>
+      <h2>Configure persistence.xml</h2>
+    </div>
+    <div class="slide-counter">14 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">
+      <strong>📌 Location:</strong> <code>src/main/resources/META-INF/persistence.xml</code> — this file tells JPA which database to connect to and which provider (Hibernate) to use.
+    </div>
+    <div class="code-block" style="font-size:0.75rem">
+      <span class="lang-badge">XML</span>
+<span class="xml-tag">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="xml-tag">&lt;persistence</span> <span class="xml-attr">version=</span><span class="xml-val">"3.0"</span>
+  <span class="xml-attr">xmlns=</span><span class="xml-val">"https://jakarta.ee/xml/ns/persistence"</span><span class="xml-tag">&gt;</span>
+
+  <span class="xml-tag">&lt;persistence-unit</span> <span class="xml-attr">name=</span><span class="xml-val">"BookstorePU"</span> <span class="xml-attr">transaction-type=</span><span class="xml-val">"RESOURCE_LOCAL"</span><span class="xml-tag">&gt;</span>
+
+    <span class="xml-tag">&lt;provider&gt;</span>org.hibernate.jpa.HibernatePersistenceProvider<span class="xml-tag">&lt;/provider&gt;</span>
+    <span class="xml-tag">&lt;class&gt;</span>com.bookstore.entity.Book<span class="xml-tag">&lt;/class&gt;</span>
+
+    <span class="xml-tag">&lt;properties&gt;</span>
+      <span class="cm">&lt;!-- JDBC Connection --&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.url"</span>
+               <span class="xml-attr">value=</span><span class="xml-val">"jdbc:mysql://localhost:3306/bookstoredb?useSSL=false&amp;serverTimezone=UTC"</span><span class="xml-tag">/&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.driver"</span>
+               <span class="xml-attr">value=</span><span class="xml-val">"com.mysql.cj.jdbc.Driver"</span><span class="xml-tag">/&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.user"</span>     <span class="xml-attr">value=</span><span class="xml-val">"root"</span><span class="xml-tag">/&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.password"</span> <span class="xml-attr">value=</span><span class="xml-val">"YourPasswordHere"</span><span class="xml-tag">/&gt;</span>
+
+      <span class="cm">&lt;!-- Hibernate settings --&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"hibernate.dialect"</span>        <span class="xml-attr">value=</span><span class="xml-val">"org.hibernate.dialect.MySQLDialect"</span><span class="xml-tag">/&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"hibernate.hbm2ddl.auto"</span>   <span class="xml-attr">value=</span><span class="xml-val">"update"</span><span class="xml-tag">/&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"hibernate.show_sql"</span>       <span class="xml-attr">value=</span><span class="xml-val">"true"</span><span class="xml-tag">/&gt;</span>
+      <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"hibernate.format_sql"</span>     <span class="xml-attr">value=</span><span class="xml-val">"true"</span><span class="xml-tag">/&gt;</span>
+    <span class="xml-tag">&lt;/properties&gt;</span>
+
+  <span class="xml-tag">&lt;/persistence-unit&gt;</span>
+<span class="xml-tag">&lt;/persistence&gt;</span>
+    </div>
+    <div class="info-box amber">
+      <strong>⚠️ Security note</strong> — replace <code>YourPasswordHere</code> with your actual root password. Never commit passwords to a public repository.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 14 – SECTION DIVIDER: PART 3
+═══════════════════════════════════════════════════════ -->
+<div class="slide section-divider">
+  <div class="slide-header">
+    <div class="titles">
+      <div class="section-label">Part 3 of 3</div>
+      <h2>Build the Project</h2>
+    </div>
+    <div class="slide-counter">15 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="part-num">Part 3 · Project Build</div>
+    <h1>Write the JPA Code</h1>
+    <p class="desc">Now the fun part — entity class, DAO, and a main class
+    that performs full CRUD operations on the bookstore database.</p>
+    <div class="steps-preview">
+      <span class="step-chip">① Book entity</span>
+      <span class="step-chip">② BookDAO</span>
+      <span class="step-chip">③ Main class (CRUD)</span>
+      <span class="step-chip">④ Run &amp; verify</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 15 – BOOK ENTITY PART 1
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">📝</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Code</div>
+      <h2>Book.java — The Entity Class</h2>
+    </div>
+    <div class="slide-counter">16 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">
+      File: <code>src/main/java/com/bookstore/entity/Book.java</code>
+    </div>
+    <div class="code-block" style="font-size:0.75rem">
+      <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore.entity;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> java.math.BigDecimal;
+
+<span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="st">"books"</span>)
+<span class="kw">public class</span> <span class="tp">Book</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kw">private</span> <span class="tp">Long</span> <span class="nm">id</span>;
+
+    <span class="an">@Column</span>(nullable = <span class="kw">false</span>, length = <span class="nu">255</span>)
+    <span class="kw">private</span> <span class="tp">String</span> <span class="nm">title</span>;
+
+    <span class="an">@Column</span>(nullable = <span class="kw">false</span>, length = <span class="nu">150</span>)
+    <span class="kw">private</span> <span class="tp">String</span> <span class="nm">author</span>;
+
+    <span class="an">@Column</span>(unique = <span class="kw">true</span>, length = <span class="nu">20</span>)
+    <span class="kw">private</span> <span class="tp">String</span> <span class="nm">isbn</span>;
+
+    <span class="an">@Column</span>(precision = <span class="nu">8</span>, scale = <span class="nu">2</span>)
+    <span class="kw">private</span> <span class="tp">BigDecimal</span> <span class="nm">price</span>;
+
+    <span class="an">@Column</span>(name = <span class="st">"stock_qty"</span>)
+    <span class="kw">private</span> <span class="tp">int</span> <span class="nm">stockQty</span>;
+
+    <span class="cm">// ── No-arg constructor (required by JPA) ──</span>
+    <span class="kw">public</span> <span class="tp">Book</span>() {
+    }
+
+    <span class="cm">// ── Convenience constructor ──</span>
+    <span class="kw">public</span> <span class="tp">Book</span>(
+            <span class="tp">String</span> title,
+            <span class="tp">String</span> author,
+            <span class="tp">String</span> isbn,
+            <span class="tp">BigDecimal</span> price,
+            <span class="kw">int</span> stockQty) {
+
+        <span class="kw">this</span>.title    = title;
+        <span class="kw">this</span>.author   = author;
+        <span class="kw">this</span>.isbn     = isbn;
+        <span class="kw">this</span>.price    = price;
+        <span class="kw">this</span>.stockQty = stockQty;
+    }
+
+    <span class="cm">// ── Getters &amp; Setters on next slide ──</span>
+
+}
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 16 – BOOK ENTITY PART 2: GETTERS/SETTERS
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">📝</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Code</div>
+      <h2>Book.java — Getters, Setters &amp; toString</h2>
+    </div>
+    <div class="slide-counter">17 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <div class="code-block" style="font-size:0.73rem">
+          <span class="lang-badge">Java</span>
+    <span class="cm">// ── Getters ──────────────────────────────────</span>
+
+    <span class="kw">public</span> <span class="tp">Long</span> getId() {
+        <span class="kw">return</span> id;
+    }
+
+    <span class="kw">public</span> <span class="tp">String</span> getTitle() {
+        <span class="kw">return</span> title;
+    }
+
+    <span class="kw">public</span> <span class="tp">String</span> getAuthor() {
+        <span class="kw">return</span> author;
+    }
+
+    <span class="kw">public</span> <span class="tp">String</span> getIsbn() {
+        <span class="kw">return</span> isbn;
+    }
+
+    <span class="kw">public</span> <span class="tp">BigDecimal</span> getPrice() {
+        <span class="kw">return</span> price;
+    }
+
+    <span class="kw">public</span> <span class="kw">int</span> getStockQty() {
+        <span class="kw">return</span> stockQty;
+    }
+
+    <span class="cm">// ── Setters ──────────────────────────────────</span>
+
+    <span class="kw">public void</span> setTitle(<span class="tp">String</span> title) {
+        <span class="kw">this</span>.title = title;
+    }
+
+    <span class="kw">public void</span> setAuthor(<span class="tp">String</span> author) {
+        <span class="kw">this</span>.author = author;
+    }
+
+    <span class="kw">public void</span> setIsbn(<span class="tp">String</span> isbn) {
+        <span class="kw">this</span>.isbn = isbn;
+    }
+
+    <span class="kw">public void</span> setPrice(<span class="tp">BigDecimal</span> price) {
+        <span class="kw">this</span>.price = price;
+    }
+
+    <span class="kw">public void</span> setStockQty(<span class="kw">int</span> stockQty) {
+        <span class="kw">this</span>.stockQty = stockQty;
+    }
+
+    <span class="cm">// ── toString ─────────────────────────────────</span>
+
+    <span class="kw">@Override</span>
+    <span class="kw">public</span> <span class="tp">String</span> toString() {
+        <span class="kw">return</span> <span class="st">"Book{"</span>
+            + <span class="st">"id="</span>      + id
+            + <span class="st">", title='"</span>  + title  + <span class="st">"'"</span>
+            + <span class="st">", author='"</span> + author + <span class="st">"'"</span>
+            + <span class="st">", price="</span>   + price
+            + <span class="st">", stock="</span>   + stockQty
+            + <span class="st">"}"</span>;
+    }
+        </div>
+      </div>
+      <div>
+        <h3>Annotation Recap</h3>
+        <table>
+          <tr><th>Annotation</th><th>Purpose</th></tr>
+          <tr><td><code>@Entity</code></td><td>Marks class as JPA entity</td></tr>
+          <tr><td><code>@Table</code></td><td>Maps to table name <code>books</code></td></tr>
+          <tr><td><code>@Id</code></td><td>Primary key field</td></tr>
+          <tr><td><code>@GeneratedValue</code></td><td>Auto-increment PK</td></tr>
+          <tr><td><code>@Column</code></td><td>Customise column constraints</td></tr>
+        </table>
+        <div class="info-box green">
+          <strong>💡 NetBeans shortcut</strong> — right-click in the class body → <em>Insert Code → Getter and Setter</em> to generate all getters/setters automatically.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 17 – BOOKDAO
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🗃️</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Code</div>
+      <h2>BookDAO.java — Data Access Object</h2>
+    </div>
+    <div class="slide-counter">18 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">
+      File: <code>src/main/java/com/bookstore/dao/BookDAO.java</code> — wraps all JPA calls so the rest of your code never touches <code>EntityManager</code> directly.
+    </div>
+    <div class="code-block" style="font-size:0.73rem">
+      <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore.dao;
+
+<span class="kw">import</span> com.bookstore.entity.Book;
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> java.util.List;
+
+<span class="kw">public class</span> <span class="tp">BookDAO</span> {
+
+    <span class="kw">private final</span> <span class="tp">EntityManagerFactory</span> <span class="nm">emf</span> =
+        Persistence.createEntityManagerFactory(<span class="st">"BookstorePU"</span>);
+
+    <span class="cm">// ── CREATE ──────────────────────────────────────</span>
+    <span class="kw">public void</span> save(<span class="tp">Book</span> book) {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        em.getTransaction().begin();
+        em.persist(book);
+        em.getTransaction().commit();
+        em.close();
+    }
+
+    <span class="cm">// ── READ (by id) ────────────────────────────────</span>
+    <span class="kw">public</span> <span class="tp">Book</span> findById(<span class="tp">Long</span> id) {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        <span class="tp">Book</span> book = em.find(Book.<span class="kw">class</span>, id);
+        em.close();
+        <span class="kw">return</span> book;
+    }
+
+    <span class="cm">// ── READ (all books) ────────────────────────────</span>
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; findAll() {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; list = em
+            .createQuery(<span class="st">"SELECT b FROM Book b"</span>, Book.<span class="kw">class</span>)
+            .getResultList();
+        em.close();
+        <span class="kw">return</span> list;
+    }
+
+    <span class="cm">// ── UPDATE ──────────────────────────────────────</span>
+    <span class="kw">public void</span> update(<span class="tp">Book</span> book) {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        em.getTransaction().begin();
+        em.merge(book);
+        em.getTransaction().commit();
+        em.close();
+    }
+
+    <span class="cm">// ── DELETE ──────────────────────────────────────</span>
+    <span class="kw">public void</span> delete(<span class="tp">Long</span> id) {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        em.getTransaction().begin();
+        <span class="tp">Book</span> book = em.find(Book.<span class="kw">class</span>, id);
+        <span class="kw">if</span> (book != <span class="kw">null</span>) em.remove(book);
+        em.getTransaction().commit();
+        em.close();
+    }
+
+    <span class="kw">public void</span> close() { emf.close(); }
+}
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 18 – MAIN CLASS
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">▶️</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Code</div>
+      <h2>Main.java — Run CRUD Operations</h2>
+    </div>
+    <div class="slide-counter">19 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">
+      File: <code>src/main/java/com/bookstore/Main.java</code>
+    </div>
+    <div class="code-block" style="font-size:0.73rem">
+      <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore;
+
+<span class="kw">import</span> com.bookstore.dao.BookDAO;
+<span class="kw">import</span> com.bookstore.entity.Book;
+<span class="kw">import</span> java.math.BigDecimal;
+<span class="kw">import</span> java.util.List;
+
+<span class="kw">public class</span> <span class="tp">Main</span> {
+
+    <span class="kw">public static void</span> main(<span class="tp">String</span>[] args) {
+
+        <span class="tp">BookDAO</span> dao = <span class="kw">new</span> <span class="tp">BookDAO</span>();
+
+        <span class="cm">// ── CREATE ─────────────────────────────────────</span>
+        <span class="tp">Book</span> b1 = <span class="kw">new</span> <span class="tp">Book</span>(<span class="st">"Clean Code"</span>, <span class="st">"Robert C. Martin"</span>,
+                          <span class="st">"978-0132350884"</span>,
+                          <span class="kw">new</span> <span class="tp">BigDecimal</span>(<span class="st">"49.99"</span>), <span class="nu">10</span>);
+        <span class="tp">Book</span> b2 = <span class="kw">new</span> <span class="tp">Book</span>(<span class="st">"Effective Java"</span>, <span class="st">"Joshua Bloch"</span>,
+                          <span class="st">"978-0134685991"</span>,
+                          <span class="kw">new</span> <span class="tp">BigDecimal</span>(<span class="st">"54.99"</span>), <span class="nu">7</span>);
+        dao.save(b1);
+        dao.save(b2);
+        System.out.println(<span class="st">"✅ Books saved: "</span> + b1 + <span class="st">", "</span> + b2);
+
+        <span class="cm">// ── READ ALL ───────────────────────────────────</span>
+        <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; books = dao.findAll();
+        System.out.println(<span class="st">"\n📚 All Books:"</span>);
+        books.forEach(b -> System.out.println(<span class="st">"  "</span> + b));
+
+        <span class="cm">// ── UPDATE ─────────────────────────────────────</span>
+        b1.setPrice(<span class="kw">new</span> <span class="tp">BigDecimal</span>(<span class="st">"44.99"</span>));
+        dao.update(b1);
+        System.out.println(<span class="st">"\n✏️  Updated price: "</span> + dao.findById(b1.getId()));
+
+        <span class="cm">// ── DELETE ─────────────────────────────────────</span>
+        dao.delete(b2.getId());
+        System.out.println(<span class="st">"\n🗑️  After deleting b2: "</span> + dao.findAll());
+
+        dao.close();
+    }
+}
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 19 – RUN THE PROJECT
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🚀</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Run</div>
+      <h2>Running the Project in NetBeans</h2>
+    </div>
+    <div class="slide-counter">20 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Steps to Run</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Right-click project → <strong>Build</strong> (downloads Maven deps)</div></li>
+          <li><span class="step-num">2</span><div>Confirm no red underlines in the editor (all imports resolved)</div></li>
+          <li><span class="step-num">3</span><div>Right-click <code>Main.java</code> → <strong>Run File</strong> <em>(or press F6)</em></div></li>
+          <li><span class="step-num">4</span><div>Watch the <em>Output</em> panel at the bottom of NetBeans</div></li>
+        </ol>
+        <h3 style="margin-top:14px">Expected Console Output</h3>
+        <div class="terminal">
+          <span class="out">✅ Books saved: Book{id=1, title='Clean Code'...}</span><br>
+          <span class="out">   Book{id=2, title='Effective Java'...}</span><br><br>
+          <span class="out">📚 All Books:</span><br>
+          <span class="out">  Book{id=1, title='Clean Code', price=49.99}</span><br>
+          <span class="out">  Book{id=2, title='Effective Java', price=54.99}</span><br><br>
+          <span class="out">✏️  Updated price: Book{id=1, ..., price=44.99}</span><br><br>
+          <span class="out">🗑️  After deleting b2: [Book{id=1...}]</span>
+        </div>
+      </div>
+      <div>
+        <h3>Verify in MySQL Workbench</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span><div>Switch to Workbench → run query:</div></li>
+        </ol>
+        <div class="code-block">
+          <span class="lang-badge">SQL</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> bookstoredb.books;
+        </div>
+        <div class="info-box green">
+          You should see <strong>1 row</strong> (Clean Code, price 44.99 after update, b2 deleted).
+        </div>
+        <div class="info-box amber">
+          <strong>Can't connect?</strong> Check:<br>
+          • MySQL service is running<br>
+          • Password in persistence.xml is correct<br>
+          • <code>useSSL=false</code> is in the JDBC URL
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 20 – ENTITY-TABLE MAPPING DIAGRAM
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🗺️</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Concept</div>
+      <h2>How JPA Maps Entity → Table</h2>
+    </div>
+    <div class="slide-counter">21 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="diagram-box" style="flex-direction:column;align-items:stretch;gap:0;">
+      <div style="display:flex;justify-content:space-around;margin-bottom:8px;">
+        <div style="text-align:center;font-family:'Trebuchet MS',sans-serif;font-size:0.78rem;font-weight:bold;color:var(--red)">JAVA (JPA Entity)</div>
+        <div style="text-align:center;font-family:'Trebuchet MS',sans-serif;font-size:0.78rem;font-weight:bold;color:var(--blue)">MySQL (Database Table)</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:stretch;">
+        <div style="flex:1;background:white;border-radius:8px;padding:12px;font-family:monospace;font-size:0.78rem;border:2px solid var(--red-light)">
+          <div style="color:var(--red);font-weight:bold;margin-bottom:6px">@Entity class Book { }</div>
+          <div style="color:#569cd6">@Id Long <span style="color:#9cdcfe">id</span></div>
+          <div style="color:#569cd6">@Column String <span style="color:#9cdcfe">title</span></div>
+          <div style="color:#569cd6">@Column String <span style="color:#9cdcfe">author</span></div>
+          <div style="color:#569cd6">@Column String <span style="color:#9cdcfe">isbn</span></div>
+          <div style="color:#569cd6">@Column BigDecimal <span style="color:#9cdcfe">price</span></div>
+          <div style="color:#569cd6">@Column int <span style="color:#9cdcfe">stockQty</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;">
+          <div style="color:var(--red);font-size:1.5rem">→</div>
+          <div style="font-family:'Trebuchet MS',sans-serif;font-size:0.68rem;color:var(--gray-text);writing-mode:vertical-lr;transform:rotate(180deg)">Hibernate ORM</div>
+          <div style="color:var(--red);font-size:1.5rem">→</div>
+        </div>
+        <div style="flex:1;background:white;border-radius:8px;padding:12px;font-family:monospace;font-size:0.78rem;border:2px solid var(--blue-light)">
+          <div style="color:var(--blue);font-weight:bold;margin-bottom:6px">TABLE books</div>
+          <div>PK <span style="color:#9cdcfe">id</span> INT AUTO_INCREMENT</div>
+          <div><span style="color:#9cdcfe">title</span> VARCHAR(255) NOT NULL</div>
+          <div><span style="color:#9cdcfe">author</span> VARCHAR(150) NOT NULL</div>
+          <div><span style="color:#9cdcfe">isbn</span> VARCHAR(20) UNIQUE</div>
+          <div><span style="color:#9cdcfe">price</span> DECIMAL(8,2)</div>
+          <div><span style="color:#9cdcfe">stock_qty</span> INT DEFAULT 0</div>
+        </div>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top:12px">
+      <div class="info-box">
+        <strong>Class name → Table name</strong><br>
+        <code>Book</code> → <code>books</code> (via <code>@Table(name="books")</code>).<br>
+        Without the annotation, Hibernate defaults to the class name.
+      </div>
+      <div class="info-box blue">
+        <strong>Field name → Column name</strong><br>
+        <code>stockQty</code> → <code>stock_qty</code> (via <code>@Column(name="stock_qty")</code>).<br>
+        Without it, the Java field name is used directly.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 21 – JPQL QUERIES
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🔍</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Extension</div>
+      <h2>Useful JPQL Queries for the Bookstore</h2>
+    </div>
+    <div class="slide-counter">22 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">
+      <strong>JPQL</strong> (Jakarta Persistence Query Language) queries entities and fields — not tables and columns — so it works across any supported database.
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>Find by Author</h3>
+        <div class="code-block" style="font-size:0.76rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; findByAuthor(<span class="tp">String</span> author) {
+    <span class="tp">EntityManager</span> em = emf.createEntityManager();
+    <span class="kw">return</span> em
+      .createQuery(
+        <span class="st">"SELECT b FROM Book b WHERE b.author = :a"</span>,
+        Book.<span class="kw">class</span>)
+      .setParameter(<span class="st">"a"</span>, author)
+      .getResultList();
+}</div>
+        <h3>Find Cheap Books</h3>
+        <div class="code-block" style="font-size:0.76rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; findUnder(<span class="tp">BigDecimal</span> maxPrice) {
+    <span class="tp">EntityManager</span> em = emf.createEntityManager();
+    <span class="kw">return</span> em
+      .createQuery(
+        <span class="st">"SELECT b FROM Book b WHERE b.price &lt; :p ORDER BY b.price"</span>,
+        Book.<span class="kw">class</span>)
+      .setParameter(<span class="st">"p"</span>, maxPrice)
+      .getResultList();
+}</div>
+      </div>
+      <div>
+        <h3>Count Books</h3>
+        <div class="code-block" style="font-size:0.76rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">public long</span> countBooks() {
+    <span class="tp">EntityManager</span> em = emf.createEntityManager();
+    <span class="kw">return</span> em
+      .createQuery(
+        <span class="st">"SELECT COUNT(b) FROM Book b"</span>, <span class="tp">Long</span>.<span class="kw">class</span>)
+      .getSingleResult();
+}</div>
+        <h3>Search by Title Keyword</h3>
+        <div class="code-block" style="font-size:0.76rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; searchTitle(<span class="tp">String</span> kw) {
+    <span class="tp">EntityManager</span> em = emf.createEntityManager();
+    <span class="kw">return</span> em
+      .createQuery(
+        <span class="st">"SELECT b FROM Book b WHERE b.title LIKE :k"</span>,
+        Book.<span class="kw">class</span>)
+      .setParameter(<span class="st">"k"</span>, <span class="st">"%" </span>+ kw + <span class="st">"%"</span>)
+      .getResultList();
+}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 22 – TROUBLESHOOTING COMMON ERRORS
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🔧</div>
+    <div class="titles">
+      <div class="section-label">Part 3 · Troubleshooting</div>
+      <h2>Common Errors &amp; Fixes</h2>
+    </div>
+    <div class="slide-counter">23 / 33</div>
+  </div>
+  <div class="slide-body">
+    <table>
+      <tr><th>Error / Symptom</th><th>Likely Cause</th><th>Fix</th></tr>
+      <tr>
+        <td><code>Communications link failure</code></td>
+        <td>MySQL not running or wrong port</td>
+        <td>Start MySQL service; check port is 3306 in JDBC URL</td>
+      </tr>
+      <tr>
+        <td><code>Access denied for user 'root'</code></td>
+        <td>Wrong password in persistence.xml</td>
+        <td>Confirm password; consider creating a dedicated DB user</td>
+      </tr>
+      <tr>
+        <td><code>Unknown database 'bookstoredb'</code></td>
+        <td>Database not created yet</td>
+        <td>Run <code>CREATE DATABASE bookstoredb</code> in Workbench</td>
+      </tr>
+      <tr>
+        <td><code>No Persistence provider found</code></td>
+        <td>Hibernate JARs not in classpath</td>
+        <td>Run <strong>Maven → Clean &amp; Build</strong> to re-download deps</td>
+      </tr>
+      <tr>
+        <td><code>Table 'books' doesn't exist</code></td>
+        <td>hbm2ddl.auto not set to create/update</td>
+        <td>Set <code>hibernate.hbm2ddl.auto=update</code> in persistence.xml</td>
+      </tr>
+      <tr>
+        <td><code>ClassNotFoundException: com.mysql.cj...</code></td>
+        <td>Connector/J not on classpath</td>
+        <td>Add mysql-connector-j dependency to pom.xml; rebuild</td>
+      </tr>
+      <tr>
+        <td>Entities saved but IDs are 0</td>
+        <td>Transaction not committed</td>
+        <td>Ensure <code>em.getTransaction().commit()</code> is called</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 23 – CHECKLIST INTERACTIVE
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">✅</div>
+    <div class="titles">
+      <div class="section-label">Progress Check</div>
+      <h2>Lab Setup Checklist — Click to Track Progress</h2>
+    </div>
+    <div class="slide-counter">24 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Installation</h3>
+        <ul class="checklist" id="chk1">
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> JDK 21 installed &amp; JAVA_HOME set</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> NetBeans 21 installed</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> GlassFish/Payara server added</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> MySQL 8 Server running</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> MySQL Workbench connected</li>
+        </ul>
+        <h3 style="margin-top:12px">Database</h3>
+        <ul class="checklist">
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> <code>bookstoredb</code> schema created</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> <code>books</code> table created</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> Test row inserted &amp; visible in Workbench</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Project Setup</h3>
+        <ul class="checklist">
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> Maven project created in NetBeans</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> pom.xml dependencies added</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> <code>persistence.xml</code> in META-INF</li>
+        </ul>
+        <h3 style="margin-top:12px">Code</h3>
+        <ul class="checklist">
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> <code>Book.java</code> entity created</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> <code>BookDAO.java</code> with CRUD methods</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> <code>Main.java</code> runs without errors</li>
+          <li onclick="toggleCheck(this)"><span class="check-box">✓</span> Data verified in MySQL Workbench</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 24 – QUIZ 1
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🧠</div>
+    <div class="titles">
+      <div class="section-label">Knowledge Check</div>
+      <h2>Quiz — JPA Annotations</h2>
+    </div>
+    <div class="slide-counter">25 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="quiz-q">Q1. Which annotation marks a Java class as a JPA-managed persistent entity?</div>
+    <div class="quiz-options" id="q1">
+      <div class="quiz-opt" onclick="checkQuiz('q1',this,false)">@Persistent</div>
+      <div class="quiz-opt" onclick="checkQuiz('q1',this,true)">@Entity</div>
+      <div class="quiz-opt" onclick="checkQuiz('q1',this,false)">@Table</div>
+      <div class="quiz-opt" onclick="checkQuiz('q1',this,false)">@Mapped</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+
+    <div class="quiz-q" style="margin-top:16px">Q2. What does <code>GenerationType.IDENTITY</code> mean in <code>@GeneratedValue</code>?</div>
+    <div class="quiz-options" id="q2">
+      <div class="quiz-opt" onclick="checkQuiz('q2',this,false)">JPA generates the ID using a sequence table</div>
+      <div class="quiz-opt" onclick="checkQuiz('q2',this,false)">The application must set the ID manually</div>
+      <div class="quiz-opt" onclick="checkQuiz('q2',this,true)">The database auto-increments the column (e.g., MySQL AUTO_INCREMENT)</div>
+      <div class="quiz-opt" onclick="checkQuiz('q2',this,false)">JPA assigns a UUID as the primary key</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 25 – QUIZ 2
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🧠</div>
+    <div class="titles">
+      <div class="section-label">Knowledge Check</div>
+      <h2>Quiz — Persistence &amp; DAO</h2>
+    </div>
+    <div class="slide-counter">26 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="quiz-q">Q3. In the DAO, which <code>EntityManager</code> method saves a <strong>new</strong> entity to the database?</div>
+    <div class="quiz-options" id="q3">
+      <div class="quiz-opt" onclick="checkQuiz('q3',this,false)"><code>em.merge(entity)</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q3',this,true)"><code>em.persist(entity)</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q3',this,false)"><code>em.save(entity)</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q3',this,false)"><code>em.insert(entity)</code></div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+
+    <div class="quiz-q" style="margin-top:16px">Q4. Where must <code>persistence.xml</code> be placed in a Maven project?</div>
+    <div class="quiz-options" id="q4">
+      <div class="quiz-opt" onclick="checkQuiz('q4',this,false)"><code>src/main/java/META-INF/</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q4',this,false)"><code>src/main/java/</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q4',this,true)"><code>src/main/resources/META-INF/</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q4',this,false)"><code>src/META-INF/</code></div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 26 – QUIZ 3
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🧠</div>
+    <div class="titles">
+      <div class="section-label">Knowledge Check</div>
+      <h2>Quiz — Connections &amp; Configuration</h2>
+    </div>
+    <div class="slide-counter">27 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="quiz-q">Q5. Which property in persistence.xml controls whether Hibernate automatically creates/updates the database schema?</div>
+    <div class="quiz-options" id="q5">
+      <div class="quiz-opt" onclick="checkQuiz('q5',this,false)"><code>hibernate.auto_schema</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q5',this,true)"><code>hibernate.hbm2ddl.auto</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q5',this,false)"><code>hibernate.schema.update</code></div>
+      <div class="quiz-opt" onclick="checkQuiz('q5',this,false)"><code>jakarta.persistence.ddl</code></div>
+    </div>
+    <div class="quiz-feedback" id="q5-fb"></div>
+
+    <div class="quiz-q" style="margin-top:16px">Q6. What is the default MySQL port used in the JDBC URL?</div>
+    <div class="quiz-options" id="q6">
+      <div class="quiz-opt" onclick="checkQuiz('q6',this,false)">5432</div>
+      <div class="quiz-opt" onclick="checkQuiz('q6',this,false)">1521</div>
+      <div class="quiz-opt" onclick="checkQuiz('q6',this,true)">3306</div>
+      <div class="quiz-opt" onclick="checkQuiz('q6',this,false)">8080</div>
+    </div>
+    <div class="quiz-feedback" id="q6-fb"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 27 – EXTENSION: NAMED QUERIES
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">⭐</div>
+    <div class="titles">
+      <div class="section-label">Extension</div>
+      <h2>Named Queries <span class="badge">Optional</span></h2>
+    </div>
+    <div class="slide-counter">28 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box amber">
+      <strong>What are Named Queries?</strong> Pre-defined JPQL queries attached to the entity class with <code>@NamedQuery</code>. They are parsed once at startup — more efficient and easier to maintain.
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>Define on the Entity</h3>
+        <div class="code-block" style="font-size:0.74rem">
+          <span class="lang-badge">Java</span>
+<span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="st">"books"</span>)
+<span class="an">@NamedQueries</span>({
+  <span class="an">@NamedQuery</span>(
+    name  = <span class="st">"Book.findAll"</span>,
+    query = <span class="st">"SELECT b FROM Book b"</span>
+  ),
+  <span class="an">@NamedQuery</span>(
+    name  = <span class="st">"Book.findByAuthor"</span>,
+    query = <span class="st">"SELECT b FROM Book b WHERE b.author = :author"</span>
+  )
+})
+<span class="kw">public class</span> <span class="tp">Book</span> { ... }
+        </div>
+      </div>
+      <div>
+        <h3>Call from DAO</h3>
+        <div class="code-block" style="font-size:0.74rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; findAll() {
+    <span class="tp">EntityManager</span> em = emf.createEntityManager();
+    <span class="kw">return</span> em
+        .createNamedQuery(<span class="st">"Book.findAll"</span>, Book.<span class="kw">class</span>)
+        .getResultList();
+}
+
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; byAuthor(<span class="tp">String</span> a) {
+    <span class="tp">EntityManager</span> em = emf.createEntityManager();
+    <span class="kw">return</span> em
+        .createNamedQuery(<span class="st">"Book.findByAuthor"</span>, Book.<span class="kw">class</span>)
+        .setParameter(<span class="st">"author"</span>, a)
+        .getResultList();
+}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 28 – EXTENSION: CATEGORY RELATIONSHIP
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🔗</div>
+    <div class="titles">
+      <div class="section-label">Extension</div>
+      <h2>Adding a Category — @ManyToOne <span class="badge">Optional</span></h2>
+    </div>
+    <div class="slide-counter">29 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Category Entity</h3>
+        <div class="code-block" style="font-size:0.73rem">
+          <span class="lang-badge">Java</span>
+<span class="an">@Entity</span> <span class="an">@Table</span>(name=<span class="st">"categories"</span>)
+<span class="kw">public class</span> <span class="tp">Category</span> {
+
+    <span class="an">@Id</span> <span class="an">@GeneratedValue</span>(strategy=GenerationType.IDENTITY)
+    <span class="kw">private</span> <span class="tp">Long</span> id;
+
+    <span class="an">@Column</span>(nullable=<span class="kw">false</span>)
+    <span class="kw">private</span> <span class="tp">String</span> name;
+
+    <span class="an">@OneToMany</span>(mappedBy=<span class="st">"category"</span>, cascade=CascadeType.ALL)
+    <span class="kw">private</span> <span class="tp">List</span>&lt;<span class="tp">Book</span>&gt; books;
+
+    <span class="cm">// constructors, getters, setters…</span>
+}
+        </div>
+      </div>
+      <div>
+        <h3>Update Book Entity</h3>
+        <div class="code-block" style="font-size:0.73rem">
+          <span class="lang-badge">Java</span>
+<span class="cm">// Inside Book.java — add this field:</span>
+<span class="an">@ManyToOne</span>
+<span class="an">@JoinColumn</span>(name=<span class="st">"category_id"</span>)
+<span class="kw">private</span> <span class="tp">Category</span> category;
+
+<span class="cm">// getter / setter</span>
+<span class="kw">public</span> <span class="tp">Category</span> getCategory() { <span class="kw">return</span> category; }
+<span class="kw">public void</span> setCategory(<span class="tp">Category</span> c) { category = c; }
+        </div>
+        <div class="info-box">
+          <strong>Resulting SQL</strong>: Hibernate adds a <code>category_id</code> foreign key column to the <code>books</code> table automatically when <code>hbm2ddl.auto=update</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 29 – FULL PROJECT STRUCTURE RECAP
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🗂️</div>
+    <div class="titles">
+      <div class="section-label">Summary</div>
+      <h2>Complete Project File Map</h2>
+    </div>
+    <div class="slide-counter">30 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <div class="code-block" style="font-size:0.76rem">
+          <span class="lang-badge">Structure</span>
+BookstoreJPA/
+├── pom.xml                         <span class="cm">← Maven deps</span>
+└── src/
+    └── main/
+        ├── java/
+        │   └── com/bookstore/
+        │       ├── entity/
+        │       │   └── <span class="an">Book.java</span>       <span class="cm">← @Entity</span>
+        │       ├── dao/
+        │       │   └── <span class="an">BookDAO.java</span>    <span class="cm">← CRUD methods</span>
+        │       └── <span class="an">Main.java</span>          <span class="cm">← Entry point</span>
+        └── resources/
+            └── META-INF/
+                └── <span class="st">persistence.xml</span>  <span class="cm">← DB config</span>
+        </div>
+      </div>
+      <div>
+        <h3>Data Flow Summary</h3>
+        <div class="v-steps">
+          <div class="v-step">
+            <h4>1. Main.java calls BookDAO</h4>
+            <p style="font-size:0.85rem">Application code creates entity objects and calls DAO methods</p>
+          </div>
+          <div class="v-step">
+            <h4>2. BookDAO uses EntityManager</h4>
+            <p style="font-size:0.85rem">DAO opens an EM, begins a transaction, calls persist/merge/remove</p>
+          </div>
+          <div class="v-step">
+            <h4>3. Hibernate translates to SQL</h4>
+            <p style="font-size:0.85rem">The JPA provider generates INSERT/UPDATE/DELETE/SELECT SQL</p>
+          </div>
+          <div class="v-step">
+            <h4>4. MySQL executes the SQL</h4>
+            <p style="font-size:0.85rem">Data is persisted in the <code>books</code> table — visible in Workbench</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 30 – KEY CONCEPTS RECAP
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">📖</div>
+    <div class="titles">
+      <div class="section-label">Summary</div>
+      <h2>Key Concepts — Quick Reference</h2>
+    </div>
+    <div class="slide-counter">31 / 33</div>
+  </div>
+  <div class="slide-body">
+    <table>
+      <tr><th>Concept</th><th>What It Is</th><th>In Our Project</th></tr>
+      <tr><td><strong>JPA</strong></td><td>Standard API for ORM in Java/Jakarta EE</td><td>The annotations + EntityManager we use</td></tr>
+      <tr><td><strong>Hibernate</strong></td><td>The JPA provider (implementation)</td><td>Declared in pom.xml; does the SQL work</td></tr>
+      <tr><td><strong>Entity</strong></td><td>A Java class mapped to a DB table</td><td><code>Book.java</code> ← → <code>books</code> table</td></tr>
+      <tr><td><strong>EntityManager</strong></td><td>JPA's API for DB operations</td><td>Used inside BookDAO to persist/find/merge/remove</td></tr>
+      <tr><td><strong>Persistence Unit</strong></td><td>Named config block in persistence.xml</td><td><code>BookstorePU</code> — references DB + entity class</td></tr>
+      <tr><td><strong>JPQL</strong></td><td>Object-oriented query language for JPA</td><td><code>SELECT b FROM Book b WHERE b.author = :a</code></td></tr>
+      <tr><td><strong>CRUD</strong></td><td>Create, Read, Update, Delete operations</td><td>persist / find / merge / remove in BookDAO</td></tr>
+      <tr><td><strong>DAO</strong></td><td>Data Access Object pattern</td><td><code>BookDAO.java</code> — isolates DB logic</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 31 – LAB TASKS
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🧪</div>
+    <div class="titles">
+      <div class="section-label">Lab</div>
+      <h2>Lab Tasks — Try It Yourself</h2>
+    </div>
+    <div class="slide-counter">32 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>🟢 Core Tasks</h3>
+        <ol>
+          <li>Follow slides 4–7: install all tools</li>
+          <li>Create <code>bookstoredb</code> and <code>books</code> table in Workbench</li>
+          <li>Create the Maven project with correct <code>pom.xml</code></li>
+          <li>Write <code>Book.java</code>, <code>BookDAO.java</code>, <code>Main.java</code></li>
+          <li>Run Main — confirm output in console <em>and</em> in Workbench</li>
+        </ol>
+        <h3 style="margin-top:14px">🔵 Extend the Entity</h3>
+        <ol>
+          <li>Add a <code>publishYear</code> (<code>int</code>) field to <code>Book</code></li>
+          <li>Add a <code>findByYear(int year)</code> JPQL method to BookDAO</li>
+          <li>Re-run and verify the new column appears in Workbench</li>
+        </ol>
+      </div>
+      <div>
+        <h3>🟠 Extension Challenges</h3>
+        <ol>
+          <li>Convert inline JPQL queries to <code>@NamedQuery</code></li>
+          <li>Add a <code>Category</code> entity with a <code>@ManyToOne</code> relationship to <code>Book</code></li>
+          <li>Create a <code>CategoryDAO</code> with its own CRUD methods</li>
+          <li>Write a query that retrieves all books in a given category</li>
+        </ol>
+        <div class="info-box amber" style="margin-top:14px">
+          <strong>⭐ Challenge</strong> — Create a <code>BookstoreMenu</code> class that loops on a simple text menu (add/list/search/exit) so users can interact with the bookstore from the console.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 32 – END SLIDE
+═══════════════════════════════════════════════════════ -->
+<div class="slide title-slide">
+  <div class="slide-header">
+    <div class="titles">
+      <div class="section-label">End of Session</div>
+      <h2>JPA Bookstore — NetBeans &amp; MySQL</h2>
+    </div>
+    <div class="slide-counter">33 / 33</div>
+  </div>
+  <div class="slide-body">
+    <div class="big-icon">🎓</div>
+    <h1>You've built a working JPA Bookstore!</h1>
+    <div class="tag-row">
+      <span class="tag green">JDK 21 ✓</span>
+      <span class="tag blue">NetBeans ✓</span>
+      <span class="tag">MySQL ✓</span>
+      <span class="tag">Hibernate ✓</span>
+      <span class="tag">CRUD ✓</span>
+    </div>
+    <p class="subtitle">Next: Week 3 — Relationships, Cascading, and Jakarta EE Web Tier</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px;">
+      <div class="card" style="max-width:200px;text-align:left">
+        <div class="card-icon">📂</div>
+        <h4>Files created</h4>
+        <p style="font-size:0.78rem">Book.java · BookDAO.java · Main.java · persistence.xml · pom.xml</p>
+      </div>
+      <div class="card" style="max-width:200px;text-align:left">
+        <div class="card-icon">🧠</div>
+        <h4>Concepts covered</h4>
+        <p style="font-size:0.78rem">@Entity, @Id, @Column, EntityManager, JPQL, CRUD, DAO pattern</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 34 – WEEK 4 SECTION DIVIDER
+═══════════════════════════════════════════════════════ -->
+<div class="slide section-divider">
+  <div class="slide-header">
+    <div class="titles">
+      <div class="section-label">Week 4 · Extension</div>
+      <h2>JPQL, Callbacks &amp; Listeners</h2>
+    </div>
+    <div class="slide-counter">34 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="part-num">Week 4 Lab — Adding to BookstoreJPA</div>
+    <h1>Extending Our Project</h1>
+    <p class="desc">We will add Customer and Address entities to the existing BookstoreJPA project,
+    covering three lab requirements: JPQL named queries, lifecycle callbacks, and entity listeners.</p>
+    <div class="steps-preview">
+      <span class="step-chip">① Address entity</span>
+      <span class="step-chip">② Customer entity</span>
+      <span class="step-chip">③ Named &amp; native queries</span>
+      <span class="step-chip">④ Callbacks</span>
+      <span class="step-chip">⑤ Listeners</span>
+      <span class="step-chip">⑥ CustomerDAO</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 35 – WHAT TO ADD: NEW PROJECT STRUCTURE
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🗂️</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Setup</div>
+      <h2>What to Add to the Existing Project</h2>
+    </div>
+    <div class="slide-counter">35 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">
+      <strong>You do NOT need a new project.</strong> Add all files below to your existing
+      <code>BookstoreJPA</code> project. The <code>persistence.xml</code> and <code>pom.xml</code> only need small additions.
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>New Files to Create</h3>
+        <div class="code-block" style="font-size:0.76rem">
+          <span class="lang-badge">Structure</span>
+src/main/java/com/bookstore/
+├── entity/
+│   ├── Book.java         <span class="cm">← already exists</span>
+│   ├── <span class="an">Address.java</span>      <span class="cm">← NEW (Project 1)</span>
+│   └── <span class="an">Customer.java</span>     <span class="cm">← NEW (Projects 1+2+3)</span>
+├── dao/
+│   ├── BookDAO.java      <span class="cm">← already exists</span>
+│   └── <span class="an">CustomerDAO.java</span>  <span class="cm">← NEW</span>
+├── listener/             <span class="cm">← NEW package</span>
+│   ├── <span class="an">CustomerValidator.java</span>
+│   └── <span class="an">CustomerAgeListener.java</span>
+├── Main.java             <span class="cm">← already exists</span>
+└── <span class="an">Week4Main.java</span>        <span class="cm">← NEW entry point</span>
+        </div>
+      </div>
+      <div>
+        <h3>Steps Before Writing Code</h3>
+        <ol class="step-list" style="list-style:none;padding:0;">
+          <li><span class="step-num">1</span>
+            <div>Right-click <strong>Source Packages → New → Java Package</strong><br>
+            Name: <code>com.bookstore.listener</code> → Finish</div>
+          </li>
+          <li><span class="step-num">2</span>
+            <div>Create each new <code>.java</code> file by right-clicking the correct package → <strong>New → Java Class</strong></div>
+          </li>
+          <li><span class="step-num">3</span>
+            <div>Add the 2 new entity class names to <code>persistence.xml</code><br>
+            (shown on slide 38)</div>
+          </li>
+        </ol>
+        <div class="info-box green">
+          <strong>💡 Combining all 3 projects</strong><br>
+          The <code>Customer</code> entity will satisfy all three lab projects at once — named queries (P1), callback methods (P2), and external listeners (P3) are all declared on the same class.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 36 – ADDRESS ENTITY
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🏠</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Project 1</div>
+      <h2>Address.java — Entity</h2>
+    </div>
+    <div class="slide-counter">36 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">File: <code>src/main/java/com/bookstore/entity/Address.java</code></div>
+    <div class="two-col">
+      <div>
+        <div class="code-block" style="font-size:0.74rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore.entity;
+
+<span class="kw">import</span> jakarta.persistence.*;
+
+<span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="st">"addresses"</span>)
+<span class="kw">public class</span> <span class="tp">Address</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kw">private</span> <span class="tp">Long</span> id;
+
+    <span class="an">@Column</span>(name = <span class="st">"street1"</span>)
+    <span class="kw">private</span> <span class="tp">String</span> street1;
+
+    <span class="an">@Column</span>(name = <span class="st">"city"</span>)
+    <span class="kw">private</span> <span class="tp">String</span> city;
+
+    <span class="an">@Column</span>(name = <span class="st">"zipcode"</span>)
+    <span class="kw">private</span> <span class="tp">String</span> zipcode;
+
+    <span class="an">@Column</span>(name = <span class="st">"country"</span>)
+    <span class="kw">private</span> <span class="tp">String</span> country;
+
+    <span class="kw">public</span> <span class="tp">Address</span>() {
+    }
+
+    <span class="kw">public</span> <span class="tp">Address</span>(
+            <span class="tp">String</span> street1,
+            <span class="tp">String</span> city,
+            <span class="tp">String</span> zipcode,
+            <span class="tp">String</span> country) {
+        <span class="kw">this</span>.street1 = street1;
+        <span class="kw">this</span>.city    = city;
+        <span class="kw">this</span>.zipcode = zipcode;
+        <span class="kw">this</span>.country = country;
+    }
+
+    <span class="kw">public</span> <span class="tp">Long</span>   getId()      { <span class="kw">return</span> id; }
+    <span class="kw">public</span> <span class="tp">String</span> getStreet1() { <span class="kw">return</span> street1; }
+    <span class="kw">public</span> <span class="tp">String</span> getCity()    { <span class="kw">return</span> city; }
+    <span class="kw">public</span> <span class="tp">String</span> getZipcode() { <span class="kw">return</span> zipcode; }
+    <span class="kw">public</span> <span class="tp">String</span> getCountry() { <span class="kw">return</span> country; }
+
+    <span class="kw">public void</span> setStreet1(<span class="tp">String</span> s) { street1 = s; }
+    <span class="kw">public void</span> setCity(<span class="tp">String</span> c)    { city    = c; }
+    <span class="kw">public void</span> setZipcode(<span class="tp">String</span> z) { zipcode = z; }
+    <span class="kw">public void</span> setCountry(<span class="tp">String</span> c) { country = c; }
+
+    <span class="an">@Override</span>
+    <span class="kw">public</span> <span class="tp">String</span> toString() {
+        <span class="kw">return</span> street1 + <span class="st">", "</span> + city
+             + <span class="st">" "</span> + zipcode + <span class="st">", "</span> + country;
+    }
+}
+        </div>
+      </div>
+      <div>
+        <h3>Resulting Table</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th></tr>
+          <tr><td><code>id</code></td><td>BIGINT PK AUTO_INCREMENT</td></tr>
+          <tr><td><code>street1</code></td><td>VARCHAR(255)</td></tr>
+          <tr><td><code>city</code></td><td>VARCHAR(255)</td></tr>
+          <tr><td><code>zipcode</code></td><td>VARCHAR(255)</td></tr>
+          <tr><td><code>country</code></td><td>VARCHAR(255)</td></tr>
+        </table>
+        <div class="info-box">
+          <strong>How Customer links to Address</strong><br>
+          The <code>Customer</code> entity has a <code>@ManyToOne</code> field pointing to <code>Address</code>.
+          Hibernate adds an <code>address_id</code> foreign key column to the <code>customers</code> table automatically.
+        </div>
+        <div class="info-box amber">
+          <strong>Cascade saves</strong><br>
+          When persisting a <code>Customer</code>, you must either persist the <code>Address</code> first,
+          or add <code>cascade = CascadeType.PERSIST</code> to the <code>@ManyToOne</code> annotation on Customer.
+          We use cascade in this project.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 37 – CUSTOMER ENTITY PART 1: FIELDS + QUERIES
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">👤</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Projects 1+2+3</div>
+      <h2>Customer.java — Fields, Named &amp; Native Queries</h2>
+    </div>
+    <div class="slide-counter">37 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">File: <code>src/main/java/com/bookstore/entity/Customer.java</code> — this one class satisfies all three lab projects.</div>
+    <div class="code-block" style="font-size:0.73rem">
+      <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore.entity;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> java.util.Date;
+<span class="kw">import</span> com.bookstore.listener.CustomerValidator;
+<span class="kw">import</span> com.bookstore.listener.CustomerAgeListener;
+
+<span class="cm">// ── Project 1: Named JPQL queries ───────────────────────</span>
+<span class="an">@NamedQueries</span>({
+    <span class="an">@NamedQuery</span>(
+        name  = <span class="st">"Customer.findAll"</span>,
+        query = <span class="st">"SELECT c FROM Customer c"</span>
+    ),
+    <span class="an">@NamedQuery</span>(
+        name  = <span class="st">"Customer.findByFirstName"</span>,
+        query = <span class="st">"SELECT c FROM Customer c WHERE c.firstName = :firstName"</span>
+    )
+})
+<span class="cm">// ── Project 1: Native SQL query ──────────────────────────</span>
+<span class="an">@NamedNativeQuery</span>(
+    name        = <span class="st">"Customer.findAllNative"</span>,
+    query       = <span class="st">"SELECT * FROM customers"</span>,
+    resultClass = Customer.<span class="kw">class</span>
+)
+<span class="cm">// ── Project 3: Register external listeners ───────────────</span>
+<span class="an">@EntityListeners</span>({ CustomerValidator.<span class="kw">class</span>, CustomerAgeListener.<span class="kw">class</span> })
+<span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="st">"customers"</span>)
+<span class="kw">public class</span> <span class="tp">Customer</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kw">private</span> <span class="tp">Long</span>    id;
+
+    <span class="an">@Column</span>(name = <span class="st">"first_name"</span>)
+    <span class="kw">private</span> <span class="tp">String</span>  firstName;
+
+    <span class="an">@Column</span>(name = <span class="st">"last_name"</span>)
+    <span class="kw">private</span> <span class="tp">String</span>  lastName;
+
+    <span class="kw">private</span> <span class="tp">String</span>  email;
+
+    <span class="an">@Column</span>(name = <span class="st">"phone_number"</span>)
+    <span class="kw">private</span> <span class="tp">String</span>  phoneNumber;
+
+    <span class="an">@Temporal</span>(TemporalType.DATE)
+    <span class="an">@Column</span>(name = <span class="st">"date_of_birth"</span>)
+    <span class="kw">private</span> <span class="tp">Date</span>    dateOfBirth;
+
+    <span class="an">@Transient</span>          <span class="cm">// NOT persisted — age changes each year</span>
+    <span class="kw">private</span> <span class="tp">Integer</span> age;
+
+    <span class="an">@Temporal</span>(TemporalType.TIMESTAMP)
+    <span class="an">@Column</span>(name = <span class="st">"creation_date"</span>)
+    <span class="kw">private</span> <span class="tp">Date</span>    creationDate;
+
+    <span class="an">@ManyToOne</span>(cascade = CascadeType.PERSIST)
+    <span class="an">@JoinColumn</span>(name = <span class="st">"address_id"</span>)
+    <span class="kw">private</span> <span class="tp">Address</span> address;
+
+    <span class="cm">// constructors, getters, setters — next slide</span>
+}
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 38 – CUSTOMER ENTITY PART 2: CONSTRUCTORS + GETTERS/SETTERS
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">👤</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Projects 1+2+3</div>
+      <h2>Customer.java — Constructors, Getters &amp; Setters</h2>
+    </div>
+    <div class="slide-counter">38 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <div class="code-block" style="font-size:0.72rem">
+          <span class="lang-badge">Java</span>
+    <span class="cm">// ── No-arg constructor (required by JPA) ──</span>
+    <span class="kw">public</span> <span class="tp">Customer</span>() {
+    }
+
+    <span class="cm">// ── Convenience constructor ──</span>
+    <span class="kw">public</span> <span class="tp">Customer</span>(
+            <span class="tp">String</span> firstName,
+            <span class="tp">String</span> lastName,
+            <span class="tp">String</span> email,
+            <span class="tp">String</span> phoneNumber,
+            <span class="tp">Date</span>   dateOfBirth,
+            <span class="tp">Address</span> address) {
+        <span class="kw">this</span>.firstName   = firstName;
+        <span class="kw">this</span>.lastName    = lastName;
+        <span class="kw">this</span>.email       = email;
+        <span class="kw">this</span>.phoneNumber = phoneNumber;
+        <span class="kw">this</span>.dateOfBirth = dateOfBirth;
+        <span class="kw">this</span>.address     = address;
+    }
+
+    <span class="cm">// ── Getters ──</span>
+    <span class="kw">public</span> <span class="tp">Long</span>    getId()          { <span class="kw">return</span> id; }
+    <span class="kw">public</span> <span class="tp">String</span>  getFirstName()   { <span class="kw">return</span> firstName; }
+    <span class="kw">public</span> <span class="tp">String</span>  getLastName()    { <span class="kw">return</span> lastName; }
+    <span class="kw">public</span> <span class="tp">String</span>  getEmail()       { <span class="kw">return</span> email; }
+    <span class="kw">public</span> <span class="tp">String</span>  getPhoneNumber() { <span class="kw">return</span> phoneNumber; }
+    <span class="kw">public</span> <span class="tp">Date</span>    getDateOfBirth() { <span class="kw">return</span> dateOfBirth; }
+    <span class="kw">public</span> <span class="tp">Integer</span> getAge()         { <span class="kw">return</span> age; }
+    <span class="kw">public</span> <span class="tp">Date</span>    getCreationDate(){ <span class="kw">return</span> creationDate; }
+    <span class="kw">public</span> <span class="tp">Address</span> getAddress()     { <span class="kw">return</span> address; }
+
+    <span class="cm">// ── Setters ──</span>
+    <span class="kw">public void</span> setFirstName(<span class="tp">String</span> fn)   { firstName   = fn; }
+    <span class="kw">public void</span> setLastName(<span class="tp">String</span> ln)    { lastName    = ln; }
+    <span class="kw">public void</span> setEmail(<span class="tp">String</span> e)        { email       = e;  }
+    <span class="kw">public void</span> setPhoneNumber(<span class="tp">String</span> p)  { phoneNumber = p;  }
+    <span class="kw">public void</span> setDateOfBirth(<span class="tp">Date</span> d)    { dateOfBirth = d;  }
+    <span class="kw">public void</span> setAge(<span class="tp">Integer</span> a)         { age         = a;  }
+    <span class="kw">public void</span> setCreationDate(<span class="tp">Date</span> cd)  { creationDate= cd; }
+    <span class="kw">public void</span> setAddress(<span class="tp">Address</span> addr)  { address     = addr; }
+
+    <span class="an">@Override</span>
+    <span class="kw">public</span> <span class="tp">String</span> toString() {
+        <span class="kw">return</span> <span class="st">"Customer{"</span>
+            + <span class="st">"id="</span>         + id
+            + <span class="st">", name='"</span>    + firstName + <span class="st">" "</span> + lastName + <span class="st">"'"</span>
+            + <span class="st">", email='"</span>   + email     + <span class="st">"'"</span>
+            + <span class="st">", age="</span>      + age
+            + <span class="st">"}"</span>;
+    }
+        </div>
+      </div>
+      <div>
+        <h3>Key Annotation Recap</h3>
+        <table>
+          <tr><th>Annotation</th><th>Meaning</th></tr>
+          <tr><td><code>@Transient</code></td><td>Field exists in Java but is <strong>not</strong> stored in DB</td></tr>
+          <tr><td><code>@Temporal</code></td><td>Tells JPA how to store a <code>java.util.Date</code> (DATE / TIMESTAMP)</td></tr>
+          <tr><td><code>@ManyToOne</code></td><td>Many customers can share one address</td></tr>
+          <tr><td><code>@JoinColumn</code></td><td>Names the FK column (<code>address_id</code>) in <code>customers</code> table</td></tr>
+          <tr><td><code>cascade = PERSIST</code></td><td>Saves the Address automatically when the Customer is saved</td></tr>
+          <tr><td><code>@NamedQuery</code></td><td>Pre-compiled JPQL (uses entity/field names)</td></tr>
+          <tr><td><code>@NamedNativeQuery</code></td><td>Pre-compiled raw SQL (uses table/column names)</td></tr>
+          <tr><td><code>@EntityListeners</code></td><td>Registers external listener classes for lifecycle events</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 39 – LISTENER: CUSTOMERVALIDATOR
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🔒</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Project 3</div>
+      <h2>CustomerValidator.java — Pre-Persist / Pre-Update Listener</h2>
+    </div>
+    <div class="slide-counter">39 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">File: <code>src/main/java/com/bookstore/listener/CustomerValidator.java</code></div>
+    <div class="two-col">
+      <div>
+        <div class="code-block" style="font-size:0.75rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore.listener;
+
+<span class="kw">import</span> com.bookstore.entity.Customer;
+<span class="kw">import</span> jakarta.persistence.PrePersist;
+<span class="kw">import</span> jakarta.persistence.PreUpdate;
+
+<span class="kw">public class</span> <span class="tp">CustomerValidator</span> {
+
+    <span class="an">@PrePersist</span>
+    <span class="an">@PreUpdate</span>
+    <span class="kw">public void</span> validate(<span class="tp">Customer</span> customer) {
+
+        <span class="kw">if</span> (customer.getFirstName() == <span class="kw">null</span>
+                || customer.getFirstName().trim().isEmpty()) {
+            <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(
+                <span class="st">"First name cannot be empty."</span>
+            );
+        }
+
+        <span class="kw">if</span> (customer.getLastName() == <span class="kw">null</span>
+                || customer.getLastName().trim().isEmpty()) {
+            <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(
+                <span class="st">"Last name cannot be empty."</span>
+            );
+        }
+
+        System.out.println(
+            <span class="st">"[Validator] Passed for: "</span>
+            + customer.getFirstName()
+            + <span class="st">" "</span> + customer.getLastName()
+        );
+    }
+}
+        </div>
+      </div>
+      <div>
+        <h3>How Lifecycle Listeners Work</h3>
+        <div class="diagram-box" style="flex-direction:column;gap:8px;align-items:stretch">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="diag-node" style="flex:1;text-align:center">em.persist(customer)</div>
+            <div class="diag-arrow">→</div>
+            <div class="diag-node" style="flex:1;text-align:center;background:var(--red-light)">@PrePersist<br>validate() fires</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="diag-node" style="flex:1;text-align:center">em.merge(customer)</div>
+            <div class="diag-arrow">→</div>
+            <div class="diag-node" style="flex:1;text-align:center;background:var(--red-light)">@PreUpdate<br>validate() fires</div>
+          </div>
+        </div>
+        <div class="info-box">
+          <strong>Listener vs. Callback — what's the difference?</strong><br>
+          A <strong>callback</strong> (Project 2) is a method <em>inside</em> the entity class itself.<br>
+          A <strong>listener</strong> (Project 3) is a method in a <em>separate</em> class registered via <code>@EntityListeners</code>. Listeners are preferred because they keep business logic out of the entity.
+        </div>
+        <div class="info-box amber">
+          <strong>Listener method signature rule</strong><br>
+          The method must take the entity as its single parameter: <code>void validate(Customer c)</code>.<br>
+          Unlike callback methods in the entity itself, which take no parameters.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 40 – LISTENER: CUSTOMERAGELISTENER
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🎂</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Project 3</div>
+      <h2>CustomerAgeListener.java — Post-Persist / Post-Load Listener</h2>
+    </div>
+    <div class="slide-counter">40 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">File: <code>src/main/java/com/bookstore/listener/CustomerAgeListener.java</code></div>
+    <div class="two-col">
+      <div>
+        <div class="code-block" style="font-size:0.74rem">
+          <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore.listener;
+
+<span class="kw">import</span> com.bookstore.entity.Customer;
+<span class="kw">import</span> jakarta.persistence.PostLoad;
+<span class="kw">import</span> jakarta.persistence.PostPersist;
+<span class="kw">import</span> jakarta.persistence.PostUpdate;
+<span class="kw">import</span> java.util.Calendar;
+
+<span class="kw">public class</span> <span class="tp">CustomerAgeListener</span> {
+
+    <span class="an">@PostPersist</span>
+    <span class="an">@PostLoad</span>
+    <span class="an">@PostUpdate</span>
+    <span class="kw">public void</span> calculateAge(<span class="tp">Customer</span> customer) {
+
+        <span class="kw">if</span> (customer.getDateOfBirth() == <span class="kw">null</span>) {
+            <span class="kw">return</span>;
+        }
+
+        <span class="tp">Calendar</span> dob = Calendar.getInstance();
+        dob.setTime(customer.getDateOfBirth());
+
+        <span class="tp">Calendar</span> today = Calendar.getInstance();
+
+        <span class="kw">int</span> age = today.get(Calendar.YEAR)
+                - dob.get(Calendar.YEAR);
+
+        <span class="cm">// Adjust if birthday hasn't occurred yet this year</span>
+        <span class="kw">if</span> (today.get(Calendar.DAY_OF_YEAR)
+                &lt; dob.get(Calendar.DAY_OF_YEAR)) {
+            age--;
+        }
+
+        customer.setAge(age);
+
+        System.out.println(
+            <span class="st">"[AgeListener] Age set to "</span> + age
+            + <span class="st">" for: "</span> + customer.getFirstName()
+        );
+    }
+}
+        </div>
+      </div>
+      <div>
+        <h3>All JPA Lifecycle Events</h3>
+        <table>
+          <tr><th>Annotation</th><th>Fires</th></tr>
+          <tr><td><code>@PrePersist</code></td><td>Before <code>em.persist()</code></td></tr>
+          <tr><td><code>@PostPersist</code></td><td>After INSERT committed to DB</td></tr>
+          <tr><td><code>@PreUpdate</code></td><td>Before <code>em.merge()</code> / dirty flush</td></tr>
+          <tr><td><code>@PostUpdate</code></td><td>After UPDATE committed to DB</td></tr>
+          <tr><td><code>@PreRemove</code></td><td>Before <code>em.remove()</code></td></tr>
+          <tr><td><code>@PostRemove</code></td><td>After DELETE committed to DB</td></tr>
+          <tr><td><code>@PostLoad</code></td><td>After entity loaded from DB (find / query)</td></tr>
+        </table>
+        <div class="info-box green">
+          <strong>Why @Transient + @PostLoad?</strong><br>
+          <code>age</code> is marked <code>@Transient</code> so it is never saved to the database.
+          But every time a Customer is loaded from the DB, <code>@PostLoad</code> fires and recalculates
+          the current age from the stored <code>dateOfBirth</code> — always up to date.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 41 – CUSTOMERDAO
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🗃️</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Project 1</div>
+      <h2>CustomerDAO.java — Named &amp; Native Queries</h2>
+    </div>
+    <div class="slide-counter">41 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">File: <code>src/main/java/com/bookstore/dao/CustomerDAO.java</code></div>
+    <div class="code-block" style="font-size:0.73rem">
+      <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore.dao;
+
+<span class="kw">import</span> com.bookstore.entity.Customer;
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> java.util.List;
+
+<span class="kw">public class</span> <span class="tp">CustomerDAO</span> {
+
+    <span class="kw">private final</span> <span class="tp">EntityManagerFactory</span> emf =
+        Persistence.createEntityManagerFactory(<span class="st">"BookstorePU"</span>);
+
+    <span class="cm">// ── CREATE ──────────────────────────────────────────────</span>
+    <span class="kw">public void</span> save(<span class="tp">Customer</span> customer) {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        em.getTransaction().begin();
+        em.persist(customer);        <span class="cm">// triggers @PrePersist listener</span>
+        em.getTransaction().commit(); <span class="cm">// triggers @PostPersist listener</span>
+        em.close();
+    }
+
+    <span class="cm">// ── Named Query: all customers (JPQL) ───────────────────</span>
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Customer</span>&gt; findAll() {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        <span class="kw">return</span> em
+            .createNamedQuery(<span class="st">"Customer.findAll"</span>, Customer.<span class="kw">class</span>)
+            .getResultList();        <span class="cm">// triggers @PostLoad for each row</span>
+    }
+
+    <span class="cm">// ── Named Query: by first name (JPQL) ───────────────────</span>
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Customer</span>&gt; findByFirstName(<span class="tp">String</span> firstName) {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        <span class="kw">return</span> em
+            .createNamedQuery(<span class="st">"Customer.findByFirstName"</span>, Customer.<span class="kw">class</span>)
+            .setParameter(<span class="st">"firstName"</span>, firstName)
+            .getResultList();
+    }
+
+    <span class="cm">// ── Named Native Query: raw SQL ──────────────────────────</span>
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Customer</span>&gt; findAllNative() {
+        <span class="tp">EntityManager</span> em = emf.createEntityManager();
+        <span class="kw">return</span> em
+            .createNamedQuery(<span class="st">"Customer.findAllNative"</span>, Customer.<span class="kw">class</span>)
+            .getResultList();
+    }
+
+    <span class="kw">public void</span> close() { emf.close(); }
+}
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 42 – UPDATE PERSISTENCE.XML
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">⚙️</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Setup</div>
+      <h2>Update persistence.xml — Register New Entities</h2>
+    </div>
+    <div class="slide-counter">42 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box amber">
+      <strong>You must register every entity class in persistence.xml.</strong> Open
+      <code>src/main/resources/META-INF/persistence.xml</code> and add the two new
+      <code>&lt;class&gt;</code> lines highlighted below.
+    </div>
+    <div class="code-block" style="font-size:0.75rem">
+      <span class="lang-badge">XML</span>
+<span class="xml-tag">&lt;persistence-unit</span> <span class="xml-attr">name=</span><span class="xml-val">"BookstorePU"</span> <span class="xml-attr">transaction-type=</span><span class="xml-val">"RESOURCE_LOCAL"</span><span class="xml-tag">&gt;</span>
+
+  <span class="xml-tag">&lt;provider&gt;</span>org.hibernate.jpa.HibernatePersistenceProvider<span class="xml-tag">&lt;/provider&gt;</span>
+
+  <span class="cm">&lt;!-- Already registered --&gt;</span>
+  <span class="xml-tag">&lt;class&gt;</span>com.bookstore.entity.Book<span class="xml-tag">&lt;/class&gt;</span>
+
+  <span class="cm">&lt;!-- ADD THESE TWO NEW LINES --&gt;</span>
+  <span class="xml-tag">&lt;class&gt;</span>com.bookstore.entity.Address<span class="xml-tag">&lt;/class&gt;</span>
+  <span class="xml-tag">&lt;class&gt;</span>com.bookstore.entity.Customer<span class="xml-tag">&lt;/class&gt;</span>
+
+  <span class="xml-tag">&lt;properties&gt;</span>
+    <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.url"</span>
+             <span class="xml-attr">value=</span><span class="xml-val">"jdbc:mysql://localhost:3306/bookstore?useSSL=false&amp;amp;serverTimezone=UTC"</span><span class="xml-tag">/&gt;</span>
+    <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.driver"</span>
+             <span class="xml-attr">value=</span><span class="xml-val">"com.mysql.cj.jdbc.Driver"</span><span class="xml-tag">/&gt;</span>
+    <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.user"</span>     <span class="xml-attr">value=</span><span class="xml-val">"root"</span><span class="xml-tag">/&gt;</span>
+    <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"jakarta.persistence.jdbc.password"</span> <span class="xml-attr">value=</span><span class="xml-val">"YourPassword"</span><span class="xml-tag">/&gt;</span>
+    <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"hibernate.hbm2ddl.auto"</span>   <span class="xml-attr">value=</span><span class="xml-val">"update"</span><span class="xml-tag">/&gt;</span>
+    <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"hibernate.show_sql"</span>       <span class="xml-attr">value=</span><span class="xml-val">"true"</span><span class="xml-tag">/&gt;</span>
+    <span class="xml-tag">&lt;property</span> <span class="xml-attr">name=</span><span class="xml-val">"hibernate.format_sql"</span>     <span class="xml-attr">value=</span><span class="xml-val">"true"</span><span class="xml-tag">/&gt;</span>
+  <span class="xml-tag">&lt;/properties&gt;</span>
+
+<span class="xml-tag">&lt;/persistence-unit&gt;</span>
+    </div>
+    <div class="info-box green">
+      <strong>hibernate.hbm2ddl.auto = update</strong> means Hibernate will automatically create the new
+      <code>addresses</code> and <code>customers</code> tables in MySQL when you run the project. No SQL needed.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 43 – WEEK4MAIN.JAVA
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">▶️</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Run</div>
+      <h2>Week4Main.java — Testing All Three Projects</h2>
+    </div>
+    <div class="slide-counter">43 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box blue">File: <code>src/main/java/com/bookstore/Week4Main.java</code> — right-click this file → Run File to test</div>
+    <div class="code-block" style="font-size:0.72rem">
+      <span class="lang-badge">Java</span>
+<span class="kw">package</span> com.bookstore;
+
+<span class="kw">import</span> com.bookstore.dao.CustomerDAO;
+<span class="kw">import</span> com.bookstore.entity.Address;
+<span class="kw">import</span> com.bookstore.entity.Customer;
+<span class="kw">import</span> java.util.Calendar;
+<span class="kw">import</span> java.util.List;
+
+<span class="kw">public class</span> <span class="tp">Week4Main</span> {
+
+    <span class="kw">public static void</span> main(<span class="tp">String</span>[] args) {
+
+        <span class="tp">CustomerDAO</span> dao = <span class="kw">new</span> <span class="tp">CustomerDAO</span>();
+
+        <span class="cm">// ── Build addresses ─────────────────────────────────────</span>
+        <span class="tp">Address</span> addr1 = <span class="kw">new</span> <span class="tp">Address</span>(<span class="st">"10 Main St"</span>, <span class="st">"Brisbane"</span>, <span class="st">"4000"</span>, <span class="st">"Australia"</span>);
+        <span class="tp">Address</span> addr2 = <span class="kw">new</span> <span class="tp">Address</span>(<span class="st">"5 Park Ave"</span>, <span class="st">"Sydney"</span>,   <span class="st">"2000"</span>, <span class="st">"Australia"</span>);
+
+        <span class="cm">// ── Build customers with date of birth ──────────────────</span>
+        <span class="tp">Calendar</span> cal1 = Calendar.getInstance();
+        cal1.set(<span class="nu">1990</span>, Calendar.MARCH, <span class="nu">15</span>);
+
+        <span class="tp">Calendar</span> cal2 = Calendar.getInstance();
+        cal2.set(<span class="nu">1985</span>, Calendar.JULY, <span class="nu">22</span>);
+
+        <span class="tp">Customer</span> c1 = <span class="kw">new</span> <span class="tp">Customer</span>(
+            <span class="st">"Alice"</span>, <span class="st">"Smith"</span>, <span class="st">"alice@email.com"</span>,
+            <span class="st">"0400111222"</span>, cal1.getTime(), addr1
+        );
+
+        <span class="tp">Customer</span> c2 = <span class="kw">new</span> <span class="tp">Customer</span>(
+            <span class="st">"Bob"</span>, <span class="st">"Jones"</span>, <span class="st">"bob@email.com"</span>,
+            <span class="st">"0400333444"</span>, cal2.getTime(), addr2
+        );
+
+        <span class="cm">// ── Persist (triggers @PrePersist validate, @PostPersist calculateAge)</span>
+        dao.save(c1);
+        dao.save(c2);
+        System.out.println(<span class="st">"Customers saved."</span>);
+
+        <span class="cm">// ── Named JPQL query: all customers ──────────────────────</span>
+        System.out.println(<span class="st">"
+--- Named Query: All Customers ---"</span>);
+        <span class="tp">List</span>&lt;<span class="tp">Customer</span>&gt; all = dao.findAll(); <span class="cm">// triggers @PostLoad calculateAge</span>
+        all.forEach(c -> System.out.println(c));
+
+        <span class="cm">// ── Named JPQL query: by first name ──────────────────────</span>
+        System.out.println(<span class="st">"
+--- Named Query: Find by First Name 'Alice' ---"</span>);
+        dao.findByFirstName(<span class="st">"Alice"</span>)
+           .forEach(c -> System.out.println(c));
+
+        <span class="cm">// ── Named Native query: raw SQL ───────────────────────────</span>
+        System.out.println(<span class="st">"
+--- Native Query: All Customers (raw SQL) ---"</span>);
+        dao.findAllNative()
+           .forEach(c -> System.out.println(c));
+
+        dao.close();
+    }
+}
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 44 – EXPECTED OUTPUT + VERIFY IN WORKBENCH
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">✅</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Verify</div>
+      <h2>Expected Console Output &amp; Workbench Verification</h2>
+    </div>
+    <div class="slide-counter">44 / 45</div>
+  </div>
+  <div class="slide-body">
+    <div class="two-col">
+      <div>
+        <h3>Console Output (trimmed)</h3>
+        <div class="terminal">
+          <span class="out">[Validator] Passed for: Alice Smith</span><br>
+          <span class="out">[AgeListener] Age set to 35 for: Alice</span><br>
+          <span class="out">[Validator] Passed for: Bob Jones</span><br>
+          <span class="out">[AgeListener] Age set to 40 for: Bob</span><br>
+          <span class="out">Customers saved.</span><br><br>
+          <span class="out">--- Named Query: All Customers ---</span><br>
+          <span class="out">[AgeListener] Age set to 35 for: Alice</span><br>
+          <span class="out">Customer{id=1, name='Alice Smith', age=35}</span><br>
+          <span class="out">[AgeListener] Age set to 40 for: Bob</span><br>
+          <span class="out">Customer{id=2, name='Bob Jones', age=40}</span><br><br>
+          <span class="out">--- Named Query: Find by First Name 'Alice' ---</span><br>
+          <span class="out">Customer{id=1, name='Alice Smith', age=35}</span><br><br>
+          <span class="out">--- Native Query: All Customers (raw SQL) ---</span><br>
+          <span class="out">Customer{id=1, name='Alice Smith', age=35}</span><br>
+          <span class="out">Customer{id=2, name='Bob Jones', age=40}</span>
+        </div>
+      </div>
+      <div>
+        <h3>Verify in MySQL Workbench</h3>
+        <div class="code-block" style="font-size:0.76rem">
+          <span class="lang-badge">SQL</span>
+<span class="cm">-- Check new tables were auto-created</span>
+<span class="kw">SHOW TABLES FROM</span> bookstore;
+
+<span class="cm">-- Check addresses</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> bookstore.addresses;
+
+<span class="cm">-- Check customers (note: no 'age' column)</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> bookstore.customers;
+
+<span class="cm">-- Check FK relationship</span>
+<span class="kw">SELECT</span> c.first_name, c.last_name, a.city
+<span class="kw">FROM</span>   customers c
+<span class="kw">JOIN</span>   addresses a <span class="kw">ON</span> c.address_id = a.id;
+        </div>
+        <div class="info-box green">
+          <strong>Key things to confirm:</strong><br>
+          1. No <code>age</code> column in <code>customers</code> table — it is <code>@Transient</code><br>
+          2. <code>customers.address_id</code> FK column links to <code>addresses.id</code><br>
+          3. The listener print lines appear <em>before</em> "Customers saved" on persist,
+             and again on every load — confirming the lifecycle events fired
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 45 – WEEK 4 LECTURE RESOURCES
+═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="icon">🧭</div>
+    <div class="titles">
+      <div class="section-label">Week 4 · Lecture Companion</div>
+      <h2>Add Your Lecture Slides to This Week</h2>
+    </div>
+    <div class="slide-counter">45 / 46</div>
+  </div>
+  <div class="slide-body">
+    <div class="info-box">
+      <strong>Integrated resource:</strong> Your COIT20059 Week 4 lecture slide is linked directly in this tutorial.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px">
+      <div class="card" style="padding:16px">
+        <div class="card-icon">📘</div>
+        <h4>Primary Lecture Slide (COIT20059)</h4>
+        <p style="font-size:0.82rem">
+          Opens <code>coit20059/week4_slide.html</code> in a new tab.
+        </p>
+        <p style="margin-top:10px">
+          <a href="week4_slide.html" target="_blank" rel="noopener"
+             style="display:inline-block;text-decoration:none;background:var(--red);color:var(--white);padding:8px 12px;border-radius:4px;font-family:'Trebuchet MS',sans-serif;font-size:0.82rem">
+            Open COIT20059 Week 4 Slide
+          </a>
+        </p>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="card-icon">🗂️</div>
+        <h4>Quick Access (Same File)</h4>
+        <p style="font-size:0.82rem">
+          This button also opens <code>coit20059/week4_slide.html</code>.
+        </p>
+        <p style="margin-top:10px">
+          <a href="week4_slide.html" target="_blank" rel="noopener"
+             style="display:inline-block;text-decoration:none;background:var(--blue);color:var(--white);padding:8px 12px;border-radius:4px;font-family:'Trebuchet MS',sans-serif;font-size:0.82rem">
+            Open COIT20059 Week 4 Slide
+          </a>
+        </p>
+      </div>
+    </div>
+    <div class="warn-box" style="margin-top:14px">
+      <strong>Tip:</strong> Keep this tutorial in one tab and open the lecture slide in another tab for side-by-side study.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 46 – WEEK 4 SUMMARY
+═══════════════════════════════════════════════════════ -->
+<div class="slide title-slide">
+  <div class="slide-header">
+    <div class="titles">
+      <div class="section-label">Week 4 · Complete</div>
+      <h2>JPQL, Callbacks &amp; Listeners — Summary</h2>
+    </div>
+    <div class="slide-counter">46 / 46</div>
+  </div>
+  <div class="slide-body">
+    <div class="big-icon">🎓</div>
+    <h1>Week 4 Lab Complete!</h1>
+    <div class="tag-row">
+      <span class="tag green">@NamedQuery ✓</span>
+      <span class="tag green">@NamedNativeQuery ✓</span>
+      <span class="tag blue">@Transient ✓</span>
+      <span class="tag">@PrePersist ✓</span>
+      <span class="tag">@PostLoad ✓</span>
+      <span class="tag">@EntityListeners ✓</span>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:14px">
+      <div class="card" style="max-width:180px;text-align:left">
+        <div class="card-icon">📋</div>
+        <h4>Project 1</h4>
+        <p style="font-size:0.78rem">Customer + Address entities, @NamedQuery (JPQL), @NamedNativeQuery (SQL)</p>
+      </div>
+      <div class="card" style="max-width:180px;text-align:left">
+        <div class="card-icon">🔁</div>
+        <h4>Project 2</h4>
+        <p style="font-size:0.78rem">@Transient age, @PrePersist validate(), @PostLoad calculateAge()</p>
+      </div>
+      <div class="card" style="max-width:180px;text-align:left">
+        <div class="card-icon">👂</div>
+        <h4>Project 3</h4>
+        <p style="font-size:0.78rem">External listener classes, @EntityListeners, same events but decoupled</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slide-container -->
+
+<!-- ── NAV BAR ── -->
+<div id="nav-bar">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>← Prev</button>
+  <span id="slide-num">1 / 46</span>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+
+  function showSlide(n) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(n, total - 1));
+    slides[cur].classList.add('active');
+    document.getElementById('slide-num').textContent = (cur + 1) + ' / ' + total;
+    document.getElementById('btn-prev').disabled = cur === 0;
+    document.getElementById('btn-next').disabled = cur === total - 1;
+    document.getElementById('progress-bar').style.width =
+      ((cur + 1) / total * 100) + '%';
+  }
+
+  function navigate(dir) { showSlide(cur + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    navigate(-1);
+  });
+
+  // ── Quiz ──
+  const feedbacks = {
+    q1: { correct: '✅ Correct! @Entity registers the class with JPA so it can be persisted.', wrong: '❌ Not quite. @Entity is the correct annotation to mark a class as persistable.' },
+    q2: { correct: '✅ Correct! IDENTITY delegates ID generation to the database column (AUTO_INCREMENT in MySQL).', wrong: '❌ Not quite. IDENTITY means the database column auto-generates the value.' },
+    q3: { correct: '✅ Correct! em.persist() inserts a new entity. em.merge() handles detached/updated entities.', wrong: '❌ Not quite. Use em.persist() for new entities. em.merge() is for updating detached ones.' },
+    q4: { correct: '✅ Correct! Maven packages everything under src/main/resources into the classpath root, so META-INF/ inside it is found automatically.', wrong: '❌ Not quite. It must be in src/main/resources/META-INF/ for Maven projects.' },
+    q5: { correct: '✅ Correct! hbm2ddl.auto accepts: create, create-drop, update, validate, none.', wrong: '❌ Not quite. The property is hibernate.hbm2ddl.auto.' },
+    q6: { correct: '✅ Correct! MySQL defaults to port 3306. PostgreSQL uses 5432; Oracle uses 1521.', wrong: '❌ Not quite. MySQL uses 3306 by default.' }
+  };
+
+  function checkQuiz(qid, el, isCorrect) {
+    const container = document.getElementById(qid);
+    if (container.dataset.answered) return;
+    container.dataset.answered = '1';
+    const opts = container.querySelectorAll('.quiz-opt');
+    opts.forEach(o => o.style.pointerEvents = 'none');
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+    if (!isCorrect) {
+      opts.forEach(o => { if (o.dataset.correct) o.classList.add('correct'); });
+    }
+    const fb = document.getElementById(qid + '-fb');
+    fb.textContent = feedbacks[qid][isCorrect ? 'correct' : 'wrong'];
+    fb.className = 'quiz-feedback show ' + (isCorrect ? 'correct-fb' : 'wrong-fb');
+  }
+
+  // Mark correct answers for wrong-answer reveal
+  document.querySelectorAll('.quiz-opt').forEach(opt => {
+    if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true')) {
+      opt.dataset.correct = '1';
+    }
+  });
+
+  // ── Checklist ──
+  function toggleCheck(li) {
+    li.classList.toggle('checked');
+  }
+
+  // Initialise progress bar
+  document.getElementById('progress-bar').style.width = (1 / total * 100) + '%';
+</script>
+</body>
+</html>

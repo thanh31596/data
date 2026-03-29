@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 4 – JPQL, Entity Lifecycle & Callbacks</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&family=DM+Sans:wght@300;400;500;700&family=DM+Serif+Display&display=swap');
+
+  :root {
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --red-faint: #fdf2f1;
+    --dark: #1a1a1a;
+    --mid: #444;
+    --muted: #888;
+    --border: #e0e0e0;
+    --code-bg: #f7f7f7;
+    --white: #ffffff;
+    --amber: #e67e22;
+    --amber-faint: #fef9f4;
+    --green: #27ae60;
+    --blue: #2980b9;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #fff;
+    color: var(--dark);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Progress bar */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 4px;
+    background: var(--red);
+    transition: width 0.35s ease;
+    z-index: 100;
+  }
+
+  /* Slide container */
+  #deck {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    padding: 52px 64px 40px;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .slide.active { display: flex; }
+
+  /* Navigation */
+  #nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 64px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  #nav button {
+    border: 1.5px solid var(--border);
+    background: white;
+    padding: 7px 22px;
+    border-radius: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--mid);
+    transition: all 0.15s;
+  }
+  #nav button:hover { border-color: var(--red); color: var(--red); }
+  #nav button:disabled { opacity: 0.3; cursor: default; }
+  #slide-counter { font-size: 13px; color: var(--muted); }
+
+  /* Typography */
+  .slide-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 42px;
+    color: var(--red);
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--red);
+    margin-bottom: 18px;
+    line-height: 1.2;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 8px;
+  }
+
+  p { font-size: 15px; line-height: 1.65; color: var(--mid); margin-bottom: 12px; }
+  
+  .subtitle {
+    font-size: 18px;
+    color: var(--mid);
+    font-weight: 300;
+    margin-bottom: 6px;
+  }
+
+  /* Code */
+  pre, code {
+    font-family: 'Source Code Pro', monospace;
+  }
+
+  pre {
+    background: var(--code-bg);
+    border-left: 3px solid var(--red);
+    border-radius: 0 6px 6px 0;
+    padding: 16px 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+    color: #2c3e50;
+  }
+
+  code {
+    background: var(--code-bg);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 13px;
+    color: var(--red);
+  }
+
+  /* Keyword highlights */
+  .kw { color: #8e44ad; font-weight: 600; }
+  .str { color: #16a085; }
+  .cm { color: #95a5a6; font-style: italic; }
+  .ann { color: var(--red); font-weight: 600; }
+  .type { color: var(--blue); }
+
+  /* Layout helpers */
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .mt { margin-top: 16px; }
+  .mt-sm { margin-top: 8px; }
+
+  /* Cards */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+
+  .card.red-top { border-top: 3px solid var(--red); }
+  .card.amber-top { border-top: 3px solid var(--amber); }
+  .card.green-top { border-top: 3px solid var(--green); }
+  .card.blue-top { border-top: 3px solid var(--blue); }
+
+  .callout {
+    background: var(--red-faint);
+    border-left: 3px solid var(--red);
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--mid);
+    margin: 10px 0;
+  }
+
+  .callout.amber {
+    background: var(--amber-faint);
+    border-color: var(--amber);
+  }
+
+  /* Bullet list */
+  ul.bullets { list-style: none; padding: 0; }
+  ul.bullets li {
+    padding: 5px 0 5px 20px;
+    position: relative;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--mid);
+  }
+  ul.bullets li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 13px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 12px 0;
+  }
+  th {
+    background: var(--red);
+    color: white;
+    text-align: left;
+    padding: 9px 14px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--mid);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  /* Lifecycle diagram */
+  .lifecycle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 24px 0;
+  }
+
+  .lc-box {
+    border-radius: 8px;
+    padding: 14px 20px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 110px;
+  }
+
+  .lc-new { background: #eaf6fb; border: 2px solid #2980b9; color: #2980b9; }
+  .lc-managed { background: #eafaf1; border: 2px solid #27ae60; color: #27ae60; }
+  .lc-detached { background: #fff8e1; border: 2px solid var(--amber); color: var(--amber); }
+  .lc-removed { background: #fdecea; border: 2px solid var(--red); color: var(--red); }
+  .lc-db { background: #f0f0f0; border: 2px solid #666; color: #444; }
+
+  .lc-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 10px;
+    color: var(--muted);
+    margin: 0 4px;
+    min-width: 70px;
+  }
+  .lc-arrow span { margin-bottom: 3px; text-align: center; line-height: 1.2; }
+  .lc-arrow .line {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+  }
+  .lc-arrow .line::after {
+    content: '▶';
+    position: absolute;
+    right: -6px;
+    top: -7px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* Callback timeline */
+  .cb-timeline {
+    position: relative;
+    padding-left: 28px;
+    margin: 12px 0;
+  }
+  .cb-timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--border);
+  }
+  .cb-event {
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .cb-event::before {
+    content: '';
+    position: absolute;
+    left: -22px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--red);
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px var(--red);
+  }
+  .cb-ann {
+    display: inline-block;
+    background: var(--red);
+    color: white;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-bottom: 3px;
+  }
+  .cb-desc { font-size: 13px; color: var(--mid); }
+
+  /* Quiz */
+  .quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px 18px;
+    margin: 7px 0;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--mid);
+  }
+  .quiz-option:hover { border-color: var(--red); color: var(--dark); }
+  .quiz-option.correct { border-color: var(--green); background: #eafaf1; color: var(--green); font-weight: 600; }
+  .quiz-option.wrong { border-color: var(--red); background: #fdecea; color: var(--red); }
+  .quiz-option:disabled { cursor: default; }
+  .quiz-feedback { margin-top: 12px; font-size: 14px; padding: 10px 14px; border-radius: 6px; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok { background: #eafaf1; color: var(--green); }
+  .quiz-feedback.nope { background: #fdecea; color: var(--red); }
+
+  /* Tag badge */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge.red { background: var(--red); color: white; }
+  .badge.blue { background: var(--blue); color: white; }
+
+  /* Title slide extras */
+  .title-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .meta-pill {
+    background: var(--red-faint);
+    border: 1px solid #f0c0bd;
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: var(--red);
+    font-weight: 500;
+  }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* State detail rows */
+  .state-row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .state-label {
+    min-width: 90px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-align: center;
+  }
+  .state-desc { font-size: 13.5px; color: var(--mid); line-height: 1.5; }
+
+  /* SVG diagram wrapper */
+  .diagram-center { display: flex; justify-content: center; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<div id="deck">
+
+  <!-- ═══════════════════════════════ SLIDE 1 – TITLE ═══════════════════════════════ -->
+  <div class="slide active">
+    <div class="slide-label">Enterprise Computing · Week 4</div>
+    <h1>JPQL, Entity Lifecycle<br>& Callbacks</h1>
+    <p class="subtitle">Querying objects, understanding state, and hooking into JPA events</p>
+    <div class="title-meta">
+      <span class="meta-pill">JPQL Queries</span>
+      <span class="meta-pill">Entity States</span>
+      <span class="meta-pill">Lifecycle Callbacks</span>
+      <span class="meta-pill">Entity Listeners</span>
+    </div>
+    <div style="margin-top:auto; padding-top:32px;">
+      <p style="font-size:13px; color:var(--muted);">Use ← → arrow keys or the buttons below to navigate.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 2 – JPQL INTRO ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 1 — JPQL</div>
+    <h2>What is JPQL?</h2>
+    <p><strong>JPQL</strong> stands for <strong>Jakarta Persistence Query Language</strong>. It lets you query your Java objects — not database tables.</p>
+
+    <div class="cols-2 mt">
+      <div>
+        <h3>SQL queries tables</h3>
+        <pre><span class="cm">-- SQL: uses table & column names</span>
+SELECT * FROM orders
+WHERE customer_id = 5;</pre>
+      </div>
+      <div>
+        <h3>JPQL queries entities</h3>
+        <pre><span class="cm">// JPQL: uses class & field names</span>
+SELECT o FROM Order o
+WHERE o.customer.id = 5</pre>
+      </div>
+    </div>
+
+    <div class="callout mt">
+      <strong>Key idea:</strong> Write your queries in terms of your Java classes. JPA translates them to the correct SQL for your database automatically.
+    </div>
+
+    <ul class="bullets mt-sm">
+      <li>Case-insensitive for keywords (<code>SELECT</code>, <code>from</code>, etc.) — but class/field names must match Java exactly</li>
+      <li>Works across any supported database without changing your code</li>
+      <li>Returns entity objects (or specific fields) — not raw rows</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 3 – JPQL SYNTAX ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 1 — JPQL</div>
+    <h2>Basic JPQL Syntax</h2>
+
+    <div class="cols-2">
+      <div>
+        <h3>Select all entities</h3>
+        <pre><span class="cm">// "p" is an alias for Product</span>
+SELECT p FROM <span class="type">Product</span> p</pre>
+
+        <h3 class="mt">Filter with WHERE</h3>
+        <pre>SELECT p FROM <span class="type">Product</span> p
+WHERE p.price &gt; 100</pre>
+
+        <h3 class="mt">Order results</h3>
+        <pre>SELECT p FROM <span class="type">Product</span> p
+ORDER BY p.name ASC</pre>
+      </div>
+      <div>
+        <h3>Select specific fields</h3>
+        <pre><span class="cm">// Returns a list of Strings, not Products</span>
+SELECT p.name FROM <span class="type">Product</span> p</pre>
+
+        <h3 class="mt">Count rows</h3>
+        <pre>SELECT COUNT(p) FROM <span class="type">Product</span> p</pre>
+
+        <h3 class="mt">Navigate relationships</h3>
+        <pre><span class="cm">// Dot notation crosses FK relationships</span>
+SELECT o FROM <span class="type">Order</span> o
+WHERE o.customer.name = <span class="str">'Alice'</span></pre>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Rule:</strong> Always use the <em>entity class name</em> and <em>Java field names</em> — never the table/column names from the database.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 4 – PARAMETERS ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 1 — JPQL</div>
+    <h2>Parameters &amp; Running Queries</h2>
+    <p>Always use <strong>parameters</strong> instead of building query strings by hand — it prevents SQL injection and keeps code clean.</p>
+
+    <div class="cols-2">
+      <div>
+        <h3>Named parameters <span class="badge blue">Preferred</span></h3>
+        <pre>String jpql = <span class="str">"SELECT p FROM Product p "</span>
+           + <span class="str">"WHERE p.price &lt; :maxPrice"</span>;
+
+TypedQuery&lt;<span class="type">Product</span>&gt; q =
+  em.createQuery(jpql, <span class="type">Product</span>.class);
+
+q.setParameter(<span class="str">"maxPrice"</span>, 50.0);
+List&lt;<span class="type">Product</span>&gt; results = q.getResultList();</pre>
+      </div>
+      <div>
+        <h3>Positional parameters</h3>
+        <pre>String jpql = <span class="str">"SELECT p FROM Product p "</span>
+           + <span class="str">"WHERE p.price &lt; ?1"</span>;
+
+TypedQuery&lt;<span class="type">Product</span>&gt; q =
+  em.createQuery(jpql, <span class="type">Product</span>.class);
+
+q.setParameter(1, 50.0);
+List&lt;<span class="type">Product</span>&gt; results = q.getResultList();</pre>
+      </div>
+    </div>
+
+    <div class="mt">
+      <h3>Single result vs list</h3>
+      <div class="cols-2">
+        <div class="card">
+          <code>q.getResultList()</code>
+          <p style="margin-top:6px; font-size:13px;">Returns a <code>List</code>. Safe to call even when 0 results.</p>
+        </div>
+        <div class="card">
+          <code>q.getSingleResult()</code>
+          <p style="margin-top:6px; font-size:13px;">Returns one object. Throws an exception if 0 or 2+ results found — use carefully.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 5 – NAMED QUERIES ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 1 — JPQL</div>
+    <h2>Named Queries</h2>
+    <p>Define a query <strong>once</strong> on the entity class, then reuse it by name anywhere in your app. Cleaner than duplicating query strings all over your code.</p>
+
+    <div class="cols-2">
+      <div>
+        <h3>Define on the entity</h3>
+        <pre><span class="ann">@Entity</span>
+<span class="ann">@NamedQuery</span>(
+  name = <span class="str">"Product.findCheap"</span>,
+  query = <span class="str">"SELECT p FROM Product p "</span>
+        + <span class="str">"WHERE p.price &lt; :max"</span>
+)
+<span class="kw">public class</span> <span class="type">Product</span> {
+  ...
+}</pre>
+      </div>
+      <div>
+        <h3>Use it anywhere</h3>
+        <pre>TypedQuery&lt;<span class="type">Product</span>&gt; q =
+  em.createNamedQuery(
+    <span class="str">"Product.findCheap"</span>,
+    <span class="type">Product</span>.class
+  );
+
+q.setParameter(<span class="str">"max"</span>, 20.0);
+List&lt;<span class="type">Product</span>&gt; cheap =
+  q.getResultList();</pre>
+      </div>
+    </div>
+
+    <div class="callout mt">
+      <strong>Convention:</strong> Name them <code>EntityName.purpose</code> — e.g. <code>Customer.findByEmail</code>, <code>Order.findPending</code>. This makes them easy to find.
+    </div>
+    <div class="callout amber">
+      Named queries are compiled and validated at application startup — you'll catch typos immediately rather than at runtime.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 6 – JPQL vs SQL TABLE ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 1 — JPQL</div>
+    <h2>JPQL vs SQL — Side by Side</h2>
+
+    <table>
+      <thead>
+        <tr><th>Task</th><th>SQL</th><th>JPQL</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Get all rows/entities</td>
+          <td><code>SELECT * FROM customer</code></td>
+          <td><code>SELECT c FROM Customer c</code></td>
+        </tr>
+        <tr>
+          <td>Filter by field</td>
+          <td><code>WHERE last_name = 'Lee'</code></td>
+          <td><code>WHERE c.lastName = 'Lee'</code></td>
+        </tr>
+        <tr>
+          <td>Join related table</td>
+          <td><code>JOIN orders ON ...</code></td>
+          <td><code>JOIN c.orders o</code> (uses the field)</td>
+        </tr>
+        <tr>
+          <td>Count rows</td>
+          <td><code>SELECT COUNT(*) FROM ...</code></td>
+          <td><code>SELECT COUNT(c) FROM Customer c</code></td>
+        </tr>
+        <tr>
+          <td>Limit results</td>
+          <td><code>LIMIT 10</code></td>
+          <td><code>query.setMaxResults(10)</code></td>
+        </tr>
+        <tr>
+          <td>What you refer to</td>
+          <td>Table names, column names</td>
+          <td>Entity class names, Java field names</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout mt">
+      JPQL has no <code>INSERT</code>, <code>UPDATE</code>, or <code>DELETE</code> in the same way as SQL — you use the <code>EntityManager</code> methods (<code>persist</code>, <code>merge</code>, <code>remove</code>) for those.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 7 – LIFECYCLE INTRO ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 2 — Entity Lifecycle</div>
+    <h2>What is the Entity Lifecycle?</h2>
+    <p>Every entity object passes through a series of <strong>states</strong> during its life. The JPA runtime tracks which state each object is in and decides what to do with it.</p>
+
+    <div class="callout">
+      Think of it like a document: it starts as a draft (New) → gets filed (Managed) → might be removed from the cabinet (Detached) → eventually deleted (Removed).
+    </div>
+
+    <!-- Lifecycle diagram using SVG -->
+    <div class="diagram-center mt">
+      <svg viewBox="0 0 700 130" width="680" xmlns="http://www.w3.org/2000/svg" style="font-family:'DM Sans',sans-serif;">
+        <!-- State boxes -->
+        <rect x="10" y="35" width="110" height="48" rx="8" fill="#eaf6fb" stroke="#2980b9" stroke-width="2"/>
+        <text x="65" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#2980b9">NEW</text>
+        <text x="65" y="72" text-anchor="middle" font-size="10" fill="#2980b9">Just created</text>
+
+        <rect x="175" y="35" width="130" height="48" rx="8" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+        <text x="240" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#27ae60">MANAGED</text>
+        <text x="240" y="72" text-anchor="middle" font-size="10" fill="#27ae60">Tracked by JPA</text>
+
+        <rect x="360" y="35" width="130" height="48" rx="8" fill="#fff8e1" stroke="#e67e22" stroke-width="2"/>
+        <text x="425" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#e67e22">DETACHED</text>
+        <text x="425" y="72" text-anchor="middle" font-size="10" fill="#e67e22">Exists, not tracked</text>
+
+        <rect x="545" y="35" width="130" height="48" rx="8" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+        <text x="610" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#c0392b">REMOVED</text>
+        <text x="610" y="72" text-anchor="middle" font-size="10" fill="#c0392b">Scheduled to delete</text>
+
+        <!-- Arrows between states -->
+        <!-- NEW → MANAGED -->
+        <line x1="120" y1="59" x2="172" y2="59" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="146" y="53" text-anchor="middle" font-size="9" fill="#888">persist()</text>
+
+        <!-- MANAGED → DETACHED -->
+        <line x1="305" y1="59" x2="357" y2="59" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="331" y="53" text-anchor="middle" font-size="9" fill="#888">detach()/close()</text>
+
+        <!-- DETACHED → MANAGED (curved back) -->
+        <path d="M 425,35 Q 425,15 305,15 Q 200,15 240,35" fill="none" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="4,3"/>
+        <text x="330" y="11" text-anchor="middle" font-size="9" fill="#888">merge()</text>
+
+        <!-- MANAGED → REMOVED -->
+        <line x1="490" y1="59" x2="542" y2="59" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="516" y="53" text-anchor="middle" font-size="9" fill="#888">remove()</text>
+
+        <!-- REMOVED → gone (DB) -->
+        <line x1="610" y1="83" x2="610" y2="110" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="640" y="102" font-size="9" fill="#888">commit</text>
+        <rect x="570" y="111" width="80" height="16" rx="3" fill="#f0f0f0" stroke="#aaa" stroke-width="1"/>
+        <text x="610" y="123" text-anchor="middle" font-size="9" fill="#666">deleted from DB</text>
+
+        <!-- Arrow marker definition -->
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#aaa"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <p style="font-size:13px; color:var(--muted); text-align:center; margin-top:4px;">The dashed line shows that a detached entity can be re-attached with <code>merge()</code></p>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 8 – STATES DETAIL ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 2 — Entity Lifecycle</div>
+    <h2>The Four States Explained</h2>
+
+    <div class="state-row">
+      <span class="state-label" style="background:#eaf6fb; color:#2980b9; border:1.5px solid #2980b9;">NEW</span>
+      <div class="state-desc">
+        You created the object with <code>new Product()</code>. JPA doesn't know about it yet — it's not in the database and not being tracked. Changes are invisible to JPA.
+      </div>
+    </div>
+
+    <div class="state-row">
+      <span class="state-label" style="background:#eafaf1; color:#27ae60; border:1.5px solid #27ae60;">MANAGED</span>
+      <div class="state-desc">
+        JPA is actively tracking this object. Any changes you make to its fields will be automatically saved to the database when the transaction commits. This is the "normal working" state.
+      </div>
+    </div>
+
+    <div class="state-row">
+      <span class="state-label" style="background:#fff8e1; color:#e67e22; border:1.5px solid #e67e22;">DETACHED</span>
+      <div class="state-desc">
+        The entity was once managed, but its <code>EntityManager</code> was closed or it was explicitly detached. The object still exists in memory, but JPA won't track or save changes to it.
+      </div>
+    </div>
+
+    <div class="state-row" style="border-bottom:none;">
+      <span class="state-label" style="background:#fdecea; color:#c0392b; border:1.5px solid #c0392b;">REMOVED</span>
+      <div class="state-desc">
+        You called <code>em.remove(entity)</code>. JPA will delete the row from the database when the transaction commits. The object still exists in Java memory until then.
+      </div>
+    </div>
+
+    <div class="callout amber mt">
+      <strong>Common mistake:</strong> Modifying a <em>detached</em> entity and expecting it to save — it won't! You must call <code>em.merge(entity)</code> to put it back into managed state first.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 9 – EM OPERATIONS ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 2 — Entity Lifecycle</div>
+    <h2>EntityManager Operations &amp; State Transitions</h2>
+
+    <table>
+      <thead>
+        <tr><th>Operation</th><th>Before</th><th>After</th><th>Effect</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>em.persist(e)</code></td>
+          <td>New</td>
+          <td>Managed</td>
+          <td>Schedules INSERT on next flush/commit</td>
+        </tr>
+        <tr>
+          <td><code>em.find(T, id)</code></td>
+          <td>–</td>
+          <td>Managed</td>
+          <td>Loads entity from DB; now tracked</td>
+        </tr>
+        <tr>
+          <td><code>em.merge(e)</code></td>
+          <td>Detached</td>
+          <td>Managed (new)</td>
+          <td>Returns a new managed copy; saves changes</td>
+        </tr>
+        <tr>
+          <td><code>em.remove(e)</code></td>
+          <td>Managed</td>
+          <td>Removed</td>
+          <td>Schedules DELETE on next flush/commit</td>
+        </tr>
+        <tr>
+          <td><code>em.detach(e)</code></td>
+          <td>Managed</td>
+          <td>Detached</td>
+          <td>Stops tracking; no more auto-save</td>
+        </tr>
+        <tr>
+          <td><code>em.refresh(e)</code></td>
+          <td>Managed</td>
+          <td>Managed</td>
+          <td>Overwrites entity fields with DB values</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout mt">
+      <strong>Automatic dirty-checking:</strong> For managed entities, JPA compares the current field values against the snapshot it took when it loaded the entity. Any difference → UPDATE at commit time.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 10 – CALLBACKS INTRO ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 3 — Callbacks & Listeners</div>
+    <h2>Lifecycle Callbacks — Hook Into JPA Events</h2>
+    <p>JPA fires events when an entity changes state. You can attach your own Java methods to these events using <strong>callback annotations</strong>.</p>
+
+    <div class="callout">
+      <strong>Why?</strong> Business logic that must always run — e.g., setting a timestamp before saving, logging, validation — belongs here rather than scattered across your service code.
+    </div>
+
+    <h3 class="mt">All six callback annotations</h3>
+    <div class="cols-2">
+      <div class="cb-timeline">
+        <div class="cb-event">
+          <span class="cb-ann">@PrePersist</span>
+          <div class="cb-desc">Just before a new entity is saved (INSERT)</div>
+        </div>
+        <div class="cb-event">
+          <span class="cb-ann">@PostPersist</span>
+          <div class="cb-desc">After the INSERT is executed in the DB</div>
+        </div>
+        <div class="cb-event">
+          <span class="cb-ann">@PreUpdate</span>
+          <div class="cb-desc">Just before a managed entity's changes are saved</div>
+        </div>
+      </div>
+      <div class="cb-timeline">
+        <div class="cb-event">
+          <span class="cb-ann">@PostUpdate</span>
+          <div class="cb-desc">After the UPDATE is executed in the DB</div>
+        </div>
+        <div class="cb-event">
+          <span class="cb-ann">@PreRemove</span>
+          <div class="cb-desc">Just before an entity is deleted</div>
+        </div>
+        <div class="cb-event">
+          <span class="cb-ann" style="background:#2980b9;">@PostLoad</span>
+          <div class="cb-desc">After an entity is loaded from the DB</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:13px; color:var(--muted); margin-top:8px;">Note: there is no <code>@PostRemove</code> equivalent that's commonly needed — but it does exist in the spec.</p>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 11 – CALLBACK EXAMPLE ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 3 — Callbacks & Listeners</div>
+    <h2>Callback Example — Auto Timestamps</h2>
+    <p>A very common use case: record when an entity was created and last modified, without relying on every developer to set those fields manually.</p>
+
+    <pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="type">Article</span> {
+
+    <span class="ann">@Id @GeneratedValue</span>
+    <span class="kw">private</span> <span class="type">Long</span> id;
+
+    <span class="kw">private</span> <span class="type">String</span> title;
+    <span class="kw">private</span> <span class="type">LocalDateTime</span> createdAt;
+    <span class="kw">private</span> <span class="type">LocalDateTime</span> updatedAt;
+
+    <span class="ann">@PrePersist</span>  <span class="cm">// runs just before first INSERT</span>
+    <span class="kw">public void</span> onCreate() {
+        createdAt = <span class="type">LocalDateTime</span>.now();
+        updatedAt = <span class="type">LocalDateTime</span>.now();
+    }
+
+    <span class="ann">@PreUpdate</span>   <span class="cm">// runs before every UPDATE</span>
+    <span class="kw">public void</span> onUpdate() {
+        updatedAt = <span class="type">LocalDateTime</span>.now();
+    }
+}</pre>
+
+    <div class="callout">
+      No matter which piece of code saves or updates an <code>Article</code>, the timestamps are set automatically — JPA guarantees it.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 12 – POSTLOAD ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 3 — Callbacks & Listeners</div>
+    <h2>@PostLoad — Computed Fields</h2>
+    <p><code>@PostLoad</code> fires after JPA loads an entity from the database. Useful for setting <strong>derived / transient fields</strong> that shouldn't be stored but need to be ready to use.</p>
+
+    <div class="cols-2">
+      <div>
+        <pre><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="type">Product</span> {
+
+    <span class="kw">private</span> <span class="type">double</span> priceExTax;
+
+    <span class="ann">@Transient</span>  <span class="cm">// not stored in DB</span>
+    <span class="kw">private</span> <span class="type">double</span> priceIncTax;
+
+    <span class="ann">@PostLoad</span>
+    <span class="kw">public void</span> calculateTax() {
+        <span class="cm">// 10% GST</span>
+        priceIncTax = priceExTax * 1.10;
+    }
+}</pre>
+      </div>
+      <div>
+        <div class="card red-top">
+          <h3>When is this useful?</h3>
+          <ul class="bullets">
+            <li>Computed display values (e.g., full name from first/last)</li>
+            <li>Tax or currency calculations</li>
+            <li>Decrypting a stored encrypted field</li>
+            <li>Initialising transient collections or helpers</li>
+          </ul>
+        </div>
+        <div class="callout amber mt-sm">
+          <code>@Transient</code> tells JPA: <em>"don't try to save this field to the database."</em>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 13 – ENTITY LISTENERS ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 3 — Callbacks & Listeners</div>
+    <h2>Entity Listeners — Reusable Logic</h2>
+    <p>Callbacks inside the entity class work, but they mix business logic with your data class. <strong>Entity Listeners</strong> are separate classes you attach to one or more entities.</p>
+
+    <div class="cols-2">
+      <div>
+        <h3>1. Create the listener class</h3>
+        <pre><span class="kw">public class</span> <span class="type">AuditListener</span> {
+
+    <span class="ann">@PrePersist</span>
+    <span class="kw">public void</span> beforeInsert(
+            <span class="type">Object</span> entity) {
+        System.out.println(
+          <span class="str">"Inserting: "</span> + entity);
+    }
+
+    <span class="ann">@PreUpdate</span>
+    <span class="kw">public void</span> beforeUpdate(
+            <span class="type">Object</span> entity) {
+        System.out.println(
+          <span class="str">"Updating: "</span> + entity);
+    }
+}</pre>
+      </div>
+      <div>
+        <h3>2. Attach to an entity</h3>
+        <pre><span class="ann">@Entity</span>
+<span class="ann">@EntityListeners</span>(
+    <span class="type">AuditListener</span>.class
+)
+<span class="kw">public class</span> <span class="type">Order</span> {
+    ...
+}
+
+<span class="cm">// Apply to multiple entities:</span>
+<span class="ann">@EntityListeners</span>({
+    <span class="type">AuditListener</span>.class,
+    <span class="type">ValidationListener</span>.class
+})</pre>
+        <div class="callout mt-sm">
+          You can attach the same listener to <em>many</em> entity classes — write the logic once, apply it everywhere.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 14 – LISTENER VS CALLBACK ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 3 — Callbacks & Listeners</div>
+    <h2>Callbacks vs Listeners — When to Use Which</h2>
+
+    <table>
+      <thead>
+        <tr><th></th><th>Internal Callback</th><th>External Listener</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Where defined</strong></td>
+          <td>Method inside the entity class</td>
+          <td>Separate class, referenced via <code>@EntityListeners</code></td>
+        </tr>
+        <tr>
+          <td><strong>Good for</strong></td>
+          <td>Logic tightly coupled to <em>this</em> entity (e.g. its own timestamps)</td>
+          <td>Cross-cutting logic shared across many entities (e.g. audit logging)</td>
+        </tr>
+        <tr>
+          <td><strong>Reusability</strong></td>
+          <td>Only applies to this entity</td>
+          <td>Apply same listener to any number of entities</td>
+        </tr>
+        <tr>
+          <td><strong>Separation of concerns</strong></td>
+          <td>Mixed into the entity — can get messy</td>
+          <td>Clean separation — entity stays focused on data</td>
+        </tr>
+        <tr>
+          <td><strong>Typical uses</strong></td>
+          <td>Timestamps, derived fields, simple validation</td>
+          <td>Audit trails, security checks, logging, notifications</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout mt">
+      In practice: use <strong>callbacks</strong> for simple per-entity logic, and <strong>listeners</strong> for anything you'd want to apply across multiple entities consistently.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 15 – FULL EXAMPLE ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Part 3 — Callbacks & Listeners</div>
+    <h2>Putting It Together — Audit Listener</h2>
+    <p>A realistic listener that records who created or updated an entity, and when:</p>
+
+    <div class="cols-2">
+      <div>
+        <pre><span class="cm">// Shared interface for auditable entities</span>
+<span class="kw">public interface</span> <span class="type">Auditable</span> {
+    <span class="kw">void</span> setCreatedAt(<span class="type">LocalDateTime</span> t);
+    <span class="kw">void</span> setUpdatedAt(<span class="type">LocalDateTime</span> t);
+}
+
+<span class="cm">// The listener</span>
+<span class="kw">public class</span> <span class="type">AuditListener</span> {
+
+  <span class="ann">@PrePersist</span>
+  <span class="kw">public void</span> onPersist(<span class="type">Object</span> o) {
+    <span class="kw">if</span> (o <span class="kw">instanceof</span> <span class="type">Auditable</span> a) {
+      <span class="type">LocalDateTime</span> now =
+        <span class="type">LocalDateTime</span>.now();
+      a.setCreatedAt(now);
+      a.setUpdatedAt(now);
+    }
+  }
+
+  <span class="ann">@PreUpdate</span>
+  <span class="kw">public void</span> onUpdate(<span class="type">Object</span> o) {
+    <span class="kw">if</span> (o <span class="kw">instanceof</span> <span class="type">Auditable</span> a)
+      a.setUpdatedAt(
+        <span class="type">LocalDateTime</span>.now());
+  }
+}</pre>
+      </div>
+      <div>
+        <pre><span class="ann">@Entity</span>
+<span class="ann">@EntityListeners</span>(<span class="type">AuditListener</span>.class)
+<span class="kw">public class</span> <span class="type">Invoice</span>
+       <span class="kw">implements</span> <span class="type">Auditable</span> {
+
+  <span class="ann">@Id @GeneratedValue</span>
+  <span class="kw">private</span> <span class="type">Long</span> id;
+
+  <span class="kw">private</span> <span class="type">String</span> description;
+  <span class="kw">private</span> <span class="type">LocalDateTime</span> createdAt;
+  <span class="kw">private</span> <span class="type">LocalDateTime</span> updatedAt;
+
+  <span class="cm">// setters/getters...</span>
+}</pre>
+
+        <div class="callout mt-sm">
+          Now <em>any</em> entity that <code>implements Auditable</code> and adds <code>@EntityListeners(AuditListener.class)</code> gets automatic timestamp tracking — no extra code needed per entity.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 16 – QUIZ 1 ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Check Your Understanding</div>
+    <h2>Quiz — JPQL</h2>
+
+    <p style="font-size:15px; margin-bottom:18px;">You have an entity class called <code>Student</code> with a field <code>gpa</code>. Which JPQL query finds all students with a GPA above 3.5?</p>
+
+    <button class="quiz-option" onclick="quiz(this, false, 'q1')">SELECT * FROM student WHERE gpa &gt; 3.5</button>
+    <button class="quiz-option" onclick="quiz(this, true,  'q1')">SELECT s FROM Student s WHERE s.gpa &gt; 3.5</button>
+    <button class="quiz-option" onclick="quiz(this, false, 'q1')">SELECT s FROM student s WHERE s.gpa &gt; 3.5</button>
+    <button class="quiz-option" onclick="quiz(this, false, 'q1')">FIND Student WHERE gpa &gt; 3.5</button>
+
+    <div id="q1-ok"   class="quiz-feedback ok">  ✓ Correct! JPQL uses the entity class name <code>Student</code> (capital S), a named alias <code>s</code>, and the Java field <code>gpa</code>.</div>
+    <div id="q1-nope" class="quiz-feedback nope"> ✗ Not quite. Remember: JPQL uses the <em>entity class name</em> (<code>Student</code>, not the table) and the <em>Java field name</em>. Also, JPQL has no <code>SELECT *</code>.</div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 17 – QUIZ 2 ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Check Your Understanding</div>
+    <h2>Quiz — Entity Lifecycle</h2>
+
+    <p style="font-size:15px; margin-bottom:18px;">A developer loads a <code>Customer</code> from the database, then the transaction ends and the EntityManager closes. They update the customer's email. What state is the entity in, and will the change be saved?</p>
+
+    <button class="quiz-option" onclick="quiz(this, false, 'q2')">Managed — yes, the change will be saved automatically</button>
+    <button class="quiz-option" onclick="quiz(this, false, 'q2')">Removed — the entity was deleted when the EM closed</button>
+    <button class="quiz-option" onclick="quiz(this, true,  'q2')">Detached — the change will NOT be saved unless merge() is called</button>
+    <button class="quiz-option" onclick="quiz(this, false, 'q2')">New — it's as if the entity was never loaded</button>
+
+    <div id="q2-ok"   class="quiz-feedback ok">  ✓ Correct! Closing the EntityManager detaches all entities. Changes to detached entities are invisible to JPA — you must call <code>em.merge()</code> to re-attach and save.</div>
+    <div id="q2-nope" class="quiz-feedback nope"> ✗ Not quite. When the EntityManager closes, entities become <em>detached</em> — they still exist in memory but JPA stops tracking them.</div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 18 – QUIZ 3 ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Check Your Understanding</div>
+    <h2>Quiz — Callbacks</h2>
+
+    <p style="font-size:15px; margin-bottom:18px;">You want to automatically set a <code>lastModified</code> timestamp every time any field on an entity changes. You want this logic reusable across 10 different entity classes. What is the best approach?</p>
+
+    <button class="quiz-option" onclick="quiz(this, false, 'q3')">Add a <code>@PreUpdate</code> method inside each of the 10 entity classes</button>
+    <button class="quiz-option" onclick="quiz(this, true,  'q3')">Create an EntityListener class with <code>@PreUpdate</code>, then attach it with <code>@EntityListeners</code></button>
+    <button class="quiz-option" onclick="quiz(this, false, 'q3')">Use <code>@PostLoad</code> on each entity class</button>
+    <button class="quiz-option" onclick="quiz(this, false, 'q3')">Override <code>EntityManager.merge()</code> to add the timestamp</button>
+
+    <div id="q3-ok"   class="quiz-feedback ok">  ✓ Correct! An EntityListener centralises the logic once and can be attached to any entity with a single annotation — exactly what they're designed for.</div>
+    <div id="q3-nope" class="quiz-feedback nope"> ✗ Not quite. Duplicating logic across 10 entity classes is error-prone. An EntityListener lets you write the logic once and attach it everywhere.</div>
+  </div>
+
+  <!-- ═══════════════════════════════ SLIDE 19 – SUMMARY ═══════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-label">Week 4 Summary</div>
+    <h2>What We Covered Today</h2>
+
+    <div class="cols-3">
+      <div class="card red-top">
+        <h3>JPQL</h3>
+        <ul class="bullets">
+          <li>Queries entities, not tables</li>
+          <li>Use class/field names, not SQL names</li>
+          <li>Named and positional parameters</li>
+          <li>Named queries for reuse</li>
+          <li><code>getResultList()</code> vs <code>getSingleResult()</code></li>
+        </ul>
+      </div>
+      <div class="card red-top">
+        <h3>Entity Lifecycle</h3>
+        <ul class="bullets">
+          <li><strong>New</strong> → not tracked</li>
+          <li><strong>Managed</strong> → auto-saved</li>
+          <li><strong>Detached</strong> → not tracked</li>
+          <li><strong>Removed</strong> → pending delete</li>
+          <li><code>persist</code>, <code>merge</code>, <code>remove</code>, <code>detach</code></li>
+        </ul>
+      </div>
+      <div class="card red-top">
+        <h3>Callbacks &amp; Listeners</h3>
+        <ul class="bullets">
+          <li><code>@PrePersist</code> / <code>@PostPersist</code></li>
+          <li><code>@PreUpdate</code> / <code>@PostUpdate</code></li>
+          <li><code>@PreRemove</code> / <code>@PostLoad</code></li>
+          <li>Internal callbacks for per-entity logic</li>
+          <li>External listeners for shared logic</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout mt">
+      <strong>Key takeaway:</strong> JPQL keeps you working in Java-land (objects and fields). The lifecycle model means JPA handles saving for you — but you must understand the states. Callbacks and listeners let you inject business logic at exactly the right moment, cleanly.
+    </div>
+    <p style="margin-top:12px; font-size:13px; color:var(--muted);">Next week: more on relationships, fetch strategies, and the persistence context in depth.</p>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button id="btn-prev" onclick="go(-1)" disabled>← Prev</button>
+  <span id="slide-counter"></span>
+  <button id="btn-next" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+
+  function show(n) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(n, slides.length - 1));
+    slides[cur].classList.add('active');
+    document.getElementById('slide-counter').textContent = (cur + 1) + ' / ' + slides.length;
+    document.getElementById('btn-prev').disabled = cur === 0;
+    document.getElementById('btn-next').disabled = cur === slides.length - 1;
+    document.getElementById('progress-bar').style.width = ((cur + 1) / slides.length * 100) + '%';
+  }
+
+  function go(d) { show(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    go(-1);
+  });
+
+  function quiz(btn, correct, id) {
+    const slide = btn.closest('.slide');
+    slide.querySelectorAll('.quiz-option').forEach(b => b.disabled = true);
+    btn.classList.add(correct ? 'correct' : 'wrong');
+    const ok   = document.getElementById(id + '-ok');
+    const nope = document.getElementById(id + '-nope');
+    if (correct) { ok.classList.add('show'); }
+    else         { nope.classList.add('show'); }
+  }
+
+  show(0);
+</script>
+</body>
+</html>
