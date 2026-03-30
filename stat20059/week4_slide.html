@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 4: Probability — Credit Risk Edition</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --red: #C0272D;
+    --red-light: #e8535a;
+    --dark: #1a1e2e;
+    --dark2: #252a3d;
+    --mid: #3d4460;
+    --accent: #e8a020;
+    --green: #2d8a4e;
+    --blue: #2563a8;
+    --text: #1a1e2e;
+    --muted: #6b7280;
+    --bg: #ffffff;
+    --border: #e5e7eb;
+    --slide-w: 960px;
+    --slide-h: 580px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: #111827;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  #progress-wrap {
+    width: var(--slide-w);
+    max-width: 100%;
+    height: 4px;
+    background: #374151;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%;
+    background: var(--red);
+    transition: width 0.35s ease;
+  }
+
+  #counter {
+    width: var(--slide-w);
+    max-width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #9ca3af;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  #section-label {
+    color: var(--red);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  #stage {
+    width: var(--slide-w);
+    max-width: 100%;
+    height: var(--slide-h);
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .slide.active { display: flex; }
+
+  #nav { display: flex; gap: 8px; align-items: center; }
+  .nav-btn {
+    background: #1f2937;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 8px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: var(--red); border-color: var(--red); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; background: #1f2937; border-color: #374151; }
+
+  /* TITLE SLIDE */
+  .slide-title {
+    flex-direction: column;
+    justify-content: center;
+    background: var(--dark);
+    position: relative;
+  }
+  .slide-title::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: var(--red);
+  }
+  .slide-title::after {
+    content: '';
+    position: absolute;
+    right: -80px; top: -80px;
+    width: 360px; height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(192,39,45,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .title-inner { padding: 0 72px; z-index: 1; }
+  .unit-tag {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--red);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 20px;
+    display: inline-block;
+    border: 1px solid rgba(192,39,45,0.4);
+    padding: 4px 12px;
+    border-radius: 2px;
+  }
+  .title-main {
+    font-family: 'Playfair Display', serif;
+    font-size: 54px;
+    color: #ffffff;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .title-sub { font-size: 17px; color: #9ca3af; margin-bottom: 36px; font-weight: 300; }
+  .title-meta { font-size: 13px; color: #6b7280; font-family: 'JetBrains Mono', monospace; }
+
+  /* SECTION DIVIDER */
+  .slide-divider {
+    flex-direction: column;
+    justify-content: center;
+    background: var(--dark2);
+  }
+  .divider-inner { padding: 0 72px; }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 80px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.06);
+    line-height: 1;
+    margin-bottom: -20px;
+  }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 38px; color: #ffffff; margin-bottom: 12px; }
+  .section-desc { font-size: 15px; color: #9ca3af; font-weight: 300; max-width: 500px; line-height: 1.6; }
+  .section-pill {
+    display: inline-block;
+    background: var(--red);
+    color: white;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+
+  /* CONTENT SLIDE */
+  .slide-content { flex-direction: row; }
+  .slide-left {
+    width: 300px;
+    flex-shrink: 0;
+    background: #f8f9fa;
+    border-right: 1px solid var(--border);
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+  }
+  .slide-right {
+    flex: 1;
+    padding: 32px 32px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .slide-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+  .slide-title-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--text);
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+  .context-box {
+    background: white;
+    border-left: 3px solid var(--accent);
+    padding: 10px 12px;
+    border-radius: 0 4px 4px 0;
+    margin-top: 10px;
+  }
+  .context-box .ctx-label {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .context-box p { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .so-what {
+    background: #fff8f0;
+    border-left: 3px solid var(--red);
+    padding: 9px 12px;
+    border-radius: 0 4px 4px 0;
+    margin-top: auto;
+  }
+  .so-what .sw-label {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    margin-bottom: 3px;
+  }
+  .so-what p { font-size: 11.5px; color: #4b2020; line-height: 1.5; }
+
+  /* FULL-WIDTH SLIDE */
+  .slide-full { flex-direction: column; padding: 36px 52px; }
+  .slide-full .slide-heading { margin-bottom: 4px; }
+  .slide-full .slide-title-text { margin-bottom: 18px; font-size: 26px; }
+
+  /* OUTCOMES */
+  .outcomes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .outcome-card {
+    background: #f8f9fa;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .oc-num { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--red); line-height: 1; flex-shrink: 0; opacity: 0.45; }
+  .oc-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+  /* DEF BOX */
+  .def-box { background: var(--dark); border-radius: 4px; padding: 16px 20px; margin-bottom: 12px; }
+  .def-box .def-term { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--red); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .def-box .def-text { color: #e5e7eb; font-size: 13.5px; line-height: 1.6; }
+  .def-box .def-text strong { color: var(--accent); font-weight: 600; }
+
+  /* APPROACH CARDS */
+  .approach-cards { display: flex; gap: 10px; flex: 1; }
+  .approach-card { flex: 1; border: 1px solid var(--border); border-radius: 4px; padding: 14px; display: flex; flex-direction: column; gap: 5px; }
+  .ap-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 2px; display: inline-block; margin-bottom: 3px; }
+  .ap-label.classical { background: #dbeafe; color: #1e40af; }
+  .ap-label.relative  { background: #dcfce7; color: #166534; }
+  .ap-label.subjective{ background: #fef3c7; color: #92400e; }
+  .approach-card h4 { font-size: 13.5px; color: var(--text); font-weight: 600; }
+  .approach-card p  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .approach-card .example { font-size: 11.5px; color: var(--red); font-style: italic; margin-top: auto; padding-top: 7px; border-top: 1px solid var(--border); }
+
+  /* TABLE */
+  .ct-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .ct-table th { background: var(--dark); color: white; padding: 10px 14px; text-align: center; font-weight: 500; }
+  .ct-table th.row-header { text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .ct-table td { border: 1px solid var(--border); padding: 9px 14px; text-align: center; color: var(--text); }
+  .ct-table td.row-label { text-align: left; font-weight: 600; color: var(--dark); background: #f8f9fa; }
+  .ct-table td.total { background: #f0f0f0; font-weight: 700; }
+  .ct-table td.highlight  { background: #fef3c7; font-weight: 700; }
+  .ct-table td.highlight2 { background: #dbeafe; font-weight: 700; }
+  .ct-table td.highlight3 { background: #dcfce7; font-weight: 700; }
+
+  /* FORMULA */
+  .formula-block { background: var(--dark); border-radius: 4px; padding: 16px 20px; margin: 10px 0; text-align: center; }
+  .formula-block .formula-text { font-family: 'JetBrains Mono', monospace; font-size: 17px; color: #f9fafb; letter-spacing: 0.02em; }
+  .formula-block .formula-sub { font-size: 11.5px; color: #9ca3af; margin-top: 6px; }
+  .formula-block .formula-text span.red    { color: #f87171; }
+  .formula-block .formula-text span.yellow { color: #fbbf24; }
+  .formula-block .formula-text span.green  { color: #6ee7b7; }
+  .formula-block .formula-text span.blue   { color: #93c5fd; }
+
+  /* BULLET */
+  .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .bullet-list li { display: flex; gap: 9px; font-size: 13.5px; color: var(--text); line-height: 1.55; }
+  .bullet-list li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; margin-top: 6px; }
+
+  /* QUIZ */
+  .slide-quiz { flex-direction: column; background: var(--dark2); padding: 36px 52px; }
+  .quiz-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 10px; }
+  .quiz-question { font-family: 'Playfair Display', serif; font-size: 22px; color: white; margin-bottom: 22px; line-height: 1.35; max-width: 680px; }
+  .quiz-options { display: flex; flex-direction: column; gap: 9px; max-width: 580px; margin-bottom: 18px; }
+  .quiz-option {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 10px 16px;
+    color: #e5e7eb;
+    cursor: pointer;
+    font-size: 13.5px;
+    transition: all 0.2s;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .quiz-option:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
+  .quiz-option.correct  { background: rgba(45,138,78,0.25); border-color: var(--green); color: #6ee7b7; }
+  .quiz-option.incorrect{ background: rgba(192,39,45,0.2);  border-color: var(--red);   color: #fca5a5; }
+  .quiz-option.revealed { cursor: default; }
+  .opt-key { font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(255,255,255,0.1); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 2px; flex-shrink: 0; }
+  .quiz-reveal-btn { background: var(--red); color: white; border: none; padding: 9px 22px; border-radius: 3px; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 14px; font-weight: 600; transition: all 0.2s; align-self: flex-start; }
+  .quiz-reveal-btn:hover { background: var(--red-light); }
+  .quiz-explain { display: none; margin-top: 14px; background: rgba(255,255,255,0.06); border-left: 3px solid var(--green); padding: 11px 14px; border-radius: 0 4px 4px 0; max-width: 580px; }
+  .quiz-explain.show { display: block; }
+  .quiz-explain p { color: #d1fae5; font-size: 13px; line-height: 1.6; }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; gap: 8px; }
+  .step-item { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text); line-height: 1.5; }
+  .step-num { flex-shrink: 0; width: 22px; height: 22px; background: var(--red); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-top: 1px; }
+
+  /* PROBABILITY NOTATION */
+  .prob-notation { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+  .prob-notation .pval { color: var(--red); font-weight: 600; }
+
+  /* INDEPENDENCE */
+  .ind-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ind-box { border-radius: 4px; padding: 14px; border: 1px solid var(--border); }
+  .ind-box.dependent   { border-left: 4px solid var(--red); }
+  .ind-box.independent { border-left: 4px solid var(--green); }
+  .ind-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 7px; }
+  .ind-box.dependent h4   { color: var(--red); }
+  .ind-box.independent h4 { color: var(--green); }
+  .ind-box p { font-size: 12px; color: var(--text); line-height: 1.5; margin-bottom: 5px; }
+  .ind-box .ind-formula { font-family: 'JetBrains Mono', monospace; font-size: 11px; background: #f8f9fa; padding: 5px 8px; border-radius: 2px; color: var(--dark); margin-top:4px; display:inline-block; }
+
+  /* BAYES BARS */
+  .bayes-row { display: flex; gap: 8px; align-items: center; font-size: 12.5px; }
+  .bayes-bar-bg { flex: 1; height: 26px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+  .bayes-bar-fill { height: 100%; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 600; color: white; border-radius: 3px; }
+  .bayes-label { width: 120px; text-align: right; font-weight: 500; font-size: 12px; color: var(--muted); }
+  .bayes-value { width: 46px; font-family: 'JetBrains Mono', monospace; font-size: 12px; text-align: right; }
+
+  /* COUNTING */
+  .counting-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .counting-card { border: 1px solid var(--border); border-radius: 4px; padding: 12px; }
+  .counting-card .cc-num { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--red); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .counting-card h4 { font-size: 13.5px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .counting-card p  { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .counting-card .cc-formula { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #f8f9fa; border-radius: 2px; padding: 3px 7px; margin-top: 5px; display: inline-block; color: var(--dark); }
+
+  /* SUMMARY */
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex: 1; }
+  .summary-card { background: #f8f9fa; border: 1px solid var(--border); border-radius: 4px; padding: 14px; border-top: 3px solid var(--red); }
+  .summary-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+  .summary-card p  { font-size: 12px; color: var(--muted); line-height: 1.55; }
+</style>
+</head>
+<body>
+
+<div id="progress-wrap"><div id="progress-bar"></div></div>
+
+<div id="counter">
+  <span id="section-label">Introduction</span>
+  <span id="slide-counter">1 / 30</span>
+</div>
+
+<div id="stage">
+
+  <!-- 1 TITLE -->
+  <div class="slide slide-title active" data-section="Introduction">
+    <div class="title-inner">
+      <span class="unit-tag">Week 4 · Statistics for Accounting</span>
+      <div class="title-main">Probability</div>
+      <div class="title-sub">Quantifying uncertainty — from theory to credit risk decisions</div>
+      <div class="title-meta">← → arrow keys to navigate &nbsp;·&nbsp; 30 slides</div>
+    </div>
+  </div>
+
+  <!-- 2 LEARNING OUTCOMES -->
+  <div class="slide slide-full" data-section="Introduction">
+    <div class="slide-heading">This Week</div>
+    <div class="slide-title-text">Learning Outcomes</div>
+    <div class="outcomes-grid">
+      <div class="outcome-card"><div class="oc-num">1</div><div class="oc-text">Define probability and apply the three approaches to credit risk scenarios</div></div>
+      <div class="outcome-card"><div class="oc-num">2</div><div class="oc-text">Build and interpret contingency tables; compute marginal and joint probabilities</div></div>
+      <div class="outcome-card"><div class="oc-num">3</div><div class="oc-text">Apply addition and multiplication rules to combined loan events</div></div>
+      <div class="outcome-card"><div class="oc-num">4</div><div class="oc-text">Calculate conditional probabilities and test for statistical independence</div></div>
+      <div class="outcome-card"><div class="oc-num">5</div><div class="oc-text">Use Bayes' theorem to update default risk estimates with new evidence</div></div>
+      <div class="outcome-card"><div class="oc-num">6</div><div class="oc-text">Apply the five counting rules to audit sampling and portfolio problems</div></div>
+    </div>
+  </div>
+
+  <!-- 3 DIVIDER: FOUNDATIONS -->
+  <div class="slide slide-divider" data-section="Foundations">
+    <div class="divider-inner">
+      <div class="section-num">01</div>
+      <div class="section-pill">Section 1</div>
+      <div class="section-title">Foundations of Probability</div>
+      <div class="section-desc">What probability means, the three ways to assign it, and the language of sample spaces and events — grounded in loan assessment.</div>
+    </div>
+  </div>
+
+  <!-- 4 WHAT IS PROBABILITY -->
+  <div class="slide slide-content" data-section="Foundations">
+    <div class="slide-left">
+      <div class="slide-heading">Foundations</div>
+      <div class="slide-title-text">What is Probability?</div>
+      <div class="context-box">
+        <div class="ctx-label">Credit Risk Context</div>
+        <p>A bank wants to know: <strong>how likely is a new applicant to default?</strong> Probability gives us a rigorous language to answer this.</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">So What?</div>
+        <p>Every loan approval model, credit score, and loan loss provision rests on probability estimates.</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="def-box">
+        <div class="def-term">Definition</div>
+        <div class="def-text">Probability is a <strong>number between 0 and 1</strong> that measures how likely an event is to occur.<br><br>P(A) = 0 → impossible &nbsp;·&nbsp; P(A) = 1 → certain</div>
+      </div>
+      <div class="approach-cards" style="margin-top:10px;">
+        <div class="approach-card">
+          <span class="ap-label classical">Classical</span>
+          <h4>Equal likelihood</h4>
+          <p>Count favourable outcomes ÷ total outcomes. All outcomes equally likely.</p>
+          <div class="example">3 loan grades, equally likely → P(Grade A) = 1/3</div>
+        </div>
+        <div class="approach-card">
+          <span class="ap-label relative">Relative Freq.</span>
+          <h4>Past data</h4>
+          <p>Proportion of a specific outcome observed over many trials.</p>
+          <div class="example">120 of 500 applicants defaulted → P(default) = 0.24</div>
+        </div>
+        <div class="approach-card">
+          <span class="ap-label subjective">Subjective</span>
+          <h4>Expert judgment</h4>
+          <p>No repeatable experiment; based on informed belief.</p>
+          <div class="example">Analyst: "40% chance this sector deteriorates next quarter."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 SAMPLE SPACES -->
+  <div class="slide slide-content" data-section="Foundations">
+    <div class="slide-left">
+      <div class="slide-heading">Foundations</div>
+      <div class="slide-title-text">Sample Spaces &amp; Events</div>
+      <div class="context-box">
+        <div class="ctx-label">Loan Portfolio Scenario</div>
+        <p>500 loan applications. Each applicant is either <strong>employed / unemployed</strong> and either <strong>defaults / does not default</strong>.</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Key Terms</div>
+        <p><strong>Experiment:</strong> Randomly selecting one applicant.<br><strong>Sample space (S):</strong> All possible outcomes.<br><strong>Event (A):</strong> A subset of S we care about.</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <svg viewBox="0 0 580 340" style="width:100%;height:100%;">
+        <rect x="10" y="10" width="560" height="300" rx="8" fill="#f8f9fa" stroke="#d1d5db" stroke-width="1.5"/>
+        <text x="30" y="36" font-family="JetBrains Mono" font-size="11" fill="#6b7280" letter-spacing="1">SAMPLE SPACE S — 500 applicants</text>
+        <ellipse cx="220" cy="175" rx="155" ry="108" fill="rgba(192,39,45,0.10)" stroke="#C0272D" stroke-width="2"/>
+        <text x="100" y="128" font-family="Source Sans 3" font-size="13" font-weight="600" fill="#C0272D">Event A</text>
+        <text x="98"  y="145" font-family="Source Sans 3" font-size="11" fill="#C0272D">Default (120)</text>
+        <ellipse cx="355" cy="175" rx="165" ry="108" fill="rgba(37,99,168,0.09)" stroke="#2563a8" stroke-width="2"/>
+        <text x="395" y="128" font-family="Source Sans 3" font-size="13" font-weight="600" fill="#2563a8">Event B</text>
+        <text x="385" y="145" font-family="Source Sans 3" font-size="11" fill="#2563a8">Employed (360)</text>
+        <!-- intersection -->
+        <text x="255" y="166" font-family="Source Sans 3" font-size="11" fill="#374151" text-anchor="middle">A ∩ B</text>
+        <text x="255" y="181" font-family="Source Sans 3" font-size="11" fill="#374151" text-anchor="middle">Employed</text>
+        <text x="255" y="196" font-family="Source Sans 3" font-size="11" fill="#374151" text-anchor="middle">&amp; Default</text>
+        <text x="255" y="213" font-family="JetBrains Mono" font-size="13" fill="#92400e" text-anchor="middle" font-weight="600">(40)</text>
+        <!-- A only -->
+        <text x="138" y="188" font-family="Source Sans 3" font-size="11" fill="#C0272D" text-anchor="middle">Unemployed</text>
+        <text x="138" y="203" font-family="Source Sans 3" font-size="11" fill="#C0272D" text-anchor="middle">&amp; Default (80)</text>
+        <!-- B only -->
+        <text x="422" y="188" font-family="Source Sans 3" font-size="11" fill="#2563a8" text-anchor="middle">Employed &amp;</text>
+        <text x="422" y="203" font-family="Source Sans 3" font-size="11" fill="#2563a8" text-anchor="middle">No Default (320)</text>
+        <!-- outside -->
+        <text x="48" y="280" font-family="Source Sans 3" font-size="11" fill="#6b7280">Outside A ∪ B: Unemployed &amp; No Default (60)</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 6 QUIZ 1 -->
+  <div class="slide slide-quiz" data-section="Foundations">
+    <div class="quiz-label">Quick Check — Section 1</div>
+    <div class="quiz-question">A bank reviews 1,000 past loan accounts and finds 180 defaulted. Which approach to probability is the bank using when it estimates P(default) = 0.18?</div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">A</span> Classical — all outcomes are equally likely</div>
+      <div class="quiz-option" onclick="selectOption(this,true)"><span class="opt-key">B</span> Relative frequency — based on historical proportions</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">C</span> Subjective — based on analyst judgment</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">D</span> Classical — 180 out of 1,000 favourable outcomes</div>
+    </div>
+    <button class="quiz-reveal-btn" onclick="revealExplanation(this)">Reveal Explanation</button>
+    <div class="quiz-explain">
+      <p><strong>B is correct.</strong> The bank is computing the proportion of a specific outcome (default) over many observed trials — that's the relative frequency approach. Classical probability requires all outcomes to be equally likely (not true here — not every applicant has the same default risk). Subjective probability uses expert judgment rather than observed data.</p>
+    </div>
+  </div>
+
+  <!-- 7 DIVIDER: CONTINGENCY -->
+  <div class="slide slide-divider" data-section="Contingency Tables">
+    <div class="divider-inner">
+      <div class="section-num">02</div>
+      <div class="section-pill">Section 2</div>
+      <div class="section-title">Contingency Tables &amp; Probability</div>
+      <div class="section-desc">Organising loan portfolio data into a two-way table to read off marginal and joint probabilities.</div>
+    </div>
+  </div>
+
+  <!-- 8 THE DATA -->
+  <div class="slide slide-content" data-section="Contingency Tables">
+    <div class="slide-left">
+      <div class="slide-heading">Contingency Tables</div>
+      <div class="slide-title-text">The Loan Portfolio Dataset</div>
+      <div class="context-box">
+        <div class="ctx-label">Scenario</div>
+        <p>A commercial bank reviews <strong>500 closed loan accounts</strong>, classified by employment status at application and whether the loan ultimately defaulted.</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Why a Table?</div>
+        <p>A contingency table reveals how two categorical variables <em>relate</em> — essential for credit risk segmentation and loan pricing.</p>
+      </div>
+    </div>
+    <div class="slide-right" style="justify-content:center; gap:14px;">
+      <table class="ct-table">
+        <thead>
+          <tr>
+            <th class="row-header">Employment Status</th>
+            <th>Default</th>
+            <th>No Default</th>
+            <th>Row Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="row-label">Employed</td><td>40</td><td>320</td><td class="total">360</td></tr>
+          <tr><td class="row-label">Unemployed</td><td>80</td><td>60</td><td class="total">140</td></tr>
+          <tr><td class="row-label total">Column Total</td><td class="total">120</td><td class="total">380</td><td class="total">500</td></tr>
+        </tbody>
+      </table>
+      <ul class="bullet-list" style="margin-top:6px;">
+        <li><strong>Rows</strong> represent employment categories</li>
+        <li><strong>Columns</strong> represent loan outcome (default vs no default)</li>
+        <li>Each <strong>cell</strong> counts applicants in that specific combination</li>
+        <li>Row and column <strong>totals</strong> are called marginals — they summarise each variable alone</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 9 MARGINAL PROBABILITY -->
+  <div class="slide slide-content" data-section="Contingency Tables">
+    <div class="slide-left">
+      <div class="slide-heading">Contingency Tables</div>
+      <div class="slide-title-text">Marginal Probability</div>
+      <div class="context-box">
+        <div class="ctx-label">Definition</div>
+        <p>Probability of <strong>one event alone</strong>, ignoring the other variable. Found in the row/column totals (the "margins").</p>
+      </div>
+      <div class="formula-block" style="margin-top:12px; background:#252a3d;">
+        <div class="formula-text">P(A) = <span class="red">Marginal Total</span> ÷ <span class="yellow">500</span></div>
+      </div>
+    </div>
+    <div class="slide-right" style="justify-content:center; gap:12px;">
+      <table class="ct-table">
+        <thead><tr><th class="row-header">Employment</th><th>Default</th><th>No Default</th><th>Row Total</th></tr></thead>
+        <tbody>
+          <tr><td class="row-label">Employed</td><td>40</td><td>320</td><td class="highlight">360</td></tr>
+          <tr><td class="row-label">Unemployed</td><td>80</td><td>60</td><td class="total">140</td></tr>
+          <tr><td class="row-label total">Total</td><td class="highlight2">120</td><td class="total">380</td><td class="total" style="background:#fef3c7;">500</td></tr>
+        </tbody>
+      </table>
+      <div class="steps">
+        <div class="step-item"><div class="step-num">1</div><span><span class="prob-notation">P(Employed) = <span class="pval">360/500 = 0.72</span></span> → 72% of applicants were employed</span></div>
+        <div class="step-item"><div class="step-num">2</div><span><span class="prob-notation">P(Default) = <span class="pval">120/500 = 0.24</span></span> → 24% of loans ended in default</span></div>
+        <div class="step-item"><div class="step-num">3</div><span><span class="prob-notation">P(No Default) = <span class="pval">380/500 = 0.76</span></span> → complement: 1 − 0.24 = 0.76</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 JOINT PROBABILITY -->
+  <div class="slide slide-content" data-section="Contingency Tables">
+    <div class="slide-left">
+      <div class="slide-heading">Contingency Tables</div>
+      <div class="slide-title-text">Joint Probability</div>
+      <div class="context-box">
+        <div class="ctx-label">Definition</div>
+        <p>Probability of <strong>two events occurring together</strong>. Found in the interior cells of the table — not the margins.</p>
+      </div>
+      <div class="formula-block" style="margin-top:12px; background:#252a3d;">
+        <div class="formula-text">P(A∩B) = <span class="red">Cell Count</span> ÷ <span class="yellow">500</span></div>
+      </div>
+    </div>
+    <div class="slide-right" style="justify-content:center; gap:12px;">
+      <table class="ct-table">
+        <thead><tr><th class="row-header">Employment</th><th>Default</th><th>No Default</th><th>Row Total</th></tr></thead>
+        <tbody>
+          <tr><td class="row-label">Employed</td><td class="highlight">40</td><td class="highlight2">320</td><td class="total">360</td></tr>
+          <tr><td class="row-label">Unemployed</td><td class="highlight3">80</td><td>60</td><td class="total">140</td></tr>
+          <tr><td class="row-label total">Total</td><td class="total">120</td><td class="total">380</td><td class="total">500</td></tr>
+        </tbody>
+      </table>
+      <div class="steps">
+        <div class="step-item"><div class="step-num" style="background:#92400e; font-size:10px;">▲</div><span><span class="prob-notation">P(Employed ∩ Default) = <span class="pval">40/500 = 0.08</span></span></span></div>
+        <div class="step-item"><div class="step-num" style="background:var(--blue); font-size:10px;">▲</div><span><span class="prob-notation">P(Employed ∩ No Default) = <span class="pval">320/500 = 0.64</span></span></span></div>
+        <div class="step-item"><div class="step-num" style="background:var(--green); font-size:10px;">▲</div><span><span class="prob-notation">P(Unemployed ∩ Default) = <span class="pval">80/500 = 0.16</span></span></span></div>
+      </div>
+      <div class="so-what" style="margin-top:8px;">
+        <div class="sw-label">So What?</div>
+        <p>Joint probabilities identify the riskiest <em>combinations</em>. Unemployed &amp; Default (0.16) is twice as likely as Employed &amp; Default (0.08).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11 DIVIDER: ADDITION & MULTIPLICATION -->
+  <div class="slide slide-divider" data-section="Addition & Multiplication">
+    <div class="divider-inner">
+      <div class="section-num">03</div>
+      <div class="section-pill">Section 3</div>
+      <div class="section-title">Addition &amp; Multiplication Rules</div>
+      <div class="section-desc">Rules for computing the probability of A or B (addition) and A and B (multiplication) across loan events.</div>
+    </div>
+  </div>
+
+  <!-- 12 ADDITION RULE -->
+  <div class="slide slide-content" data-section="Addition & Multiplication">
+    <div class="slide-left">
+      <div class="slide-heading">Addition Rule</div>
+      <div class="slide-title-text">P(A or B) — Union of Events</div>
+      <div class="context-box">
+        <div class="ctx-label">Bank Question</div>
+        <p>What is the probability that a randomly selected applicant is either <strong>unemployed OR defaults</strong>?</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Key Insight</div>
+        <p>Without the formula we'd double-count applicants who are both unemployed <em>and</em> defaulted.</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="formula-block">
+        <div class="formula-text">P(<span class="red">A</span>∪<span class="blue">B</span>) = P(<span class="red">A</span>) + P(<span class="blue">B</span>) − P(<span class="red">A</span>∩<span class="blue">B</span>)</div>
+        <div class="formula-sub">General Addition Rule — subtract the overlap to avoid double-counting</div>
+      </div>
+      <div class="steps" style="margin-top:14px;">
+        <div class="step-item"><div class="step-num">1</div><span>Let A = Unemployed → P(A) = 140/500 = <strong>0.28</strong></span></div>
+        <div class="step-item"><div class="step-num">2</div><span>Let B = Default → P(B) = 120/500 = <strong>0.24</strong></span></div>
+        <div class="step-item"><div class="step-num">3</div><span>Overlap: P(A∩B) = 80/500 = <strong>0.16</strong></span></div>
+        <div class="step-item"><div class="step-num">4</div><span>P(A∪B) = 0.28 + 0.24 − 0.16 = <strong style="color:var(--red);">0.36</strong></span></div>
+      </div>
+      <div style="margin-top:12px; padding:10px 14px; background:#f8f9fa; border:1px solid var(--border); border-radius:4px;">
+        <p style="font-size:12px; color:var(--muted);"><strong>Special case — Mutually Exclusive:</strong> If A and B cannot both occur, P(A∩B) = 0, so P(A∪B) = P(A) + P(B). Example: a loan can't be both "approved" and "rejected" simultaneously.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13 MULTIPLICATION RULE -->
+  <div class="slide slide-content" data-section="Addition & Multiplication">
+    <div class="slide-left">
+      <div class="slide-heading">Multiplication Rule</div>
+      <div class="slide-title-text">P(A and B) — Intersection</div>
+      <div class="context-box">
+        <div class="ctx-label">Two Versions</div>
+        <p><strong>General:</strong> Works for any two events.<br><strong>Special (independent):</strong> When events don't affect each other.</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Accounting Use</div>
+        <p>Probability that two <em>independent</em> internal controls both fail simultaneously.</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="formula-block" style="margin-bottom:8px;">
+        <div class="formula-text">P(<span class="red">A</span>∩<span class="blue">B</span>) = P(<span class="red">A</span>) × P(<span class="blue">B</span>|<span class="red">A</span>)</div>
+        <div class="formula-sub">General — probability of A, then B given A already occurred</div>
+      </div>
+      <div class="formula-block">
+        <div class="formula-text">P(<span class="red">A</span>∩<span class="blue">B</span>) = P(<span class="red">A</span>) × P(<span class="blue">B</span>)</div>
+        <div class="formula-sub">Special — ONLY when A and B are statistically independent</div>
+      </div>
+      <div class="steps" style="margin-top:12px;">
+        <div class="step-item"><div class="step-num">eg</div><span>P(Unemployed) = 0.28 &nbsp;·&nbsp; P(Default|Unemployed) = 80/140 ≈ 0.571</span></div>
+        <div class="step-item"><div class="step-num">→</div><span>P(Unemployed ∩ Default) = 0.28 × 0.571 = <strong style="color:var(--red);">0.16 ✓</strong> — matches our contingency table cell!</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14 QUIZ 2 -->
+  <div class="slide slide-quiz" data-section="Addition & Multiplication">
+    <div class="quiz-label">Quick Check — Section 3</div>
+    <div class="quiz-question">Using the loan dataset (500 applicants, 360 employed, 380 no-default, 320 employed &amp; no-default): What is P(Employed OR No Default)?</div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">A</span> 0.72 + 0.76 = 1.48 — add the marginal probabilities</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">B</span> 0.72 + 0.76 − 0.08 = 1.40 — subtract the wrong overlap</div>
+      <div class="quiz-option" onclick="selectOption(this,true)"><span class="opt-key">C</span> 0.72 + 0.76 − 0.64 = 0.84 — correct: subtract the joint</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">D</span> 0.72 × 0.76 = 0.547 — multiply the marginals</div>
+    </div>
+    <button class="quiz-reveal-btn" onclick="revealExplanation(this)">Reveal Explanation</button>
+    <div class="quiz-explain">
+      <p><strong>C is correct.</strong> General Addition Rule: P(Employed ∪ No Default) = P(E) + P(ND) − P(E∩ND) = 360/500 + 380/500 − 320/500 = 0.72 + 0.76 − 0.64 = <strong>0.84</strong>. Option A forgets to subtract the overlap entirely. Option B subtracts P(Employed ∩ Default) = 0.08 — the wrong cell. Option D uses multiplication, which gives "and" not "or".</p>
+    </div>
+  </div>
+
+  <!-- 15 DIVIDER: CONDITIONAL -->
+  <div class="slide slide-divider" data-section="Conditional Probability">
+    <div class="divider-inner">
+      <div class="section-num">04</div>
+      <div class="section-pill">Section 4</div>
+      <div class="section-title">Conditional Probability &amp; Independence</div>
+      <div class="section-desc">How knowing one thing about an applicant changes our default risk estimate — and when it tells us nothing new at all.</div>
+    </div>
+  </div>
+
+  <!-- 16 CONDITIONAL PROBABILITY -->
+  <div class="slide slide-content" data-section="Conditional Probability">
+    <div class="slide-left">
+      <div class="slide-heading">Conditional Probability</div>
+      <div class="slide-title-text">P(A | B) — Given that B occurred</div>
+      <div class="context-box">
+        <div class="ctx-label">Bank Question</div>
+        <p>We already know an applicant is <strong>unemployed</strong>. How does this change our estimate of their default probability?</p>
+      </div>
+      <div class="formula-block" style="margin-top:12px; background:#252a3d;">
+        <div class="formula-text">P(<span class="red">A</span>|<span class="blue">B</span>) = P(<span class="red">A</span>∩<span class="blue">B</span>) / P(<span class="blue">B</span>)</div>
+        <div class="formula-sub">Restrict the sample space to B; find A within it</div>
+      </div>
+    </div>
+    <div class="slide-right" style="justify-content:center; gap:12px;">
+      <table class="ct-table">
+        <thead><tr><th class="row-header">Employment</th><th>Default</th><th>No Default</th><th>Row Total</th></tr></thead>
+        <tbody>
+          <tr><td class="row-label">Employed</td><td>40</td><td>320</td><td class="total">360</td></tr>
+          <tr><td class="row-label">Unemployed</td><td class="highlight">80</td><td>60</td><td class="highlight" style="background:#fef3c7;">140</td></tr>
+          <tr><td class="row-label total">Total</td><td class="total">120</td><td class="total">380</td><td class="total">500</td></tr>
+        </tbody>
+      </table>
+      <div class="steps">
+        <div class="step-item"><div class="step-num">1</div><span>Restrict to unemployed applicants: new total = <strong>140</strong></span></div>
+        <div class="step-item"><div class="step-num">2</div><span>Among those, how many defaulted? → <strong>80</strong></span></div>
+        <div class="step-item"><div class="step-num">3</div><span>P(Default|Unemployed) = 80/140 = <strong style="color:var(--red);">0.571</strong></span></div>
+      </div>
+      <div class="so-what">
+        <div class="sw-label">Compare</div>
+        <p>P(Default|Employed) = 40/360 = 0.111. Unemployment multiplies default risk by <strong>5×</strong>. This is exactly what credit models should capture in their segmentation.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 17 TREE DIAGRAM -->
+  <div class="slide slide-content" data-section="Conditional Probability">
+    <div class="slide-left">
+      <div class="slide-heading">Conditional Probability</div>
+      <div class="slide-title-text">Tree Diagrams</div>
+      <div class="context-box">
+        <div class="ctx-label">Purpose</div>
+        <p>Tree diagrams map all paths through sequential events and make conditional probabilities visual.</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Reading the Tree</div>
+        <p>Branches show conditional probabilities. Multiplying along a path gives the joint probability at the leaf.</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <svg viewBox="0 0 540 330" style="width:100%;height:100%;">
+        <circle cx="55" cy="162" r="5" fill="#1a1e2e"/>
+        <text x="14" y="158" font-family="Source Sans 3" font-size="11" fill="#6b7280">Select</text>
+        <text x="14" y="172" font-family="Source Sans 3" font-size="11" fill="#6b7280">applicant</text>
+        <!-- Employed branch -->
+        <line x1="60" y1="148" x2="185" y2="74" stroke="#2563a8" stroke-width="1.8"/>
+        <text x="96" y="100" font-family="JetBrains Mono" font-size="11" fill="#2563a8">0.72</text>
+        <circle cx="190" cy="72" r="5" fill="#2563a8"/>
+        <text x="200" y="68" font-family="Source Sans 3" font-size="12" fill="#2563a8" font-weight="600">Employed (360)</text>
+        <!-- Unemployed branch -->
+        <line x1="60" y1="176" x2="185" y2="252" stroke="#C0272D" stroke-width="1.8"/>
+        <text x="90" y="230" font-family="JetBrains Mono" font-size="11" fill="#C0272D">0.28</text>
+        <circle cx="190" cy="255" r="5" fill="#C0272D"/>
+        <text x="200" y="251" font-family="Source Sans 3" font-size="12" fill="#C0272D" font-weight="600">Unemployed (140)</text>
+        <!-- Employed → Default -->
+        <line x1="195" y1="66" x2="340" y2="36" stroke="#374151" stroke-width="1.4"/>
+        <text x="242" y="42" font-family="JetBrains Mono" font-size="10" fill="#374151">0.111</text>
+        <text x="344" y="32" font-family="Source Sans 3" font-size="12" fill="#374151">Default</text>
+        <text x="344" y="46" font-family="JetBrains Mono" font-size="11" fill="#C0272D">P = 0.72×0.111 = <tspan font-weight="700">0.08</tspan></text>
+        <!-- Employed → No Default -->
+        <line x1="195" y1="78" x2="340" y2="110" stroke="#374151" stroke-width="1.4"/>
+        <text x="242" y="86" font-family="JetBrains Mono" font-size="10" fill="#374151">0.889</text>
+        <text x="344" y="106" font-family="Source Sans 3" font-size="12" fill="#374151">No Default</text>
+        <text x="344" y="120" font-family="JetBrains Mono" font-size="11" fill="#2d8a4e">P = 0.72×0.889 = <tspan font-weight="700">0.64</tspan></text>
+        <!-- Unemployed → Default -->
+        <line x1="195" y1="249" x2="340" y2="212" stroke="#374151" stroke-width="1.4"/>
+        <text x="238" y="222" font-family="JetBrains Mono" font-size="10" fill="#374151">0.571</text>
+        <text x="344" y="208" font-family="Source Sans 3" font-size="12" fill="#374151">Default</text>
+        <text x="344" y="222" font-family="JetBrains Mono" font-size="11" fill="#C0272D">P = 0.28×0.571 = <tspan font-weight="700">0.16</tspan></text>
+        <!-- Unemployed → No Default -->
+        <line x1="195" y1="261" x2="340" y2="292" stroke="#374151" stroke-width="1.4"/>
+        <text x="236" y="290" font-family="JetBrains Mono" font-size="10" fill="#374151">0.429</text>
+        <text x="344" y="288" font-family="Source Sans 3" font-size="12" fill="#374151">No Default</text>
+        <text x="344" y="302" font-family="JetBrains Mono" font-size="11" fill="#2d8a4e">P = 0.28×0.429 = <tspan font-weight="700">0.12</tspan></text>
+        <text x="356" y="324" font-family="JetBrains Mono" font-size="10" fill="#6b7280">Σ = 0.08+0.64+0.16+0.12 = 1.00 ✓</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 18 INDEPENDENCE -->
+  <div class="slide slide-content" data-section="Conditional Probability">
+    <div class="slide-left">
+      <div class="slide-heading">Statistical Independence</div>
+      <div class="slide-title-text">Does knowing one thing change anything?</div>
+      <div class="context-box">
+        <div class="ctx-label">Test for Independence</div>
+        <p>A and B are <strong>independent</strong> if:<br>P(A|B) = P(A) &nbsp;·&nbsp; equivalently:<br>P(A∩B) = P(A) × P(B)</p>
+      </div>
+      <div class="formula-block" style="margin-top:10px; background:#252a3d;">
+        <div class="formula-text">P(<span class="red">A</span>|<span class="blue">B</span>) = P(<span class="red">A</span>) → Independent</div>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="ind-compare">
+        <div class="ind-box dependent">
+          <h4>Dependent — Our Data</h4>
+          <p>P(Default|Unemployed) = 0.571</p>
+          <p>P(Default) = 0.24</p>
+          <p style="color:var(--red); font-weight:700; margin-top:4px;">0.571 ≠ 0.24</p>
+          <p>Employment status <strong>does</strong> affect default risk. Events are dependent.</p>
+          <div class="ind-formula">P(D|U) ≠ P(D) → DEPENDENT</div>
+        </div>
+        <div class="ind-box independent">
+          <h4>Independent — Hypothetical</h4>
+          <p>P(Default|Unemployed) = 0.24</p>
+          <p>P(Default) = 0.24</p>
+          <p style="color:var(--green); font-weight:700; margin-top:4px;">0.24 = 0.24</p>
+          <p>Knowing employment status tells us <strong>nothing new</strong> about default risk.</p>
+          <div class="ind-formula">P(D|U) = P(D) → INDEPENDENT</div>
+        </div>
+      </div>
+      <div class="so-what" style="margin-top:12px;">
+        <div class="sw-label">Credit Risk Implication</div>
+        <p>If employment and default were independent, segmenting loans by employment status would add zero value. Our data shows strong dependence — so segmentation genuinely improves risk pricing.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 19 DIVIDER: BAYES -->
+  <div class="slide slide-divider" data-section="Bayes' Theorem">
+    <div class="divider-inner">
+      <div class="section-num">05</div>
+      <div class="section-pill">Section 5</div>
+      <div class="section-title">Bayes' Theorem</div>
+      <div class="section-desc">The formula that lets a bank update its default probability estimate when new information — like a missed payment — arrives mid-loan.</div>
+    </div>
+  </div>
+
+  <!-- 20 BAYES INTUITION -->
+  <div class="slide slide-content" data-section="Bayes' Theorem">
+    <div class="slide-left">
+      <div class="slide-heading">Bayes' Theorem</div>
+      <div class="slide-title-text">Updating Beliefs with Evidence</div>
+      <div class="context-box">
+        <div class="ctx-label">The Problem</div>
+        <p>A borrower just missed their first payment. Should the bank reclassify them as high risk? By exactly how much should the estimated default probability increase?</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Why Bayes Matters</div>
+        <p>Foundation of credit scoring models, fraud detection systems, and dynamic loan provisioning — any system that updates beliefs with new data.</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="def-box">
+        <div class="def-term">Three Key Terms</div>
+        <div class="def-text">
+          <strong>Prior probability:</strong> Initial estimate before new evidence.<br><br>
+          <strong>Likelihood:</strong> How probable is the evidence if the event is true?<br><br>
+          <strong>Posterior probability:</strong> Updated estimate after seeing the evidence.
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:14px; font-size:12px;">
+        <div style="text-align:center; flex:1; background:#f8f9fa; border:1px solid var(--border); border-radius:4px; padding:12px;">
+          <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Prior</div>
+          <div style="font-size:28px; font-family:'Playfair Display',serif; color:var(--dark);">30%</div>
+          <div style="font-size:11px; color:var(--muted);">High risk before payment data</div>
+        </div>
+        <div style="font-size:20px; color:var(--muted);">+</div>
+        <div style="text-align:center; flex:1; background:#f8f9fa; border:1px solid var(--border); border-radius:4px; padding:12px;">
+          <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Evidence</div>
+          <div style="font-size:20px; font-family:'Playfair Display',serif; color:var(--accent); line-height:1.2;">Missed<br>payment</div>
+        </div>
+        <div style="font-size:20px; color:var(--muted);">=</div>
+        <div style="text-align:center; flex:1; background:#fff3f3; border:1px solid var(--red); border-radius:4px; padding:12px;">
+          <div style="font-size:10px; color:var(--red); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Posterior</div>
+          <div style="font-size:28px; font-family:'Playfair Display',serif; color:var(--red);">63.2%</div>
+          <div style="font-size:11px; color:var(--muted);">High risk after evidence</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 21 BAYES FORMULA -->
+  <div class="slide slide-full" data-section="Bayes' Theorem">
+    <div class="slide-heading">Bayes' Theorem</div>
+    <div class="slide-title-text">The Formula</div>
+    <div class="formula-block" style="margin-bottom:18px;">
+      <div class="formula-text">P(<span class="red">A</span>|<span class="blue">B</span>) = <span class="yellow">P(<span class="blue">B</span>|<span class="red">A</span>) × P(<span class="red">A</span>)</span> / <span class="green">P(<span class="blue">B</span>)</span></div>
+      <div class="formula-sub" style="font-size:12px; margin-top:8px;">where P(B) = P(B|A)·P(A) + P(B|Aᶜ)·P(Aᶜ)  — the Law of Total Probability</div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; flex:1;">
+      <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:4px; padding:14px; border-top:3px solid var(--red);">
+        <div style="font-size:10px; color:var(--red); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px;">P(A|B) — Posterior</div>
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px;">What We Want</div>
+        <div style="font-size:12px; color:var(--muted);">Probability of A given we observed B</div>
+      </div>
+      <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:4px; padding:14px; border-top:3px solid #fbbf24;">
+        <div style="font-size:10px; color:#92400e; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px;">P(B|A) — Likelihood</div>
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px;">Evidence Strength</div>
+        <div style="font-size:12px; color:var(--muted);">How probable is evidence B if A is true?</div>
+      </div>
+      <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:4px; padding:14px; border-top:3px solid var(--blue);">
+        <div style="font-size:10px; color:var(--blue); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px;">P(A) — Prior</div>
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px;">Initial Belief</div>
+        <div style="font-size:12px; color:var(--muted);">Our estimate before seeing evidence B</div>
+      </div>
+      <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:4px; padding:14px; border-top:3px solid var(--green);">
+        <div style="font-size:10px; color:var(--green); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:5px;">P(B) — Normaliser</div>
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px;">Total Probability of B</div>
+        <div style="font-size:12px; color:var(--muted);">Probability of observing B across all scenarios</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 22 BAYES WORKED EXAMPLE -->
+  <div class="slide slide-content" data-section="Bayes' Theorem">
+    <div class="slide-left">
+      <div class="slide-heading">Bayes' Theorem</div>
+      <div class="slide-title-text">Worked Example</div>
+      <div class="context-box">
+        <div class="ctx-label">Setup</div>
+        <p>30% of applicants are classified High Risk (HR).<br>P(Missed Payment | HR) = 0.80<br>P(Missed Payment | Low Risk) = 0.20<br><br><strong>A borrower misses month-1 payment. What is P(HR | Missed Payment)?</strong></p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="steps">
+        <div class="step-item"><div class="step-num">1</div><span>Prior: P(HR) = 0.30 &nbsp;·&nbsp; P(LR) = 0.70</span></div>
+        <div class="step-item"><div class="step-num">2</div><span>Likelihoods: P(MP|HR) = 0.80 &nbsp;·&nbsp; P(MP|LR) = 0.20</span></div>
+        <div class="step-item"><div class="step-num">3</div><span>P(MP) = (0.80)(0.30) + (0.20)(0.70) = 0.24 + 0.14 = <strong>0.38</strong></span></div>
+        <div class="step-item"><div class="step-num">4</div><span>P(HR|MP) = (0.80 × 0.30) / 0.38 = 0.24 / 0.38 = <strong style="color:var(--red); font-size:15px;">0.632</strong></span></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;">Probability of High Risk</div>
+        <div class="bayes-row">
+          <div class="bayes-label">Before evidence</div>
+          <div class="bayes-bar-bg"><div class="bayes-bar-fill" style="width:30%; background:var(--blue);">30%</div></div>
+          <div class="bayes-value">0.30</div>
+        </div>
+        <div class="bayes-row" style="margin-top:8px;">
+          <div class="bayes-label">After missed payment</div>
+          <div class="bayes-bar-bg"><div class="bayes-bar-fill" style="width:63.2%; background:var(--red);">63.2%</div></div>
+          <div class="bayes-value">0.632</div>
+        </div>
+      </div>
+      <div class="so-what" style="margin-top:12px;">
+        <div class="sw-label">Interpretation</div>
+        <p>One missed payment <strong>more than doubles</strong> the estimated high-risk probability. This is why early payment behaviour is so predictive in credit scoring models.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 23 QUIZ 3 -->
+  <div class="slide slide-quiz" data-section="Bayes' Theorem">
+    <div class="quiz-label">Quick Check — Section 5</div>
+    <div class="quiz-question">In the Bayes' example, if the prior P(High Risk) increased to 50% and all likelihoods stayed the same, what would happen to P(High Risk | Missed Payment)?</div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">A</span> Stay the same — the prior doesn't affect the posterior</div>
+      <div class="quiz-option" onclick="selectOption(this,true)"><span class="opt-key">B</span> Increase — a higher prior pushes the posterior up</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">C</span> Decrease — more high-risk applicants dilutes the signal</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">D</span> Become exactly 1.0 — certainty of high risk</div>
+    </div>
+    <button class="quiz-reveal-btn" onclick="revealExplanation(this)">Reveal Explanation</button>
+    <div class="quiz-explain">
+      <p><strong>B is correct.</strong> With P(HR) = 0.50: P(MP) = (0.80)(0.50) + (0.20)(0.50) = 0.40 + 0.10 = 0.50. P(HR|MP) = (0.80 × 0.50) / 0.50 = <strong>0.80</strong>. The posterior rose from 0.632 to 0.80. A higher prior always yields a higher posterior — Bayes is a weighted average of prior belief and likelihood evidence. Option D is wrong: with likelihoods &lt; 1, the posterior can never reach 1.0 unless P(MP|LR) = 0.</p>
+    </div>
+  </div>
+
+  <!-- 24 DIVIDER: COUNTING -->
+  <div class="slide slide-divider" data-section="Counting Rules">
+    <div class="divider-inner">
+      <div class="section-num">06</div>
+      <div class="section-pill">Section 6</div>
+      <div class="section-title">Counting Rules</div>
+      <div class="section-desc">Five techniques for counting the number of ways events can occur — essential for computing classical probabilities in audit sampling and portfolio problems.</div>
+    </div>
+  </div>
+
+  <!-- 25 WHY COUNTING MATTERS -->
+  <div class="slide slide-content" data-section="Counting Rules">
+    <div class="slide-left">
+      <div class="slide-heading">Counting Rules</div>
+      <div class="slide-title-text">Why Counting Matters</div>
+      <div class="context-box">
+        <div class="ctx-label">Classical Probability Link</div>
+        <p>P(Event) = Favourable outcomes ÷ Total outcomes. Counting rules help us compute both efficiently when there are too many outcomes to list.</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Accounting Examples</div>
+        <p>• How many ways can an auditor select 3 accounts from 12?<br>• How many loan product combinations does the bank offer?<br>• How many ways can 5 candidates be ranked for a single role?</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="counting-grid">
+        <div class="counting-card"><div class="cc-num">Rule 1</div><h4>Multiplication (mn)</h4><p>m choices for first, n for second → m × n total combinations.</p><div class="cc-formula">m × n × p × ...</div></div>
+        <div class="counting-card"><div class="cc-num">Rule 2</div><h4>Permutations (all n)</h4><p>Arrange all n distinct objects in order. Order matters.</p><div class="cc-formula">n!</div></div>
+        <div class="counting-card"><div class="cc-num">Rule 3</div><h4>Permutations (r of n)</h4><p>Arrange r objects chosen from n. Order matters.</p><div class="cc-formula">n! / (n−r)!</div></div>
+        <div class="counting-card"><div class="cc-num">Rule 4</div><h4>Combinations (r of n)</h4><p>Choose r from n. Order does NOT matter.</p><div class="cc-formula">n! / [r!(n−r)!]</div></div>
+      </div>
+      <div class="counting-card" style="border:1px solid var(--border); border-radius:4px; padding:12px; margin-top:9px;">
+        <div class="cc-num">Rule 5</div><h4>Partition Rule</h4>
+        <p>Divide n objects into k groups of fixed sizes n₁, n₂, ..., nₖ.</p>
+        <div class="cc-formula">n! / (n₁! × n₂! × ... × nₖ!)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 26 PERMUTATIONS VS COMBINATIONS -->
+  <div class="slide slide-content" data-section="Counting Rules">
+    <div class="slide-left">
+      <div class="slide-heading">Counting Rules</div>
+      <div class="slide-title-text">Permutations vs Combinations</div>
+      <div class="context-box">
+        <div class="ctx-label">The Only Question You Need</div>
+        <p>Does <strong>order matter</strong>? Yes → Permutation. No → Combination.</p>
+      </div>
+      <div class="so-what" style="margin-top:14px;">
+        <div class="sw-label">Memory Hook</div>
+        <p><strong>P</strong>ermutation = <strong>P</strong>ositional (1st, 2nd, 3rd — roles matter). <strong>C</strong>ombination = <strong>C</strong>ommittee (only who is selected, not their role).</p>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="ind-compare">
+        <div class="ind-box dependent" style="border-left-color:var(--blue);">
+          <h4 style="color:var(--blue);">Permutation — Order Matters</h4>
+          <p><strong>Scenario:</strong> An audit firm assigns the top 3 candidates from 8 finalists to Senior, Manager, and Analyst roles.</p>
+          <p style="margin-top:6px;"><strong>Formula:</strong> P(8,3) = 8! / (8−3)! = 8×7×6</p>
+          <p style="color:var(--blue); font-weight:700; font-size:15px; margin-top:4px;">= 336 ordered arrangements</p>
+          <div class="ind-formula">ABC ≠ BAC → different role assignments</div>
+        </div>
+        <div class="ind-box independent" style="border-left-color:var(--accent);">
+          <h4 style="color:#92400e;">Combination — Order Irrelevant</h4>
+          <p><strong>Scenario:</strong> An auditor selects 3 accounts from 8 for random testing. Any group of 3 is equally valid.</p>
+          <p style="margin-top:6px;"><strong>Formula:</strong> C(8,3) = 8! / (3! × 5!)</p>
+          <p style="color:#92400e; font-weight:700; font-size:15px; margin-top:4px;">= 56 possible groups</p>
+          <div class="ind-formula">ABC = BAC → same accounts selected</div>
+        </div>
+      </div>
+      <div class="so-what" style="margin-top:12px;">
+        <div class="sw-label">Ratio Insight</div>
+        <p>C(8,3) = P(8,3) / 3! = 336 / 6 = 56. Combinations are always smaller — we divide out the r! orderings of the selected items.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 27 COUNTING APPLIED EXAMPLES -->
+  <div class="slide slide-full" data-section="Counting Rules">
+    <div class="slide-heading">Counting Rules</div>
+    <div class="slide-title-text">Applied Examples</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; flex:1;">
+      <div style="border:1px solid var(--border); border-radius:4px; padding:16px; border-top:3px solid var(--blue);">
+        <div style="font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--blue); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Rule 1 — Multiplication</div>
+        <p style="font-size:13px; color:var(--text); margin-bottom:10px; line-height:1.5;">A bank offers 3 loan types × 4 repayment terms × 2 rate structures. How many distinct loan products?</p>
+        <div style="background:#f8f9fa; border-radius:3px; padding:10px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--dark);">3 × 4 × 2 = <strong style="color:var(--red);">24</strong> products</div>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:4px; padding:16px; border-top:3px solid var(--accent);">
+        <div style="font-size:10px; font-family:'JetBrains Mono',monospace; color:#92400e; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Rule 4 — Combinations</div>
+        <p style="font-size:13px; color:var(--text); margin-bottom:10px; line-height:1.5;">An auditor selects 4 accounts from a population of 10 for detailed testing. How many different samples are possible?</p>
+        <div style="background:#f8f9fa; border-radius:3px; padding:10px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--dark);">C(10,4) = 10!/(4!·6!) = <strong style="color:var(--red);">210</strong></div>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:4px; padding:16px; border-top:3px solid var(--green);">
+        <div style="font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--green); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Rule 5 — Partition</div>
+        <p style="font-size:13px; color:var(--text); margin-bottom:10px; line-height:1.5;">12 loan files must be distributed among 3 auditors — 4 files each. In how many ways can this be done?</p>
+        <div style="background:#f8f9fa; border-radius:3px; padding:10px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--dark);">12!/(4!·4!·4!) = <strong style="color:var(--red);">34,650</strong></div>
+      </div>
+    </div>
+    <div style="margin-top:14px; background:#fff8f0; border-left:3px solid var(--accent); padding:10px 14px; border-radius:0 4px 4px 0;">
+      <p style="font-size:13px; color:#4b2020;"><strong>Decision guide:</strong> Is order important (rankings, roles)? → Permutation. Is only the group what matters? → Combination. Distributing n items into fixed groups? → Partition.</p>
+    </div>
+  </div>
+
+  <!-- 28 QUIZ 4 -->
+  <div class="slide slide-quiz" data-section="Counting Rules">
+    <div class="quiz-label">Quick Check — Section 6</div>
+    <div class="quiz-question">A credit committee of 3 members must be chosen from 7 senior analysts. The committee has no designated roles — all members are equal. How many different committees are possible?</div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">A</span> P(7,3) = 210 — use permutations because selection is sequential</div>
+      <div class="quiz-option" onclick="selectOption(this,true)"><span class="opt-key">B</span> C(7,3) = 35 — use combinations because all roles are equal</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">C</span> 7³ = 343 — apply the multiplication rule</div>
+      <div class="quiz-option" onclick="selectOption(this,false)"><span class="opt-key">D</span> 7! = 5,040 — arrange all 7 analysts</div>
+    </div>
+    <button class="quiz-reveal-btn" onclick="revealExplanation(this)">Reveal Explanation</button>
+    <div class="quiz-explain">
+      <p><strong>B is correct.</strong> Since committee members have no designated roles, only <em>who</em> is selected matters — not the order of selection. That's combinations: C(7,3) = 7! / (3! × 4!) = 5040 / (6 × 24) = <strong>35</strong>. If the problem instead asked for a Chair, Deputy, and Secretary from 7 analysts, roles would differ → P(7,3) = 210. When in doubt: no roles = combinations; specific roles = permutations.</p>
+    </div>
+  </div>
+
+  <!-- 29 WEEK SUMMARY -->
+  <div class="slide slide-full" data-section="Summary">
+    <div class="slide-heading">Week 4</div>
+    <div class="slide-title-text">Key Takeaways</div>
+    <div class="summary-grid">
+      <div class="summary-card"><h4>Probability Foundations</h4><p>Three approaches: classical (equal likelihood), relative frequency (past data), subjective (expert judgment). Always 0 ≤ P(A) ≤ 1.</p></div>
+      <div class="summary-card"><h4>Contingency Tables</h4><p>Marginal probabilities from row/column totals. Joint probabilities from interior cells. Both divided by the grand total.</p></div>
+      <div class="summary-card"><h4>Addition Rule</h4><p>P(A∪B) = P(A) + P(B) − P(A∩B). Subtract overlap to avoid double-counting. Mutually exclusive: no subtraction needed.</p></div>
+      <div class="summary-card"><h4>Conditional Probability</h4><p>P(A|B) = P(A∩B)/P(B). Restrict the sample space to B. Independence: P(A|B) = P(A) — knowing B tells us nothing new about A.</p></div>
+      <div class="summary-card"><h4>Bayes' Theorem</h4><p>Prior × Likelihood → Posterior. Formal framework for updating default risk estimates as new borrower information arrives.</p></div>
+      <div class="summary-card"><h4>Counting Rules</h4><p>Multiplication, Permutations (n or r of n), Combinations, Partitions. Key question every time: does order matter?</p></div>
+    </div>
+  </div>
+
+  <!-- 30 CLOSING -->
+  <div class="slide slide-title" data-section="Summary">
+    <div class="title-inner">
+      <span class="unit-tag">Week 4 Complete</span>
+      <div class="title-main" style="font-size:40px; line-height:1.15;">Probability is how<br>we price uncertainty.</div>
+      <div class="title-sub" style="margin-top:16px;">Every credit score, audit sample, and loan loss provision<br>rests on the concepts covered today.</div>
+      <div style="margin-top:32px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--red); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">Next Week</div>
+        <div style="color:#d1d5db; font-size:15px;">Week 5 — Probability Distributions:<br>Binomial, Poisson &amp; Normal</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #stage -->
+
+<div id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="changeSlide(-1)" disabled>← Previous</button>
+  <button class="nav-btn" id="btn-next" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+  const TOTAL = 30;
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+
+  function updateUI() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    document.getElementById('slide-counter').textContent = `${current + 1} / ${TOTAL}`;
+    document.getElementById('progress-bar').style.width = `${((current + 1) / TOTAL) * 100}%`;
+    document.getElementById('section-label').textContent = slides[current].dataset.section || '';
+    document.getElementById('btn-prev').disabled = current === 0;
+    document.getElementById('btn-next').disabled = current === TOTAL - 1;
+  }
+
+  function changeSlide(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < TOTAL) { current = next; updateUI(); }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+  });
+
+  function selectOption(el, isCorrect) {
+    const parent = el.closest('.quiz-options');
+    if (parent.querySelector('.revealed')) return;
+    parent.querySelectorAll('.quiz-option').forEach(opt => {
+      opt.classList.add('revealed');
+      if (opt.onclick.toString().includes(',true)')) opt.classList.add('correct');
+    });
+    if (!isCorrect) el.classList.add('incorrect');
+  }
+
+  function revealExplanation(btn) {
+    const explain = btn.nextElementSibling;
+    explain.classList.toggle('show');
+    btn.textContent = explain.classList.contains('show') ? 'Hide Explanation' : 'Reveal Explanation';
+    const opts = btn.previousElementSibling.querySelectorAll('.quiz-option');
+    opts.forEach(opt => {
+      opt.classList.add('revealed');
+      if (opt.onclick.toString().includes(',true)')) opt.classList.add('correct');
+    });
+  }
+
+  updateUI();
+</script>
+</body>
+</html>
