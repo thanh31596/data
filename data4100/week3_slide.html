@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DATA4100 – Week 3: Analytics, UX & Report Writing</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Sans+3:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C0392B;--red2:#E74C3C;--redp:#FDEDEC;--redm:#F1948A;
+  --ink:#1A1A1C;--ink2:#3C3C3E;--ink3:#696969;--ink4:#A0A0A0;
+  --rule:#E4E4E7;--bg:#FFFFFF;--bg2:#F9F9FB;--bg3:#F2F2F5;
+  --blue:#1B5E8C;--bluep:#EBF3FB;--bluem:#AED6F1;
+  --grn:#166534;--grnp:#F0FDF4;--grnm:#86EFAC;
+  --amb:#92400E;--ambp:#FFFBEB;--ambm:#FCD34D;
+  --pur:#4C1D95;--purp:#F5F3FF;--purm:#C4B5FD;
+  --gold:#B45309;
+}
+html,body{width:100%;height:100%;font-family:'Source Sans 3',sans-serif;background:#0C0C0E;overflow:hidden;color:var(--ink)}
+
+/* ── PROGRESS ── */
+#prog{position:fixed;top:0;left:0;height:3px;background:var(--red);z-index:400;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* ── DECK ── */
+#deck{width:100vw;height:100vh;position:relative}
+.slide{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s ease;overflow:hidden}
+.slide.active{opacity:1;pointer-events:all}
+.slide-accent{height:4px;background:var(--red);flex-shrink:0}
+
+/* ── HEADER ── */
+.hdr{padding:16px 48px 12px;border-bottom:1px solid var(--rule);flex-shrink:0}
+.hdr-eye{font-size:9px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:var(--red);margin-bottom:3px}
+.hdr-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--red);line-height:1.1}
+.hdr-sub{font-size:12.5px;color:var(--ink3);margin-top:2px;font-weight:400}
+
+/* ── BODY LAYOUTS ── */
+.body{flex:1;padding:14px 48px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:0}
+.body.row{flex-direction:row;gap:24px}
+.col{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-55{flex:0 0 54%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-45{flex:0 0 42%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-60{flex:0 0 58%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-40{flex:0 0 38%;display:flex;flex-direction:column;gap:8px;min-width:0}
+
+/* ── TITLE SLIDE ── */
+.title-slide{justify-content:stretch}
+.ts-top{height:5px;background:var(--red);flex-shrink:0}
+.ts-body{flex:1;display:flex;align-items:center;padding:0 80px;gap:60px}
+.ts-left{flex:1}
+.ts-right{flex:0 0 280px}
+.ts-kicker{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--red);margin-bottom:14px}
+.ts-h{font-family:'Playfair Display',serif;font-size:46px;font-weight:900;color:var(--ink);line-height:1.0;margin-bottom:6px}
+.ts-h em{color:var(--red);font-style:normal}
+.ts-rule{width:48px;height:2px;background:var(--red);margin:16px 0}
+.ts-p{font-size:15px;color:var(--ink3);line-height:1.65;max-width:500px;margin-bottom:24px}
+.ts-agenda{display:flex;flex-direction:column;gap:6px}
+.ts-ag-item{display:flex;gap:12px;align-items:center}
+.ts-ag-num{font-family:'Playfair Display',serif;font-size:11px;font-weight:700;color:var(--red);opacity:.5;width:22px;flex-shrink:0}
+.ts-ag-text{font-size:13px;color:var(--ink2);font-weight:600}
+.ts-ag-tag{font-size:10.5px;color:var(--ink4);font-weight:300;margin-left:4px}
+.ts-timing-box{border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.ts-timing-hd{background:var(--red);color:white;padding:7px 12px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+.ts-timing-row{display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--rule);font-size:11.5px}
+.ts-timing-row:last-child{border-bottom:none}
+.ts-timing-row span:first-child{color:var(--ink2);font-weight:600}
+.ts-timing-row span:last-child{color:var(--ink4);font-family:'JetBrains Mono',monospace;font-size:10.5px}
+.ts-foot{font-size:10.5px;color:var(--ink4);margin-top:20px;letter-spacing:.5px}
+
+/* ── CONCEPT SLIDE (big idea, full-width) ── */
+.concept-slide{}
+.concept-body{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 80px}
+.concept-inner{max-width:780px;width:100%;text-align:center}
+.concept-kicker{font-size:9.5px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:var(--red);margin-bottom:16px}
+.concept-q{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;color:var(--ink);line-height:1.1;margin-bottom:16px}
+.concept-q em{color:var(--red);font-style:normal}
+.concept-p{font-size:15px;color:var(--ink3);line-height:1.7;max-width:620px;margin:0 auto 24px}
+
+/* ── CALLOUT BOXES ── */
+.box{border-radius:3px;padding:10px 14px}
+.box-r{background:var(--redp);border-left:3px solid var(--red)}
+.box-b{background:var(--bluep);border-left:3px solid var(--blue)}
+.box-g{background:var(--grnp);border-left:3px solid var(--grn)}
+.box-a{background:var(--ambp);border-left:3px solid var(--gold)}
+.box-p{background:var(--purp);border-left:3px solid var(--pur)}
+.box-lbl{font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.box-lbl.r{color:var(--red)} .box-lbl.b{color:var(--blue)} .box-lbl.g{color:var(--grn)} .box-lbl.a{color:var(--gold)} .box-lbl.p{color:var(--pur)}
+.box-txt{font-size:12.5px;line-height:1.55;color:var(--ink2)}
+.box-txt strong{color:var(--red)} .box-txt em{font-family:'Playfair Display',serif;font-style:italic}
+
+/* ── ACTIVITY SLIDES ── */
+.act-slide{background:var(--bg)}
+.act-stripe{height:5px;background:var(--red);flex-shrink:0}
+.act-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 80px;gap:16px}
+.act-label{font-size:9.5px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:var(--red)}
+.act-h{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--ink);text-align:center;line-height:1.15;max-width:680px}
+.act-h em{color:var(--red);font-style:normal}
+.act-p{font-size:14px;color:var(--ink3);text-align:center;max-width:600px;line-height:1.65}
+.act-tasks{display:flex;flex-direction:column;gap:9px;max-width:620px;width:100%}
+.act-task{background:var(--bg2);border:1px solid var(--rule);border-radius:4px;padding:12px 16px;display:flex;gap:12px;align-items:flex-start}
+.act-task-n{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--red);opacity:.25;line-height:1;flex-shrink:0;width:28px}
+.act-task-t{font-size:13px;color:var(--ink);line-height:1.55}
+.act-task-t strong{color:var(--red)}
+.act-time{background:var(--redp);border:1px solid var(--redm);color:var(--red);font-size:11px;font-weight:700;padding:4px 14px;border-radius:2px;letter-spacing:.5px}
+
+/* ── STEP LIST ── */
+.steps{display:flex;flex-direction:column;gap:8px}
+.step{display:flex;gap:10px;align-items:flex-start}
+.sn{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--red);color:white;font-family:'Playfair Display',serif;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.st{font-size:12.5px;color:var(--ink2);line-height:1.5;padding-top:3px}
+.st strong{color:var(--red)} .st em{color:var(--blue);font-style:normal;font-weight:600}
+.st code{background:var(--bg3);border:1px solid var(--rule);padding:1px 5px;font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:2px}
+
+/* ── DATA TABLE ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--red);color:white;padding:7px 11px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.5px}
+.tbl td{padding:6px 11px;border-bottom:1px solid var(--rule);font-size:12px;color:var(--ink);vertical-align:top}
+.tbl tr:nth-child(even) td{background:var(--bg2)}
+
+/* ── TIER CARDS ── */
+.tier-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tier-card{border-radius:4px;padding:14px;position:relative;overflow:hidden;border:1px solid var(--rule)}
+.tier-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.tier-card.d1::before{background:#BDC3C7}
+.tier-card.d2::before{background:#2E86C1}
+.tier-card.d3::before{background:#1E8449}
+.tier-card.d4::before{background:var(--red)}
+.tier-n{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;opacity:.08;line-height:1;margin-bottom:6px}
+.tier-label{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.tier-q{font-size:11.5px;color:var(--ink3);margin-bottom:8px;line-height:1.4;font-style:italic}
+.tier-eg{font-size:11px;color:var(--ink2);line-height:1.5;border-top:1px solid var(--rule);padding-top:7px;margin-top:6px}
+.tier-eg strong{color:var(--red)}
+.tier-tag{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:2px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.tier-card.d1 .tier-tag{background:#F2F3F4;color:#7F8C8D}
+.tier-card.d2 .tier-tag{background:var(--bluep);color:var(--blue)}
+.tier-card.d3 .tier-tag{background:var(--grnp);color:var(--grn)}
+.tier-card.d4 .tier-tag{background:var(--redp);color:var(--red)}
+
+/* ── PRINCIPLE CARDS ── */
+.principle-num{font-family:'Playfair Display',serif;font-size:72px;font-weight:900;color:var(--red);opacity:.08;line-height:1;position:absolute;right:14px;top:6px}
+.principle-block{position:relative;border:1px solid var(--rule);border-radius:4px;padding:14px 16px;overflow:hidden}
+.principle-block::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--red)}
+
+/* ── COMPARISON (before/after) ── */
+.ba-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ba-panel{border-radius:4px;overflow:hidden;border:1px solid var(--rule)}
+.ba-hd{padding:7px 12px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+.ba-hd.bad{background:#FDECEA;color:var(--red);border-bottom:1px solid var(--redm)}
+.ba-hd.good{background:var(--grnp);color:var(--grn);border-bottom:1px solid var(--grnm)}
+.ba-body{padding:10px 12px;background:white}
+
+/* ── WRITING EXAMPLES ── */
+.writing-ex{border-radius:3px;padding:12px 16px;font-size:13px;line-height:1.65;position:relative}
+.writing-ex.obs{background:var(--bg2);border:1px solid var(--rule)}
+.writing-ex.ins{background:var(--bluep);border:1px solid var(--bluem)}
+.writing-ex.rec{background:var(--grnp);border:1px solid var(--grnm)}
+.writing-ex-lbl{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;display:block}
+.writing-ex.obs .writing-ex-lbl{color:var(--ink4)}
+.writing-ex.ins .writing-ex-lbl{color:var(--blue)}
+.writing-ex.rec .writing-ex-lbl{color:var(--grn)}
+.writing-ex.bad-eg{background:var(--redp);border:1px solid var(--redm)}
+.writing-ex.bad-eg .writing-ex-lbl{color:var(--red)}
+mark{background:#FFF176;border-radius:2px;padding:0 2px}
+
+/* ── SEGMENT RUBRIC ── */
+.rubric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rubric-card{border:1px solid var(--rule);border-radius:4px;padding:11px 13px}
+.rubric-title{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.rubric-q{font-size:11.5px;color:var(--ink3);line-height:1.5}
+.rubric-scale{display:flex;gap:4px;margin-top:7px}
+.rs{flex:1;height:6px;border-radius:2px;background:var(--rule)}
+.rs.fill{background:var(--red)}
+
+/* ── MISC ── */
+.section-lbl{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink4);margin-bottom:5px}
+.divider{height:1px;background:var(--rule)}
+ul.bl{list-style:none;display:flex;flex-direction:column;gap:5px}
+ul.bl li{font-size:12.5px;color:var(--ink2);padding-left:14px;position:relative;line-height:1.5}
+ul.bl li::before{content:'';position:absolute;left:0;top:8px;width:5px;height:5px;background:var(--red);border-radius:50%}
+ul.bl li strong{color:var(--red)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{border:1px solid var(--rule);border-radius:4px;padding:12px;text-align:center}
+.kpi-val{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:var(--red);line-height:1;margin-bottom:3px}
+.kpi-lbl{font-size:11px;color:var(--ink3)}
+small.note{font-size:11px;color:var(--ink4);font-style:italic}
+
+/* ── NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;height:42px;background:#0C0C0E;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:400}
+.nav-label{font-size:9.5px;color:rgba(255,255,255,.3);letter-spacing:2px}
+.nav-dots{display:flex;gap:3px;align-items:center}
+.ndot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.15);cursor:pointer;transition:all .2s;flex-shrink:0}
+.ndot.act-dot{background:rgba(192,57,43,.6);width:7px;height:7px}
+.ndot.cur{background:white}
+.nav-ctrl{display:flex;gap:10px;align-items:center}
+.nbtn{background:none;border:1px solid rgba(255,255,255,.2);color:white;padding:5px 16px;font-size:11px;font-family:'Source Sans 3',sans-serif;font-weight:600;cursor:pointer;border-radius:2px;transition:all .2s}
+.nbtn:hover{background:var(--red);border-color:var(--red)}
+.nctr{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:rgba(255,255,255,.4);min-width:46px;text-align:center}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<nav class="nav">
+  <span class="nav-label">DATA4100 · WEEK 3 · ANALYTICS · UX · REPORT WRITING</span>
+  <div class="nav-dots" id="ndots"></div>
+  <div class="nav-ctrl">
+    <button class="nbtn" id="prevBtn">← PREV</button>
+    <span class="nctr" id="nctr">1/20</span>
+    <button class="nbtn" id="nextBtn">NEXT →</button>
+  </div>
+</nav>
+<div id="deck">
+
+<!-- ══════════════════════ SLIDE 1: TITLE ══════════════════════ -->
+<div class="slide title-slide">
+  <div class="ts-top"></div>
+  <div class="ts-body">
+    <div class="ts-left">
+      <div class="ts-kicker">DATA4100 · Week 3</div>
+      <h1 class="ts-h">Performing Analytics,<br><em>UX</em> &amp; Report Writing</h1>
+      <div class="ts-rule"></div>
+      <p class="ts-p">You can build charts. Now learn what to do with them — how to frame the analysis, design dashboards people actually use, and write findings that drive decisions.</p>
+      <div class="ts-agenda">
+        <div class="ts-ag-item"><span class="ts-ag-num">01</span><span class="ts-ag-text">The Four Analytics Tiers</span><span class="ts-ag-tag">— what kind of analysis are you doing?</span></div>
+        <div class="ts-ag-item"><span class="ts-ag-num">02</span><span class="ts-ag-text">Dashboard UX Principles</span><span class="ts-ag-tag">— five rules that separate good from unusable</span></div>
+        <div class="ts-ag-item"><span class="ts-ag-num">03</span><span class="ts-ag-text">Report Writing for Data</span><span class="ts-ag-tag">— observation vs insight vs recommendation</span></div>
+        <div class="ts-ag-item"><span class="ts-ag-num">04</span><span class="ts-ag-text">Activities</span><span class="ts-ag-tag">— redesign, write, and peer review</span></div>
+      </div>
+      <div class="ts-foot">Navigate with ← → arrow keys · all examples use the Superstore dataset</div>
+    </div>
+    <div class="ts-right">
+      <div class="ts-timing-box">
+        <div class="ts-timing-hd">Session Timing — 3 hrs</div>
+        <div class="ts-timing-row"><span>Four Analytics Tiers</span><span>20 min</span></div>
+        <div class="ts-timing-row"><span>Dashboard UX</span><span>35 min</span></div>
+        <div class="ts-timing-row"><span>Activity: Redesign</span><span>40 min</span></div>
+        <div class="ts-timing-row"><span>Break</span><span>15 min</span></div>
+        <div class="ts-timing-row"><span>Report Writing</span><span>30 min</span></div>
+        <div class="ts-timing-row"><span>Activity: Write summary</span><span>30 min</span></div>
+        <div class="ts-timing-row"><span>Peer Review</span><span>20 min</span></div>
+        <div class="ts-timing-row"><span>Wrap-up + Week 4 preview</span><span>10 min</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 2: BIG IDEA ══════════════════════ -->
+<div class="slide concept-slide">
+  <div class="slide-accent"></div>
+  <div class="concept-body">
+    <div class="concept-inner">
+      <div class="concept-kicker">The Central Tension</div>
+      <h2 class="concept-q">Building a chart is not<br>the same as <em>doing analysis.</em></h2>
+      <p class="concept-p">Last week you learned to create visuals in Power BI. That is a mechanical skill — like learning to type. This week is about what you type. Analysis is the reasoning that connects data to a decision. A chart without reasoning is just decoration.</p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <div style="background:var(--bg2);border:1px solid var(--rule);border-radius:4px;padding:14px 20px;text-align:center;min-width:150px">
+          <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--red);opacity:.2;line-height:1">Week 2</div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px">Tool Skills</div>
+          <div style="font-size:11.5px;color:var(--ink3)">How to build charts<br>in Power BI</div>
+        </div>
+        <div style="display:flex;align-items:center;font-size:22px;color:var(--red);font-weight:300">→</div>
+        <div style="background:var(--redp);border:1px solid var(--redm);border-radius:4px;padding:14px 20px;text-align:center;min-width:150px">
+          <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--red);opacity:.2;line-height:1">Week 3</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px">Analytical Skills</div>
+          <div style="font-size:11.5px;color:var(--ink2)">What to do with them<br>— and how to say it</div>
+        </div>
+        <div style="display:flex;align-items:center;font-size:22px;color:var(--red);font-weight:300">→</div>
+        <div style="background:var(--bg2);border:1px solid var(--rule);border-radius:4px;padding:14px 20px;text-align:center;min-width:150px">
+          <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--red);opacity:.2;line-height:1">Weeks 4+</div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px">Advanced Skills</div>
+          <div style="font-size:11.5px;color:var(--ink3)">Storytelling, platforms,<br>and modelling</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 3: FOUR TIERS ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Analytics Framework</div>
+    <div class="hdr-title">The Four Tiers of Analytics</div>
+    <div class="hdr-sub">Every analysis you do sits somewhere on this ladder — knowing where matters for how you frame your findings</div>
+  </div>
+  <div class="body">
+    <div class="tier-row">
+      <div class="tier-card d1">
+        <div class="tier-n">1</div>
+        <div class="tier-tag">Descriptive</div>
+        <div class="tier-label">What happened?</div>
+        <div class="tier-q">"Give me the facts."</div>
+        <ul class="bl" style="margin-bottom:8px">
+          <li>Summarises historical data</li>
+          <li>Reports counts, sums, averages</li>
+          <li>Most common in business dashboards</li>
+        </ul>
+        <div class="tier-eg"><strong>Superstore example:</strong><br>Total sales by region — West had $725K, East had $678K</div>
+      </div>
+      <div class="tier-card d2">
+        <div class="tier-n">2</div>
+        <div class="tier-tag">Diagnostic</div>
+        <div class="tier-label">Why did it happen?</div>
+        <div class="tier-q">"Dig deeper into the cause."</div>
+        <ul class="bl" style="margin-bottom:8px">
+          <li>Compares groups and time periods</li>
+          <li>Uses drill-down and filtering</li>
+          <li>Identifies root causes</li>
+        </ul>
+        <div class="tier-eg"><strong>Superstore example:</strong><br>Texas has negative profit — <strong>because</strong> 68% of orders have discounts ≥50%</div>
+      </div>
+      <div class="tier-card d3">
+        <div class="tier-n">3</div>
+        <div class="tier-tag">Predictive</div>
+        <div class="tier-label">What will happen?</div>
+        <div class="tier-q">"Show me the likely future."</div>
+        <ul class="bl" style="margin-bottom:8px">
+          <li>Uses statistical models</li>
+          <li>Forecasting and trend extrapolation</li>
+          <li>Confidence intervals communicate uncertainty</li>
+        </ul>
+        <div class="tier-eg"><strong>Superstore example:</strong><br>Tableau forecast: Q4 2023 sales <em>expected</em> to reach $180K ±$22K</div>
+      </div>
+      <div class="tier-card d4">
+        <div class="tier-n">4</div>
+        <div class="tier-tag">Prescriptive</div>
+        <div class="tier-label">What should we do?</div>
+        <div class="tier-q">"Give me an action."</div>
+        <ul class="bl" style="margin-bottom:8px">
+          <li>Recommends a specific decision</li>
+          <li>Combines all three lower tiers</li>
+          <li>Requires judgement, not just data</li>
+        </ul>
+        <div class="tier-eg"><strong>Superstore example:</strong><br>Cap all discounts at 30% in the Central region to eliminate the $26K annual loss</div>
+      </div>
+    </div>
+    <div class="box box-r" style="margin-top:4px">
+      <div class="box-lbl r">Key Principle</div>
+      <div class="box-txt">Most student work (and most Power BI dashboards) stays at <strong>Tier 1</strong>. The charts you built last week are Tier 1 — accurate but not yet analytical. Moving to Tier 2 and beyond is what separates a data analyst from a data entry clerk.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 4: TIERS IN SUPERSTORE ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Analytics Framework — Applied</div>
+    <div class="hdr-title">Same Data, Four Different Depths</div>
+    <div class="hdr-sub">How the same Superstore finding escalates through the four tiers</div>
+  </div>
+  <div class="body">
+    <div class="box box-b" style="margin-bottom:4px">
+      <div class="box-lbl b">The Question</div>
+      <div class="box-txt"><em>"What is going on with profit in the Central region?"</em></div>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr><th style="width:14%">Tier</th><th style="width:20%">What you ask</th><th style="width:33%">What you do in Power BI</th><th>What you say in the report</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="font-weight:700;color:var(--ink4)">1 — Descriptive</span></td>
+          <td style="font-style:italic;color:var(--ink3)">"What is the profit in Central?"</td>
+          <td>Build a bar chart: Sum of profit by region. Central shows $39,706.</td>
+          <td>"The Central region generated $39,706 in profit — the second lowest of the four regions."</td>
+        </tr>
+        <tr>
+          <td><span style="font-weight:700;color:var(--blue)">2 — Diagnostic</span></td>
+          <td style="font-style:italic;color:var(--ink3)">"Why is Central's profit low?"</td>
+          <td>Scatter plot: discount vs profit, filter to Central. Add state filter. Texas and Illinois show heavy discounting driving losses.</td>
+          <td>"The low profit is driven by Texas (−$25,729) where 42% of orders carry discounts above 50%, eroding all margin."</td>
+        </tr>
+        <tr>
+          <td><span style="font-weight:700;color:var(--grn)">3 — Predictive</span></td>
+          <td style="font-style:italic;color:var(--ink3)">"Will Central improve?"</td>
+          <td>Line chart of Central profit by quarter. Add Tableau forecast. Wide confidence band signals uncertainty.</td>
+          <td>"If current discounting continues, Central is forecast to remain loss-making in Texas through 2024 (95% CI: −$28K to −$22K)."</td>
+        </tr>
+        <tr>
+          <td><span style="font-weight:700;color:var(--red)">4 — Prescriptive</span></td>
+          <td style="font-style:italic;color:var(--ink3)">"What should we do?"</td>
+          <td>Calculate: removing discounts &gt;30% in TX. Model the profit impact using a DAX measure.</td>
+          <td style="font-weight:600;color:var(--ink)">"<strong>Recommendation:</strong> Cap Texas discounts at 30%. Modelling shows this recovers ~$18K of the annual loss with minimal volume impact."</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="box box-g" style="margin-top:4px">
+      <div class="box-lbl g">Today's Goal</div>
+      <div class="box-txt">By the end of this session you will be able to classify any analysis by tier, and write findings that advance from Tier 1 observation into Tier 2 or 3 insight — the level expected in your assessment.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 5: ACTIVITY — CLASSIFY ══════════════════════ -->
+<div class="slide act-slide">
+  <div class="act-stripe"></div>
+  <div class="act-body">
+    <div class="act-label">Group Activity · 10 minutes</div>
+    <h2 class="act-h">Which tier does each statement belong to?</h2>
+    <p class="act-p">Read each statement and decide: is it Descriptive, Diagnostic, Predictive, or Prescriptive? Be ready to justify your answer to the class.</p>
+    <div class="act-tasks">
+      <div class="act-task"><div class="act-task-n">A</div><div class="act-task-t">"Office Supplies accounts for 60% of all orders by volume."</div></div>
+      <div class="act-task"><div class="act-task-n">B</div><div class="act-task-t">"Home Office customers have the highest average profit margin at 14% — likely because they place fewer, more considered purchases with fewer discounts applied."</div></div>
+      <div class="act-task"><div class="act-task-n">C</div><div class="act-task-t">"Based on the 2019–2022 trend, total annual sales are expected to exceed $700K in 2023."</div></div>
+      <div class="act-task"><div class="act-task-n">D</div><div class="act-task-t">"Superstore should discontinue the Tables subcategory in the South region, where it has generated a $14K cumulative loss over four years."</div></div>
+      <div class="act-task"><div class="act-task-n">E</div><div class="act-task-t">"Q4 sales are consistently higher than Q1–Q3 across all four years in the dataset."</div></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+      <span style="background:var(--bg3);border:1px solid var(--rule);padding:4px 12px;border-radius:2px;font-size:11px;font-weight:700;color:var(--ink4)">Answers: A=1 · B=2 · C=3 · D=4 · E=1</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 6: UX INTRO ══════════════════════ -->
+<div class="slide concept-slide">
+  <div class="slide-accent"></div>
+  <div class="concept-body">
+    <div class="concept-inner">
+      <div class="concept-kicker">Part 2 — Dashboard UX</div>
+      <h2 class="concept-q">A dashboard nobody can read<br>is worse than <em>no dashboard.</em></h2>
+      <p class="concept-p">UX (User Experience) in data visualisation means designing for your audience's cognitive limitations — not your own preferences. Five principles determine whether a dashboard enables decisions or creates confusion.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+        <div style="border:1px solid var(--rule);border-radius:4px;padding:10px 18px;text-align:center;background:var(--bg2)">
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--red);opacity:.3;line-height:1">1</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink)">Visual Hierarchy</div>
+        </div>
+        <div style="border:1px solid var(--rule);border-radius:4px;padding:10px 18px;text-align:center;background:var(--bg2)">
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--red);opacity:.3;line-height:1">2</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink)">Cognitive Load</div>
+        </div>
+        <div style="border:1px solid var(--rule);border-radius:4px;padding:10px 18px;text-align:center;background:var(--bg2)">
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--red);opacity:.3;line-height:1">3</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink)">Colour Consistency</div>
+        </div>
+        <div style="border:1px solid var(--rule);border-radius:4px;padding:10px 18px;text-align:center;background:var(--bg2)">
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--red);opacity:.3;line-height:1">4</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink)">Interactivity</div>
+        </div>
+        <div style="border:1px solid var(--rule);border-radius:4px;padding:10px 18px;text-align:center;background:var(--bg2)">
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--red);opacity:.3;line-height:1">5</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink)">Audience Fit</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 7: UX 1 — HIERARCHY ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">UX Principle 1</div>
+    <div class="hdr-title">Visual Hierarchy — Lead with What Matters Most</div>
+    <div class="hdr-sub">The human eye scans in a Z-pattern: top-left first, then right, then diagonally down-left, then right again</div>
+  </div>
+  <div class="body row">
+    <div class="col-55">
+      <div class="section-lbl">The Rule</div>
+      <div class="principle-block">
+        <div class="principle-num">1</div>
+        <p style="font-size:13.5px;line-height:1.65;color:var(--ink2)">Place your <strong style="color:var(--red)">most important KPI</strong> in the top-left. It should be the first thing the eye lands on. Use size, contrast, and white space — not colour alone — to establish dominance.</p>
+      </div>
+      <div class="section-lbl" style="margin-top:8px">In Power BI — Use Card Visuals for KPIs</div>
+      <div class="steps">
+        <div class="step"><div class="sn">1</div><div class="st">Visualizations → <strong>Card</strong> visual (single large number)</div></div>
+        <div class="step"><div class="sn">2</div><div class="st">Drag <code>profit</code> → Fields → set to <strong>Sum</strong>. Shows <em>$286,397</em> in large font.</div></div>
+        <div class="step"><div class="sn">3</div><div class="st">Duplicate for <code>sales</code> (Sum = <em>$2,297,201</em>) and <code>profit_margin</code> (Average = <em>12%</em>)</div></div>
+        <div class="step"><div class="sn">4</div><div class="st">Arrange the three cards in a <strong>horizontal row at the top</strong> of your dashboard — this creates an immediate executive summary before the charts.</div></div>
+      </div>
+      <div class="box box-r" style="margin-top:6px">
+        <div class="box-lbl r">Common Mistake</div>
+        <div class="box-txt">Putting a large map or chart in the top-left and burying the KPI numbers at the bottom. The audience sees geography before understanding whether performance is good or bad.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-lbl">Example: KPI Card Row — Superstore</div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-val">$2.3M</div><div class="kpi-lbl">Total Sales</div></div>
+        <div class="kpi"><div class="kpi-val">$286K</div><div class="kpi-lbl">Total Profit</div></div>
+        <div class="kpi"><div class="kpi-val">12%</div><div class="kpi-lbl">Avg Margin</div></div>
+        <div class="kpi"><div class="kpi-val">9,994</div><div class="kpi-lbl">Orders</div></div>
+      </div>
+      <div class="section-lbl" style="margin-top:10px">Z-Pattern Eye Tracking</div>
+      <svg viewBox="0 0 280 160" width="100%" style="max-height:155px;border:1px solid var(--rule);border-radius:4px;background:#FAFAFA" xmlns="http://www.w3.org/2000/svg">
+        <!-- Dashboard mock layout -->
+        <rect x="8" y="8" width="60" height="28" rx="2" fill="#C0392B" opacity=".15" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="38" y="26" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#C0392B" font-weight="700">KPI Cards</text>
+        <rect x="72" y="8" width="48" height="28" rx="2" fill="#E0E0E0"/>
+        <rect x="124" y="8" width="48" height="28" rx="2" fill="#E0E0E0"/>
+        <rect x="176" y="8" width="48" height="28" rx="2" fill="#E0E0E0"/>
+        <rect x="228" y="8" width="45" height="28" rx="2" fill="#E0E0E0"/>
+        <!-- Charts -->
+        <rect x="8" y="42" width="130" height="60" rx="2" fill="#E8F0F8" stroke="#AED6F1" stroke-width="1"/>
+        <text x="73" y="75" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#2471A3">Bar Chart</text>
+        <rect x="144" y="42" width="129" height="60" rx="2" fill="#E8F0F8" stroke="#AED6F1" stroke-width="1"/>
+        <text x="208" y="75" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#2471A3">Line Chart</text>
+        <rect x="8" y="108" width="265" height="45" rx="2" fill="#E8F8EC" stroke="#86EFAC" stroke-width="1"/>
+        <text x="140" y="134" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="9" fill="#166534">Map</text>
+        <!-- Z-pattern arrows -->
+        <path d="M22,22 L260,22" stroke="#C0392B" stroke-width="2" marker-end="url(#arr)" opacity=".6"/>
+        <path d="M260,22 L22,72" stroke="#C0392B" stroke-width="2" stroke-dasharray="3,2" opacity=".4"/>
+        <path d="M22,72 L260,72" stroke="#C0392B" stroke-width="2" opacity=".4"/>
+        <!-- Eye labels -->
+        <circle cx="22" cy="22" r="5" fill="#C0392B"/>
+        <text x="22" y="18" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B" font-weight="700">1st</text>
+        <circle cx="260" cy="22" r="4" fill="#E74C3C"/>
+        <circle cx="22" cy="72" r="4" fill="#E74C3C" opacity=".6"/>
+        <circle cx="260" cy="72" r="4" fill="#E74C3C" opacity=".4"/>
+        <text x="260" y="18" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#999">2nd</text>
+        <text x="22" y="85" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#999">3rd</text>
+      </svg>
+      <div class="box box-b" style="margin-top:6px">
+        <div class="box-lbl b">Design Rule</div>
+        <div class="box-txt">If someone can answer "is the business performing well?" within 5 seconds of opening your dashboard — the hierarchy is working. Test this with a partner.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 8: UX 2 — COGNITIVE LOAD ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">UX Principle 2</div>
+    <div class="hdr-title">Cognitive Load — Every Chart Added Has a Cost</div>
+    <div class="hdr-sub">The more a viewer has to process, the less they understand. Ruthless editing is a design skill.</div>
+  </div>
+  <div class="body row">
+    <div class="col-55">
+      <div class="principle-block">
+        <div class="principle-num">2</div>
+        <p style="font-size:13.5px;line-height:1.65;color:var(--ink2)"><strong style="color:var(--red)">Cognitive load</strong> is the mental effort required to interpret a visual. Every additional chart, label, colour, and gridline increases it. The brain has a fixed processing budget per screen.</p>
+      </div>
+      <div class="section-lbl" style="margin-top:8px">The Editing Test</div>
+      <div class="box box-g" style="margin-bottom:6px">
+        <div class="box-lbl g">The rule</div>
+        <div class="box-txt">Ask of every visual on your dashboard: <em>"If I removed this, would the audience lose a decision they need to make?"</em> If the answer is no — remove it.</div>
+      </div>
+      <div class="section-lbl">What to cut first</div>
+      <ul class="bl">
+        <li><strong>Decorative gridlines</strong> — reduce opacity to 20% or remove entirely</li>
+        <li><strong>3D charts</strong> — always increase load with zero information gain. Never use them.</li>
+        <li><strong>Legends when labels will do</strong> — directly label bars and lines where possible</li>
+        <li><strong>Duplicate information</strong> — a data label on every bar AND axis labels is redundant</li>
+        <li><strong>Titles that restate the obvious</strong> — "Bar Chart of Sales" adds nothing; "Phones Lead Revenue by 18%" is informative</li>
+      </ul>
+    </div>
+    <div class="col-45">
+      <div class="ba-wrap">
+        <div class="ba-panel">
+          <div class="ba-hd bad">High Cognitive Load — Avoid</div>
+          <div class="ba-body">
+            <svg viewBox="0 0 220 140" width="100%" style="max-height:135px" xmlns="http://www.w3.org/2000/svg">
+              <!-- 3D-ish cluttered chart -->
+              <rect x="10" y="10" width="200" height="120" fill="#f5f5f5"/>
+              <!-- Lots of gridlines -->
+              <line x1="10" y1="30" x2="210" y2="30" stroke="#ddd" stroke-width="1"/>
+              <line x1="10" y1="50" x2="210" y2="50" stroke="#ddd" stroke-width="1"/>
+              <line x1="10" y1="70" x2="210" y2="70" stroke="#ddd" stroke-width="1"/>
+              <line x1="10" y1="90" x2="210" y2="90" stroke="#ddd" stroke-width="1"/>
+              <line x1="10" y1="110" x2="210" y2="110" stroke="#ddd" stroke-width="1"/>
+              <!-- Bars with many different colours -->
+              <rect x="20" y="40" width="22" height="80" rx="1" fill="#E74C3C"/>
+              <rect x="46" y="55" width="22" height="65" rx="1" fill="#8E44AD"/>
+              <rect x="72" y="48" width="22" height="72" rx="1" fill="#2ECC71"/>
+              <rect x="98" y="62" width="22" height="58" rx="1" fill="#F39C12"/>
+              <rect x="124" y="35" width="22" height="85" rx="1" fill="#1ABC9C"/>
+              <rect x="150" y="70" width="22" height="50" rx="1" fill="#E67E22"/>
+              <rect x="176" y="44" width="22" height="76" rx="1" fill="#3498DB"/>
+              <!-- Data labels on every bar -->
+              <text x="31" y="38" text-anchor="middle" font-size="6" fill="#333">330K</text>
+              <text x="57" y="53" text-anchor="middle" font-size="6" fill="#333">260K</text>
+              <text x="83" y="46" text-anchor="middle" font-size="6" fill="#333">295K</text>
+              <text x="109" y="60" text-anchor="middle" font-size="6" fill="#333">230K</text>
+              <text x="135" y="33" text-anchor="middle" font-size="6" fill="#333">348K</text>
+              <text x="161" y="68" text-anchor="middle" font-size="6" fill="#333">197K</text>
+              <text x="187" y="42" text-anchor="middle" font-size="6" fill="#333">315K</text>
+              <!-- Too many x-labels -->
+              <text x="31" y="132" text-anchor="middle" font-size="5.5" fill="#555" transform="rotate(-45,31,132)">Phones</text>
+              <text x="57" y="132" text-anchor="middle" font-size="5.5" fill="#555" transform="rotate(-45,57,132)">Chairs</text>
+              <text x="83" y="132" text-anchor="middle" font-size="5.5" fill="#555" transform="rotate(-45,83,132)">Storage</text>
+              <text x="109" y="132" text-anchor="middle" font-size="5.5" fill="#555" transform="rotate(-45,109,132)">Tables</text>
+              <text x="135" y="132" text-anchor="middle" font-size="5.5" fill="#555" transform="rotate(-45,135,132)">Binders</text>
+              <text x="161" y="132" text-anchor="middle" font-size="5.5" fill="#555" transform="rotate(-45,161,132)">Machines</text>
+              <text x="187" y="132" text-anchor="middle" font-size="5.5" fill="#555" transform="rotate(-45,187,132)">Accessories</text>
+              <text x="110" y="20" text-anchor="middle" font-size="8" fill="#333" font-weight="600">Bar Chart of Sales Values</text>
+            </svg>
+            <div style="font-size:10px;color:var(--red);margin-top:5px">7 random colours · dense gridlines · redundant title · cluttered labels</div>
+          </div>
+        </div>
+        <div class="ba-panel">
+          <div class="ba-hd good">Low Cognitive Load — Better</div>
+          <div class="ba-body">
+            <svg viewBox="0 0 220 140" width="100%" style="max-height:135px" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="10" width="200" height="120" fill="white"/>
+              <!-- Light gridlines only -->
+              <line x1="10" y1="70" x2="210" y2="70" stroke="#EEE" stroke-width="1"/>
+              <line x1="10" y1="100" x2="210" y2="100" stroke="#EEE" stroke-width="1"/>
+              <!-- Clean single-colour bars -->
+              <rect x="20" y="40" width="22" height="80" rx="1" fill="#2471A3"/>
+              <rect x="46" y="55" width="22" height="65" rx="1" fill="#2471A3"/>
+              <rect x="72" y="48" width="22" height="72" rx="1" fill="#2471A3"/>
+              <rect x="98" y="62" width="22" height="58" rx="1" fill="#2471A3"/>
+              <rect x="124" y="35" width="22" height="85" rx="1" fill="#C0392B"/>
+              <rect x="150" y="70" width="22" height="50" rx="1" fill="#2471A3"/>
+              <rect x="176" y="44" width="22" height="76" rx="1" fill="#2471A3"/>
+              <!-- Only top-performer labelled -->
+              <text x="135" y="32" text-anchor="middle" font-size="7.5" fill="#C0392B" font-weight="700">$348K ←</text>
+              <!-- Clean x-axis -->
+              <text x="31" y="132" text-anchor="middle" font-size="6" fill="#555" transform="rotate(-40,31,132)">Phones</text>
+              <text x="57" y="132" text-anchor="middle" font-size="6" fill="#555" transform="rotate(-40,57,132)">Chairs</text>
+              <text x="83" y="132" text-anchor="middle" font-size="6" fill="#555" transform="rotate(-40,83,132)">Storage</text>
+              <text x="109" y="132" text-anchor="middle" font-size="6" fill="#555" transform="rotate(-40,109,132)">Tables</text>
+              <text x="135" y="132" text-anchor="middle" font-size="6" fill="#C0392B" font-weight="700" transform="rotate(-40,135,132)">Binders ★</text>
+              <text x="161" y="132" text-anchor="middle" font-size="6" fill="#555" transform="rotate(-40,161,132)">Machines</text>
+              <text x="187" y="132" text-anchor="middle" font-size="6" fill="#555" transform="rotate(-40,187,132)">Accessories</text>
+              <!-- Informative title -->
+              <text x="110" y="20" text-anchor="middle" font-size="8" fill="#C0392B" font-weight="700">Binders Lead in Total Sales</text>
+            </svg>
+            <div style="font-size:10px;color:var(--grn);margin-top:5px">Single colour · highlight the winner · minimal gridlines · insight-led title</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 9: UX 3 — COLOUR ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">UX Principle 3</div>
+    <div class="hdr-title">Colour Consistency — Same Colour Must Mean the Same Thing</div>
+    <div class="hdr-sub">Colour is a communication channel. Using it arbitrarily destroys trust in the data.</div>
+  </div>
+  <div class="body row">
+    <div class="col-55">
+      <div class="principle-block">
+        <div class="principle-num">3</div>
+        <p style="font-size:13.5px;line-height:1.65;color:var(--ink2)">If <strong style="color:var(--blue)">blue = Consumer</strong> in your first chart, blue must mean Consumer in every chart on the dashboard. Breaking this forces the audience to re-read the legend on every visual — destroying comprehension.</p>
+      </div>
+      <div class="section-lbl" style="margin-top:8px">Three colour roles</div>
+      <table class="tbl">
+        <thead><tr><th>Role</th><th>Usage</th><th>Superstore example</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Categorical</strong></td><td>Different colours for different categories. Max 6–8 categories.</td><td>Blue=Consumer, Orange=Corporate, Red=Home Office — consistent across every visual</td></tr>
+          <tr><td><strong>Sequential</strong></td><td>One hue, varying lightness. For quantities on a scale.</td><td>Light blue = low profit → Dark blue = high profit on the choropleth map</td></tr>
+          <tr><td><strong>Diverging</strong></td><td>Two hues from a neutral midpoint. For loss vs gain.</td><td>Red = loss-making states, Grey = zero, Blue = profitable states</td></tr>
+        </tbody>
+      </table>
+      <div class="box box-r" style="margin-top:6px">
+        <div class="box-lbl r">In Power BI</div>
+        <div class="box-txt">Format visual → <strong>Data colours</strong> → manually assign consistent hex codes to each category value. Write these down in your project file so all team members use the same palette.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-lbl">Consistent Palette — Superstore Dashboard</div>
+      <div style="border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin-bottom:8px">
+        <div style="background:var(--red);color:white;padding:6px 12px;font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Recommended Colour Assignments</div>
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;background:#2471A3;border-radius:3px;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:700">Consumer</div><div style="font-size:11px;color:var(--ink4);font-family:'JetBrains Mono',monospace">#2471A3</div></div><div style="margin-left:auto;font-size:11px;color:var(--ink3)">Use in all segment charts</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;background:#E67E22;border-radius:3px;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:700">Corporate</div><div style="font-size:11px;color:var(--ink4);font-family:'JetBrains Mono',monospace">#E67E22</div></div><div style="margin-left:auto;font-size:11px;color:var(--ink3)">Use in all segment charts</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;background:#C0392B;border-radius:3px;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:700">Home Office</div><div style="font-size:11px;color:var(--ink4);font-family:'JetBrains Mono',monospace">#C0392B</div></div><div style="margin-left:auto;font-size:11px;color:var(--ink3)">Use in all segment charts</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;background:#C0392B;border-radius:3px;flex-shrink:0;opacity:.15;border:2px dashed #C0392B"></div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--red)">Alert / Loss</div><div style="font-size:11px;color:var(--ink4);font-family:'JetBrains Mono',monospace">#C0392B — reserved for negatives</div></div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;background:#1E8449;border-radius:3px;flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--grn)">Positive / Growth</div><div style="font-size:11px;color:var(--ink4);font-family:'JetBrains Mono',monospace">#1E8449 — reserved for targets met</div></div></div>
+        </div>
+      </div>
+      <div class="box box-a">
+        <div class="box-lbl a">Warning</div>
+        <div class="box-txt">Never use red for "Furniture" in one chart and then use red to mean "below target" in another. The audience will be confused about whether Furniture is a problem category. Assign semantic colours intentionally.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 10: UX 4 — INTERACTIVITY ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">UX Principle 4</div>
+    <div class="hdr-title">Interactivity as Navigation — Not Decoration</div>
+    <div class="hdr-sub">Slicers and filters should reduce the audience's remaining questions, not multiply them</div>
+  </div>
+  <div class="body row">
+    <div class="col-55">
+      <div class="principle-block">
+        <div class="principle-num">4</div>
+        <p style="font-size:13.5px;line-height:1.65;color:var(--ink2)">Interactivity is powerful because it allows one dashboard to serve many analytical questions. But <strong style="color:var(--red)">every filter you add creates a decision the audience must make</strong> before they can read anything. Keep controls minimal and purposeful.</p>
+      </div>
+      <div class="section-lbl" style="margin-top:8px">Decision framework for slicers</div>
+      <table class="tbl">
+        <thead><tr><th>Slicer field</th><th>Good reason to add?</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-size:11px">Year</code></td><td>Audience needs to compare annual performance</td><td style="color:var(--grn);font-weight:700">Add it</td></tr>
+          <tr><td><code style="font-size:11px">Region</code></td><td>Regional managers will each use this for their area</td><td style="color:var(--grn);font-weight:700">Add it</td></tr>
+          <tr><td><code style="font-size:11px">Category</code></td><td>Product managers want category-specific views</td><td style="color:var(--grn);font-weight:700">Add it</td></tr>
+          <tr><td><code style="font-size:11px">Customer</code></td><td>793 customers — audience can't meaningfully choose</td><td style="color:var(--red);font-weight:700">Skip it</td></tr>
+          <tr><td><code style="font-size:11px">Order ID</code></td><td>No business question requires filtering to one order</td><td style="color:var(--red);font-weight:700">Skip it</td></tr>
+          <tr><td><code style="font-size:11px">Ship Mode</code></td><td>Only useful for a specific logistics dashboard</td><td style="color:var(--gold);font-weight:700">Maybe</td></tr>
+        </tbody>
+      </table>
+      <div class="box box-b" style="margin-top:6px">
+        <div class="box-lbl b">Cross-filtering in Power BI</div>
+        <div class="box-txt">When you click any bar or pie slice on a Power BI dashboard, all other charts automatically filter to match — this is <strong>cross-filtering</strong> and it is interactivity without adding any slicer controls. Teach your audience to click into charts, not just use slicers.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-lbl">Good Slicer Placement — Dashboard Layout</div>
+      <svg viewBox="0 0 260 195" width="100%" style="max-height:190px;border:1px solid var(--rule);border-radius:4px;background:white" xmlns="http://www.w3.org/2000/svg">
+        <!-- Top: KPI row -->
+        <rect x="6" y="6" width="50" height="22" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="31" y="20" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#C0392B" font-weight="700">$2.3M Sales</text>
+        <rect x="60" y="6" width="50" height="22" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="85" y="20" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#C0392B" font-weight="700">$286K Profit</text>
+        <rect x="114" y="6" width="50" height="22" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="139" y="20" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8" fill="#C0392B" font-weight="700">12% Margin</text>
+        <!-- Slicers on the RIGHT side -->
+        <rect x="200" y="6" width="55" height="185" rx="2" fill="#F9F9FB" stroke="#E4E4E7" stroke-width="1"/>
+        <text x="227" y="18" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#A0A0A0" font-weight="700">FILTERS</text>
+        <rect x="205" y="22" width="45" height="40" rx="2" fill="white" stroke="#E4E4E7" stroke-width="1"/>
+        <text x="227" y="32" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555" font-weight="700">Year</text>
+        <text x="213" y="44" font-family="Source Sans 3,sans-serif" font-size="7" fill="#2471A3">● 2019</text>
+        <text x="213" y="54" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555">○ 2020</text>
+        <rect x="205" y="67" width="45" height="52" rx="2" fill="white" stroke="#E4E4E7" stroke-width="1"/>
+        <text x="227" y="77" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555" font-weight="700">Region</text>
+        <text x="213" y="87" font-family="Source Sans 3,sans-serif" font-size="7" fill="#2471A3">● All</text>
+        <text x="213" y="97" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555">○ West</text>
+        <text x="213" y="107" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555">○ East</text>
+        <rect x="205" y="124" width="45" height="52" rx="2" fill="white" stroke="#E4E4E7" stroke-width="1"/>
+        <text x="227" y="134" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555" font-weight="700">Category</text>
+        <text x="213" y="144" font-family="Source Sans 3,sans-serif" font-size="7" fill="#2471A3">● All</text>
+        <text x="213" y="154" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555">○ Furniture</text>
+        <text x="213" y="164" font-family="Source Sans 3,sans-serif" font-size="7" fill="#555">○ Tech</text>
+        <!-- Main charts area -->
+        <rect x="6" y="32" width="120" height="75" rx="2" fill="#EBF3FB" stroke="#AED6F1" stroke-width="1"/>
+        <text x="66" y="73" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#2471A3">Bar Chart</text>
+        <rect x="130" y="32" width="66" height="75" rx="2" fill="#EBF3FB" stroke="#AED6F1" stroke-width="1"/>
+        <text x="163" y="73" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#2471A3">Pie</text>
+        <rect x="6" y="111" width="190" height="78" rx="2" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1"/>
+        <text x="101" y="153" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="8.5" fill="#166534">Line Chart (Time Series)</text>
+        <!-- Label -->
+        <text x="227" y="190" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7" fill="#999">Slicers right-column</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 11: UX 5 — AUDIENCE ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">UX Principle 5</div>
+    <div class="hdr-title">Audience Fit — Design for Who Will Read It</div>
+    <div class="hdr-sub">A dashboard for a CEO requires different design decisions than one for a data analyst or a store manager</div>
+  </div>
+  <div class="body">
+    <table class="tbl">
+      <thead><tr><th>Audience</th><th>What they need from the dashboard</th><th>Right chart types</th><th>What to avoid</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Executive / CEO</strong><br><small style="color:var(--ink4)">5–10 seconds per view</small></td>
+          <td>High-level summary. Is the business on track? Where is the biggest risk?</td>
+          <td>KPI cards · single bar chart · one map. Max 4 visuals per page.</td>
+          <td>Scatter plots · matrices · raw tables · anything requiring technical literacy</td>
+        </tr>
+        <tr>
+          <td><strong>Regional Manager</strong><br><small style="color:var(--ink4)">10–20 minutes per session</small></td>
+          <td>Performance for their area. How is their team tracking against target?</td>
+          <td>Filtered bar charts · time series with target line · table with drill-down</td>
+          <td>National-level aggregates that don't reflect their decisions</td>
+        </tr>
+        <tr>
+          <td><strong>Data Analyst</strong><br><small style="color:var(--ink4)">Deep exploration sessions</small></td>
+          <td>Full data access. Ability to explore hypotheses. Raw figures visible.</td>
+          <td>Scatter plots · matrices · distribution histograms · all filtering options</td>
+          <td>Over-simplification that hides the data they need to investigate</td>
+        </tr>
+        <tr>
+          <td><strong>Marketing Team</strong><br><small style="color:var(--ink4)">Campaign-specific use</small></td>
+          <td>Customer segments, product performance, geographic opportunity</td>
+          <td>Donut charts for segment share · map · treemap for product prominence</td>
+          <td>Financial loss/profit metrics that aren't in their remit</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="box box-r" style="margin-top:4px">
+      <div class="box-lbl r">Assessment Relevance</div>
+      <div class="box-txt">Your dashboard assessment asks you to specify your intended audience. This is not decorative — it should genuinely constrain your design choices. Write the audience at the top of your dashboard file before you build a single visual.</div>
+    </div>
+    <div class="box box-g" style="margin-top:4px">
+      <div class="box-lbl g">Quick Self-Test</div>
+      <div class="box-txt">Look at your Week 2 dashboard. Could a CEO extract the main finding in under 10 seconds? If no — you have a hierarchy or cognitive load problem. Could a data analyst use it for hypothesis investigation? If no — you have a depth problem. Both are valid dashboards; they just need different designs.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 12: ACTIVITY — REDESIGN ══════════════════════ -->
+<div class="slide act-slide">
+  <div class="act-stripe"></div>
+  <div class="act-body">
+    <div class="act-label">Hands-On Activity · 40 minutes</div>
+    <h2 class="act-h">Redesign your Week 2 <em>Superstore Dashboard</em></h2>
+    <p class="act-p">Apply the five UX principles to improve the dashboard you built last week. Work in pairs — one person applies changes, the other reads as the intended audience.</p>
+    <div class="act-tasks">
+      <div class="act-task"><div class="act-task-n">1</div><div class="act-task-t"><strong>Add three KPI cards</strong> to the top row: Total Sales · Total Profit · Average Margin. These become your visual hierarchy anchor. (5 min)</div></div>
+      <div class="act-task"><div class="act-task-n">2</div><div class="act-task-t"><strong>Remove at least one chart</strong> that a viewer could live without. Apply the editing test: "Would removing this hurt a decision?" (5 min)</div></div>
+      <div class="act-task"><div class="act-task-n">3</div><div class="act-task-t"><strong>Fix colour consistency.</strong> Open Format visual → Data colours for each chart. Assign the same colour to each segment/region across all visuals. (10 min)</div></div>
+      <div class="act-task"><div class="act-task-n">4</div><div class="act-task-t"><strong>Add three slicers</strong> in a right-hand column: Year · Region · Category. Delete any slicers that don't meet the decision test. (5 min)</div></div>
+      <div class="act-task"><div class="act-task-n">5</div><div class="act-task-t"><strong>Rename your chart titles</strong> to insight-led titles (e.g., "Phones Lead Revenue" not "Bar Chart of Sales"). Change at least three titles. (5 min)</div></div>
+      <div class="act-task"><div class="act-task-n">6</div><div class="act-task-t"><strong>Partner review:</strong> Swap screens. Can your partner identify the main finding in under 10 seconds? Give one specific piece of feedback. (10 min)</div></div>
+    </div>
+    <div class="act-time">40 MINUTES TOTAL</div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 13: REPORT WRITING INTRO ══════════════════════ -->
+<div class="slide concept-slide">
+  <div class="slide-accent"></div>
+  <div class="concept-body">
+    <div class="concept-inner">
+      <div class="concept-kicker">Part 3 — Report Writing</div>
+      <h2 class="concept-q">A data report is not a description<br>of your charts. It is an <em>argument</em><br>supported by your charts.</h2>
+      <p class="concept-p">The most common mistake in student data reports is restating what the charts show in prose. That adds no value — the audience can see the chart. A report's job is to explain what the data <em>means</em> and what should be done about it.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:620px;margin:0 auto">
+        <div class="writing-ex bad-eg">
+          <span class="writing-ex-lbl r">Common mistake — avoid</span>
+          "The bar chart shows that Phones had the highest sales of $330,000 and Fasteners had the lowest sales of $3,000."
+        </div>
+        <div class="writing-ex ins">
+          <span class="writing-ex-lbl">Better — adds meaning</span>
+          "Technology accessories dominate revenue, with Phones and Chairs each exceeding $328K — together accounting for 28% of total sales — suggesting the business is effectively a high-ticket durables retailer despite its broad category mix."
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 14: OIR FRAMEWORK ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Report Writing Framework</div>
+    <div class="hdr-title">Observation → Insight → Recommendation</div>
+    <div class="hdr-sub">Every finding in your report should advance through these three levels — observation alone is not sufficient</div>
+  </div>
+  <div class="body row">
+    <div class="col-60">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="writing-ex obs">
+          <span class="writing-ex-lbl">Level 1 — Observation (what the chart shows)</span>
+          "Q4 sales are higher than Q1–Q3 in all four years of the dataset. The highest monthly figure occurs in November 2021 at $118,448."
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:0 10px">
+          <div style="height:1px;flex:1;background:var(--blue);opacity:.4"></div>
+          <div style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:1px">ADD CONTEXT → BECOMES INSIGHT</div>
+          <div style="height:1px;flex:1;background:var(--blue);opacity:.4"></div>
+        </div>
+        <div class="writing-ex ins">
+          <span class="writing-ex-lbl">Level 2 — Insight (what it means for the business)</span>
+          "Q4 sales spike by an average of 35% above the annual monthly mean, creating a predictable seasonal demand pattern. This suggests Superstore can plan inventory procurement and staffing levels in advance of the October–December peak — currently an opportunity that appears underutilised given flat profit margins in the same period."
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:0 10px">
+          <div style="height:1px;flex:1;background:var(--grn);opacity:.4"></div>
+          <div style="font-size:10px;font-weight:700;color:var(--grn);letter-spacing:1px">ADD ACTION → BECOMES RECOMMENDATION</div>
+          <div style="height:1px;flex:1;background:var(--grn);opacity:.4"></div>
+        </div>
+        <div class="writing-ex rec">
+          <span class="writing-ex-lbl">Level 3 — Recommendation (what to do)</span>
+          "<strong>Recommendation:</strong> Superstore should introduce a Q3 inventory pre-loading strategy, purchasing high-demand subcategories (Phones, Chairs) in August to reduce Q4 stock-out risk and capture margin currently lost to rush procurement premiums. An estimated 3–5% margin improvement is achievable based on comparable retailers."
+        </div>
+      </div>
+    </div>
+    <div class="col-40">
+      <div class="section-lbl">The Upgrade Formula</div>
+      <div class="box box-b" style="margin-bottom:8px">
+        <div class="box-lbl b">Observation → Insight</div>
+        <div class="box-txt">Add one of: <strong>a cause, a comparison, a consequence, or a surprise.</strong> Ask "so what does this mean for the business?"</div>
+      </div>
+      <div class="box box-g" style="margin-bottom:8px">
+        <div class="box-lbl g">Insight → Recommendation</div>
+        <div class="box-txt">Add one of: <strong>a specific action, a who, a when, or an estimated impact.</strong> Ask "what should someone do differently tomorrow?"</div>
+      </div>
+      <div class="section-lbl">The Three-Sentence Test</div>
+      <p style="font-size:12.5px;color:var(--ink2);line-height:1.6">Any finding can be expressed in three sentences:<br><br>
+        <span style="font-weight:700;color:var(--ink4)">Sentence 1:</span> The key finding (observation)<br>
+        <span style="font-weight:700;color:var(--blue)">Sentence 2:</span> What it means (insight)<br>
+        <span style="font-weight:700;color:var(--grn)">Sentence 3:</span> What to do (recommendation)<br><br>
+        If you can't write Sentence 3, your analysis hasn't reached the level required for a business report.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 15: EXEC SUMMARY STRUCTURE ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Report Writing</div>
+    <div class="hdr-title">Structuring an Executive Summary</div>
+    <div class="hdr-sub">The opening of any data report — 150 to 250 words that a busy executive reads in full</div>
+  </div>
+  <div class="body row">
+    <div class="col-55">
+      <div class="section-lbl">The Five-Part Structure</div>
+      <div class="steps">
+        <div class="step"><div class="sn">1</div><div class="st"><strong>Context sentence</strong> — one sentence explaining the purpose of the analysis and the dataset used. <em>Who asked for this, and what data answered it?</em></div></div>
+        <div class="step"><div class="sn">2</div><div class="st"><strong>Headline finding</strong> — the single most important insight, stated directly. <em>No hedging, no "it appears that".</em></div></div>
+        <div class="step"><div class="sn">3</div><div class="st"><strong>Supporting evidence</strong> — two or three specific data points that back the headline. <em>Exact numbers, not vague language.</em></div></div>
+        <div class="step"><div class="sn">4</div><div class="st"><strong>Key risk or caveat</strong> — one limitation of the analysis. <em>Shows intellectual honesty and builds credibility.</em></div></div>
+        <div class="step"><div class="sn">5</div><div class="st"><strong>Primary recommendation</strong> — one specific action, stated in one sentence. <em>Actionable, not vague.</em></div></div>
+      </div>
+      <div class="box box-r" style="margin-top:6px">
+        <div class="box-lbl r">Common Mistakes</div>
+        <div class="box-txt"><strong>Starting with "This report will discuss..."</strong> — tells the reader nothing. Start with the finding.<br><br><strong>Using vague language</strong> — "sales were quite high" vs "sales reached $2.3M". Numbers build credibility.<br><br><strong>No recommendation</strong> — an executive summary without an action item is an observation, not an analysis.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-lbl">Example — Superstore Profitability Report</div>
+      <div style="border:1px solid var(--rule);border-radius:4px;overflow:hidden">
+        <div style="background:var(--ink);color:white;padding:8px 14px;font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Executive Summary</div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.65;color:var(--ink2)">
+          <p><mark>This analysis examines four years of Superstore transactional data (2019–2022, 9,994 orders) to identify drivers of profitability across products, regions, and customer segments.</mark></p>
+          <p><mark style="background:#BBDEFB">The Central region's discount strategy is destroying margin:</mark> while it generates $723K in gross sales, aggressive discounting — particularly in Texas and Illinois — produces a net profit of only $39,706, the lowest of all four regions.</p>
+          <p><mark style="background:#C8E6C9">Specifically, Texas alone accounts for a $25,729 annual loss</mark>, driven by 42% of its orders carrying discounts ≥50%. In contrast, the Technology category generates a 20% profit margin even at moderate volumes, confirming that product mix — not sales volume — is the primary profit lever.</p>
+          <p><mark style="background:#FFE0B2">Note: this analysis cannot determine whether discounts are being applied correctly per contract or at-will by sales staff</mark> — a process audit would clarify this.</p>
+          <p><mark style="background:#E8F5E9"><strong>Recommendation:</strong> Cap all discretionary discounts in the Central region at 30%, and require manager approval for any discount above this threshold. Modelled impact: recovery of approximately $18K annually in Texas alone.</mark></p>
+        </div>
+        <div style="padding:6px 14px;background:var(--bg2);font-size:10px;color:var(--ink4);display:flex;gap:12px">
+          <span style="background:#FFF176;padding:1px 5px;border-radius:2px">Context</span>
+          <span style="background:#BBDEFB;padding:1px 5px;border-radius:2px">Headline finding</span>
+          <span style="background:#C8E6C9;padding:1px 5px;border-radius:2px">Evidence</span>
+          <span style="background:#FFE0B2;padding:1px 5px;border-radius:2px">Caveat</span>
+          <span style="background:#E8F5E9;padding:1px 5px;border-radius:2px">Recommendation</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 16: AUDIENCE REGISTER ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Report Writing</div>
+    <div class="hdr-title">Audience Register — The Same Finding, Three Ways</div>
+    <div class="hdr-sub">How you write a finding depends entirely on who will read it — the data doesn't change, but the framing must</div>
+  </div>
+  <div class="body">
+    <div class="box box-b" style="margin-bottom:6px">
+      <div class="box-lbl b">The Finding</div>
+      <div class="box-txt"><em>Texas has a $25,729 annual profit loss driven by discount rates above 50% on 42% of all orders.</em></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div style="border:1px solid var(--rule);border-radius:4px;overflow:hidden">
+        <div style="background:var(--ink);color:white;padding:8px 12px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.6;margin-bottom:2px">For a CEO</div>
+          <div style="font-size:12px;font-weight:700">Decision-maker. 30 seconds.</div>
+        </div>
+        <div style="padding:12px 14px;font-size:12.5px;line-height:1.65;color:var(--ink2)">
+          "Texas is our only loss-making state at −$25.7K annually. The cause is identifiable and fixable: capping discounts at 30% recovers an estimated $18K. <strong>Recommendation: implement a discount approval policy in the Central region before Q4.</strong>"
+        </div>
+        <div style="padding:6px 12px;background:var(--bg2);font-size:10.5px;color:var(--ink4)">Short · decisive · one action · dollar figures</div>
+      </div>
+      <div style="border:1px solid var(--rule);border-radius:4px;overflow:hidden">
+        <div style="background:var(--blue);color:white;padding:8px 12px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.8;margin-bottom:2px">For a Regional Manager</div>
+          <div style="font-size:12px;font-weight:700">Operational. 5 minutes.</div>
+        </div>
+        <div style="padding:12px 14px;font-size:12.5px;line-height:1.65;color:var(--ink2)">
+          "The Texas market generated $170K in sales in 2022 but posted a −$25,729 profit loss. Analysis of individual orders shows 42% carried discounts of 50% or more — concentrated in Office Supplies subcategories. Orders with discounts under 30% were consistently profitable. A targeted review of discount approval practices in Texas is recommended, beginning with the Binders and Paper subcategories where loss frequency is highest."
+        </div>
+        <div style="padding:6px 12px;background:var(--bg2);font-size:10.5px;color:var(--ink4)">Specific · operational · subcategory detail</div>
+      </div>
+      <div style="border:1px solid var(--rule);border-radius:4px;overflow:hidden">
+        <div style="background:var(--grn);color:white;padding:8px 12px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.8;margin-bottom:2px">For a Data Analyst</div>
+          <div style="font-size:12px;font-weight:700">Technical. Full detail.</div>
+        </div>
+        <div style="padding:12px 14px;font-size:12.5px;line-height:1.65;color:var(--ink2)">
+          "Pearson correlation between discount rate and profit in the Texas subset (n=945 orders) is r = −0.38 (p&lt;0.001), indicating a moderate statistically significant negative relationship. Orders at discount ≥50% show a mean profit of −$68 vs. +$42 for orders at discount &lt;30%. The correlation is strongest in the Office Supplies category (r = −0.44) and weakest in Technology (r = −0.18). Recommend a multivariate regression controlling for order size and ship mode to isolate the discount effect."
+        </div>
+        <div style="padding:6px 12px;background:var(--bg2);font-size:10.5px;color:var(--ink4)">Statistical · precise · methodological caveat</div>
+      </div>
+    </div>
+    <div class="box box-a" style="margin-top:4px">
+      <div class="box-lbl a">The Principle</div>
+      <div class="box-txt">The underlying data is identical in all three versions. What changes is <strong>level of detail, type of language, and what action is implied</strong>. Knowing your audience before you write is not a courtesy — it determines whether the report achieves anything.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 17: ANNOTATING CHARTS ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Report Writing</div>
+    <div class="hdr-title">Annotating Charts — Making Visuals Self-Explanatory</div>
+    <div class="hdr-sub">A well-annotated chart does not need surrounding paragraphs to explain it — the insight lives inside the visual</div>
+  </div>
+  <div class="body row">
+    <div class="col-45">
+      <div class="section-lbl">Four Annotation Techniques</div>
+      <div class="steps">
+        <div class="step"><div class="sn">1</div><div class="st"><strong>Insight-led title</strong> — rename the chart title from "Sum of Sales by Month" to "Sales peak in Q4 every year — a consistent seasonal pattern." The title is the first text the eye reads.</div></div>
+        <div class="step"><div class="sn">2</div><div class="st"><strong>Reference lines</strong> — In Power BI: Format visual → Analytics → Constant line / Average line. Add a dotted average line to a time series so the audience can see months above and below average instantly.</div></div>
+        <div class="step"><div class="sn">3</div><div class="st"><strong>Data callout</strong> — select a specific bar or point → right-click → <strong>Show data label</strong> and make the font bold. This pulls a key number into focus without the viewer having to read the axis.</div></div>
+        <div class="step"><div class="sn">4</div><div class="st"><strong>Text box annotation</strong> — Insert → Text box in Power BI. Position it adjacent to the anomaly you want to explain. Write one sentence: "Texas accounts for 65% of all Central region losses."</div></div>
+      </div>
+      <div class="box box-g" style="margin-top:6px">
+        <div class="box-lbl g">The Rule</div>
+        <div class="box-txt">If you have to explain what a chart means in the paragraph next to it, the chart has failed. Fix the chart — don't patch it with surrounding text.</div>
+      </div>
+    </div>
+    <div class="col-55">
+      <div class="section-lbl">Example — Annotated Time Series</div>
+      <svg viewBox="0 0 360 200" width="100%" style="max-height:195px;border:1px solid var(--rule);border-radius:4px;background:white;padding:0" xmlns="http://www.w3.org/2000/svg">
+        <!-- Insight-led title -->
+        <text x="180" y="16" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="10" fill="#C0392B" font-weight="700">Monthly sales peak in Q4 every year — a predictable seasonal pattern</text>
+        <!-- Grid -->
+        <line x1="34" y1="25" x2="355" y2="25" stroke="#F5F5F5" stroke-width="1"/>
+        <line x1="34" y1="55" x2="355" y2="55" stroke="#F5F5F5" stroke-width="1"/>
+        <line x1="34" y1="85" x2="355" y2="85" stroke="#F5F5F5" stroke-width="1"/>
+        <line x1="34" y1="115" x2="355" y2="115" stroke="#F5F5F5" stroke-width="1"/>
+        <!-- Average reference line -->
+        <line x1="34" y1="90" x2="355" y2="90" stroke="#BDC3C7" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <text x="357" y="93" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#999">avg</text>
+        <!-- Y labels -->
+        <text x="30" y="28" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8" fill="#999">$120K</text>
+        <text x="30" y="88" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8" fill="#999">$70K</text>
+        <text x="30" y="118" text-anchor="end" font-family="Source Sans 3,sans-serif" font-size="8" fill="#999">$50K</text>
+        <!-- Lines for 2019-2022 seasons -->
+        <polyline points="36,102 46,95 56,90 66,82 76,88 86,70 96,80 106,58 116,68 126,62 136,55 146,88 156,75 166,82 176,65 186,75 196,68 206,50 216,60 226,55 236,48 246,78 256,62 266,70 276,54 286,65 296,60 306,43 316,55 326,50 336,39 346,52" fill="none" stroke="#2471A3" stroke-width="2"/>
+        <!-- Q4 shading 2019 -->
+        <rect x="96" y="24" width="30" height="130" fill="#FDEDEC" opacity=".4"/>
+        <!-- Q4 shading 2020 -->
+        <rect x="178" y="24" width="30" height="130" fill="#FDEDEC" opacity=".4"/>
+        <!-- Q4 shading 2021 -->
+        <rect x="258" y="24" width="30" height="130" fill="#FDEDEC" opacity=".4"/>
+        <!-- Q4 shading 2022 -->
+        <rect x="338" y="24" width="18" height="130" fill="#FDEDEC" opacity=".4"/>
+        <!-- Redraw line on top -->
+        <polyline points="36,102 46,95 56,90 66,82 76,88 86,70 96,80 106,58 116,68 126,62 136,55 146,88 156,75 166,82 176,65 186,75 196,68 206,50 216,60 226,55 236,48 246,78 256,62 266,70 276,54 286,65 296,60 306,43 316,55 326,50 336,39 346,52" fill="none" stroke="#2471A3" stroke-width="2"/>
+        <!-- Callout on peak -->
+        <circle cx="206" cy="50" r="4" fill="#C0392B"/>
+        <line x1="206" y1="46" x2="206" y2="30" stroke="#C0392B" stroke-width="1.5"/>
+        <rect x="175" y="22" width="62" height="14" rx="2" fill="#FDEDEC" stroke="#C0392B" stroke-width="1"/>
+        <text x="206" y="32" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B" font-weight="700">$118K peak · Nov 2021</text>
+        <!-- Text box annotation -->
+        <rect x="248" y="155" width="106" height="30" rx="2" fill="#FEF9E7" stroke="#B7950B" stroke-width="1"/>
+        <text x="301" y="167" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#92400E" font-weight="700">Q4 averages 35% above</text>
+        <text x="301" y="178" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#92400E">annual monthly mean</text>
+        <!-- X labels -->
+        <text x="36" y="165" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan '19</text>
+        <text x="112" y="165" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan '20</text>
+        <text x="188" y="165" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan '21</text>
+        <text x="264" y="165" font-family="Source Sans 3,sans-serif" font-size="8" fill="#555">Jan '22</text>
+        <!-- Annotation labels -->
+        <text x="111" y="178" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B" opacity=".7">Q4 '19</text>
+        <text x="193" y="178" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B" opacity=".7">Q4 '20</text>
+        <text x="273" y="178" text-anchor="middle" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#C0392B" opacity=".7">Q4 '21</text>
+        <!-- Average label -->
+        <text x="36" y="88" font-family="Source Sans 3,sans-serif" font-size="7.5" fill="#999">avg. line</text>
+      </svg>
+      <small class="note" style="display:block;margin-top:5px">Four annotations: insight title · Q4 shading · peak callout · text box quantifying the finding. None of these require explanatory paragraphs.</small>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 18: ACTIVITY — WRITE ══════════════════════ -->
+<div class="slide act-slide">
+  <div class="act-stripe"></div>
+  <div class="act-body">
+    <div class="act-label">Writing Activity · 30 minutes</div>
+    <h2 class="act-h">Write a <em>200-word executive summary</em> of your Superstore dashboard</h2>
+    <p class="act-p">Using the five-part structure, write an executive summary for the dashboard you redesigned in the first activity. This will form the basis of your Week 3 submission.</p>
+    <div class="act-tasks">
+      <div class="act-task"><div class="act-task-n">1</div><div class="act-task-t"><strong>Choose your audience</strong> first — CEO, Regional Manager, or Marketing Team. Write their name at the top of your document. Every sentence must be appropriate for that audience.</div></div>
+      <div class="act-task"><div class="act-task-n">2</div><div class="act-task-t"><strong>Write the five parts:</strong> Context (1 sentence) → Headline finding (1–2 sentences) → Supporting evidence with specific numbers (2–3 sentences) → Caveat (1 sentence) → Recommendation (1 sentence).</div></div>
+      <div class="act-task"><div class="act-task-n">3</div><div class="act-task-t"><strong>Upgrade test:</strong> Underline every sentence that is purely observation (Tier 1). Try to upgrade at least two of them to insight or recommendation level.</div></div>
+      <div class="act-task"><div class="act-task-n">4</div><div class="act-task-t"><strong>Word count check:</strong> 150–250 words. If you are over 250, you have not edited ruthlessly enough. Cut the least important sentence.</div></div>
+    </div>
+    <div class="act-time">30 MINUTES · TARGET 150–250 WORDS</div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 19: PEER REVIEW ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Peer Review Activity</div>
+    <div class="hdr-title">Giving and Receiving Analytical Feedback</div>
+    <div class="hdr-sub">20 minutes — swap executive summaries with a partner and apply the rubric below</div>
+  </div>
+  <div class="body row">
+    <div class="col-55">
+      <div class="section-lbl">Review Rubric — Use These Four Questions</div>
+      <div class="rubric-grid">
+        <div class="rubric-card">
+          <div class="rubric-title">1. Can you find the main finding in under 10 seconds?</div>
+          <div class="rubric-q">Is the headline finding stated clearly in the first two sentences? Or do you have to read the whole summary to find it?</div>
+          <div class="rubric-scale"><div class="rs fill"></div><div class="rs fill"></div><div class="rs fill"></div><div class="rs"></div><div class="rs"></div></div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:4px">Rate 1–5 · write one specific comment</div>
+        </div>
+        <div class="rubric-card">
+          <div class="rubric-title">2. Does the recommendation follow logically from the data?</div>
+          <div class="rubric-q">Could someone challenge the recommendation by questioning the data used? Is the logic chain clear and defensible?</div>
+          <div class="rubric-scale"><div class="rs fill"></div><div class="rs fill"></div><div class="rs fill"></div><div class="rs fill"></div><div class="rs"></div></div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:4px">Rate 1–5 · write one specific comment</div>
+        </div>
+        <div class="rubric-card">
+          <div class="rubric-title">3. Are there any observation sentences that should be insights?</div>
+          <div class="rubric-q">Find one sentence that describes a chart without explaining what it means. Suggest how to upgrade it.</div>
+          <div class="rubric-scale"><div class="rs fill"></div><div class="rs fill"></div><div class="rs"></div><div class="rs"></div><div class="rs"></div></div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:4px">Find at least one and rewrite it</div>
+        </div>
+        <div class="rubric-card">
+          <div class="rubric-title">4. Is the register appropriate for the stated audience?</div>
+          <div class="rubric-q">If written for a CEO, is it concise and action-oriented? If for an analyst, is it technically precise? Or does the register drift?</div>
+          <div class="rubric-scale"><div class="rs fill"></div><div class="rs fill"></div><div class="rs fill"></div><div class="rs fill"></div><div class="rs"></div></div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:4px">Rate 1–5 · suggest one change</div>
+        </div>
+      </div>
+      <div class="box box-r" style="margin-top:6px">
+        <div class="box-lbl r">Feedback Rules</div>
+        <div class="box-txt">Be specific. "This is good" is not feedback. "The headline finding appears in paragraph three — it should be sentence two" is feedback. Point to specific sentences, not the document as a whole.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-lbl">What Makes Feedback Useful</div>
+      <div class="writing-ex bad-eg" style="margin-bottom:8px">
+        <span class="writing-ex-lbl r">Unhelpful feedback</span>
+        "Good work overall but the report could be clearer and more concise. The recommendation is a bit vague. Also consider the audience more carefully throughout."
+      </div>
+      <div class="writing-ex rec">
+        <span class="writing-ex-lbl">Useful feedback</span>
+        "The headline finding is buried in sentence 5 — move it to sentence 1. Sentence 3 ('sales were high in Q4') is a pure observation — add the business implication. The recommendation uses 'should consider' which is too weak for a CEO audience — change to 'should implement by Q3'. Word count is 284 — cut the final two sentences about data limitations which duplicate point 4."
+      </div>
+      <div class="box box-b" style="margin-top:8px">
+        <div class="box-lbl b">Why peer review matters</div>
+        <div class="box-txt">Reading as an audience — rather than as the author — is the single most important analytical habit to develop. You cannot spot the gaps in your own reasoning because you already know what you meant to say. Your partner doesn't.</div>
+      </div>
+      <div class="box box-g" style="margin-top:6px">
+        <div class="box-lbl g">After receiving feedback</div>
+        <div class="box-txt">You are not obliged to accept every suggestion. But for every piece of feedback you reject, write one sentence explaining why. This forces you to interrogate your own choices.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 20: WRAP-UP ══════════════════════ -->
+<div class="slide">
+  <div class="slide-accent"></div>
+  <div class="hdr">
+    <div class="hdr-eye">Week 3 Summary</div>
+    <div class="hdr-title">What You Can Now Do</div>
+    <div class="hdr-sub">And what's coming in Week 4</div>
+  </div>
+  <div class="body row">
+    <div class="col-55">
+      <div class="section-lbl">Week 3 Learning Outcomes — Achieved</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="flex-shrink:0;width:22px;height:22px;background:var(--grn);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" fill="none"/></svg>
+          </div>
+          <div style="font-size:13px;color:var(--ink2);line-height:1.5"><strong>Classify any analysis</strong> by tier — Descriptive, Diagnostic, Predictive, or Prescriptive</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="flex-shrink:0;width:22px;height:22px;background:var(--grn);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" fill="none"/></svg>
+          </div>
+          <div style="font-size:13px;color:var(--ink2);line-height:1.5"><strong>Apply five UX principles</strong> to evaluate and redesign a Power BI dashboard</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="flex-shrink:0;width:22px;height:22px;background:var(--grn);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" fill="none"/></svg>
+          </div>
+          <div style="font-size:13px;color:var(--ink2);line-height:1.5"><strong>Write findings</strong> that advance from observation → insight → recommendation</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="flex-shrink:0;width:22px;height:22px;background:var(--grn);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" fill="none"/></svg>
+          </div>
+          <div style="font-size:13px;color:var(--ink2);line-height:1.5"><strong>Structure an executive summary</strong> in five parts and adapt register for different audiences</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="flex-shrink:0;width:22px;height:22px;background:var(--grn);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" fill="none"/></svg>
+          </div>
+          <div style="font-size:13px;color:var(--ink2);line-height:1.5"><strong>Annotate charts</strong> with insight-led titles, reference lines, and callouts</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-lbl" style="margin-top:8px">Assessment Connection</div>
+      <div class="box box-r">
+        <div class="box-lbl r">Your dashboard assessment</div>
+        <div class="box-txt">The redesign activity and executive summary you produced today are directly applicable to your assessment. Specifically: (1) KPI cards in the header, (2) colour consistency across visuals, (3) three slicers, and (4) a written executive summary using the five-part structure.</div>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="section-lbl">Week 4 Preview — Using IT Systems for Data Visualisation</div>
+      <div style="border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin-bottom:8px">
+        <div style="background:var(--ink2);color:white;padding:8px 14px;font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Coming Next Week</div>
+        <div style="padding:12px 14px;display:flex;flex-direction:column;gap:7px">
+          <div style="font-size:13px;color:var(--ink2)"><strong style="color:var(--red)">Power BI Service</strong> — publishing dashboards to the web and sharing with stakeholders</div>
+          <div class="divider"></div>
+          <div style="font-size:13px;color:var(--ink2)"><strong style="color:var(--red)">Data refresh</strong> — connecting Power BI to live data sources (SQL, Excel, SharePoint)</div>
+          <div class="divider"></div>
+          <div style="font-size:13px;color:var(--ink2)"><strong style="color:var(--red)">Row-level security</strong> — controlling who sees what in a shared dashboard (regional managers see only their region)</div>
+          <div class="divider"></div>
+          <div style="font-size:13px;color:var(--ink2)"><strong style="color:var(--red)">Alerts and subscriptions</strong> — setting up automated email alerts when KPIs breach thresholds</div>
+        </div>
+      </div>
+      <div class="box box-b">
+        <div class="box-lbl b">Preparation for Week 4</div>
+        <div class="box-txt">Ensure your Power BI Desktop dashboard is saved and complete. You will publish it to Power BI Service in the first activity of Week 4 — bring your student Microsoft account login credentials.</div>
+      </div>
+      <div style="margin-top:8px;text-align:center;padding:12px;background:var(--bg2);border-radius:4px;border:1px solid var(--rule)">
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--red);margin-bottom:4px">"Statistics are no good unless you have good people to analyse and interpret their meaning."</div>
+        <div style="font-size:11px;color:var(--ink4)">— Brendan Rodgers · Today was about becoming that person.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+<script>
+const slides=document.querySelectorAll('.slide');
+const n=slides.length;
+let cur=0;
+const ndots=document.getElementById('ndots');
+slides.forEach((s,i)=>{
+  const d=document.createElement('div');
+  d.className='ndot'+(s.classList.contains('act-slide')?' act-dot':'');
+  d.addEventListener('click',()=>go(i));
+  ndots.appendChild(d);
+});
+function go(idx){
+  slides[cur].classList.remove('active');
+  ndots.children[cur].classList.remove('cur');
+  cur=Math.max(0,Math.min(idx,n-1));
+  slides[cur].classList.add('active');
+  ndots.children[cur].classList.add('cur');
+  document.getElementById('nctr').textContent=(cur+1)+'/'+n;
+  document.getElementById('prog').style.width=((cur+1)/n*100)+'%';
+}
+document.getElementById('prevBtn').addEventListener('click',()=>go(cur-1));
+document.getElementById('nextBtn').addEventListener('click',()=>go(cur+1));
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')go(cur+1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(cur-1);
+});
+go(0);
+</script>
+</body>
+</html>
