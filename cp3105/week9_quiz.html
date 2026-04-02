@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CP3501 – Week 8 Quiz: Collaborative Filtering</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red:        #c0272d;
+    --red-dark:   #8b1a1e;
+    --red-faint:  #fdf2f2;
+    --ink:        #1a1a1a;
+    --ink-mid:    #444;
+    --ink-light:  #777;
+    --rule:       #e4e4e4;
+    --bg:         #f7f7f5;
+    --white:      #ffffff;
+    --blue:       #1a4fa0;
+    --mono:       'IBM Plex Mono', monospace;
+    --sans:       'IBM Plex Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Sticky header ── */
+  #topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--white);
+    border-bottom: 3px solid var(--red);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 54px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  #topbar .brand { font-size: 13px; font-weight: 600; color: var(--red); letter-spacing: 0.5px; }
+  #topbar .title { font-size: 14px; font-weight: 500; color: var(--ink-mid); }
+  #progress-wrap {
+    display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-light);
+  }
+  #progress-bar-outer {
+    width: 120px; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden;
+  }
+  #progress-bar-inner {
+    height: 100%; background: var(--red); width: 0%; transition: width 0.3s; border-radius: 3px;
+  }
+  #q-counter { font-family: var(--mono); font-size: 12px; color: var(--ink-light); }
+
+  /* ── Page layout ── */
+  .page-wrap { max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  /* ── Hero ── */
+  .hero {
+    background: var(--red);
+    border-radius: 8px;
+    padding: 36px 40px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .hero .tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    color: white;
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px; border-radius: 2px; margin-bottom: 14px;
+  }
+  .hero h1 { color: white; font-size: 28px; font-weight: 700; margin-bottom: 10px; line-height: 1.2; }
+  .hero p  { color: rgba(255,255,255,0.80); font-size: 14px; max-width: 520px; }
+  .hero .meta {
+    display: flex; gap: 24px; margin-top: 20px;
+    font-size: 13px; color: rgba(255,255,255,0.65);
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 16px;
+  }
+  .hero .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── Section divider ── */
+  .section-head {
+    display: flex; align-items: center; gap: 14px;
+    margin: 40px 0 24px;
+  }
+  .section-head .section-num {
+    background: var(--red); color: white;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 3px; white-space: nowrap;
+  }
+  .section-head h2 {
+    font-size: 18px; font-weight: 700; color: var(--ink);
+  }
+  .section-head::after {
+    content: ''; flex: 1; height: 1px; background: var(--rule);
+  }
+  .section-desc {
+    font-size: 13.5px; color: var(--ink-light);
+    margin: -16px 0 24px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--rule);
+    background: var(--white);
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* ── Question card ── */
+  .q-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .q-card:focus-within {
+    box-shadow: 0 0 0 2px var(--red);
+    border-color: var(--red);
+  }
+  .q-header {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 20px 22px 0;
+  }
+  .q-num {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--red); background: var(--red-faint);
+    border: 1px solid #f0c0c0;
+    padding: 3px 8px; border-radius: 3px;
+    white-space: nowrap; margin-top: 2px;
+  }
+  .q-text {
+    font-size: 15px; font-weight: 500; color: var(--ink); line-height: 1.55;
+  }
+  .q-text code {
+    font-family: var(--mono); font-size: 13px;
+    background: #f0f0f0; padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* ── Options ── */
+  .q-options {
+    padding: 14px 22px 20px 22px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .option-label {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--rule);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    font-size: 14px; color: var(--ink-mid);
+    line-height: 1.45;
+  }
+  .option-label:hover { background: var(--red-faint); border-color: #f0b0b0; }
+  .option-label input[type="radio"] { display: none; }
+  .option-label.selected {
+    background: var(--red-faint);
+    border-color: var(--red);
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .option-letter {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--ink-light); background: var(--rule);
+    border-radius: 3px; padding: 2px 6px;
+    min-width: 24px; text-align: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .option-label.selected .option-letter {
+    background: var(--red); color: white;
+  }
+
+  /* ── Short answer ── */
+  .sa-body { padding: 14px 22px 20px; }
+  .sa-label { font-size: 12px; font-weight: 600; color: var(--ink-light);
+              text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .sa-hint  { font-size: 13px; color: var(--ink-light); font-style: italic;
+              margin-bottom: 10px; }
+  textarea {
+    width: 100%; min-height: 100px;
+    border: 1.5px solid var(--rule); border-radius: 6px;
+    font-family: var(--sans); font-size: 14px; color: var(--ink);
+    padding: 12px 14px; resize: vertical;
+    background: #fdfdf9;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--red); background: var(--white); }
+  .char-count { font-size: 11px; color: var(--ink-light); text-align: right;
+                margin-top: 4px; font-family: var(--mono); }
+
+  /* ── Required badge ── */
+  .req-badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    background: #fff3cd; color: #856404; border: 1px solid #ffd83d;
+    padding: 1px 6px; border-radius: 2px; margin-left: 8px;
+    vertical-align: middle; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ── Submit area ── */
+  .submit-area {
+    background: var(--white); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 28px 28px;
+    margin-top: 32px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    text-align: center;
+  }
+  .submit-area p {
+    font-size: 13.5px; color: var(--ink-light); max-width: 460px;
+  }
+  #student-name-wrap {
+    width: 100%; display: flex; flex-direction: column; gap: 6px; max-width: 400px;
+  }
+  #student-name-wrap label { font-size: 12px; font-weight: 600; color: var(--ink-mid);
+                              text-align: left; }
+  #student-name {
+    border: 1.5px solid var(--rule); border-radius: 6px;
+    padding: 10px 14px; font-size: 14px; font-family: var(--sans);
+    outline: none; width: 100%;
+  }
+  #student-name:focus { border-color: var(--red); }
+
+  #submit-btn {
+    background: var(--red); color: white; border: none;
+    padding: 14px 48px; border-radius: 6px;
+    font-family: var(--sans); font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  #submit-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
+  #submit-btn:active { transform: translateY(0); }
+
+  /* ── Validation warning ── */
+  #val-warning {
+    display: none;
+    background: #fff3cd; border: 1px solid #ffd83d;
+    color: #664d03; padding: 12px 18px; border-radius: 6px;
+    font-size: 13.5px; width: 100%; text-align: left;
+  }
+
+  /* ── Score modal ── */
+  #score-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  #score-overlay.visible { display: flex; }
+  #score-box {
+    background: white; border-radius: 12px;
+    padding: 48px 52px;
+    max-width: 460px; width: 90%;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+    animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+  #score-box .submitted-name {
+    font-size: 13px; color: var(--ink-light); margin-bottom: 8px;
+  }
+  #score-box .score-label {
+    font-size: 13px; font-weight: 600; color: var(--ink-light);
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;
+  }
+  #score-ring {
+    width: 130px; height: 130px; margin: 0 auto 24px;
+    position: relative;
+  }
+  #score-ring svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+  #score-ring .ring-bg  { fill: none; stroke: var(--rule); stroke-width: 10; }
+  #score-ring .ring-val { fill: none; stroke: var(--red); stroke-width: 10;
+                          stroke-linecap: round;
+                          stroke-dasharray: 326.7;
+                          stroke-dashoffset: 326.7;
+                          transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1); }
+  #score-number {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: var(--mono);
+  }
+  #score-number .big { font-size: 36px; font-weight: 600; color: var(--red); line-height: 1; }
+  #score-number .denom { font-size: 14px; color: var(--ink-light); }
+  #score-box h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+  #score-box .grade-msg { font-size: 14.5px; color: var(--ink-mid); margin-bottom: 8px; }
+  #score-box .sa-note {
+    font-size: 12.5px; color: var(--ink-light);
+    background: var(--bg); padding: 10px 14px; border-radius: 6px;
+    margin-top: 16px; line-height: 1.5;
+  }
+  #close-score {
+    margin-top: 24px;
+    background: var(--red); color: white; border: none;
+    padding: 11px 32px; border-radius: 6px;
+    font-family: var(--sans); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  #close-score:hover { background: var(--red-dark); }
+
+  /* ── Unanswered highlight ── */
+  .q-card.unanswered { border-color: #ffd83d; box-shadow: 0 0 0 2px #ffd83d; }
+
+  /* ── Code inline ── */
+  .mono { font-family: var(--mono); font-size: 13px;
+          background: #f0f0f0; padding: 1px 5px; border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    .page-wrap { padding: 24px 14px 60px; }
+    .hero { padding: 24px 22px; }
+    #topbar { padding: 0 16px; }
+    #topbar .title { display: none; }
+    #score-box { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sticky bar ── -->
+<div id="topbar">
+  <span class="brand">CP3501 · Week 8</span>
+  <span class="title">Collaborative Filtering Quiz</span>
+  <div class="progress-wrap" style="display:flex;align-items:center;gap:10px;">
+    <span id="q-counter" style="font-family:var(--mono);font-size:12px;color:var(--ink-light);">0 / 25</span>
+    <div id="progress-bar-outer">
+      <div id="progress-bar-inner"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="tag">Week 8 &nbsp;·&nbsp; Assessment Quiz</div>
+    <h1>Collaborative Filtering</h1>
+    <p>20 multiple-choice questions on core concepts, plus 5 short-answer questions on FastAI. Attempt every question before submitting.</p>
+    <div class="meta">
+      <span>📋 25 questions total</span>
+      <span>⭐ 25 marks</span>
+      <span>🕐 No time limit</span>
+      <span>🔒 Answers not revealed</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- PART A: MULTIPLE CHOICE -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-head">
+    <span class="section-num">PART A</span>
+    <h2>Multiple Choice &nbsp;<span style="font-weight:300;color:var(--ink-light);font-size:15px;">(1 mark each)</span></h2>
+  </div>
+  <p class="section-desc">Select the single best answer for each question. Each question is worth 1 mark.</p>
+
+  <!-- Q1 -->
+  <div class="q-card" data-q="1">
+    <div class="q-header">
+      <span class="q-num">Q1</span>
+      <p class="q-text">Collaborative filtering makes recommendations based on:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q1" value="A"><span class="option-letter">A</span>The genre and cast metadata attached to each item</label>
+      <label class="option-label"><input type="radio" name="q1" value="B"><span class="option-letter">B</span>The rating patterns shared across many users and items</label>
+      <label class="option-label"><input type="radio" name="q1" value="C"><span class="option-letter">C</span>The demographic profile of the individual user (age, location)</label>
+      <label class="option-label"><input type="radio" name="q1" value="D"><span class="option-letter">D</span>The most recently released items in the catalogue</label>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="q-card" data-q="2">
+    <div class="q-header">
+      <span class="q-num">Q2</span>
+      <p class="q-text">In a user–item rating matrix, a missing cell (marked <span class="mono">?</span> or <span class="mono">NaN</span>) means:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q2" value="A"><span class="option-letter">A</span>The user gave the item a rating of zero</label>
+      <label class="option-label"><input type="radio" name="q2" value="B"><span class="option-letter">B</span>The item was removed from the catalogue</label>
+      <label class="option-label"><input type="radio" name="q2" value="C"><span class="option-letter">C</span>The user has not yet interacted with that item — the rating is unknown</label>
+      <label class="option-label"><input type="radio" name="q2" value="D"><span class="option-letter">D</span>The rating was corrupted and should be dropped from the dataset</label>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="q-card" data-q="3">
+    <div class="q-header">
+      <span class="q-num">Q3</span>
+      <p class="q-text">A rating matrix with 500 users, 1,000 movies, and only 10,000 known ratings has a sparsity of:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q3" value="A"><span class="option-letter">A</span>2% (matrix is 2% empty)</label>
+      <label class="option-label"><input type="radio" name="q3" value="B"><span class="option-letter">B</span>98% (matrix is 98% empty)</label>
+      <label class="option-label"><input type="radio" name="q3" value="C"><span class="option-letter">C</span>50% (matrix is half empty)</label>
+      <label class="option-label"><input type="radio" name="q3" value="D"><span class="option-letter">D</span>10% (matrix is 10% empty)</label>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="q-card" data-q="4">
+    <div class="q-header">
+      <span class="q-num">Q4</span>
+      <p class="q-text">In matrix factorisation, the rating matrix <strong>R</strong> is approximated as:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q4" value="A"><span class="option-letter">A</span>R ≈ U + V (element-wise addition of two matrices)</label>
+      <label class="option-label"><input type="radio" name="q4" value="B"><span class="option-letter">B</span>R ≈ U × Vᵀ (product of a user matrix and a transposed item matrix)</label>
+      <label class="option-label"><input type="radio" name="q4" value="C"><span class="option-letter">C</span>R ≈ U ÷ V (element-wise division of two matrices)</label>
+      <label class="option-label"><input type="radio" name="q4" value="D"><span class="option-letter">D</span>R ≈ log(U) × V (logarithm of the user matrix times the item matrix)</label>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="q-card" data-q="5">
+    <div class="q-header">
+      <span class="q-num">Q5</span>
+      <p class="q-text">The parameter <strong>k</strong> in matrix factorisation refers to:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q5" value="A"><span class="option-letter">A</span>The number of training epochs</label>
+      <label class="option-label"><input type="radio" name="q5" value="B"><span class="option-letter">B</span>The total number of known ratings in the dataset</label>
+      <label class="option-label"><input type="radio" name="q5" value="C"><span class="option-letter">C</span>The number of latent dimensions in each user and item embedding vector</label>
+      <label class="option-label"><input type="radio" name="q5" value="D"><span class="option-letter">D</span>The learning rate used during gradient descent</label>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="q-card" data-q="6">
+    <div class="q-header">
+      <span class="q-num">Q6</span>
+      <p class="q-text">A predicted rating in the basic dot-product CF model is computed as:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q6" value="A"><span class="option-letter">A</span>The Euclidean distance between the user and item embedding vectors</label>
+      <label class="option-label"><input type="radio" name="q6" value="B"><span class="option-letter">B</span>The sum of all values in the user embedding vector</label>
+      <label class="option-label"><input type="radio" name="q6" value="C"><span class="option-letter">C</span>The dot product of the user embedding vector and the item embedding vector</label>
+      <label class="option-label"><input type="radio" name="q6" value="D"><span class="option-letter">D</span>The average of the user's past ratings</label>
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="q-card" data-q="7">
+    <div class="q-header">
+      <span class="q-num">Q7</span>
+      <p class="q-text">Latent factors in collaborative filtering are best described as:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q7" value="A"><span class="option-letter">A</span>Hand-crafted features like genre, director, and release year</label>
+      <label class="option-label"><input type="radio" name="q7" value="B"><span class="option-letter">B</span>Hidden preference dimensions discovered automatically from rating patterns</label>
+      <label class="option-label"><input type="radio" name="q7" value="C"><span class="option-letter">C</span>The number of users who rated each item</label>
+      <label class="option-label"><input type="radio" name="q7" value="D"><span class="option-letter">D</span>The weights in the final output layer of a neural network</label>
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="q-card" data-q="8">
+    <div class="q-header">
+      <span class="q-num">Q8</span>
+      <p class="q-text">A user bias term <strong>b<sub>u</sub></strong> captures:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q8" value="A"><span class="option-letter">A</span>How much the model overfits to a particular user's ratings</label>
+      <label class="option-label"><input type="radio" name="q8" value="B"><span class="option-letter">B</span>The tendency of a user to rate all items systematically higher or lower than average</label>
+      <label class="option-label"><input type="radio" name="q8" value="C"><span class="option-letter">C</span>The number of items the user has rated so far</label>
+      <label class="option-label"><input type="radio" name="q8" value="D"><span class="option-letter">D</span>The difference between the user's first and last rating</label>
+    </div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="q-card" data-q="9">
+    <div class="q-header">
+      <span class="q-num">Q9</span>
+      <p class="q-text">Given user embedding <strong>u</strong> = [0.8, 0.5] and item embedding <strong>v</strong> = [0.6, −0.4], what is the dot product <strong>u · v</strong>?</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q9" value="A"><span class="option-letter">A</span>0.68</label>
+      <label class="option-label"><input type="radio" name="q9" value="B"><span class="option-letter">B</span>0.28</label>
+      <label class="option-label"><input type="radio" name="q9" value="C"><span class="option-letter">C</span>0.48</label>
+      <label class="option-label"><input type="radio" name="q9" value="D"><span class="option-letter">D</span>0.96</label>
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="q-card" data-q="10">
+    <div class="q-header">
+      <span class="q-num">Q10</span>
+      <p class="q-text">The loss function used to train a collaborative filtering model on known ratings is typically:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q10" value="A"><span class="option-letter">A</span>Cross-entropy loss</label>
+      <label class="option-label"><input type="radio" name="q10" value="B"><span class="option-letter">B</span>Mean Absolute Error (MAE)</label>
+      <label class="option-label"><input type="radio" name="q10" value="C"><span class="option-letter">C</span>Mean Squared Error (MSE) over known cells only</label>
+      <label class="option-label"><input type="radio" name="q10" value="D"><span class="option-letter">D</span>Hinge loss</label>
+    </div>
+  </div>
+
+  <!-- Q11 -->
+  <div class="q-card" data-q="11">
+    <div class="q-header">
+      <span class="q-num">Q11</span>
+      <p class="q-text">A model predicts [4.2, 3.1, 2.8] for three known ratings of [4, 3, 3]. What is the RMSE?</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q11" value="A"><span class="option-letter">A</span>approximately 0.17</label>
+      <label class="option-label"><input type="radio" name="q11" value="B"><span class="option-letter">B</span>approximately 0.42</label>
+      <label class="option-label"><input type="radio" name="q11" value="C"><span class="option-letter">C</span>approximately 0.05</label>
+      <label class="option-label"><input type="radio" name="q11" value="D"><span class="option-letter">D</span>approximately 0.73</label>
+    </div>
+  </div>
+
+  <!-- Q12 -->
+  <div class="q-card" data-q="12">
+    <div class="q-header">
+      <span class="q-num">Q12</span>
+      <p class="q-text">Weight decay (L2 regularisation) is applied during CF training primarily to:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q12" value="A"><span class="option-letter">A</span>Speed up convergence by scaling gradients</label>
+      <label class="option-label"><input type="radio" name="q12" value="B"><span class="option-letter">B</span>Prevent embedding values from growing too large and overfitting</label>
+      <label class="option-label"><input type="radio" name="q12" value="C"><span class="option-letter">C</span>Ensure the embeddings sum to exactly 1.0</label>
+      <label class="option-label"><input type="radio" name="q12" value="D"><span class="option-letter">D</span>Reduce the number of latent factors automatically</label>
+    </div>
+  </div>
+
+  <!-- Q13 -->
+  <div class="q-card" data-q="13">
+    <div class="q-header">
+      <span class="q-num">Q13</span>
+      <p class="q-text">The cold start problem in collaborative filtering occurs when:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q13" value="A"><span class="option-letter">A</span>The training dataset is too large to fit in memory</label>
+      <label class="option-label"><input type="radio" name="q13" value="B"><span class="option-letter">B</span>A new user or item has no historical ratings, so the model cannot personalise recommendations</label>
+      <label class="option-label"><input type="radio" name="q13" value="C"><span class="option-letter">C</span>The model is run on a machine without a GPU</label>
+      <label class="option-label"><input type="radio" name="q13" value="D"><span class="option-letter">D</span>The learning rate is set too low and training never converges</label>
+    </div>
+  </div>
+
+  <!-- Q14 -->
+  <div class="q-card" data-q="14">
+    <div class="q-header">
+      <span class="q-num">Q14</span>
+      <p class="q-text">PCA is used to visualise learned embeddings because:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q14" value="A"><span class="option-letter">A</span>PCA improves the accuracy of predictions before plotting</label>
+      <label class="option-label"><input type="radio" name="q14" value="B"><span class="option-letter">B</span>It reduces high-dimensional embedding vectors to 2D so they can be plotted on a scatter chart</label>
+      <label class="option-label"><input type="radio" name="q14" value="C"><span class="option-letter">C</span>PCA removes noisy ratings from the training data</label>
+      <label class="option-label"><input type="radio" name="q14" value="D"><span class="option-letter">D</span>It ensures all embedding values lie between 0 and 1</label>
+    </div>
+  </div>
+
+  <!-- Q15 -->
+  <div class="q-card" data-q="15">
+    <div class="q-header">
+      <span class="q-num">Q15</span>
+      <p class="q-text">Cosine similarity between two embedding vectors measures:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q15" value="A"><span class="option-letter">A</span>The straight-line distance between the two points in embedding space</label>
+      <label class="option-label"><input type="radio" name="q15" value="B"><span class="option-letter">B</span>The angle between the two vectors — how similar their directions are, regardless of magnitude</label>
+      <label class="option-label"><input type="radio" name="q15" value="C"><span class="option-letter">C</span>The sum of squared differences between corresponding elements</label>
+      <label class="option-label"><input type="radio" name="q15" value="D"><span class="option-letter">D</span>The number of elements the two vectors have in common</label>
+    </div>
+  </div>
+
+  <!-- Q16 -->
+  <div class="q-card" data-q="16">
+    <div class="q-header">
+      <span class="q-num">Q16</span>
+      <p class="q-text">Neural collaborative filtering (with <span class="mono">use_nn=True</span>) differs from dot-product CF because it:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q16" value="A"><span class="option-letter">A</span>Does not use any embedding vectors at all</label>
+      <label class="option-label"><input type="radio" name="q16" value="B"><span class="option-letter">B</span>Concatenates the user and item embeddings and passes them through an MLP instead of computing a dot product</label>
+      <label class="option-label"><input type="radio" name="q16" value="C"><span class="option-letter">C</span>Replaces gradient descent with a closed-form solution</label>
+      <label class="option-label"><input type="radio" name="q16" value="D"><span class="option-letter">D</span>Uses convolutional layers to extract patterns from the rating matrix</label>
+    </div>
+  </div>
+
+  <!-- Q17 -->
+  <div class="q-card" data-q="17">
+    <div class="q-header">
+      <span class="q-num">Q17</span>
+      <p class="q-text">Why is <span class="mono">y_range=(0, 5.5)</span> preferred over <span class="mono">(0, 5.0)</span> when ratings go from 1 to 5?</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q17" value="A"><span class="option-letter">A</span>To allow the model to predict ratings above 5 for exceptional items</label>
+      <label class="option-label"><input type="radio" name="q17" value="B"><span class="option-letter">B</span>To avoid sigmoid saturation at the boundaries, which would cause gradients to vanish and learning to stall</label>
+      <label class="option-label"><input type="radio" name="q17" value="C"><span class="option-letter">C</span>Because 5.5 is the standard maximum in the MovieLens dataset</label>
+      <label class="option-label"><input type="radio" name="q17" value="D"><span class="option-letter">D</span>To add a 0.5-star tolerance for measurement error in user ratings</label>
+    </div>
+  </div>
+
+  <!-- Q18 -->
+  <div class="q-card" data-q="18">
+    <div class="q-header">
+      <span class="q-num">Q18</span>
+      <p class="q-text">The filter bubble effect in recommender systems refers to:</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q18" value="A"><span class="option-letter">A</span>A technical bug that causes duplicate recommendations to appear</label>
+      <label class="option-label"><input type="radio" name="q18" value="B"><span class="option-letter">B</span>The phenomenon where CF reinforces existing preferences, narrowing the diversity of content users are exposed to</label>
+      <label class="option-label"><input type="radio" name="q18" value="C"><span class="option-letter">C</span>A memory error that occurs when the rating matrix is too large</label>
+      <label class="option-label"><input type="radio" name="q18" value="D"><span class="option-letter">D</span>The tendency of new items to be recommended more than established ones</label>
+    </div>
+  </div>
+
+  <!-- Q19 -->
+  <div class="q-card" data-q="19">
+    <div class="q-header">
+      <span class="q-num">Q19</span>
+      <p class="q-text">A model has 800 users, 400 movies, and uses k=50 latent factors. How many embedding parameters does it have (excluding biases)?</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q19" value="A"><span class="option-letter">A</span>40,000</label>
+      <label class="option-label"><input type="radio" name="q19" value="B"><span class="option-letter">B</span>16,000,000</label>
+      <label class="option-label"><input type="radio" name="q19" value="C"><span class="option-letter">C</span>60,000</label>
+      <label class="option-label"><input type="radio" name="q19" value="D"><span class="option-letter">D</span>600</label>
+    </div>
+  </div>
+
+  <!-- Q20 -->
+  <div class="q-card" data-q="20">
+    <div class="q-header">
+      <span class="q-num">Q20</span>
+      <p class="q-text">Which of the following is a valid way to handle the cold start problem for a new user?</p>
+    </div>
+    <div class="q-options">
+      <label class="option-label"><input type="radio" name="q20" value="A"><span class="option-letter">A</span>Assign the new user the same embedding as the most active existing user</label>
+      <label class="option-label"><input type="radio" name="q20" value="B"><span class="option-letter">B</span>Ask the new user to rate a few items during onboarding to bootstrap their embedding</label>
+      <label class="option-label"><input type="radio" name="q20" value="C"><span class="option-letter">C</span>Remove all new users from the dataset until they have rated at least 100 items</label>
+      <label class="option-label"><input type="radio" name="q20" value="D"><span class="option-letter">D</span>Increase the learning rate specifically for new user embeddings</label>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- PART B: SHORT ANSWER (FastAI) -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-head">
+    <span class="section-num">PART B</span>
+    <h2>Short Answer — FastAI &nbsp;<span style="font-weight:300;color:var(--ink-light);font-size:15px;">(1 mark each)</span></h2>
+  </div>
+  <p class="section-desc">Answer each question in 1–3 sentences using correct FastAI terminology. These questions are marked by your lecturer. Aim for precision — code snippets where relevant are encouraged.</p>
+
+  <!-- SA1 -->
+  <div class="q-card" data-q="sa1">
+    <div class="q-header">
+      <span class="q-num">Q21</span>
+      <p class="q-text">
+        What FastAI function is used to create a <strong>DataLoader</strong> for collaborative filtering,
+        and what are the three column names you must specify?
+        <span class="req-badge">written</span>
+      </p>
+    </div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      <div class="sa-hint">Hint: think about what describes a single rating row.</div>
+      <textarea name="sa1" id="sa1" placeholder="Write your answer here…" maxlength="600"
+                oninput="updateChar('sa1')"></textarea>
+      <div class="char-count" id="sa1-count">0 / 600</div>
+    </div>
+  </div>
+
+  <!-- SA2 -->
+  <div class="q-card" data-q="sa2">
+    <div class="q-header">
+      <span class="q-num">Q22</span>
+      <p class="q-text">
+        After training a <span class="mono">collab_learner</span> model, calling <span class="mono">learn.model.forward()</span>
+        directly causes a <strong>TypeError</strong>. What is the correct FastAI way to generate predictions for new user–item pairs?
+        <span class="req-badge">written</span>
+      </p>
+    </div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      <div class="sa-hint">Hint: involve <span class="mono">dls.test_dl()</span> and <span class="mono">learn.get_preds()</span>.</div>
+      <textarea name="sa2" id="sa2" placeholder="Write your answer here…" maxlength="600"
+                oninput="updateChar('sa2')"></textarea>
+      <div class="char-count" id="sa2-count">0 / 600</div>
+    </div>
+  </div>
+
+  <!-- SA3 -->
+  <div class="q-card" data-q="sa3">
+    <div class="q-header">
+      <span class="q-num">Q23</span>
+      <p class="q-text">
+        <span class="mono">dls.n_users</span> and <span class="mono">dls.n_items</span> raise an <strong>AttributeError</strong>
+        in current versions of FastAI. How do you correctly retrieve the number of unique users and items
+        from a <span class="mono">CollabDataLoaders</span> object?
+        <span class="req-badge">written</span>
+      </p>
+    </div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      <div class="sa-hint">Hint: use <span class="mono">dls.classes</span>.</div>
+      <textarea name="sa3" id="sa3" placeholder="Write your answer here…" maxlength="600"
+                oninput="updateChar('sa3')"></textarea>
+      <div class="char-count" id="sa3-count">0 / 600</div>
+    </div>
+  </div>
+
+  <!-- SA4 -->
+  <div class="q-card" data-q="sa4">
+    <div class="q-header">
+      <span class="q-num">Q24</span>
+      <p class="q-text">
+        What does the <span class="mono">use_nn=True</span> argument do when passed to
+        <span class="mono">collab_learner()</span>? How does the resulting architecture differ from the default dot-product model?
+        <span class="req-badge">written</span>
+      </p>
+    </div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      <textarea name="sa4" id="sa4" placeholder="Write your answer here…" maxlength="600"
+                oninput="updateChar('sa4')"></textarea>
+      <div class="char-count" id="sa4-count">0 / 600</div>
+    </div>
+  </div>
+
+  <!-- SA5 -->
+  <div class="q-card" data-q="sa5">
+    <div class="q-header">
+      <span class="q-num">Q25</span>
+      <p class="q-text">
+        Explain what <span class="mono">learn.model.i_weight.weight</span> and
+        <span class="mono">learn.model.i_bias.weight</span> contain after training,
+        and describe one way you could use each to <strong>interpret</strong> what the model has learned.
+        <span class="req-badge">written</span>
+      </p>
+    </div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      <textarea name="sa5" id="sa5" placeholder="Write your answer here…" maxlength="600"
+                oninput="updateChar('sa5')"></textarea>
+      <div class="char-count" id="sa5-count">0 / 600</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- SUBMIT -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="submit-area">
+    <div id="student-name-wrap">
+      <label for="student-name">Your full name</label>
+      <input type="text" id="student-name" placeholder="e.g. Jane Smith">
+    </div>
+    <p>Check that you have answered all 25 questions, then click Submit. Your MCQ score (out of 20) will be shown. Short-answer questions are marked separately by your lecturer.</p>
+    <div id="val-warning"></div>
+    <button id="submit-btn" onclick="submitQuiz()">Submit Quiz</button>
+  </div>
+
+</div><!-- /page-wrap -->
+
+
+<!-- ── Score modal ── -->
+<div id="score-overlay">
+  <div id="score-box">
+    <div class="submitted-name" id="modal-name"></div>
+    <div class="score-label">MCQ Score</div>
+    <div id="score-ring">
+      <svg viewBox="0 0 110 110">
+        <circle class="ring-bg"  cx="55" cy="55" r="52"/>
+        <circle class="ring-val" cx="55" cy="55" r="52" id="ring-circle"/>
+      </svg>
+      <div id="score-number">
+        <span class="big" id="modal-score">0</span>
+        <span class="denom">/ 20</span>
+      </div>
+    </div>
+    <h2 id="modal-grade"></h2>
+    <p class="grade-msg" id="modal-msg"></p>
+    <div class="sa-note">
+      ✏️ Your 5 short-answer responses have been recorded and will be marked by your lecturer (5 marks total).
+      <br><strong>Full quiz total: MCQ score + short-answer marks = / 25</strong>
+    </div>
+    <button id="close-score" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+
+<script>
+// ── Correct answers (MCQ only) ─────────────────────────────────────────────
+const ANSWERS = {
+  q1:'B', q2:'C', q3:'B', q4:'B', q5:'C',
+  q6:'C', q7:'B', q8:'B', q9:'B', q10:'C',
+  q11:'A', q12:'B', q13:'B', q14:'B', q15:'B',
+  q16:'B', q17:'B', q18:'B', q19:'C', q20:'B'
+};
+// Q9: u=[0.8,0.5] v=[0.6,-0.4] → 0.8×0.6 + 0.5×(-0.4) = 0.48 - 0.20 = 0.28 → B
+// Q11: errors=[0.2,-0.1,-0.2] sq=[0.04,0.01,0.04] MSE=0.09/3=0.03 RMSE≈0.173 → A
+// Q19: (800×50)+(400×50)=40000+20000=60000 → C
+
+// ── Track answered questions ───────────────────────────────────────────────
+const N_MCQ = 20;
+const N_SA  = 5;
+const N_TOT = N_MCQ + N_SA;
+
+function getAnswered() {
+  let mcq = 0;
+  for (let i = 1; i <= N_MCQ; i++) {
+    if (document.querySelector(`input[name="q${i}"]:checked`)) mcq++;
+  }
+  let sa = 0;
+  for (let i = 1; i <= N_SA; i++) {
+    const el = document.getElementById(`sa${i}`);
+    if (el && el.value.trim().length > 10) sa++;
+  }
+  return { mcq, sa, total: mcq + sa };
+}
+
+function updateProgress() {
+  const { total } = getAnswered();
+  const pct = Math.round(total / N_TOT * 100);
+  document.getElementById('progress-bar-inner').style.width = pct + '%';
+  document.getElementById('q-counter').textContent = `${total} / ${N_TOT}`;
+}
+
+// Option selection highlight
+document.querySelectorAll('.option-label').forEach(label => {
+  label.addEventListener('click', () => {
+    const name = label.querySelector('input').name;
+    document.querySelectorAll(`input[name="${name}"]`).forEach(inp => {
+      inp.parentElement.classList.remove('selected');
+    });
+    label.classList.add('selected');
+    // Remove unanswered highlight
+    const card = label.closest('.q-card');
+    if (card) card.classList.remove('unanswered');
+    updateProgress();
+  });
+});
+
+// Textarea char count
+function updateChar(id) {
+  const el  = document.getElementById(id);
+  const cnt = document.getElementById(id + '-count');
+  cnt.textContent = el.value.length + ' / 600';
+  const card = el.closest('.q-card');
+  if (el.value.trim().length > 10 && card) card.classList.remove('unanswered');
+  updateProgress();
+}
+
+// ── Submit ──────────────────────────────────────────────────────────────────
+function submitQuiz() {
+  const name = document.getElementById('student-name').value.trim();
+  const warn = document.getElementById('val-warning');
+  warn.style.display = 'none';
+
+  // Validate name
+  if (!name) {
+    warn.style.display = 'block';
+    warn.textContent = '⚠️  Please enter your full name before submitting.';
+    document.getElementById('student-name').focus();
+    return;
+  }
+
+  // Check unanswered
+  const { mcq, sa } = getAnswered();
+  const unansweredMCQ = [];
+  for (let i = 1; i <= N_MCQ; i++) {
+    if (!document.querySelector(`input[name="q${i}"]:checked`)) unansweredMCQ.push(i);
+  }
+  const unansweredSA = [];
+  for (let i = 1; i <= N_SA; i++) {
+    const el = document.getElementById(`sa${i}`);
+    if (!el || el.value.trim().length <= 10) unansweredSA.push(i+N_MCQ);
+  }
+
+  // Highlight unanswered cards
+  document.querySelectorAll('.q-card').forEach(c => c.classList.remove('unanswered'));
+  unansweredMCQ.forEach(n => {
+    const card = document.querySelector(`.q-card[data-q="${n}"]`);
+    if (card) card.classList.add('unanswered');
+  });
+  unansweredSA.forEach(n => {
+    const q = n - N_MCQ;
+    const card = document.querySelector(`.q-card[data-q="sa${q}"]`);
+    if (card) card.classList.add('unanswered');
+  });
+
+  const allUnanswered = [...unansweredMCQ, ...unansweredSA];
+  if (allUnanswered.length > 0) {
+    warn.style.display = 'block';
+    warn.textContent = `⚠️  ${allUnanswered.length} question${allUnanswered.length>1?'s':''} still unanswered (highlighted above). Please complete all questions before submitting.`;
+    // Scroll to first unanswered
+    const first = document.querySelector('.q-card.unanswered');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  // Score MCQ
+  let score = 0;
+  for (let i = 1; i <= N_MCQ; i++) {
+    const sel = document.querySelector(`input[name="q${i}"]:checked`);
+    if (sel && sel.value === ANSWERS[`q${i}`]) score++;
+  }
+
+  showModal(name, score);
+}
+
+// ── Modal ───────────────────────────────────────────────────────────────────
+function showModal(name, score) {
+  document.getElementById('modal-name').textContent = name;
+  document.getElementById('modal-score').textContent = score;
+
+  // Grade message
+  const pct = score / 20;
+  let grade, msg;
+  if      (pct >= 0.90) { grade = 'Excellent! 🎉';        msg = 'Outstanding grasp of collaborative filtering concepts.'; }
+  else if (pct >= 0.75) { grade = 'Good work! 👍';         msg = 'Solid understanding — review the questions you missed.'; }
+  else if (pct >= 0.60) { grade = 'Satisfactory';           msg = 'A reasonable attempt — revisit the lecture slides and notebook.'; }
+  else if (pct >= 0.40) { grade = 'Needs improvement';      msg = 'Re-read the lecture slides and work through the notebook again.'; }
+  else                   { grade = 'Please review material'; msg = 'Spend time revisiting all sections of the week 8 content.'; }
+
+  document.getElementById('modal-grade').textContent = grade;
+  document.getElementById('modal-msg').textContent   = msg;
+
+  // Animate ring
+  const circumference = 326.7;
+  const offset = circumference * (1 - score / 20);
+  document.getElementById('score-overlay').classList.add('visible');
+
+  // Delay ring animation slightly
+  setTimeout(() => {
+    const ringColour = pct >= 0.75 ? '#1a7a3a' : pct >= 0.60 ? '#b35a00' : '#c0272d';
+    const ring = document.getElementById('ring-circle');
+    ring.style.stroke = ringColour;
+    ring.style.strokeDashoffset = offset;
+    document.getElementById('modal-score').style.color = ringColour;
+  }, 80);
+
+  // Disable submit button
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('submit-btn').textContent = 'Submitted ✓';
+  document.getElementById('submit-btn').style.background = '#888';
+}
+
+function closeModal() {
+  document.getElementById('score-overlay').classList.remove('visible');
+}
+
+// Close modal on overlay click
+document.getElementById('score-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Initial progress
+updateProgress();
+</script>
+</body>
+</html>
