@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CP3501 Week 3 Quiz – Model Deployment, Gradio &amp; Hugging Face</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--red:#c0272d;--rd:#8b1a1e;--rf:#fdf2f2;--ink:#1a1a1a;--im:#444;--il:#777;--rule:#e4e4e4;--bg:#f7f7f5;--wh:#fff;--blue:#1a4fa0;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.6;min-height:100vh}
+#topbar{position:sticky;top:0;z-index:100;background:var(--wh);border-bottom:3px solid var(--red);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:54px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+#topbar .brand{font-size:13px;font-weight:600;color:var(--red)}
+#topbar .title{font-size:14px;font-weight:500;color:var(--im)}
+#progress-bar-outer{width:120px;height:6px;background:var(--rule);border-radius:3px;overflow:hidden}
+#progress-bar-inner{height:100%;background:var(--red);width:0%;transition:width .3s;border-radius:3px}
+#q-counter{font-family:var(--mono);font-size:12px;color:var(--il)}
+.pw{max-width:780px;margin:0 auto;padding:48px 24px 80px}
+.hero{background:var(--red);border-radius:8px;padding:36px 40px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero .tag{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:2px;margin-bottom:14px}
+.hero h1{color:#fff;font-size:28px;font-weight:700;margin-bottom:10px;line-height:1.2}
+.hero p{color:rgba(255,255,255,.80);font-size:14px;max-width:520px}
+.hero .meta{display:flex;gap:24px;margin-top:20px;font-size:13px;color:rgba(255,255,255,.65);border-top:1px solid rgba(255,255,255,.2);padding-top:16px}
+.sh{display:flex;align-items:center;gap:14px;margin:40px 0 24px}
+.sh .sn{background:var(--red);color:#fff;font-family:var(--mono);font-size:11px;font-weight:600;padding:4px 10px;border-radius:3px;white-space:nowrap}
+.sh h2{font-size:18px;font-weight:700;color:var(--ink)}
+.sh::after{content:'';flex:1;height:1px;background:var(--rule)}
+.sd{font-size:13.5px;color:var(--il);margin:-16px 0 24px;padding:10px 14px;border-left:3px solid var(--rule);background:var(--wh);border-radius:0 4px 4px 0}
+.q-card{background:var(--wh);border:1px solid var(--rule);border-radius:8px;margin-bottom:18px;overflow:hidden;transition:box-shadow .15s}
+.q-card:focus-within{box-shadow:0 0 0 2px var(--red);border-color:var(--red)}
+.q-header{display:flex;align-items:flex-start;gap:14px;padding:20px 22px 0}
+.q-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);background:var(--rf);border:1px solid #f0c0c0;padding:3px 8px;border-radius:3px;white-space:nowrap;margin-top:2px}
+.q-text{font-size:15px;font-weight:500;color:var(--ink);line-height:1.55}
+.q-text code,.mono{font-family:var(--mono);font-size:13px;background:#f0f0f0;padding:1px 5px;border-radius:3px}
+.q-options{padding:14px 22px 20px;display:flex;flex-direction:column;gap:8px}
+.option-label{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border:1.5px solid var(--rule);border-radius:6px;cursor:pointer;transition:background .12s,border-color .12s;font-size:14px;color:var(--im);line-height:1.45}
+.option-label:hover{background:var(--rf);border-color:#f0b0b0}
+.option-label input[type=radio]{display:none}
+.option-label.selected{background:var(--rf);border-color:var(--red);color:var(--ink);font-weight:500}
+.option-letter{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--il);background:var(--rule);border-radius:3px;padding:2px 6px;min-width:24px;text-align:center;flex-shrink:0;margin-top:1px}
+.option-label.selected .option-letter{background:var(--red);color:#fff}
+.sa-body{padding:14px 22px 20px}
+.sa-label{font-size:12px;font-weight:600;color:var(--il);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.sa-hint{font-size:13px;color:var(--il);font-style:italic;margin-bottom:10px}
+textarea{width:100%;min-height:100px;border:1.5px solid var(--rule);border-radius:6px;font-family:var(--sans);font-size:14px;color:var(--ink);padding:12px 14px;resize:vertical;background:#fdfdf9;transition:border-color .15s;outline:none}
+textarea:focus{border-color:var(--red);background:var(--wh)}
+.char-count{font-size:11px;color:var(--il);text-align:right;margin-top:4px;font-family:var(--mono)}
+.req-badge{display:inline-block;font-size:10px;font-weight:700;background:#fff3cd;color:#856404;border:1px solid #ffd83d;padding:1px 6px;border-radius:2px;margin-left:8px;vertical-align:middle;text-transform:uppercase;letter-spacing:.5px}
+.submit-area{background:var(--wh);border:1px solid var(--rule);border-radius:8px;padding:28px;margin-top:32px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.submit-area p{font-size:13.5px;color:var(--il);max-width:460px}
+#sn-wrap{width:100%;display:flex;flex-direction:column;gap:6px;max-width:400px}
+#sn-wrap label{font-size:12px;font-weight:600;color:var(--im);text-align:left}
+#student-name{border:1.5px solid var(--rule);border-radius:6px;padding:10px 14px;font-size:14px;font-family:var(--sans);outline:none;width:100%}
+#student-name:focus{border-color:var(--red)}
+#submit-btn{background:var(--red);color:#fff;border:none;padding:14px 48px;border-radius:6px;font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;transition:background .15s,transform .1s}
+#submit-btn:hover{background:var(--rd);transform:translateY(-1px)}
+#val-warning{display:none;background:#fff3cd;border:1px solid #ffd83d;color:#664d03;padding:12px 18px;border-radius:6px;font-size:13.5px;width:100%;text-align:left}
+#score-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center}
+#score-overlay.visible{display:flex}
+#score-box{background:#fff;border-radius:12px;padding:48px 52px;max-width:480px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.25);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+#score-box .sub-name{font-size:13px;color:var(--il);margin-bottom:8px}
+#score-box .sc-label{font-size:13px;font-weight:600;color:var(--il);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+#score-ring{width:130px;height:130px;margin:0 auto 24px;position:relative}
+#score-ring svg{width:130px;height:130px;transform:rotate(-90deg)}
+#score-ring .ring-bg{fill:none;stroke:var(--rule);stroke-width:10}
+#score-ring .ring-val{fill:none;stroke:var(--red);stroke-width:10;stroke-linecap:round;stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)}
+#score-number{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono)}
+#score-number .big{font-size:36px;font-weight:600;color:var(--red);line-height:1}
+#score-number .denom{font-size:14px;color:var(--il)}
+#score-box h2{font-size:22px;font-weight:700;margin-bottom:8px;color:var(--ink)}
+#score-box .grade-msg{font-size:14.5px;color:var(--im);margin-bottom:8px}
+#score-box .sa-note{font-size:12.5px;color:var(--il);background:var(--bg);padding:10px 14px;border-radius:6px;margin-top:16px;line-height:1.5}
+#close-score{margin-top:24px;background:var(--red);color:#fff;border:none;padding:11px 32px;border-radius:6px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+#close-score:hover{background:var(--rd)}
+.q-card.unanswered{border-color:#ffd83d;box-shadow:0 0 0 2px #ffd83d}
+@media(max-width:600px){.pw{padding:24px 14px 60px}.hero{padding:24px 22px}#topbar{padding:0 16px}#topbar .title{display:none}#score-box{padding:32px 24px}}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <span class="brand">CP3501 · Week 3</span>
+  <span class="title">Model Deployment, Gradio &amp; Hugging Face Quiz</span>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="q-counter">0 / 30</span>
+    <div id="progress-bar-outer"><div id="progress-bar-inner"></div></div>
+  </div>
+</div>
+<div class="pw">
+  <div class="hero">
+    <div class="tag">Week 3 &nbsp;·&nbsp; Assessment Quiz</div>
+    <h1>Model Deployment, Gradio &amp; Hugging Face</h1>
+    <p>25 multiple-choice on deploying FastAI models with Gradio and Hugging Face Spaces, plus 5 short-answer questions.</p>
+    <div class="meta">
+      <span>📋 30 questions total</span>
+      <span>⭐ 30 marks</span>
+      <span>🕐 No time limit</span>
+      <span>🔒 Answers not revealed</span>
+    </div>
+  </div>
+
+  <div class="sh"><span class="sn">PART A</span>
+    <h2>Multiple Choice &nbsp;<span style="font-weight:300;color:var(--il);font-size:15px;">(25 marks)</span></h2>
+  </div>
+  <p class="sd">Select the single best answer for each question. Each question is worth 1 mark.</p>
+  
+  <div class="q-card" data-q="1">
+    <div class="q-header"><span class="q-num">Q1</span>
+      <p class="q-text"><code>learn.export("model.pkl")</code> in FastAI saves:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q1" value="A"><span class="option-letter">A</span>Only the model architecture as a Python class definition</label>
+<label class="option-label"><input type="radio" name="q1" value="B"><span class="option-letter">B</span>The complete model including architecture, weights, and DataLoaders (enough to run inference)</label>
+<label class="option-label"><input type="radio" name="q1" value="C"><span class="option-letter">C</span>Only the trained weights as a PyTorch state_dict</label>
+<label class="option-label"><input type="radio" name="q1" value="D"><span class="option-letter">D</span>The training history and metric logs</label></div>
+  </div>
+  <div class="q-card" data-q="2">
+    <div class="q-header"><span class="q-num">Q2</span>
+      <p class="q-text">To load a FastAI exported model for inference, you use:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q2" value="A"><span class="option-letter">A</span><code>torch.load("model.pkl")</code></label>
+<label class="option-label"><input type="radio" name="q2" value="B"><span class="option-letter">B</span><code>FastAI.restore("model.pkl")</code></label>
+<label class="option-label"><input type="radio" name="q2" value="C"><span class="option-letter">C</span><code>load_learner("model.pkl")</code></label>
+<label class="option-label"><input type="radio" name="q2" value="D"><span class="option-letter">D</span><code>learn.load("model.pkl")</code></label></div>
+  </div>
+  <div class="q-card" data-q="3">
+    <div class="q-header"><span class="q-num">Q3</span>
+      <p class="q-text">Hugging Face Spaces is primarily used for:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q3" value="A"><span class="option-letter">A</span>Hosting and publicly sharing machine learning demos and web apps</label>
+<label class="option-label"><input type="radio" name="q3" value="B"><span class="option-letter">B</span>Training large language models in the cloud</label>
+<label class="option-label"><input type="radio" name="q3" value="C"><span class="option-letter">C</span>Storing raw datasets for research purposes</label>
+<label class="option-label"><input type="radio" name="q3" value="D"><span class="option-letter">D</span>Running automated model evaluation benchmarks</label></div>
+  </div>
+  <div class="q-card" data-q="4">
+    <div class="q-header"><span class="q-num">Q4</span>
+      <p class="q-text">In Gradio, <code>gr.Interface(fn, inputs, outputs)</code> — what does <code>fn</code> represent?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q4" value="A"><span class="option-letter">A</span>The name of the Gradio theme to apply to the interface</label>
+<label class="option-label"><input type="radio" name="q4" value="B"><span class="option-letter">B</span>The Python function that takes user inputs and returns the model output</label>
+<label class="option-label"><input type="radio" name="q4" value="C"><span class="option-letter">C</span>The file path to the exported model weights</label>
+<label class="option-label"><input type="radio" name="q4" value="D"><span class="option-letter">D</span>The URL where the app will be deployed</label></div>
+  </div>
+  <div class="q-card" data-q="5">
+    <div class="q-header"><span class="q-num">Q5</span>
+      <p class="q-text">What does <code>learn.predict(img)</code> return?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q5" value="A"><span class="option-letter">A</span>The raw pixel values of the processed image</label>
+<label class="option-label"><input type="radio" name="q5" value="B"><span class="option-letter">B</span>The gradient of the loss with respect to the input image</label>
+<label class="option-label"><input type="radio" name="q5" value="C"><span class="option-letter">C</span>A tuple of (predicted category, category index, probability tensor)</label>
+<label class="option-label"><input type="radio" name="q5" value="D"><span class="option-letter">D</span>Only the probability of the top-1 class</label></div>
+  </div>
+  <div class="q-card" data-q="6">
+    <div class="q-header"><span class="q-num">Q6</span>
+      <p class="q-text">FastAI exports models using which file format by default?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q6" value="A"><span class="option-letter">A</span><code>.pt</code> (PyTorch native format)</label>
+<label class="option-label"><input type="radio" name="q6" value="B"><span class="option-letter">B</span><code>.pkl</code> (Python pickle format)</label>
+<label class="option-label"><input type="radio" name="q6" value="C"><span class="option-letter">C</span><code>.onnx</code> (Open Neural Network Exchange)</label>
+<label class="option-label"><input type="radio" name="q6" value="D"><span class="option-letter">D</span><code>.h5</code> (Keras/HDF5 format)</label></div>
+  </div>
+  <div class="q-card" data-q="7">
+    <div class="q-header"><span class="q-num">Q7</span>
+      <p class="q-text">What is a key advantage of deploying a model on Hugging Face Spaces over a local machine?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q7" value="A"><span class="option-letter">A</span>The model is publicly accessible via a URL without needing the user to install Python or dependencies</label>
+<label class="option-label"><input type="radio" name="q7" value="B"><span class="option-letter">B</span>The model trains faster on Hugging Face hardware than locally</label>
+<label class="option-label"><input type="radio" name="q7" value="C"><span class="option-letter">C</span>Hugging Face Spaces automatically retrains the model as new data arrives</label>
+<label class="option-label"><input type="radio" name="q7" value="D"><span class="option-letter">D</span>The model weights are encrypted and protected from copying</label></div>
+  </div>
+  <div class="q-card" data-q="8">
+    <div class="q-header"><span class="q-num">Q8</span>
+      <p class="q-text">In a Gradio interface for an image classifier, which input component is most appropriate?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q8" value="A"><span class="option-letter">A</span><code>gr.Textbox()</code></label>
+<label class="option-label"><input type="radio" name="q8" value="B"><span class="option-letter">B</span><code>gr.Slider()</code></label>
+<label class="option-label"><input type="radio" name="q8" value="C"><span class="option-letter">C</span><code>gr.Image()</code></label>
+<label class="option-label"><input type="radio" name="q8" value="D"><span class="option-letter">D</span><code>gr.Checkbox()</code></label></div>
+  </div>
+  <div class="q-card" data-q="9">
+    <div class="q-header"><span class="q-num">Q9</span>
+      <p class="q-text">The file that Hugging Face Spaces looks for to run a Gradio app is:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q9" value="A"><span class="option-letter">A</span><code>main.py</code></label>
+<label class="option-label"><input type="radio" name="q9" value="B"><span class="option-letter">B</span><code>app.py</code></label>
+<label class="option-label"><input type="radio" name="q9" value="C"><span class="option-letter">C</span><code>server.py</code></label>
+<label class="option-label"><input type="radio" name="q9" value="D"><span class="option-letter">D</span><code>gradio_app.py</code></label></div>
+  </div>
+  <div class="q-card" data-q="10">
+    <div class="q-header"><span class="q-num">Q10</span>
+      <p class="q-text"><code>PILImage.create(img)</code> is used in FastAI inference to:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q10" value="A"><span class="option-letter">A</span>Convert an input (file path, URL, or array) into a FastAI-compatible PIL image object</label>
+<label class="option-label"><input type="radio" name="q10" value="B"><span class="option-letter">B</span>Resize the image to the model's expected input resolution</label>
+<label class="option-label"><input type="radio" name="q10" value="C"><span class="option-letter">C</span>Apply normalisation and augmentation transforms to the image</label>
+<label class="option-label"><input type="radio" name="q10" value="D"><span class="option-letter">D</span>Download an image from the internet given its URL</label></div>
+  </div>
+  <div class="q-card" data-q="11">
+    <div class="q-header"><span class="q-num">Q11</span>
+      <p class="q-text"><code>learn.dls.vocab</code> contains:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q11" value="A"><span class="option-letter">A</span>The list of all training image file paths</label>
+<label class="option-label"><input type="radio" name="q11" value="B"><span class="option-letter">B</span>The list of class names in the order the model uses internally</label>
+<label class="option-label"><input type="radio" name="q11" value="C"><span class="option-letter">C</span>The transforms applied to each batch</label>
+<label class="option-label"><input type="radio" name="q11" value="D"><span class="option-letter">D</span>The hyperparameters used during training</label></div>
+  </div>
+  <div class="q-card" data-q="12">
+    <div class="q-header"><span class="q-num">Q12</span>
+      <p class="q-text">What is the difference between model weights and model architecture?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q12" value="A"><span class="option-letter">A</span>They are the same thing — architecture and weights are always saved together</label>
+<label class="option-label"><input type="radio" name="q12" value="B"><span class="option-letter">B</span>Weights are the learned numerical parameters; architecture is the structure (layers and connections)</label>
+<label class="option-label"><input type="radio" name="q12" value="C"><span class="option-letter">C</span>Architecture is specific to PyTorch; weights are framework-agnostic</label>
+<label class="option-label"><input type="radio" name="q12" value="D"><span class="option-letter">D</span>Weights define the type of layers; architecture defines the numerical values</label></div>
+  </div>
+  <div class="q-card" data-q="13">
+    <div class="q-header"><span class="q-num">Q13</span>
+      <p class="q-text"><strong>Latency</strong> in model serving refers to:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q13" value="A"><span class="option-letter">A</span>The total training time for the model</label>
+<label class="option-label"><input type="radio" name="q13" value="B"><span class="option-letter">B</span>The time taken to process a single inference request and return a result</label>
+<label class="option-label"><input type="radio" name="q13" value="C"><span class="option-letter">C</span>The number of requests the server can handle per second</label>
+<label class="option-label"><input type="radio" name="q13" value="D"><span class="option-letter">D</span>The file size of the exported model</label></div>
+  </div>
+  <div class="q-card" data-q="14">
+    <div class="q-header"><span class="q-num">Q14</span>
+      <p class="q-text">The <code>examples=</code> argument in <code>gr.Interface</code> provides:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q14" value="A"><span class="option-letter">A</span>Sample inputs that users can click to auto-fill the interface and try the model quickly</label>
+<label class="option-label"><input type="radio" name="q14" value="B"><span class="option-letter">B</span>A list of valid class names the model can predict</label>
+<label class="option-label"><input type="radio" name="q14" value="C"><span class="option-letter">C</span>Validation examples used to compute the displayed accuracy</label>
+<label class="option-label"><input type="radio" name="q14" value="D"><span class="option-letter">D</span>Pre-computed outputs to display without running the model</label></div>
+  </div>
+  <div class="q-card" data-q="15">
+    <div class="q-header"><span class="q-num">Q15</span>
+      <p class="q-text"><strong>Inference</strong> in the context of a trained model means:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q15" value="A"><span class="option-letter">A</span>Retraining the model on new data to update its weights</label>
+<label class="option-label"><input type="radio" name="q15" value="B"><span class="option-letter">B</span>Evaluating the model on the training set to compute the training loss</label>
+<label class="option-label"><input type="radio" name="q15" value="C"><span class="option-letter">C</span>Using the trained model to make predictions on new, unseen inputs</label>
+<label class="option-label"><input type="radio" name="q15" value="D"><span class="option-letter">D</span>Exporting the model to a different framework such as TensorFlow</label></div>
+  </div>
+  <div class="q-card" data-q="16">
+    <div class="q-header"><span class="q-num">Q16</span>
+      <p class="q-text"><code>requirements.txt</code> in a deployed app lists:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q16" value="A"><span class="option-letter">A</span>The names of the training datasets used</label>
+<label class="option-label"><input type="radio" name="q16" value="B"><span class="option-letter">B</span>Python package dependencies that must be installed for the app to run</label>
+<label class="option-label"><input type="radio" name="q16" value="C"><span class="option-letter">C</span>The hardware requirements (GPU/CPU) for the deployment server</label>
+<label class="option-label"><input type="radio" name="q16" value="D"><span class="option-letter">D</span>Model evaluation metrics computed during training</label></div>
+  </div>
+  <div class="q-card" data-q="17">
+    <div class="q-header"><span class="q-num">Q17</span>
+      <p class="q-text">CPU inference is sometimes preferred over GPU inference when:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q17" value="A"><span class="option-letter">A</span>Serving individual requests with low latency requirements and no GPU is available, making CPU cost-effective</label>
+<label class="option-label"><input type="radio" name="q17" value="B"><span class="option-letter">B</span>Processing large batches of 1000+ images simultaneously</label>
+<label class="option-label"><input type="radio" name="q17" value="C"><span class="option-letter">C</span>The model has more than 100 million parameters</label>
+<label class="option-label"><input type="radio" name="q17" value="D"><span class="option-letter">D</span>The deployment environment requires real-time retraining</label></div>
+  </div>
+  <div class="q-card" data-q="18">
+    <div class="q-header"><span class="q-num">Q18</span>
+      <p class="q-text">What is the purpose of <code>gr.Label()</code> as a Gradio output component?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q18" value="A"><span class="option-letter">A</span>Displays a text description of the model architecture</label>
+<label class="option-label"><input type="radio" name="q18" value="B"><span class="option-letter">B</span>Displays a free-text string generated by the model</label>
+<label class="option-label"><input type="radio" name="q18" value="C"><span class="option-letter">C</span>Displays class probabilities as a dictionary or ranked label list</label>
+<label class="option-label"><input type="radio" name="q18" value="D"><span class="option-letter">D</span>Displays the input image with bounding boxes overlaid</label></div>
+  </div>
+  <div class="q-card" data-q="19">
+    <div class="q-header"><span class="q-num">Q19</span>
+      <p class="q-text">When a FastAI <code>load_learner</code> model processes an image through <code>learn.predict()</code>, it automatically applies:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q19" value="A"><span class="option-letter">A</span>Only the model's architecture — preprocessing must be coded manually</label>
+<label class="option-label"><input type="radio" name="q19" value="B"><span class="option-letter">B</span>The same transforms stored in the DataLoaders (resize, normalise, etc.) before running inference</label>
+<label class="option-label"><input type="radio" name="q19" value="C"><span class="option-letter">C</span>Random augmentations to improve prediction accuracy</label>
+<label class="option-label"><input type="radio" name="q19" value="D"><span class="option-letter">D</span>GPU-specific optimisations that are not available during training</label></div>
+  </div>
+  <div class="q-card" data-q="20">
+    <div class="q-header"><span class="q-num">Q20</span>
+      <p class="q-text">A Gradio <code>gr.Interface</code> with <code>live=True</code> means:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q20" value="A"><span class="option-letter">A</span>Predictions are generated in real-time as the user types or uploads, without a submit button</label>
+<label class="option-label"><input type="radio" name="q20" value="B"><span class="option-letter">B</span>The app is connected to a live database that updates the model continuously</label>
+<label class="option-label"><input type="radio" name="q20" value="C"><span class="option-letter">C</span>The interface streams video from the user's webcam</label>
+<label class="option-label"><input type="radio" name="q20" value="D"><span class="option-letter">D</span>Multiple users can collaborate on the same interface simultaneously</label></div>
+  </div>
+  <div class="q-card" data-q="21">
+    <div class="q-header"><span class="q-num">Q21</span>
+      <p class="q-text">Which of the following best describes model quantisation?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q21" value="A"><span class="option-letter">A</span>Increasing the number of model parameters to improve accuracy</label>
+<label class="option-label"><input type="radio" name="q21" value="B"><span class="option-letter">B</span>Reducing numerical precision (e.g. from float32 to int8) to shrink model size and speed up inference</label>
+<label class="option-label"><input type="radio" name="q21" value="C"><span class="option-letter">C</span>Duplicating the model across multiple GPUs for parallel training</label>
+<label class="option-label"><input type="radio" name="q21" value="D"><span class="option-letter">D</span>Converting the model to ONNX format for cross-framework compatibility</label></div>
+  </div>
+  <div class="q-card" data-q="22">
+    <div class="q-header"><span class="q-num">Q22</span>
+      <p class="q-text">What is the role of a <code>README.md</code> in a Hugging Face Space repository?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q22" value="A"><span class="option-letter">A</span>It contains the Python code that runs the Gradio app</label>
+<label class="option-label"><input type="radio" name="q22" value="B"><span class="option-letter">B</span>It defines Python dependencies that Spaces must install</label>
+<label class="option-label"><input type="radio" name="q22" value="C"><span class="option-letter">C</span>It includes metadata (title, description, SDK type) that configures how the Space appears on the platform</label>
+<label class="option-label"><input type="radio" name="q22" value="D"><span class="option-letter">D</span>It stores the exported model weights for direct download</label></div>
+  </div>
+  <div class="q-card" data-q="23">
+    <div class="q-header"><span class="q-num">Q23</span>
+      <p class="q-text">After calling <code>learn.export()</code>, the exported file contains enough information to:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q23" value="A"><span class="option-letter">A</span>Run inference on new examples without needing the original training code or dataset</label>
+<label class="option-label"><input type="radio" name="q23" value="B"><span class="option-letter">B</span>Resume training from exactly where it left off with all optimiser state</label>
+<label class="option-label"><input type="radio" name="q23" value="C"><span class="option-letter">C</span>Convert the model to a different framework such as TensorFlow or JAX</label>
+<label class="option-label"><input type="radio" name="q23" value="D"><span class="option-letter">D</span>Reproduce the original training dataset from the stored transforms</label></div>
+  </div>
+  <div class="q-card" data-q="24">
+    <div class="q-header"><span class="q-num">Q24</span>
+      <p class="q-text">In a production recommender system, the model is typically served via:</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q24" value="A"><span class="option-letter">A</span>A Jupyter notebook shared with users as a link</label>
+<label class="option-label"><input type="radio" name="q24" value="B"><span class="option-letter">B</span>An API endpoint (REST or gRPC) that applications query to get predictions</label>
+<label class="option-label"><input type="radio" name="q24" value="C"><span class="option-letter">C</span>A CSV file of pre-computed recommendations refreshed weekly</label>
+<label class="option-label"><input type="radio" name="q24" value="D"><span class="option-letter">D</span>A local Python script run on each user's device</label></div>
+  </div>
+  <div class="q-card" data-q="25">
+    <div class="q-header"><span class="q-num">Q25</span>
+      <p class="q-text">Which of the following is the correct way to call a FastAI model on a new image in an inference script?</p></div>
+    <div class="q-options"><label class="option-label"><input type="radio" name="q25" value="A"><span class="option-letter">A</span><code>model.forward(img_tensor)</code></label>
+<label class="option-label"><input type="radio" name="q25" value="B"><span class="option-letter">B</span><code>learn.fit(1)</code></label>
+<label class="option-label"><input type="radio" name="q25" value="C"><span class="option-letter">C</span><code>learn.predict(PILImage.create(img_path))</code></label>
+<label class="option-label"><input type="radio" name="q25" value="D"><span class="option-letter">D</span><code>learn.export(img_path)</code></label></div>
+  </div>
+
+  <div class="sh"><span class="sn">PART B</span>
+    <h2>Short Answer &nbsp;<span style="font-weight:300;color:var(--il);font-size:15px;">(5 marks — marked by lecturer)</span></h2>
+  </div>
+  <p class="sd">Answer each question in 2–4 sentences. Precise technical language is expected. Code snippets are welcome where relevant.</p>
+  
+  <div class="q-card" data-q="sa26">
+    <div class="q-header"><span class="q-num">Q26</span>
+      <p class="q-text">Describe the end-to-end process of deploying a FastAI image classifier to Hugging Face Spaces using Gradio. What files are needed and what does each contain?<span class="req-badge">written</span></p></div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      
+      <textarea name="sa26" id="sa26" placeholder="Write your answer here…"
+                maxlength="700" oninput="updateChar('sa26')"></textarea>
+      <div class="char-count" id="sa26-count">0 / 700</div>
+    </div>
+  </div>
+  <div class="q-card" data-q="sa27">
+    <div class="q-header"><span class="q-num">Q27</span>
+      <p class="q-text">What is the difference between <code>learn.export()</code> and saving only the model weights with <code>torch.save()</code>? When would you use each?<span class="req-badge">written</span></p></div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      
+      <textarea name="sa27" id="sa27" placeholder="Write your answer here…"
+                maxlength="700" oninput="updateChar('sa27')"></textarea>
+      <div class="char-count" id="sa27-count">0 / 700</div>
+    </div>
+  </div>
+  <div class="q-card" data-q="sa28">
+    <div class="q-header"><span class="q-num">Q28</span>
+      <p class="q-text">Explain what happens step-by-step when a user uploads an image to a deployed Gradio app backed by a FastAI classifier — from the browser click to the displayed result.<span class="req-badge">written</span></p></div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      
+      <textarea name="sa28" id="sa28" placeholder="Write your answer here…"
+                maxlength="700" oninput="updateChar('sa28')"></textarea>
+      <div class="char-count" id="sa28-count">0 / 700</div>
+    </div>
+  </div>
+  <div class="q-card" data-q="sa29">
+    <div class="q-header"><span class="q-num">Q29</span>
+      <p class="q-text">What are three important practical considerations when deploying a deep learning model to a public-facing web application?<span class="req-badge">written</span></p></div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      
+      <textarea name="sa29" id="sa29" placeholder="Write your answer here…"
+                maxlength="700" oninput="updateChar('sa29')"></textarea>
+      <div class="char-count" id="sa29-count">0 / 700</div>
+    </div>
+  </div>
+  <div class="q-card" data-q="sa30">
+    <div class="q-header"><span class="q-num">Q30</span>
+      <p class="q-text">What is model latency and throughput? Why might there be a tradeoff between them, and how would you address this tradeoff in a high-traffic application?<span class="req-badge">written</span></p></div>
+    <div class="sa-body">
+      <div class="sa-label">Your answer</div>
+      
+      <textarea name="sa30" id="sa30" placeholder="Write your answer here…"
+                maxlength="700" oninput="updateChar('sa30')"></textarea>
+      <div class="char-count" id="sa30-count">0 / 700</div>
+    </div>
+  </div>
+
+  <div class="submit-area">
+    <div id="sn-wrap"><label for="student-name">Your full name</label>
+      <input type="text" id="student-name" placeholder="e.g. Jane Smith"></div>
+    <p>Complete all 30 questions then click Submit. Your MCQ score (25/25) will be shown. Short answers are marked separately.</p>
+    <div id="val-warning"></div>
+    <button id="submit-btn" onclick="submitQuiz()">Submit Quiz</button>
+  </div>
+</div>
+
+<div id="score-overlay">
+  <div id="score-box">
+    <div class="sub-name" id="modal-name"></div>
+    <div class="sc-label">MCQ Score</div>
+    <div id="score-ring">
+      <svg viewBox="0 0 110 110">
+        <circle class="ring-bg" cx="55" cy="55" r="52"/>
+        <circle class="ring-val" cx="55" cy="55" r="52" id="ring-circle"/>
+      </svg>
+      <div id="score-number">
+        <span class="big" id="modal-score">0</span>
+        <span class="denom">/ 25</span>
+      </div>
+    </div>
+    <h2 id="modal-grade"></h2>
+    <p class="grade-msg" id="modal-msg"></p>
+    <div class="sa-note">✏️ Your 5 short-answer responses are recorded for your lecturer.<br>
+      <strong>Full total: MCQ + short-answer marks = / 30</strong></div>
+    <button id="close-score" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script>
+const ANSWERS = {qq1:"B", qq2:"C", qq3:"A", qq4:"B", qq5:"C", qq6:"B", qq7:"A", qq8:"C", qq9:"B", qq10:"A", qq11:"B", qq12:"C", qq13:"B", qq14:"A", qq15:"C", qq16:"B", qq17:"A", qq18:"C", qq19:"B", qq20:"A", qq21:"B", qq22:"C", qq23:"A", qq24:"B", qq25:"C"};
+const N_MCQ=25, N_SA=5, N_TOT=30;
+function getAnswered(){
+  let m=0; for(let i=1;i<=N_MCQ;i++) if(document.querySelector(`input[name="q${i}"]:checked`)) m++;
+  let s=0; for(let i=1;i<=N_SA;i++){ const e=document.getElementById(`sa${N_MCQ+i}`); if(e&&e.value.trim().length>10) s++; }
+  return {m,s,total:m+s};
+}
+function updateProgress(){
+  const{total}=getAnswered();
+  document.getElementById('progress-bar-inner').style.width=(total/N_TOT*100)+'%';
+  document.getElementById('q-counter').textContent=`${total} / ${N_TOT}`;
+}
+document.querySelectorAll('.option-label').forEach(l=>{
+  l.addEventListener('click',()=>{
+    const n=l.querySelector('input').name;
+    document.querySelectorAll(`input[name="${n}"]`).forEach(i=>i.parentElement.classList.remove('selected'));
+    l.classList.add('selected');
+    l.closest('.q-card')?.classList.remove('unanswered');
+    updateProgress();
+  });
+});
+function updateChar(id){
+  const e=document.getElementById(id);
+  document.getElementById(id+'-count').textContent=e.value.length+' / 700';
+  if(e.value.trim().length>10) e.closest('.q-card')?.classList.remove('unanswered');
+  updateProgress();
+}
+function submitQuiz(){
+  const name=document.getElementById('student-name').value.trim();
+  const warn=document.getElementById('val-warning');
+  warn.style.display='none';
+  if(!name){ warn.style.display='block'; warn.textContent='⚠️  Please enter your full name before submitting.'; document.getElementById('student-name').focus(); return; }
+  const umcq=[],usa=[];
+  for(let i=1;i<=N_MCQ;i++) if(!document.querySelector(`input[name="q${i}"]:checked`)) umcq.push(i);
+  for(let i=1;i<=N_SA;i++){ const e=document.getElementById(`sa${N_MCQ+i}`); if(!e||e.value.trim().length<=10) usa.push(N_MCQ+i); }
+  document.querySelectorAll('.q-card').forEach(c=>c.classList.remove('unanswered'));
+  umcq.forEach(n=>document.querySelector(`.q-card[data-q="${n}"]`)?.classList.add('unanswered'));
+  usa.forEach(n=>document.querySelector(`.q-card[data-q="sa${n}"]`)?.classList.add('unanswered'));
+  if(umcq.length+usa.length>0){
+    warn.style.display='block';
+    warn.textContent=`⚠️  ${umcq.length+usa.length} question(s) still unanswered (highlighted). Please complete all questions.`;
+    document.querySelector('.q-card.unanswered')?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  let score=0;
+  for(let i=1;i<=N_MCQ;i++){
+    const s=document.querySelector(`input[name="q${i}"]:checked`);
+    if(s&&s.value===ANSWERS[`q${i}`]) score++;
+  }
+  showModal(name,score);
+}
+function showModal(name,score){
+  document.getElementById('modal-name').textContent=name;
+  document.getElementById('modal-score').textContent=score;
+  const p=score/N_MCQ;
+  const[g,m]=p>=.9?['Excellent! 🎉','Outstanding understanding of the material.']:p>=.75?['Good work! 👍','Solid understanding — review any missed questions.']:p>=.6?['Satisfactory','Re-read the relevant lecture sections.']:p>=.4?['Needs improvement','Revisit the slides, notebook and readings.']:['Please review material','Work through all week content again carefully.'];
+  document.getElementById('modal-grade').textContent=g;
+  document.getElementById('modal-msg').textContent=m;
+  document.getElementById('score-overlay').classList.add('visible');
+  setTimeout(()=>{
+    const c=score/N_MCQ;
+    const col=c>=.75?'#1a7a3a':c>=.6?'#b35a00':'#c0272d';
+    const ring=document.getElementById('ring-circle');
+    ring.style.stroke=col; ring.style.strokeDashoffset=326.7*(1-score/N_MCQ);
+    document.getElementById('modal-score').style.color=col;
+  },80);
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='Submitted ✓'; btn.style.background='#888';
+}
+function closeModal(){ document.getElementById('score-overlay').classList.remove('visible'); }
+document.getElementById('score-overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+updateProgress();
+</script>
+</body>
+</html>
