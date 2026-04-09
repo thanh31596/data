@@ -736,6 +736,9 @@ td code { font-size: 12px; }
       <a class="nav-item" href="#testing">
         <span class="nav-icon">▶️</span> Testing
       </a>
+      <a class="nav-item" href="#android">
+        <span class="nav-icon">📱</span> Android Build
+      </a>
       <a class="nav-item" href="#extensions">
         <span class="nav-icon">🚀</span> Extensions
       </a>
@@ -1374,6 +1377,7 @@ td code { font-size: 12px; }
     <span class="cm">// ────────────────────────────────────────────────────────────────────
     // Update: check for the E key press every frame.
     // We only check input here — the actual logic is in the interactable.
+    // On mobile, MobileInteract() is called directly by the UI button.
     // ────────────────────────────────────────────────────────────────────</span>
     <span class="kw">void</span> <span class="nm">Update</span>()
     {
@@ -1384,6 +1388,22 @@ td code { font-size: 12px; }
             nearbyInteractable.<span class="nm">Interact</span>(<span class="kw">this</span>);
         }
     }
+
+    <span class="cm">// ────────────────────────────────────────────────────────────────────
+    // MobileInteract / MobileInteractHold — called by on-screen UI buttons.
+    // These are public so a Button's OnClick() event can invoke them.
+    // ────────────────────────────────────────────────────────────────────</span>
+    <span class="kw">public void</span> <span class="nm">MobileInteract</span>()
+    {
+        <span class="kw">if</span> (nearbyInteractable != <span class="kw">null</span>)
+            nearbyInteractable.<span class="nm">Interact</span>(<span class="kw">this</span>);
+    }
+
+    <span class="kw">public void</span> <span class="nm">MobileChopBegin</span>()  { isMobileChopping = <span class="kw">true</span>;  }
+    <span class="kw">public void</span> <span class="nm">MobileChopEnd</span>()    { isMobileChopping = <span class="kw">false</span>; }
+
+    <span class="cm">// Expose the mobile chop state so Tree.cs can read it</span>
+    [<span class="tp">HideInInspector</span>] <span class="kw">public bool</span> isMobileChopping = <span class="kw">false</span>;
 
     <span class="cm">// ────────────────────────────────────────────────────────────────────
     // OnTriggerEnter: called when any collider enters our trigger zone.
@@ -1862,8 +1882,7 @@ td code { font-size: 12px; }
         <span class="kw">if</span> (animator != <span class="kw">null</span>)
             animator.<span class="nm">SetTrigger</span>(<span class="st">"Eat"</span>);
 
-        <span class="cm">// Award the player score</span>
-        player.Inventory.<span class="nm">AddCrop</span>(<span class="nb">0</span>); <span class="cm">// calls AddScore via GameManager</span>
+        <span class="cm">// Award the player score directly via GameManager</span>
         <span class="tp">GameManager</span>.Instance.<span class="nm">AddScore</span>(feedScore);
 
         <span class="tp">Debug</span>.<span class="nm">Log</span>(<span class="st">$"Chicken fed! Will get hungry again in {hungerDuration} seconds."</span>);
@@ -1973,7 +1992,8 @@ td code { font-size: 12px; }
     }
 
     <span class="cm">// ────────────────────────────────────────────────────────────────────
-    // Update: advance chop progress while E is held down.
+    // Update: advance chop progress while E is held (keyboard) OR while
+    // the mobile chop button is held (isMobileChopping on PlayerFarmer).
     //
     // chopProgress += Time.deltaTime / chopDuration
     //   → Time.deltaTime is the time since the last frame (e.g. 0.016s at 60fps)
@@ -1984,9 +2004,13 @@ td code { font-size: 12px; }
     {
         <span class="kw">if</span> (isFalling) <span class="kw">return</span>; <span class="cm">// already done — stop processing</span>
 
+        <span class="cm">// Accept input from keyboard (PC) OR mobile button flag</span>
+        <span class="kw">bool</span> chopInputHeld = <span class="tp">Input</span>.<span class="nm">GetKey</span>(<span class="tp">KeyCode</span>.E)
+                          || (currentPlayer != <span class="kw">null</span> &amp;&amp; currentPlayer.isMobileChopping);
+
         <span class="kw">if</span> (isBeingChopped)
         {
-            <span class="kw">if</span> (<span class="tp">Input</span>.<span class="nm">GetKey</span>(<span class="tp">KeyCode</span>.E))
+            <span class="kw">if</span> (chopInputHeld)
             {
                 <span class="cm">// Advance progress (frame-rate independent)</span>
                 chopProgress += <span class="tp">Time</span>.deltaTime / chopDuration;
@@ -2002,7 +2026,7 @@ td code { font-size: 12px; }
             }
             <span class="kw">else</span>
             {
-                <span class="cm">// Player released E — pause chopping but keep progress</span>
+                <span class="cm">// Player released — pause chopping but keep progress</span>
                 isBeingChopped = <span class="kw">false</span>;
                 <span class="kw">if</span> (chopProgressBar != <span class="kw">null</span>)
                     chopProgressBar.gameObject.<span class="nm">SetActive</span>(<span class="kw">false</span>);
@@ -2376,6 +2400,221 @@ td code { font-size: 12px; }
 
   <div class="divider"></div>
 
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION: ANDROID BUILD                                       -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="android">
+    <div class="section-eyebrow">Step 5 — Deployment</div>
+    <h2>📱 Building for Android</h2>
+
+    <p>Putting your game on an actual Android device is one of the most satisfying moments in this course. Unity handles the heavy lifting — you configure a few settings, add mobile input controls, then build and deploy.</p>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <strong>Do this before the lab session</strong>
+        <p>Steps 5A and 5B (installing modules and enabling Developer Mode on your phone) can take 10–15 minutes. Do them before you sit down to build.</p>
+      </div>
+    </div>
+
+    <h3>5A — Install Android Build Support in Unity Hub</h3>
+    <ol class="step-list">
+      <li class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Open Unity Hub</strong>
+          <p>Go to <strong>Installs</strong> tab → find your Unity version → click the ⚙️ gear icon next to it → <strong>Add Modules</strong>.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Select the Android modules</strong>
+          <p>Tick: <strong>Android Build Support</strong> and inside it tick both <strong>Android SDK &amp; NDK Tools</strong> and <strong>OpenJDK</strong>. Click <strong>Install</strong>. This downloads ~1.5 GB — use your home WiFi, not the lab.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Verify the install</strong>
+          <p>Reopen Unity. Go to <strong>File → Build Settings</strong>. You should see <strong>Android</strong> listed as a platform. If it shows a warning icon, the module is still installing.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h3>5B — Enable Developer Mode on Your Android Device</h3>
+    <ol class="step-list">
+      <li class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Find your Build Number</strong>
+          <p>Settings → <strong>About Phone</strong> → <strong>Software Information</strong> → find <strong>Build Number</strong>. (Location varies by manufacturer — search "enable developer mode" + your phone model if needed.)</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Tap Build Number 7 times</strong>
+          <p>Each tap shows a countdown. After 7 taps: "You are now a developer!" appears.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Enable USB Debugging</strong>
+          <p>Settings → <strong>Developer Options</strong> (now visible) → turn on <strong>USB Debugging</strong>.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Connect via USB and trust the computer</strong>
+          <p>Plug your phone into your PC/Mac via USB. A prompt appears on the phone: <em>"Allow USB debugging?"</em> → tap <strong>Allow</strong>. Tick "Always allow from this computer."</p>
+        </div>
+      </li>
+    </ol>
+
+    <h3>5C — Switch Platform to Android in Unity</h3>
+    <ul class="checklist">
+      <li><input type="checkbox" id="a1"><label for="a1">File → <strong>Build Settings</strong> → select <strong>Android</strong> → click <strong>Switch Platform</strong>. Unity reimports assets (may take a minute).</label></li>
+      <li><input type="checkbox" id="a2"><label for="a2">Click <strong>Player Settings</strong> (bottom-left of Build Settings). Set <strong>Company Name</strong> to your name and <strong>Product Name</strong> to "FarmLife".</label></li>
+      <li><input type="checkbox" id="a3"><label for="a3">Under <strong>Other Settings</strong> → set <strong>Package Name</strong> to <code>com.yourname.farmlife</code> (no spaces, all lowercase).</label></li>
+      <li><input type="checkbox" id="a4"><label for="a4">Set <strong>Minimum API Level</strong> to <strong>Android 8.0 (API 26)</strong> or higher.</label></li>
+      <li><input type="checkbox" id="a5"><label for="a5">Set <strong>Target API Level</strong> to <strong>Automatic (highest installed)</strong>.</label></li>
+      <li><input type="checkbox" id="a6"><label for="a6">Under <strong>Resolution and Presentation</strong> → set <strong>Default Orientation</strong> to <strong>Landscape Left</strong>.</label></li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-icon">📦</div>
+      <div class="callout-body">
+        <strong>Texture Compression</strong>
+        <p>In Build Settings, set <strong>Texture Compression</strong> to <strong>ASTC</strong> — this gives the best quality/size ratio on modern Android devices (all phones since ~2016 support it).</p>
+      </div>
+    </div>
+
+    <h3>5D — Add Mobile Input Controls</h3>
+
+    <p>Keyboard keys don't exist on a touchscreen. You need two things: a <strong>virtual joystick</strong> for movement and an <strong>on-screen Interact button</strong> for pressing E.</p>
+
+    <h4>Virtual Joystick (Movement)</h4>
+    <p>The Starter Assets package already includes a mobile joystick UI. Enable it:</p>
+    <ul class="checklist">
+      <li><input type="checkbox" id="a7"><label for="a7">In the Hierarchy, find the <strong>PlayerFollowCamera</strong> or <strong>UICanvasControllerInput</strong> child of PlayerArmature → enable it.</label></li>
+      <li><input type="checkbox" id="a8"><label for="a8">If you don't see it, look in the Starter Assets → Runtime → StarterAssets → Mobile folder for a <strong>MobileDisplacementJoystick</strong> prefab — drag it into your Canvas.</label></li>
+      <li><input type="checkbox" id="a9"><label for="a9">Press Play and test: the joystick should appear and move the character on touch (use Unity Remote or a build to test touch).</label></li>
+    </ul>
+
+    <h4>On-Screen Interact Button</h4>
+    <p>Add a button to the Canvas that calls the player's <code>MobileInteract()</code> method:</p>
+    <ul class="checklist">
+      <li><input type="checkbox" id="a10"><label for="a10">GameObject → UI → <strong>Button - TextMeshPro</strong>. Name it <strong>InteractButton</strong>.</label></li>
+      <li><input type="checkbox" id="a11"><label for="a11">Set button text to <strong>"E"</strong>. Position it bottom-right corner. Make it large — at least 150×150px for comfortable touch.</label></li>
+      <li><input type="checkbox" id="a12"><label for="a12">In the Button's <strong>OnClick()</strong> event list: click +, drag <strong>PlayerArmature</strong> into the object slot, select <strong>PlayerFarmer → MobileInteract()</strong>.</label></li>
+    </ul>
+
+    <h4>Hold-to-Chop Button (for Tree)</h4>
+    <p>Tree chopping needs a <em>hold</em>, not a tap. Use the Button's <strong>EventTrigger</strong> component instead of OnClick:</p>
+    <ul class="checklist">
+      <li><input type="checkbox" id="a13"><label for="a13">Duplicate InteractButton → rename to <strong>ChopButton</strong>. Set text to <strong>"🪓"</strong>. Position above the E button.</label></li>
+      <li><input type="checkbox" id="a14"><label for="a14">Add component: <strong>Event Trigger</strong>. Click <strong>Add New Event Type</strong> → select <strong>PointerDown</strong>. Drag PlayerArmature → select <strong>PlayerFarmer → MobileChopBegin()</strong>.</label></li>
+      <li><input type="checkbox" id="a15"><label for="a15">Add another event: <strong>PointerUp</strong> → PlayerFarmer → <strong>MobileChopEnd()</strong>.</label></li>
+      <li><input type="checkbox" id="a16"><label for="a16">Remove the Button's default OnClick() handler — it will conflict with the EventTrigger.</label></li>
+    </ul>
+
+    <div class="callout success">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>Why EventTrigger for chop but OnClick for interact?</strong>
+        <p><code>OnClick()</code> fires once on release — perfect for plant/harvest/feed (single action). <code>PointerDown/PointerUp</code> fires on press and release separately — necessary for chop which needs to know the button is <em>being held</em>.</p>
+      </div>
+    </div>
+
+    <h4>Show/Hide Mobile Buttons Based on Platform</h4>
+    <p>You want the E-key prompt on PC but the on-screen button on mobile. A simple script handles this:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">MobilePlatformUI.cs</span>
+        <span class="code-lang">C# — Attach to Canvas</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-scroll">
+<pre><span class="cm">// MobilePlatformUI.cs
+// ─────────────────────────────────────────────────────────────────────────────
+// Shows the on-screen buttons only when running on a touch device.
+// Attach to the Canvas. Drag the mobile button panel into mobileControlsPanel.
+// ─────────────────────────────────────────────────────────────────────────────</span>
+
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="tp">MobilePlatformUI</span> : <span class="tp">MonoBehaviour</span>
+{
+    [<span class="tp">SerializeField</span>] <span class="kw">private</span> <span class="tp">GameObject</span> mobileControlsPanel; <span class="cm">// parent of E button, chop button</span>
+    [<span class="tp">SerializeField</span>] <span class="kw">private</span> <span class="tp">GameObject</span> keyboardPromptPanel; <span class="cm">// "Press E to ..." text panel</span>
+
+    <span class="kw">void</span> <span class="nm">Awake</span>()
+    {
+        <span class="cm">// Application.isMobilePlatform is true on Android and iOS at runtime.
+        // In the Editor it is false — so keyboard controls stay active while testing.</span>
+        <span class="kw">bool</span> isMobile = <span class="tp">Application</span>.isMobilePlatform;
+
+        <span class="kw">if</span> (mobileControlsPanel  != <span class="kw">null</span>) mobileControlsPanel.<span class="nm">SetActive</span>(isMobile);
+        <span class="kw">if</span> (keyboardPromptPanel  != <span class="kw">null</span>) keyboardPromptPanel.<span class="nm">SetActive</span>(!isMobile);
+    }
+}</pre>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">🧪</div>
+      <div class="callout-body">
+        <strong>Testing mobile input in the Editor</strong>
+        <p>Install <strong>Unity Remote 5</strong> (free on the Play Store / App Store). With your phone connected via USB: Edit → Project Settings → Editor → Device: any Android device. Press Play in Unity — your phone's screen mirrors the game and sends touch input back to Unity in real time. Much faster than building a full APK each time.</p>
+      </div>
+    </div>
+
+    <h3>5E — Build and Deploy</h3>
+    <ul class="checklist">
+      <li><input type="checkbox" id="a17"><label for="a17">File → Build Settings → confirm your phone appears in the <strong>Run Device</strong> dropdown. If not: click <strong>Refresh</strong>, check USB is connected and debugging is enabled.</label></li>
+      <li><input type="checkbox" id="a18"><label for="a18">Click <strong>Build And Run</strong>. Choose a folder (e.g. <code>Builds/Android/</code>) to save the APK.</label></li>
+      <li><input type="checkbox" id="a19"><label for="a19">Unity compiles and installs directly to your phone. This takes 2–5 minutes the first time; subsequent builds are faster (incremental).</label></li>
+      <li><input type="checkbox" id="a20"><label for="a20">The game launches automatically on your phone. Test all three activities — crop, chicken, tree — using the on-screen controls.</label></li>
+    </ul>
+
+    <div class="callout danger">
+      <div class="callout-icon">🔐</div>
+      <div class="callout-body">
+        <strong>If your phone says "Install Blocked"</strong>
+        <p>Go to Settings → Apps → Special Access → <strong>Install Unknown Apps</strong> → find your file manager or ADB → enable it. This allows installing APKs outside the Play Store.</p>
+      </div>
+    </div>
+
+    <h3>Common Android Build Errors</h3>
+    <table>
+      <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td><code>No Android device found</code></td><td>USB Debugging not enabled, or wrong USB mode</td><td>On phone: swipe down → USB notification → select "File Transfer (MTP)" not "Charging only"</td></tr>
+        <tr><td><code>SDK not found</code></td><td>Android Build Support module installed but SDK path not set</td><td>Edit → Preferences → External Tools → Android → tick "Unity" for SDK, NDK, JDK</td></tr>
+        <tr><td><code>Gradle build failed</code></td><td>Package name has uppercase or spaces</td><td>Player Settings → Other Settings → Package Name must be <code>com.name.game</code> lowercase only</td></tr>
+        <tr><td><code>Installation failed (INSTALL_FAILED_UPDATE_INCOMPATIBLE)</code></td><td>Old version on phone has different signature</td><td>Uninstall the old version from your phone, then build again</td></tr>
+        <tr><td>Game installs but controls don't work</td><td>Mobile buttons not wired to PlayerFarmer, or wrong method selected in OnClick</td><td>Re-check Inspector wiring for InteractButton and ChopButton EventTrigger components</td></tr>
+        <tr><td>Screen orientation wrong (portrait instead of landscape)</td><td>Orientation not set in Player Settings</td><td>Player Settings → Resolution → Default Orientation → Landscape Left</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout success">
+      <div class="callout-icon">📱</div>
+      <div class="callout-body">
+        <strong>Your game is on Android!</strong>
+        <p>You've gone from a C# script to a deployed mobile game. This is the complete pipeline every professional Unity developer uses — from prototype to device.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
   <!-- ══════════════════════════════════════════════════════════════ -->
   <!-- SECTION: Extensions                                          -->
   <!-- ══════════════════════════════════════════════════════════════ -->
@@ -2456,17 +2695,42 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 
 // ─── Copy code buttons ─────────────────────────────────────────────
+// Uses modern clipboard API with fallback for file:// (no HTTPS context)
 function copyCode(btn) {
-  const pre = btn.closest('.code-block').querySelector('pre');
+  const pre  = btn.closest('.code-block').querySelector('pre');
   const text = pre.textContent;
-  navigator.clipboard.writeText(text).then(() => {
+
+  function onSuccess() {
     btn.textContent = 'Copied!';
     btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = 'Copy';
-      btn.classList.remove('copied');
-    }, 2000);
-  });
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  }
+
+  function onFail() {
+    btn.textContent = 'Select All';
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+  } else {
+    // Fallback: execCommand (works on file://)
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity  = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try {
+      document.execCommand('copy') ? onSuccess() : onFail();
+    } catch(e) { onFail(); }
+    document.body.removeChild(ta);
+  }
 }
 </script>
 
