@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 5 — CNN Architecture & YOLO | DATA5000</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Helvetica Neue', 'Arial', sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      overflow: hidden;
+      height: 100vh;
+    }
+    .slide {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      padding: 56px 80px 70px 80px;
+      position: relative;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .slide.active { display: flex; }
+
+    /* Title slide */
+    .slide.title-slide {
+      justify-content: center;
+      align-items: flex-start;
+      background: #fff;
+      border-left: 8px solid #C8102E;
+      padding-left: 80px;
+    }
+    .slide.title-slide .week-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #C8102E;
+      margin-bottom: 16px;
+    }
+    .slide.title-slide h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      max-width: 750px;
+    }
+    .slide.title-slide .subtitle {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .slide.title-slide .course-info {
+      margin-top: 40px;
+      font-size: 0.85rem;
+      color: #999;
+      line-height: 1.8;
+    }
+
+    /* Section divider */
+    .slide.section-divider {
+      justify-content: center;
+      align-items: flex-start;
+      border-left: 8px solid #C8102E;
+    }
+    .slide.section-divider .section-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #C8102E;
+      margin-bottom: 14px;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.25;
+      max-width: 700px;
+    }
+    .slide.section-divider .section-subtitle {
+      margin-top: 16px;
+      font-size: 1rem;
+      color: #666;
+      max-width: 600px;
+    }
+
+    /* Regular slide heading */
+    .slide-section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #C8102E;
+      margin-bottom: 6px;
+    }
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 10px;
+    }
+    h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a1a; margin: 14px 0 6px; }
+    p, li { font-size: 1rem; line-height: 1.75; margin-bottom: 8px; color: #1a1a1a; }
+    ul, ol { padding-left: 24px; }
+    li { margin-bottom: 6px; }
+    strong { color: #1a1a1a; }
+
+    .slide-number {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 0.8rem;
+      color: #bbb;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    /* Callout boxes */
+    .definition {
+      background: #f5f7ff;
+      border-left: 4px solid #3457a8;
+      padding: 14px 18px;
+      margin: 14px 0;
+      border-radius: 3px;
+    }
+    .definition .def-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #3457a8;
+      margin-bottom: 5px;
+    }
+    .example {
+      background: #f5faf7;
+      border-left: 4px solid #2e7d52;
+      padding: 14px 18px;
+      margin: 14px 0;
+      border-radius: 3px;
+    }
+    .example .ex-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #2e7d52;
+      margin-bottom: 5px;
+    }
+    .key-point {
+      background: #fffbf0;
+      border-left: 4px solid #C8102E;
+      padding: 14px 18px;
+      margin: 14px 0;
+      border-radius: 3px;
+    }
+    .key-point .kp-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #C8102E;
+      margin-bottom: 5px;
+    }
+
+    /* Two-column layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 4px;
+    }
+    .two-col-60-40 {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 30px;
+      margin-top: 4px;
+    }
+
+    /* Code blocks */
+    pre {
+      background: #f5f5f5;
+      border: 1px solid #e8e8e8;
+      padding: 14px 18px;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      overflow-x: auto;
+      margin: 12px 0;
+      font-family: 'Courier New', monospace;
+      line-height: 1.5;
+    }
+    code { font-family: 'Courier New', monospace; font-size: 0.9em; }
+    .kw { color: #C8102E; }
+    .cm { color: #888; font-style: italic; }
+    .st { color: #2e7d52; }
+
+    /* Table */
+    table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+    th, td { border: 1px solid #ddd; padding: 9px 14px; text-align: left; font-size: 0.95rem; }
+    th { background: #f5f5f5; font-weight: 700; }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    /* Illustrations */
+    .illustration {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 12px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center;
+      font-size: 0.82rem;
+      color: #888;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* Quiz */
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 700; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 16px; margin: 5px 0;
+      background: #f8f8f8; border: 2px solid #e0e0e0;
+      border-radius: 4px; cursor: pointer;
+      font-size: 0.95rem; font-family: 'Helvetica Neue', Arial, sans-serif;
+      transition: border-color 0.2s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: #C8102E; background: #fff8f8; }
+    .quiz-option.correct { background: #eaf7ef; border-color: #2e7d52; color: #1a4a2e; font-weight: 700; }
+    .quiz-option.incorrect { background: #fdecea; border-color: #c0392b; color: #7a1010; }
+    .quiz-option.dimmed { opacity: 0.45; }
+    .quiz-explanation {
+      display: none; margin-top: 10px;
+      background: #fffbf0; border-left: 4px solid #C8102E;
+      padding: 10px 14px; border-radius: 3px;
+      font-size: 0.92rem; color: #333;
+    }
+    .quiz-explanation.visible { display: block; }
+
+    /* Navigation */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #C8102E; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.8rem; color: #bbb; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.72rem; color: #ccc; z-index: 100;
+    }
+
+    /* TOC overlay */
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 60px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { font-size: 1.4rem; border: none; margin-bottom: 24px; }
+    .toc-item {
+      padding: 7px 0; cursor: pointer; color: #C8102E;
+      font-size: 0.97rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 16px; color: #1a1a1a; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .toc-close {
+      position: absolute; top: 24px; right: 40px;
+      font-size: 1.3rem; cursor: pointer; color: #999;
+      background: none; border: none; font-family: inherit;
+    }
+
+    /* Logo placeholder */
+    .logo-placeholder {
+      position: absolute; bottom: 20px; right: 30px;
+      font-size: 0.72rem; color: #ddd; letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed; top: 14px; right: 80px;
+      background: none; border: 1px solid #ddd;
+      padding: 4px 12px; font-size: 0.72rem;
+      border-radius: 3px; cursor: pointer; color: #bbb;
+      z-index: 100; font-family: inherit;
+    }
+    .print-btn:hover { border-color: #C8102E; color: #C8102E; }
+
+    /* Highlight span */
+    .hl { color: #C8102E; font-weight: 700; }
+    .hl-blue { color: #3457a8; font-weight: 700; }
+    .hl-green { color: #2e7d52; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<button class="print-btn" onclick="window.print()">Print / PDF</button>
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → arrows &nbsp;|&nbsp; T = contents</div>
+
+<!-- ═══════════════════════════════════════ TOC ═══════════════════════════════════════ -->
+<div class="toc-overlay" id="tocOverlay">
+  <button class="toc-close" onclick="toggleTOC()">✕ Close</button>
+  <h2>Table of Contents</h2>
+  <div id="tocList"></div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDES ═══════════════════════════════════════ -->
+
+<!-- SLIDE 1: Title -->
+<div class="slide title-slide active" id="slide-1" data-toc="Week 5 — CNN Architecture &amp; YOLO">
+  <div class="week-label">Data5000 · Week 5</div>
+  <h1>Convolutional Neural Networks &amp; YOLO</h1>
+  <p class="subtitle">Teaching computers to see: from pixels to objects</p>
+  <p class="course-info">
+    AI Programming in Business Analytics<br>
+    Kaplan Business School
+  </p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 2: Learning Outcomes -->
+<div class="slide" id="slide-2" data-toc="Learning Outcomes">
+  <div class="slide-number">0.1</div>
+  <div class="slide-section-label">Overview</div>
+  <h2>What You Will Learn Today</h2>
+  <p>By the end of this session you will be able to:</p>
+  <ul style="margin-top:12px;">
+    <li>Explain how a computer sees an image as numbers</li>
+    <li>Describe what a <strong>convolution</strong> does and why it is useful</li>
+    <li>Trace the layers of a CNN: <strong>Conv → ReLU → Pool → Flatten → Dense</strong></li>
+    <li>Explain how CNNs learn <em>features</em> automatically</li>
+    <li>Describe the object detection problem and how <strong>YOLO</strong> solves it in one pass</li>
+    <li>Identify real business applications for CNNs and YOLO</li>
+  </ul>
+  <div class="key-point" style="margin-top:20px;">
+    <div class="kp-label">Big Idea</div>
+    You do not need to memorise equations. Focus on the <em>intuition</em> — understanding <em>why</em> each layer exists is more important than the maths.
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 3: Agenda -->
+<div class="slide" id="slide-3" data-toc="Agenda">
+  <div class="slide-number">0.2</div>
+  <div class="slide-section-label">Overview</div>
+  <h2>Today's Agenda</h2>
+  <table>
+    <thead><tr><th>#</th><th>Topic</th><th>Approx. Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Images as numbers — how computers see</td><td>15 min</td></tr>
+      <tr><td>2</td><td>Convolution — the core operation</td><td>25 min</td></tr>
+      <tr><td>3</td><td>Building a full CNN — layer by layer</td><td>30 min</td></tr>
+      <tr><td>4</td><td>YOLO — detecting objects in real time</td><td>25 min</td></tr>
+      <tr><td>5</td><td>Real-world applications &amp; wrap-up</td><td>15 min</td></tr>
+    </tbody>
+  </table>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- ═══════════════ SECTION 1 ═══════════════ -->
+<div class="slide section-divider" id="slide-4" data-toc-section="Section 1: How Computers See Images" data-toc="Section 1 — How Computers See Images">
+  <div class="slide-number">§1</div>
+  <div class="section-label">Section 1</div>
+  <h1>How Computers See Images</h1>
+  <p class="section-subtitle">Images are just grids of numbers — and that changes everything about how we process them.</p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 5: Pixels -->
+<div class="slide" id="slide-5" data-toc="1.1 — Pixels and Numbers">
+  <div class="slide-number">1.1</div>
+  <div class="slide-section-label">Section 1 · How Computers See</div>
+  <h2>1.1 An Image is a Grid of Numbers</h2>
+  <div class="two-col-60-40">
+    <div>
+      <p>Every image on your screen is made up of tiny squares called <strong>pixels</strong>. Each pixel stores a brightness value.</p>
+      <ul>
+        <li>A <strong>greyscale</strong> image: one number per pixel (0 = black, 255 = white)</li>
+        <li>A <strong>colour</strong> image: three numbers per pixel — <span class="hl-blue">Red</span>, <span class="hl-green">Green</span>, <span class="hl">Blue</span> (RGB)</li>
+      </ul>
+      <div class="example" style="margin-top:14px;">
+        <div class="ex-label">Example</div>
+        A 28 × 28 greyscale image (like a handwritten digit) = <strong>784 numbers</strong>.<br>
+        A 224 × 224 colour photo = 224 × 224 × 3 = <strong>150,528 numbers</strong>.
+      </div>
+      <p style="margin-top:10px;">The computer never actually "sees" a cat. It just sees thousands of numbers that represent brightness values across the image.</p>
+    </div>
+    <div>
+      <div class="illustration">
+        <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" width="220">
+          <!-- Pixel grid 5x5 -->
+          <rect x="10" y="10" width="200" height="200" fill="none" stroke="#ccc" stroke-width="1"/>
+          <!-- Row 1 -->
+          <rect x="10" y="10" width="40" height="40" fill="#eee"/><text x="30" y="34" text-anchor="middle" font-size="11" fill="#555">20</text>
+          <rect x="50" y="10" width="40" height="40" fill="#ccc"/><text x="70" y="34" text-anchor="middle" font-size="11" fill="#555">80</text>
+          <rect x="90" y="10" width="40" height="40" fill="#888"/><text x="110" y="34" text-anchor="middle" font-size="11" fill="#fff">160</text>
+          <rect x="130" y="10" width="40" height="40" fill="#555"/><text x="150" y="34" text-anchor="middle" font-size="11" fill="#fff">210</text>
+          <rect x="170" y="10" width="40" height="40" fill="#333"/><text x="190" y="34" text-anchor="middle" font-size="11" fill="#fff">240</text>
+          <!-- Row 2 -->
+          <rect x="10" y="50" width="40" height="40" fill="#ddd"/><text x="30" y="74" text-anchor="middle" font-size="11" fill="#555">50</text>
+          <rect x="50" y="50" width="40" height="40" fill="#aaa"/><text x="70" y="74" text-anchor="middle" font-size="11" fill="#fff">120</text>
+          <rect x="90" y="50" width="40" height="40" fill="#666"/><text x="110" y="74" text-anchor="middle" font-size="11" fill="#fff">185</text>
+          <rect x="130" y="50" width="40" height="40" fill="#444"/><text x="150" y="74" text-anchor="middle" font-size="11" fill="#fff">220</text>
+          <rect x="170" y="50" width="40" height="40" fill="#222"/><text x="190" y="74" text-anchor="middle" font-size="11" fill="#fff">250</text>
+          <!-- Row 3 -->
+          <rect x="10" y="90" width="40" height="40" fill="#f5f5f5"/><text x="30" y="114" text-anchor="middle" font-size="11" fill="#555">10</text>
+          <rect x="50" y="90" width="40" height="40" fill="#e0e0e0"/><text x="70" y="114" text-anchor="middle" font-size="11" fill="#555">60</text>
+          <rect x="90" y="90" width="40" height="40" fill="#bbb"/><text x="110" y="114" text-anchor="middle" font-size="11" fill="#555">100</text>
+          <rect x="130" y="90" width="40" height="40" fill="#888"/><text x="150" y="114" text-anchor="middle" font-size="11" fill="#fff">155</text>
+          <rect x="170" y="90" width="40" height="40" fill="#444"/><text x="190" y="114" text-anchor="middle" font-size="11" fill="#fff">225</text>
+          <!-- Row 4 -->
+          <rect x="10" y="130" width="40" height="40" fill="#fff"/><text x="30" y="154" text-anchor="middle" font-size="11" fill="#555">5</text>
+          <rect x="50" y="130" width="40" height="40" fill="#f0f0f0"/><text x="70" y="154" text-anchor="middle" font-size="11" fill="#555">30</text>
+          <rect x="90" y="130" width="40" height="40" fill="#d0d0d0"/><text x="110" y="154" text-anchor="middle" font-size="11" fill="#555">75</text>
+          <rect x="130" y="130" width="40" height="40" fill="#aaa"/><text x="150" y="154" text-anchor="middle" font-size="11" fill="#fff">130</text>
+          <rect x="170" y="130" width="40" height="40" fill="#666"/><text x="190" y="154" text-anchor="middle" font-size="11" fill="#fff">190</text>
+          <!-- Row 5 -->
+          <rect x="10" y="170" width="40" height="40" fill="#eee"/><text x="30" y="194" text-anchor="middle" font-size="11" fill="#555">25</text>
+          <rect x="50" y="170" width="40" height="40" fill="#ccc"/><text x="70" y="194" text-anchor="middle" font-size="11" fill="#555">85</text>
+          <rect x="90" y="170" width="40" height="40" fill="#999"/><text x="110" y="194" text-anchor="middle" font-size="11" fill="#fff">145</text>
+          <rect x="130" y="170" width="40" height="40" fill="#666"/><text x="150" y="194" text-anchor="middle" font-size="11" fill="#fff">195</text>
+          <rect x="170" y="170" width="40" height="40" fill="#333"/><text x="190" y="194" text-anchor="middle" font-size="11" fill="#fff">245</text>
+          <!-- Grid lines -->
+          <line x1="10" y1="50" x2="210" y2="50" stroke="#bbb" stroke-width="0.5"/>
+          <line x1="10" y1="90" x2="210" y2="90" stroke="#bbb" stroke-width="0.5"/>
+          <line x1="10" y1="130" x2="210" y2="130" stroke="#bbb" stroke-width="0.5"/>
+          <line x1="10" y1="170" x2="210" y2="170" stroke="#bbb" stroke-width="0.5"/>
+          <line x1="50" y1="10" x2="50" y2="210" stroke="#bbb" stroke-width="0.5"/>
+          <line x1="90" y1="10" x2="90" y2="210" stroke="#bbb" stroke-width="0.5"/>
+          <line x1="130" y1="10" x2="130" y2="210" stroke="#bbb" stroke-width="0.5"/>
+          <line x1="170" y1="10" x2="170" y2="210" stroke="#bbb" stroke-width="0.5"/>
+        </svg>
+        <div class="illustration-caption">5 × 5 greyscale pixel grid — each cell is a number 0–255</div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 6: Why not flat NN? -->
+<div class="slide" id="slide-6" data-toc="1.2 — Why Normal Networks Struggle">
+  <div class="slide-number">1.2</div>
+  <div class="slide-section-label">Section 1 · How Computers See</div>
+  <h2>1.2 Why Can't We Just Use a Normal Neural Network?</h2>
+  <div class="two-col">
+    <div>
+      <p>A regular (fully connected) neural network connects <em>every</em> input to <em>every</em> neuron.</p>
+      <div class="example">
+        <div class="ex-label">Problem</div>
+        A 224 × 224 colour photo has <strong>150,528</strong> pixels.<br>
+        If the first hidden layer has 1,000 neurons, that's <strong>150 million weights</strong> to learn — just for one layer!
+      </div>
+      <ul style="margin-top:10px;">
+        <li><strong>Too many parameters</strong> → the model is huge and slow to train</li>
+        <li><strong>No spatial awareness</strong> → the network doesn't know that nearby pixels are related</li>
+        <li><strong>Not translation-invariant</strong> → a cat in the top-left corner looks completely different from a cat in the bottom-right</li>
+      </ul>
+    </div>
+    <div>
+      <div class="key-point">
+        <div class="kp-label">The Solution</div>
+        <p>CNNs solve all three problems by:</p>
+        <ul>
+          <li>Sharing weights (one filter scans the whole image)</li>
+          <li>Using local connections (only look at nearby pixels)</li>
+          <li>Detecting the same pattern anywhere in the image</li>
+        </ul>
+      </div>
+      <div class="illustration" style="margin-top:16px;">
+        <svg viewBox="0 0 240 100" xmlns="http://www.w3.org/2000/svg" width="240">
+          <text x="10" y="16" font-size="10" fill="#888" font-weight="bold">FLAT NETWORK</text>
+          <rect x="10" y="25" width="14" height="50" fill="#e0e0e0" rx="2"/>
+          <rect x="30" y="25" width="14" height="50" fill="#e0e0e0" rx="2"/>
+          <rect x="50" y="25" width="14" height="50" fill="#e0e0e0" rx="2"/>
+          <!-- many lines -->
+          <line x1="17" y1="50" x2="100" y2="35" stroke="#ddd" stroke-width="0.7"/>
+          <line x1="17" y1="50" x2="100" y2="55" stroke="#ddd" stroke-width="0.7"/>
+          <line x1="37" y1="50" x2="100" y2="35" stroke="#ddd" stroke-width="0.7"/>
+          <line x1="37" y1="50" x2="100" y2="55" stroke="#ddd" stroke-width="0.7"/>
+          <line x1="57" y1="50" x2="100" y2="35" stroke="#ddd" stroke-width="0.7"/>
+          <line x1="57" y1="50" x2="100" y2="55" stroke="#ddd" stroke-width="0.7"/>
+          <circle cx="100" cy="35" r="6" fill="#C8102E"/>
+          <circle cx="100" cy="55" r="6" fill="#C8102E"/>
+          <text x="10" y="92" font-size="9" fill="#C8102E">All inputs → every neuron</text>
+
+          <text x="135" y="16" font-size="10" fill="#888" font-weight="bold">CNN</text>
+          <!-- small filter box -->
+          <rect x="135" y="28" width="30" height="30" fill="#f0f4ff" stroke="#3457a8" stroke-width="1.5" rx="2"/>
+          <text x="150" y="47" text-anchor="middle" font-size="9" fill="#3457a8">filter</text>
+          <line x1="165" y1="43" x2="195" y2="43" stroke="#3457a8" stroke-width="1.5" marker-end="url(#arr)"/>
+          <rect x="195" y="33" width="30" height="20" fill="#eaf7ef" stroke="#2e7d52" stroke-width="1.5" rx="2"/>
+          <text x="210" y="46" text-anchor="middle" font-size="9" fill="#2e7d52">map</text>
+          <text x="135" y="92" font-size="9" fill="#2e7d52">Shared filter scans entire image</text>
+          <defs>
+            <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#3457a8"/>
+            </marker>
+          </defs>
+        </svg>
+        <div class="illustration-caption">Flat network vs CNN — fewer parameters, smarter design</div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- ═══════════════ SECTION 2 ═══════════════ -->
+<div class="slide section-divider" id="slide-7" data-toc-section="Section 2: Convolution" data-toc="Section 2 — The Convolution Operation">
+  <div class="slide-number">§2</div>
+  <div class="section-label">Section 2</div>
+  <h1>The Convolution Operation</h1>
+  <p class="section-subtitle">A small filter slides over the image, detecting one type of pattern at a time.</p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 8: What is convolution? -->
+<div class="slide" id="slide-8" data-toc="2.1 — What is Convolution?">
+  <div class="slide-number">2.1</div>
+  <div class="slide-section-label">Section 2 · Convolution</div>
+  <h2>2.1 What is Convolution? The Spotlight Analogy</h2>
+  <div class="two-col-60-40">
+    <div>
+      <p>Think of convolution as shining a small <strong>spotlight</strong> (called a <em>filter</em> or <em>kernel</em>) across an image, one step at a time.</p>
+      <ul>
+        <li>The filter is a small grid — typically <strong>3 × 3</strong> or <strong>5 × 5</strong> pixels</li>
+        <li>At each position, it multiplies its values with the image pixels underneath and adds them up</li>
+        <li>The result is a single number that summarises "how strongly this pattern appeared here"</li>
+        <li>The filter then <strong>slides</strong> across to the next position and repeats</li>
+      </ul>
+      <div class="definition" style="margin-top:10px;">
+        <div class="def-label">Definition</div>
+        A <strong>filter (kernel)</strong> is a small matrix of learnable numbers. During training, the CNN automatically learns the best filter values to detect useful features.
+      </div>
+    </div>
+    <div>
+      <div class="illustration">
+        <svg viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg" width="190">
+          <!-- Image grid 5x5 -->
+          <text x="0" y="12" font-size="10" fill="#888" font-weight="bold">IMAGE (5×5)</text>
+          <rect x="0" y="18" width="120" height="120" fill="#f5f5f5" stroke="#ccc" stroke-width="1"/>
+          <!-- cells -->
+          <g font-size="9" fill="#555" text-anchor="middle">
+            <text x="12" y="34">1</text><text x="36" y="34">2</text><text x="60" y="34">0</text><text x="84" y="34">1</text><text x="108" y="34">3</text>
+            <text x="12" y="58">0</text><text x="36" y="58">3</text><text x="60" y="58">1</text><text x="84" y="58">2</text><text x="108" y="58">1</text>
+            <text x="12" y="82">2</text><text x="36" y="82">1</text><text x="60" y="82">0</text><text x="84" y="82">3</text><text x="108" y="82">2</text>
+            <text x="12" y="106">1</text><text x="36" y="106">0</text><text x="60" y="106">2</text><text x="84" y="106">1</text><text x="108" y="106">0</text>
+            <text x="12" y="130">3</text><text x="36" y="130">1</text><text x="60" y="130">0</text><text x="84" y="130">2</text><text x="108" y="130">1</text>
+          </g>
+          <!-- Grid lines -->
+          <line x1="24" y1="18" x2="24" y2="138" stroke="#ccc" stroke-width="0.5"/>
+          <line x1="48" y1="18" x2="48" y2="138" stroke="#ccc" stroke-width="0.5"/>
+          <line x1="72" y1="18" x2="72" y2="138" stroke="#ccc" stroke-width="0.5"/>
+          <line x1="96" y1="18" x2="96" y2="138" stroke="#ccc" stroke-width="0.5"/>
+          <line x1="0" y1="42" x2="120" y2="42" stroke="#ccc" stroke-width="0.5"/>
+          <line x1="0" y1="66" x2="120" y2="66" stroke="#ccc" stroke-width="0.5"/>
+          <line x1="0" y1="90" x2="120" y2="90" stroke="#ccc" stroke-width="0.5"/>
+          <line x1="0" y1="114" x2="120" y2="114" stroke="#ccc" stroke-width="0.5"/>
+          <!-- Highlight filter position (top-left 3x3) -->
+          <rect x="0" y="18" width="72" height="72" fill="none" stroke="#C8102E" stroke-width="2.5"/>
+          <text x="36" y="100" text-anchor="middle" font-size="9" fill="#C8102E" font-weight="bold">filter here →</text>
+
+          <!-- Filter 3x3 -->
+          <text x="135" y="12" font-size="10" fill="#888" font-weight="bold">FILTER</text>
+          <rect x="135" y="18" width="60" height="60" fill="#f0f4ff" stroke="#3457a8" stroke-width="1.5"/>
+          <g font-size="9" fill="#3457a8" text-anchor="middle" font-weight="bold">
+            <text x="155" y="35">1</text><text x="175" y="35">0</text><text x="195" y="35">-1</text>
+            <text x="155" y="55">2</text><text x="175" y="55">0</text><text x="195" y="55">-2</text>
+            <text x="155" y="75">1</text><text x="175" y="75">0</text><text x="195" y="75">-1</text>
+          </g>
+          <line x1="165" y1="18" x2="165" y2="78" stroke="#3457a8" stroke-width="0.5"/>
+          <line x1="185" y1="18" x2="185" y2="78" stroke="#3457a8" stroke-width="0.5"/>
+          <line x1="135" y1="38" x2="195" y2="38" stroke="#3457a8" stroke-width="0.5"/>
+          <line x1="135" y1="58" x2="195" y2="58" stroke="#3457a8" stroke-width="0.5"/>
+          <text x="165" y="100" text-anchor="middle" font-size="9" fill="#3457a8">Sobel (edge detector)</text>
+
+          <!-- Arrow down to feature map -->
+          <text x="60" y="155" text-anchor="middle" font-size="9" fill="#888">multiply &amp; sum → 1 number</text>
+          <line x1="60" y1="138" x2="60" y2="165" stroke="#999" stroke-width="1.2" stroke-dasharray="4,2"/>
+          <polygon points="55,165 65,165 60,175" fill="#999"/>
+          <rect x="30" y="175" width="60" height="50" fill="#eaf7ef" stroke="#2e7d52" stroke-width="1.5" rx="2"/>
+          <text x="60" y="204" text-anchor="middle" font-size="10" fill="#2e7d52" font-weight="bold">feature</text>
+          <text x="60" y="218" text-anchor="middle" font-size="10" fill="#2e7d52" font-weight="bold">map</text>
+        </svg>
+        <div class="illustration-caption">The red box slides across the image; each position produces one output number</div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 9: Convolution arithmetic -->
+<div class="slide" id="slide-9" data-toc="2.2 — Worked Example">
+  <div class="slide-number">2.2</div>
+  <div class="slide-section-label">Section 2 · Convolution</div>
+  <h2>2.2 Worked Example — One Convolution Step</h2>
+  <p>Suppose the filter sits over the top-left 3×3 patch of the image:</p>
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <p><strong>Image patch (top-left 3×3):</strong></p>
+      <table>
+        <tr><td>1</td><td>2</td><td>0</td></tr>
+        <tr><td>0</td><td>3</td><td>1</td></tr>
+        <tr><td>2</td><td>1</td><td>0</td></tr>
+      </table>
+      <p style="margin-top:12px;"><strong>Filter:</strong></p>
+      <table>
+        <tr><td>1</td><td>0</td><td>−1</td></tr>
+        <tr><td>2</td><td>0</td><td>−2</td></tr>
+        <tr><td>1</td><td>0</td><td>−1</td></tr>
+      </table>
+    </div>
+    <div>
+      <p><strong>Calculation:</strong></p>
+      <p>Multiply each pair, then sum:</p>
+      <div class="definition" style="margin-top:6px; font-size:0.92rem;">
+        <div class="def-label">Step by Step</div>
+        (1×1) + (2×0) + (0×−1)<br>
+        + (0×2) + (3×0) + (1×−2)<br>
+        + (2×1) + (1×0) + (0×−1)<br><br>
+        = 1 + 0 + 0 + 0 + 0 − 2 + 2 + 0 + 0<br>
+        = <strong>1</strong>
+      </div>
+      <div class="key-point" style="margin-top:10px;">
+        <div class="kp-label">Output</div>
+        The number <strong>1</strong> is placed in the top-left cell of the <em>feature map</em>. The filter then slides right and we repeat for every position.
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:10px; font-size:0.92rem; color:#666;">This particular filter (called a <em>Sobel filter</em>) detects <strong>vertical edges</strong>. High output = strong vertical edge at that location.</p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 10: What filters detect -->
+<div class="slide" id="slide-10" data-toc="2.3 — What Filters Detect">
+  <div class="slide-number">2.3</div>
+  <div class="slide-section-label">Section 2 · Convolution</div>
+  <h2>2.3 What Filters Actually Detect</h2>
+  <p>Different filter values detect different visual patterns. A CNN learns the best filters automatically during training.</p>
+  <div class="illustration" style="margin-top:8px;">
+    <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" width="700">
+      <!-- Filter 1: Edge detector -->
+      <rect x="10" y="20" width="180" height="140" fill="#f8f8f8" stroke="#ddd" stroke-width="1" rx="4"/>
+      <text x="100" y="14" text-anchor="middle" font-size="11" fill="#888" font-weight="bold">EDGE DETECTOR</text>
+      <g transform="translate(35,30)">
+        <rect width="24" height="24" fill="#f0f4ff" stroke="#3457a8" stroke-width="1"/>
+        <rect x="24" width="24" height="24" fill="#fff" stroke="#3457a8" stroke-width="1"/>
+        <rect x="48" width="24" height="24" fill="#fdecea" stroke="#3457a8" stroke-width="1"/>
+        <rect y="24" width="24" height="24" fill="#f0f4ff" stroke="#3457a8" stroke-width="1"/>
+        <rect x="24" y="24" width="24" height="24" fill="#fff" stroke="#3457a8" stroke-width="1"/>
+        <rect x="48" y="24" width="24" height="24" fill="#fdecea" stroke="#3457a8" stroke-width="1"/>
+        <rect y="48" width="24" height="24" fill="#f0f4ff" stroke="#3457a8" stroke-width="1"/>
+        <rect x="24" y="48" width="24" height="24" fill="#fff" stroke="#3457a8" stroke-width="1"/>
+        <rect x="48" y="48" width="24" height="24" fill="#fdecea" stroke="#3457a8" stroke-width="1"/>
+        <g font-size="10" text-anchor="middle" font-weight="bold">
+          <text x="12" y="16" fill="#3457a8">1</text><text x="36" y="16" fill="#888">0</text><text x="60" y="16" fill="#C8102E">-1</text>
+          <text x="12" y="40" fill="#3457a8">2</text><text x="36" y="40" fill="#888">0</text><text x="60" y="40" fill="#C8102E">-2</text>
+          <text x="12" y="64" fill="#3457a8">1</text><text x="36" y="64" fill="#888">0</text><text x="60" y="64" fill="#C8102E">-1</text>
+        </g>
+      </g>
+      <text x="100" y="115" text-anchor="middle" font-size="10" fill="#555">Detects vertical edges</text>
+      <text x="100" y="130" text-anchor="middle" font-size="9" fill="#888">(left − right intensity)</text>
+      <!-- visual of edge detection -->
+      <rect x="55" y="138" width="18" height="18" fill="#333"/>
+      <rect x="73" y="138" width="18" height="18" fill="#eee"/>
+      <rect x="91" y="138" width="18" height="18" fill="#333"/>
+      <rect x="109" y="138" width="18" height="18" fill="#eee"/>
+      <text x="100" y="170" text-anchor="middle" font-size="9" fill="#666">→ high activation at edge</text>
+
+      <!-- Filter 2: Blur -->
+      <rect x="210" y="20" width="180" height="140" fill="#f8f8f8" stroke="#ddd" stroke-width="1" rx="4"/>
+      <text x="300" y="14" text-anchor="middle" font-size="11" fill="#888" font-weight="bold">BLUR / SMOOTH</text>
+      <g transform="translate(235,30)">
+        <g fill="#f5faf7" stroke="#2e7d52" stroke-width="1">
+          <rect width="24" height="24"/><rect x="24" width="24" height="24"/><rect x="48" width="24" height="24"/>
+          <rect y="24" width="24" height="24"/><rect x="24" y="24" width="24" height="24"/><rect x="48" y="24" width="24" height="24"/>
+          <rect y="48" width="24" height="24"/><rect x="24" y="48" width="24" height="24"/><rect x="48" y="48" width="24" height="24"/>
+        </g>
+        <g font-size="10" text-anchor="middle" fill="#2e7d52" font-weight="bold">
+          <text x="12" y="16">⅑</text><text x="36" y="16">⅑</text><text x="60" y="16">⅑</text>
+          <text x="12" y="40">⅑</text><text x="36" y="40">⅑</text><text x="60" y="40">⅑</text>
+          <text x="12" y="64">⅑</text><text x="36" y="64">⅑</text><text x="60" y="64">⅑</text>
+        </g>
+      </g>
+      <text x="300" y="115" text-anchor="middle" font-size="10" fill="#555">Averages nearby pixels</text>
+      <text x="300" y="130" text-anchor="middle" font-size="9" fill="#888">(reduces noise)</text>
+      <text x="300" y="162" text-anchor="middle" font-size="9" fill="#666">→ smoother, blurred image</text>
+
+      <!-- Filter 3: Sharpen -->
+      <rect x="410" y="20" width="180" height="140" fill="#f8f8f8" stroke="#ddd" stroke-width="1" rx="4"/>
+      <text x="500" y="14" text-anchor="middle" font-size="11" fill="#888" font-weight="bold">SHARPEN</text>
+      <g transform="translate(435,30)">
+        <g fill="#fffbf0" stroke="#C8102E" stroke-width="1">
+          <rect width="24" height="24"/><rect x="24" width="24" height="24"/><rect x="48" width="24" height="24"/>
+          <rect y="24" width="24" height="24"/><rect x="24" y="24" width="24" height="24"/><rect x="48" y="24" width="24" height="24"/>
+          <rect y="48" width="24" height="24"/><rect x="24" y="48" width="24" height="24"/><rect x="48" y="48" width="24" height="24"/>
+        </g>
+        <g font-size="10" text-anchor="middle" font-weight="bold">
+          <text x="12" y="16" fill="#888">0</text><text x="36" y="16" fill="#C8102E">-1</text><text x="60" y="16" fill="#888">0</text>
+          <text x="12" y="40" fill="#C8102E">-1</text><text x="36" y="40" fill="#C8102E">5</text><text x="60" y="40" fill="#C8102E">-1</text>
+          <text x="12" y="64" fill="#888">0</text><text x="36" y="64" fill="#C8102E">-1</text><text x="60" y="64" fill="#888">0</text>
+        </g>
+      </g>
+      <text x="500" y="115" text-anchor="middle" font-size="10" fill="#555">Emphasises centre pixel</text>
+      <text x="500" y="130" text-anchor="middle" font-size="9" fill="#888">(enhances fine details)</text>
+      <text x="500" y="162" text-anchor="middle" font-size="9" fill="#666">→ crisper edges</text>
+
+      <!-- In CNN note -->
+      <rect x="600" y="20" width="90" height="140" fill="#fffbf0" stroke="#C8102E" stroke-width="1.5" rx="4"/>
+      <text x="645" y="40" text-anchor="middle" font-size="10" fill="#C8102E" font-weight="bold">In a CNN</text>
+      <text x="645" y="60" text-anchor="middle" font-size="9" fill="#555">filters are</text>
+      <text x="645" y="75" text-anchor="middle" font-size="9" fill="#555">NOT hand-</text>
+      <text x="645" y="90" text-anchor="middle" font-size="9" fill="#555">designed.</text>
+      <text x="645" y="110" text-anchor="middle" font-size="9" fill="#555">The network</text>
+      <text x="645" y="125" text-anchor="middle" font-size="9" fill="#555">learns them</text>
+      <text x="645" y="140" text-anchor="middle" font-size="9" fill="#555">automatically!</text>
+    </svg>
+  </div>
+  <div class="illustration-caption">Figure 2.3: Three manually-designed filters — in practice, CNNs learn hundreds of such filters</div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 11: Multiple filters → feature maps -->
+<div class="slide" id="slide-11" data-toc="2.4 — Feature Maps">
+  <div class="slide-number">2.4</div>
+  <div class="slide-section-label">Section 2 · Convolution</div>
+  <h2>2.4 Feature Maps — Seeing the Image Differently</h2>
+  <p>A single filter produces one <strong>feature map</strong>. In practice, a convolutional layer uses many filters at once.</p>
+  <div class="illustration" style="margin-top:10px;">
+    <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" width="660">
+      <!-- Input image -->
+      <rect x="10" y="50" width="80" height="80" fill="#e0e0e0" stroke="#999" stroke-width="1.5" rx="2"/>
+      <text x="50" y="92" text-anchor="middle" font-size="11" fill="#555">Input</text>
+      <text x="50" y="106" text-anchor="middle" font-size="11" fill="#555">Image</text>
+      <text x="50" y="150" text-anchor="middle" font-size="10" fill="#888">224 × 224 × 3</text>
+
+      <!-- Arrow -->
+      <line x1="90" y1="90" x2="130" y2="90" stroke="#999" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <text x="110" y="82" text-anchor="middle" font-size="9" fill="#888">32 filters</text>
+
+      <!-- Conv layer -->
+      <rect x="130" y="30" width="50" height="130" fill="#f0f4ff" stroke="#3457a8" stroke-width="1.5" rx="3"/>
+      <text x="155" y="100" text-anchor="middle" font-size="10" fill="#3457a8" font-weight="bold">Conv</text>
+      <text x="155" y="114" text-anchor="middle" font-size="10" fill="#3457a8">Layer</text>
+      <text x="155" y="175" text-anchor="middle" font-size="9" fill="#3457a8">32 × 3×3</text>
+      <text x="155" y="188" text-anchor="middle" font-size="9" fill="#3457a8">filters</text>
+
+      <!-- Arrow -->
+      <line x1="180" y1="90" x2="220" y2="90" stroke="#999" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Feature maps stack -->
+      <g transform="translate(220,40)">
+        <rect x="0" y="0" width="70" height="55" fill="#f0f4ff" stroke="#3457a8" stroke-width="1" rx="2"/>
+        <rect x="6" y="6" width="70" height="55" fill="#ddeaff" stroke="#3457a8" stroke-width="1" rx="2"/>
+        <rect x="12" y="12" width="70" height="55" fill="#c8d9ff" stroke="#3457a8" stroke-width="1" rx="2"/>
+        <text x="47" y="43" text-anchor="middle" font-size="9" fill="#3457a8">32 maps</text>
+        <text x="47" y="88" text-anchor="middle" font-size="9" fill="#888">224×224×32</text>
+      </g>
+
+      <!-- Arrow -->
+      <line x1="302" y1="90" x2="342" y2="90" stroke="#999" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <text x="322" y="82" text-anchor="middle" font-size="9" fill="#888">ReLU</text>
+
+      <!-- After ReLU -->
+      <g transform="translate(342,40)">
+        <rect x="0" y="0" width="70" height="55" fill="#eaf7ef" stroke="#2e7d52" stroke-width="1" rx="2"/>
+        <rect x="6" y="6" width="70" height="55" fill="#d4f0df" stroke="#2e7d52" stroke-width="1" rx="2"/>
+        <rect x="12" y="12" width="70" height="55" fill="#bde8cc" stroke="#2e7d52" stroke-width="1" rx="2"/>
+        <text x="47" y="43" text-anchor="middle" font-size="9" fill="#2e7d52">32 maps</text>
+        <text x="47" y="88" text-anchor="middle" font-size="9" fill="#888">negatives→0</text>
+      </g>
+
+      <!-- Arrow -->
+      <line x1="424" y1="90" x2="464" y2="90" stroke="#999" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <text x="444" y="82" text-anchor="middle" font-size="9" fill="#888">Pool</text>
+
+      <!-- After pool -->
+      <g transform="translate(464,55)">
+        <rect x="0" y="0" width="50" height="40" fill="#fff8e1" stroke="#e6a817" stroke-width="1" rx="2"/>
+        <rect x="5" y="5" width="50" height="40" fill="#fff3cc" stroke="#e6a817" stroke-width="1" rx="2"/>
+        <rect x="10" y="10" width="50" height="40" fill="#ffe9a0" stroke="#e6a817" stroke-width="1" rx="2"/>
+        <text x="35" y="33" text-anchor="middle" font-size="9" fill="#a07000">32 maps</text>
+        <text x="35" y="68" text-anchor="middle" font-size="9" fill="#888">112×112×32</text>
+        <text x="35" y="80" text-anchor="middle" font-size="9" fill="#888">(halved!)</text>
+      </g>
+
+      <defs>
+        <marker id="arr2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#999"/>
+        </marker>
+      </defs>
+
+      <text x="340" y="185" text-anchor="middle" font-size="10" fill="#C8102E" font-weight="bold">Each map highlights where one type of pattern appears in the image</text>
+    </svg>
+  </div>
+  <div class="illustration-caption">Figure 2.4: One convolutional block — 32 filters each produce a feature map</div>
+  <div class="key-point" style="margin-top:6px;">
+    <div class="kp-label">Intuition</div>
+    Early filters detect edges and colours. Deeper layers combine these to detect shapes, then textures, then objects (like ears, eyes, wheels).
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 12: ReLU -->
+<div class="slide" id="slide-12" data-toc="2.5 — ReLU Activation">
+  <div class="slide-number">2.5</div>
+  <div class="slide-section-label">Section 2 · Convolution</div>
+  <h2>2.5 ReLU — Keeping Only the Positives</h2>
+  <div class="two-col">
+    <div>
+      <p>After each convolution, we apply an <strong>activation function</strong>. The most common one is <strong>ReLU</strong> (Rectified Linear Unit).</p>
+      <div class="definition">
+        <div class="def-label">ReLU Formula</div>
+        \(\text{ReLU}(x) = \max(0,\, x)\)
+        <p style="margin-top:6px; font-size:0.92rem;">If the value is positive → keep it.<br>If the value is negative → set it to 0.</p>
+      </div>
+      <p style="margin-top:10px;"><strong>Why?</strong> Negative convolution outputs mean "this pattern was NOT found here." We simply ignore them. This also introduces non-linearity, letting the network learn complex patterns.</p>
+      <div class="example">
+        <div class="ex-label">Example</div>
+        Input: [−3, 0, 2, −1, 5, −0.5]<br>
+        After ReLU: [0, 0, 2, 0, 5, 0]
+      </div>
+    </div>
+    <div>
+      <div class="illustration" style="margin-top:10px;">
+        <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg" width="240">
+          <!-- Axes -->
+          <line x1="20" y1="170" x2="220" y2="170" stroke="#999" stroke-width="1.5"/>
+          <line x1="120" y1="20" x2="120" y2="180" stroke="#999" stroke-width="1.5"/>
+          <!-- Arrowheads -->
+          <polygon points="218,167 224,170 218,173" fill="#999"/>
+          <polygon points="117,22 120,16 123,22" fill="#999"/>
+          <!-- Axis labels -->
+          <text x="225" y="173" font-size="11" fill="#888">x</text>
+          <text x="125" y="18" font-size="11" fill="#888">y</text>
+          <text x="115" y="185" font-size="10" fill="#888">0</text>
+          <!-- ReLU line: flat for x<0, diagonal for x>0 -->
+          <path d="M 20 170 L 120 170 L 220 70" stroke="#C8102E" stroke-width="2.5" fill="none"/>
+          <text x="155" y="110" font-size="11" fill="#C8102E" font-weight="bold">ReLU(x)</text>
+          <!-- tick marks -->
+          <line x1="60" y1="167" x2="60" y2="173" stroke="#999" stroke-width="1"/>
+          <text x="60" y="183" text-anchor="middle" font-size="10" fill="#888">−3</text>
+          <line x1="160" y1="167" x2="160" y2="173" stroke="#999" stroke-width="1"/>
+          <text x="160" y="183" text-anchor="middle" font-size="10" fill="#888">3</text>
+          <!-- Annotation -->
+          <text x="60" y="160" text-anchor="middle" font-size="9" fill="#3457a8">= 0</text>
+          <text x="60" y="148" text-anchor="middle" font-size="9" fill="#3457a8">(cut off)</text>
+          <text x="185" y="115" text-anchor="middle" font-size="9" fill="#2e7d52">= x</text>
+          <text x="185" y="127" text-anchor="middle" font-size="9" fill="#2e7d52">(keep)</text>
+        </svg>
+        <div class="illustration-caption">Figure 2.5: ReLU keeps positives, zeros out negatives</div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 13: Pooling -->
+<div class="slide" id="slide-13" data-toc="2.6 — Pooling">
+  <div class="slide-number">2.6</div>
+  <div class="slide-section-label">Section 2 · Convolution</div>
+  <h2>2.6 Pooling — Downsizing Without Losing Information</h2>
+  <div class="two-col-60-40">
+    <div>
+      <p>After ReLU, a <strong>pooling layer</strong> shrinks each feature map to make the network faster and more robust.</p>
+      <p><strong>Max Pooling</strong> is the most common type. It slides a 2×2 window over the feature map and keeps only the <em>largest</em> value in each window.</p>
+      <div class="definition" style="margin-top:10px;">
+        <div class="def-label">Why Max?</div>
+        We want to know whether a feature was detected <em>somewhere</em> in that region — not exactly where. Max pooling answers "was this feature present?" with the strongest signal.
+      </div>
+      <div class="key-point" style="margin-top:10px;">
+        <div class="kp-label">Effect</div>
+        A 4×4 feature map becomes a 2×2 map after 2×2 max pooling — 4× fewer numbers to process, while preserving the most important detections.
+      </div>
+    </div>
+    <div>
+      <div class="illustration">
+        <svg viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg" width="210">
+          <text x="50" y="14" text-anchor="middle" font-size="11" fill="#888" font-weight="bold">4×4 Feature Map</text>
+          <!-- 4x4 grid -->
+          <g fill="#f5f5f5" stroke="#ccc" stroke-width="1">
+            <rect x="0" y="20" width="40" height="40"/>
+            <rect x="40" y="20" width="40" height="40"/>
+            <rect x="80" y="20" width="40" height="40"/>
+            <rect x="120" y="20" width="40" height="40"/>
+            <rect x="0" y="60" width="40" height="40"/>
+            <rect x="40" y="60" width="40" height="40"/>
+            <rect x="80" y="60" width="40" height="40"/>
+            <rect x="120" y="60" width="40" height="40"/>
+            <rect x="0" y="100" width="40" height="40"/>
+            <rect x="40" y="100" width="40" height="40"/>
+            <rect x="80" y="100" width="40" height="40"/>
+            <rect x="120" y="100" width="40" height="40"/>
+            <rect x="0" y="140" width="40" height="40"/>
+            <rect x="40" y="140" width="40" height="40"/>
+            <rect x="80" y="140" width="40" height="40"/>
+            <rect x="120" y="140" width="40" height="40"/>
+          </g>
+          <!-- Values -->
+          <g font-size="13" text-anchor="middle" font-weight="bold">
+            <text x="20" y="44" fill="#C8102E">4</text>
+            <text x="60" y="44" fill="#555">2</text>
+            <text x="100" y="44" fill="#2e7d52">7</text>
+            <text x="140" y="44" fill="#555">1</text>
+            <text x="20" y="84" fill="#555">3</text>
+            <text x="60" y="84" fill="#555">1</text>
+            <text x="100" y="84" fill="#555">6</text>
+            <text x="140" y="84" fill="#2e7d52">8</text>
+            <text x="20" y="124" fill="#555">2</text>
+            <text x="60" y="124" fill="#C8102E">5</text>
+            <text x="100" y="124" fill="#555">1</text>
+            <text x="140" y="124" fill="#555">3</text>
+            <text x="20" y="164" fill="#555">1</text>
+            <text x="60" y="164" fill="#555">3</text>
+            <text x="100" y="164" fill="#555">2</text>
+            <text x="140" y="164" fill="#C8102E">6</text>
+          </g>
+          <!-- Boxes showing 2x2 pools -->
+          <rect x="0" y="20" width="80" height="80" fill="none" stroke="#C8102E" stroke-width="2.5" stroke-dasharray="4,2"/>
+          <rect x="80" y="20" width="80" height="80" fill="none" stroke="#2e7d52" stroke-width="2.5" stroke-dasharray="4,2"/>
+          <rect x="0" y="100" width="80" height="80" fill="none" stroke="#3457a8" stroke-width="2.5" stroke-dasharray="4,2"/>
+          <rect x="80" y="100" width="80" height="80" fill="none" stroke="#e6a817" stroke-width="2.5" stroke-dasharray="4,2"/>
+
+          <!-- Arrow -->
+          <line x1="80" y1="195" x2="80" y2="215" stroke="#999" stroke-width="1.5" marker-end="url(#arr3)"/>
+          <text x="80" y="205" font-size="9" fill="#888" x="95">max pool</text>
+
+          <!-- Output 2x2 -->
+          <text x="105" y="210" font-size="10" fill="#888">→ 2×2 Output</text>
+          <g fill="#f5f5f5" stroke="#ccc" stroke-width="1" transform="translate(35,218)">
+            <rect width="40" height="30" fill="#fff8f8" stroke="#C8102E" stroke-width="1.5"/>
+            <rect x="40" width="40" height="30" fill="#f5faf7" stroke="#2e7d52" stroke-width="1.5"/>
+            <rect y="30" width="40" height="30" fill="#f0f4ff" stroke="#3457a8" stroke-width="1.5"/>
+            <rect x="40" y="30" width="40" height="30" fill="#fffbf0" stroke="#e6a817" stroke-width="1.5"/>
+          </g>
+          <g font-size="13" text-anchor="middle" font-weight="bold" transform="translate(35,218)">
+            <text x="20" y="20" fill="#C8102E">4</text>
+            <text x="60" y="20" fill="#2e7d52">8</text>
+            <text x="20" y="50" fill="#3457a8">5</text>
+            <text x="60" y="50" fill="#e6a817">6</text>
+          </g>
+
+          <defs>
+            <marker id="arr3" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#999"/>
+            </marker>
+          </defs>
+        </svg>
+        <div class="illustration-caption">Max pooling picks the largest value from each 2×2 region</div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 14: Knowledge Check Section 2 -->
+<div class="slide" id="slide-14" data-toc="Knowledge Check — Sections 1 &amp; 2">
+  <div class="slide-number">2.Q</div>
+  <div class="slide-section-label">Knowledge Check</div>
+  <h2>Knowledge Check — Sections 1 &amp; 2</h2>
+
+  <div class="quiz" id="quiz-1">
+    <div class="quiz-question">Q1: A colour image (RGB) that is 100 × 100 pixels is represented as how many numbers?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) 10,000 numbers (100 × 100)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 30,000 numbers (100 × 100 × 3)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) 3 numbers — one per colour channel</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) It depends on the image compression format</button>
+    <div class="quiz-explanation">A colour image has 3 channels (R, G, B). Each pixel requires 3 values, so a 100×100 colour image = 100 × 100 × 3 = 30,000 numbers.</div>
+  </div>
+
+  <div class="quiz" id="quiz-2" style="margin-top:14px;">
+    <div class="quiz-question">Q2: What does a convolutional filter do?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) It connects every input pixel to every output neuron</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) It removes all negative values from the feature map</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) It slides over the image and detects one type of pattern at each location</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) It resizes the image to a smaller size</button>
+    <div class="quiz-explanation">A filter (kernel) slides across the image performing multiply-and-sum at each position, producing a feature map that shows where that pattern appears. Removing negatives is ReLU; resizing is pooling.</div>
+  </div>
+
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- ═══════════════ SECTION 3 ═══════════════ -->
+<div class="slide section-divider" id="slide-15" data-toc-section="Section 3: Full CNN Architecture" data-toc="Section 3 — The Full CNN Architecture">
+  <div class="slide-number">§3</div>
+  <div class="section-label">Section 3</div>
+  <h1>The Full CNN Architecture</h1>
+  <p class="section-subtitle">Stacking layers: Conv → ReLU → Pool → Flatten → Dense → Output</p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 16: Full pipeline -->
+<div class="slide" id="slide-16" data-toc="3.1 — Layer-by-Layer Overview">
+  <div class="slide-number">3.1</div>
+  <div class="slide-section-label">Section 3 · CNN Architecture</div>
+  <h2>3.1 The CNN Pipeline — Layer by Layer</h2>
+  <div class="illustration" style="margin-top:6px;">
+    <svg viewBox="0 0 760 140" xmlns="http://www.w3.org/2000/svg" width="750">
+      <!-- INPUT -->
+      <rect x="5" y="35" width="70" height="70" fill="#e8e8e8" stroke="#999" stroke-width="1.5" rx="3"/>
+      <text x="40" y="68" text-anchor="middle" font-size="10" fill="#555" font-weight="bold">Input</text>
+      <text x="40" y="81" text-anchor="middle" font-size="10" fill="#555">Image</text>
+      <text x="40" y="118" text-anchor="middle" font-size="9" fill="#888">e.g. 224×224×3</text>
+      <!-- Arrow -->
+      <line x1="75" y1="70" x2="100" y2="70" stroke="#ccc" stroke-width="1.5" marker-end="url(#a)"/>
+      <!-- CONV -->
+      <rect x="100" y="20" width="70" height="100" fill="#f0f4ff" stroke="#3457a8" stroke-width="1.5" rx="3"/>
+      <text x="135" y="65" text-anchor="middle" font-size="10" fill="#3457a8" font-weight="bold">CONV</text>
+      <text x="135" y="80" text-anchor="middle" font-size="9" fill="#3457a8">Filter slides</text>
+      <text x="135" y="93" text-anchor="middle" font-size="9" fill="#3457a8">over image</text>
+      <text x="135" y="133" text-anchor="middle" font-size="9" fill="#888">feature maps</text>
+      <!-- Arrow -->
+      <line x1="170" y1="70" x2="195" y2="70" stroke="#ccc" stroke-width="1.5" marker-end="url(#a)"/>
+      <!-- RELU -->
+      <rect x="195" y="30" width="70" height="80" fill="#f5faf7" stroke="#2e7d52" stroke-width="1.5" rx="3"/>
+      <text x="230" y="70" text-anchor="middle" font-size="10" fill="#2e7d52" font-weight="bold">ReLU</text>
+      <text x="230" y="84" text-anchor="middle" font-size="9" fill="#2e7d52">max(0, x)</text>
+      <text x="230" y="125" text-anchor="middle" font-size="9" fill="#888">zeroes negatives</text>
+      <!-- Arrow -->
+      <line x1="265" y1="70" x2="290" y2="70" stroke="#ccc" stroke-width="1.5" marker-end="url(#a)"/>
+      <!-- POOL -->
+      <rect x="290" y="35" width="70" height="70" fill="#fff8e1" stroke="#e6a817" stroke-width="1.5" rx="3"/>
+      <text x="325" y="68" text-anchor="middle" font-size="10" fill="#a07000" font-weight="bold">POOL</text>
+      <text x="325" y="82" text-anchor="middle" font-size="9" fill="#a07000">2×2 max</text>
+      <text x="325" y="118" text-anchor="middle" font-size="9" fill="#888">halves size</text>
+      <!-- Bracket: repeat -->
+      <path d="M 97 10 Q 97 5 135 5 Q 325 5 365 5 Q 368 5 368 10" stroke="#999" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+      <text x="230" y="4" text-anchor="middle" font-size="9" fill="#999">repeat 2–5 times</text>
+      <!-- Arrow -->
+      <line x1="360" y1="70" x2="390" y2="70" stroke="#ccc" stroke-width="1.5" marker-end="url(#a)"/>
+      <!-- FLATTEN -->
+      <rect x="390" y="30" width="80" height="80" fill="#f5e6ff" stroke="#7e3aa8" stroke-width="1.5" rx="3"/>
+      <text x="430" y="65" text-anchor="middle" font-size="10" fill="#7e3aa8" font-weight="bold">FLATTEN</text>
+      <text x="430" y="80" text-anchor="middle" font-size="9" fill="#7e3aa8">2D maps →</text>
+      <text x="430" y="93" text-anchor="middle" font-size="9" fill="#7e3aa8">1D vector</text>
+      <text x="430" y="125" text-anchor="middle" font-size="9" fill="#888">reshape only</text>
+      <!-- Arrow -->
+      <line x1="470" y1="70" x2="500" y2="70" stroke="#ccc" stroke-width="1.5" marker-end="url(#a)"/>
+      <!-- DENSE -->
+      <rect x="500" y="25" width="80" height="90" fill="#fde8f0" stroke="#a83460" stroke-width="1.5" rx="3"/>
+      <text x="540" y="63" text-anchor="middle" font-size="10" fill="#a83460" font-weight="bold">DENSE</text>
+      <text x="540" y="78" text-anchor="middle" font-size="9" fill="#a83460">Fully conn.</text>
+      <text x="540" y="91" text-anchor="middle" font-size="9" fill="#a83460">layers</text>
+      <text x="540" y="128" text-anchor="middle" font-size="9" fill="#888">combine features</text>
+      <!-- Arrow -->
+      <line x1="580" y1="70" x2="610" y2="70" stroke="#ccc" stroke-width="1.5" marker-end="url(#a)"/>
+      <!-- OUTPUT -->
+      <rect x="610" y="35" width="80" height="70" fill="#fffbf0" stroke="#C8102E" stroke-width="2" rx="3"/>
+      <text x="650" y="65" text-anchor="middle" font-size="10" fill="#C8102E" font-weight="bold">OUTPUT</text>
+      <text x="650" y="80" text-anchor="middle" font-size="9" fill="#C8102E">Softmax /</text>
+      <text x="650" y="93" text-anchor="middle" font-size="9" fill="#C8102E">Sigmoid</text>
+      <text x="650" y="118" text-anchor="middle" font-size="9" fill="#888">class probabilities</text>
+
+      <defs>
+        <marker id="a" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#ccc"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <div class="illustration-caption">Figure 3.1: The standard CNN pipeline from image to prediction</div>
+  <table style="margin-top:10px; font-size:0.9rem;">
+    <thead><tr><th>Layer</th><th>What it does</th><th>Output format</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Conv</strong></td><td>Detects local patterns using filters</td><td>3D: width × height × channels</td></tr>
+      <tr><td><strong>ReLU</strong></td><td>Removes negatives (non-linearity)</td><td>3D: same shape</td></tr>
+      <tr><td><strong>Pool</strong></td><td>Shrinks spatially, keeps strongest signal</td><td>3D: smaller width × height</td></tr>
+      <tr><td><strong>Flatten</strong></td><td>Converts 3D volume to a 1D list of numbers</td><td>1D vector</td></tr>
+      <tr><td><strong>Dense</strong></td><td>Standard neural network layer</td><td>1D vector (smaller)</td></tr>
+      <tr><td><strong>Output</strong></td><td>Final classification probabilities</td><td>1D: one value per class</td></tr>
+    </tbody>
+  </table>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 17: Flatten and Dense -->
+<div class="slide" id="slide-17" data-toc="3.2 — Flatten and Dense Layers">
+  <div class="slide-number">3.2</div>
+  <div class="slide-section-label">Section 3 · CNN Architecture</div>
+  <h2>3.2 Flatten and Dense — The Decision Stage</h2>
+  <div class="two-col">
+    <div>
+      <h3>Flatten</h3>
+      <p>After several Conv+Pool blocks, we have a 3D volume (width × height × depth). We need to convert it into a simple list to feed into a standard neural network.</p>
+      <div class="example">
+        <div class="ex-label">Example</div>
+        A 7 × 7 × 128 feature map has<br>7 × 7 × 128 = <strong>6,272 numbers</strong>.<br>
+        Flatten simply lays them end-to-end → a vector of length 6,272.
+      </div>
+      <p style="margin-top:10px;">No learning happens here — it's just a reshape.</p>
+    </div>
+    <div>
+      <h3>Dense (Fully Connected) Layers</h3>
+      <p>This is the "decision-making" part of the CNN. The flat vector is passed through one or more standard neural network layers.</p>
+      <ul>
+        <li>Each neuron connects to every value in the vector</li>
+        <li>The network combines all the detected features to make a final prediction</li>
+      </ul>
+      <div class="key-point" style="margin-top:10px;">
+        <div class="kp-label">Final Output (Softmax)</div>
+        The last dense layer outputs one probability per class. E.g., for cat/dog/bird:
+        <br>[Cat: 0.85, Dog: 0.12, Bird: 0.03]
+        <br>→ Predicted class: <strong>Cat</strong>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 18: How CNN learns -->
+<div class="slide" id="slide-18" data-toc="3.3 — How CNNs Learn">
+  <div class="slide-number">3.3</div>
+  <div class="slide-section-label">Section 3 · CNN Architecture</div>
+  <h2>3.3 How Does a CNN Actually Learn?</h2>
+  <div class="two-col">
+    <div>
+      <p>A CNN learns its filter values and dense layer weights through a process called <strong>backpropagation</strong>, guided by a <strong>loss function</strong>.</p>
+      <ol style="margin-top:10px;">
+        <li><strong>Forward pass</strong> — image goes through all layers, producing a prediction (e.g., "Cat: 62%")</li>
+        <li><strong>Calculate loss</strong> — compare prediction to true label. If it said "Cat: 62%" but it was actually a Dog, the loss is high.</li>
+        <li><strong>Backward pass</strong> — the error is traced back through every layer, and each weight is adjusted slightly to reduce the loss</li>
+        <li><strong>Repeat</strong> for thousands of images → filters become meaningful detectors</li>
+      </ol>
+    </div>
+    <div>
+      <div class="illustration" style="margin-top:20px;">
+        <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg" width="230">
+          <!-- Circle flow -->
+          <circle cx="120" cy="40" r="30" fill="#f0f4ff" stroke="#3457a8" stroke-width="1.5"/>
+          <text x="120" y="36" text-anchor="middle" font-size="10" fill="#3457a8" font-weight="bold">Forward</text>
+          <text x="120" y="49" text-anchor="middle" font-size="10" fill="#3457a8">Pass</text>
+
+          <circle cx="200" cy="120" r="30" fill="#fde8f0" stroke="#C8102E" stroke-width="1.5"/>
+          <text x="200" y="116" text-anchor="middle" font-size="10" fill="#C8102E" font-weight="bold">Compute</text>
+          <text x="200" y="129" text-anchor="middle" font-size="10" fill="#C8102E">Loss</text>
+
+          <circle cx="120" cy="180" r="30" fill="#f5faf7" stroke="#2e7d52" stroke-width="1.5"/>
+          <text x="120" y="176" text-anchor="middle" font-size="10" fill="#2e7d52" font-weight="bold">Backward</text>
+          <text x="120" y="189" text-anchor="middle" font-size="10" fill="#2e7d52">Pass</text>
+
+          <circle cx="40" cy="120" r="30" fill="#fff8e1" stroke="#e6a817" stroke-width="1.5"/>
+          <text x="40" y="116" text-anchor="middle" font-size="10" fill="#a07000" font-weight="bold">Update</text>
+          <text x="40" y="129" text-anchor="middle" font-size="10" fill="#a07000">Weights</text>
+
+          <!-- Arrows -->
+          <path d="M 148 55 Q 190 70 190 92" stroke="#999" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+          <path d="M 190 148 Q 180 172 148 175" stroke="#999" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+          <path d="M 92 175 Q 60 172 50 148" stroke="#999" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+          <path d="M 50 92 Q 60 70 92 55" stroke="#999" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+
+          <defs>
+            <marker id="a2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#999"/>
+            </marker>
+          </defs>
+        </svg>
+        <div class="illustration-caption">The training loop — repeat until loss is minimised</div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 19: Famous CNN architectures -->
+<div class="slide" id="slide-19" data-toc="3.4 — Famous CNN Architectures">
+  <div class="slide-number">3.4</div>
+  <div class="slide-section-label">Section 3 · CNN Architecture</div>
+  <h2>3.4 Famous CNN Architectures — Shoulders of Giants</h2>
+  <p>You don't need to build a CNN from scratch. Many pre-trained models are freely available.</p>
+  <table style="margin-top:12px;">
+    <thead><tr><th>Architecture</th><th>Year</th><th>Layers</th><th>Notable For</th></tr></thead>
+    <tbody>
+      <tr><td><strong>LeNet-5</strong></td><td>1998</td><td>7</td><td>First successful CNN — handwritten digit recognition</td></tr>
+      <tr><td><strong>AlexNet</strong></td><td>2012</td><td>8</td><td>Launched the deep learning revolution; won ImageNet by a wide margin</td></tr>
+      <tr><td><strong>VGG-16</strong></td><td>2014</td><td>16</td><td>Simple and uniform design; widely used as a baseline</td></tr>
+      <tr><td><strong>ResNet-50</strong></td><td>2015</td><td>50</td><td>Skip connections — allowed very deep networks without vanishing gradients</td></tr>
+      <tr><td><strong>EfficientNet</strong></td><td>2019</td><td>varies</td><td>Best accuracy-to-compute ratio; widely used in production</td></tr>
+    </tbody>
+  </table>
+  <div class="key-point" style="margin-top:14px;">
+    <div class="kp-label">Transfer Learning</div>
+    These models are pre-trained on millions of images. In practice, we <em>reuse</em> their learned filters and only retrain the final output layer for our specific task — saving weeks of computation.
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 20: Knowledge Check Section 3 -->
+<div class="slide" id="slide-20" data-toc="Knowledge Check — Section 3">
+  <div class="slide-number">3.Q</div>
+  <div class="slide-section-label">Knowledge Check</div>
+  <h2>Knowledge Check — Section 3</h2>
+
+  <div class="quiz" id="quiz-3">
+    <div class="quiz-question">Q3: What is the purpose of the Flatten layer in a CNN?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) It detects edges and gradients in the feature map</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) It removes negative activation values</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) It reshapes the 3D feature maps into a 1D vector so the Dense layer can process it</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) It reduces the spatial size of the feature map using max values</button>
+    <div class="quiz-explanation">The Flatten layer performs a reshape operation — no weights, no learning. It converts a 3D volume (e.g., 7×7×128) into a 1D vector (6,272) that a fully-connected Dense layer can accept as input.</div>
+  </div>
+
+  <div class="quiz" id="quiz-4" style="margin-top:14px;">
+    <div class="quiz-question">Q4: What is Transfer Learning?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Reusing a model trained on one dataset to solve a related task, reducing training time significantly</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Transferring image data between servers to speed up training</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Replacing max pooling with average pooling in later layers</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) Using multiple GPUs to train a CNN in parallel</button>
+    <div class="quiz-explanation">Transfer learning reuses the lower layers (which detect general edges, shapes, textures) from a large pre-trained model. Only the final classification layers need fine-tuning for the new task — making it practical even with small datasets.</div>
+  </div>
+
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- ═══════════════ SECTION 4 ═══════════════ -->
+<div class="slide section-divider" id="slide-21" data-toc-section="Section 4: YOLO — Object Detection" data-toc="Section 4 — YOLO: You Only Look Once">
+  <div class="slide-number">§4</div>
+  <div class="section-label">Section 4</div>
+  <h1>YOLO — You Only Look Once</h1>
+  <p class="section-subtitle">Detecting and locating multiple objects in a single forward pass through the network.</p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 22: Classification vs Detection -->
+<div class="slide" id="slide-22" data-toc="4.1 — Classification vs Detection">
+  <div class="slide-number">4.1</div>
+  <div class="slide-section-label">Section 4 · YOLO</div>
+  <h2>4.1 Classification vs Object Detection</h2>
+  <div class="two-col">
+    <div>
+      <h3>Image Classification</h3>
+      <div class="definition">
+        <div class="def-label">Question asked</div>
+        "What is in this image?"<br>
+        → Answer: <strong>"Cat"</strong> (with 92% confidence)
+      </div>
+      <ul>
+        <li>One label for the whole image</li>
+        <li>No information about <em>where</em> the object is</li>
+        <li>Example: "Is this invoice or a receipt?"</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Object Detection</h3>
+      <div class="key-point">
+        <div class="kp-label">Question asked</div>
+        "What is in this image <em>and where</em>?"<br>
+        → Answer: <strong>"Cat at [120, 80, 200, 160]"</strong>
+      </div>
+      <ul>
+        <li>Returns a <strong>bounding box</strong> around every detected object</li>
+        <li>Can detect <em>multiple</em> objects at different locations</li>
+        <li>Example: "Find all vehicles and pedestrians in this CCTV frame"</li>
+      </ul>
+    </div>
+  </div>
+  <div class="illustration" style="margin-top:14px;">
+    <svg viewBox="0 0 580 100" xmlns="http://www.w3.org/2000/svg" width="560">
+      <!-- Classification -->
+      <rect x="10" y="10" width="120" height="80" fill="#e8e8e8" stroke="#999" stroke-width="1.5" rx="3"/>
+      <text x="70" y="55" text-anchor="middle" font-size="10" fill="#555">[ image ]</text>
+      <line x1="130" y1="50" x2="160" y2="50" stroke="#999" stroke-width="1.5" marker-end="url(#a3)"/>
+      <rect x="160" y="20" width="80" height="60" fill="#f0f4ff" stroke="#3457a8" stroke-width="1.5" rx="3"/>
+      <text x="200" y="55" text-anchor="middle" font-size="10" fill="#3457a8">CNN</text>
+      <line x1="240" y1="50" x2="270" y2="50" stroke="#999" stroke-width="1.5" marker-end="url(#a3)"/>
+      <rect x="270" y="25" width="100" height="50" fill="#eaf7ef" stroke="#2e7d52" stroke-width="1.5" rx="3"/>
+      <text x="320" y="46" text-anchor="middle" font-size="10" fill="#2e7d52" font-weight="bold">Cat: 92%</text>
+      <text x="320" y="60" text-anchor="middle" font-size="10" fill="#2e7d52">Dog: 6%</text>
+      <text x="200" y="92" text-anchor="middle" font-size="10" fill="#3457a8" font-weight="bold">CLASSIFICATION</text>
+
+      <!-- Detection -->
+      <rect x="390" y="10" width="120" height="80" fill="#e8e8e8" stroke="#999" stroke-width="1.5" rx="3"/>
+      <rect x="400" y="18" width="40" height="35" fill="none" stroke="#C8102E" stroke-width="2" stroke-dasharray="3,2"/>
+      <rect x="445" y="35" width="55" height="45" fill="none" stroke="#2e7d52" stroke-width="2" stroke-dasharray="3,2"/>
+      <text x="417" y="15" font-size="8" fill="#C8102E">cat</text>
+      <text x="450" y="33" font-size="8" fill="#2e7d52">dog</text>
+      <text x="450" y="92" text-anchor="middle" font-size="10" fill="#C8102E" font-weight="bold">DETECTION</text>
+
+      <defs>
+        <marker id="a3" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#999"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <div class="illustration-caption">Figure 4.1: Classification gives one label; detection gives labels AND locations for every object</div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 23: Traditional detection problem -->
+<div class="slide" id="slide-23" data-toc="4.2 — The Challenge of Detection">
+  <div class="slide-number">4.2</div>
+  <div class="slide-section-label">Section 4 · YOLO</div>
+  <h2>4.2 The Challenge — Objects Can Be Anywhere</h2>
+  <div class="two-col">
+    <div>
+      <p>Object detection is harder than classification because:</p>
+      <ul>
+        <li>Objects can appear <em>anywhere</em> in the image</li>
+        <li>There can be <em>multiple</em> objects of <em>different sizes</em></li>
+        <li>We need to output both a <strong>class label</strong> AND a <strong>bounding box</strong> for each one</li>
+      </ul>
+      <h3 style="margin-top:14px;">Traditional Approach (Slow)</h3>
+      <p>Older methods like R-CNN would:</p>
+      <ol>
+        <li>Propose ~2,000 candidate regions in the image</li>
+        <li>Run a CNN on <em>each region separately</em></li>
+        <li>This was accurate but <strong>very slow</strong> — up to 47 seconds per image!</li>
+      </ol>
+    </div>
+    <div>
+      <div class="key-point">
+        <div class="kp-label">YOLO's Insight</div>
+        <p>Instead of looking at thousands of regions one at a time, YOLO asks: <em>"What if we run the CNN <strong>just once</strong> on the whole image?"</em></p>
+        <p style="margin-top:8px;">The result: <strong>real-time detection at 30–100+ frames per second</strong>.</p>
+      </div>
+      <div class="example" style="margin-top:10px;">
+        <div class="ex-label">Speed comparison</div>
+        R-CNN: ~47 seconds/image<br>
+        Fast R-CNN: ~2 seconds/image<br>
+        YOLO: <strong>&lt;0.03 seconds/image</strong> (real time!)
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 24: YOLO grid -->
+<div class="slide" id="slide-24" data-toc="4.3 — The YOLO Grid System">
+  <div class="slide-number">4.3</div>
+  <div class="slide-section-label">Section 4 · YOLO</div>
+  <h2>4.3 How YOLO Works — The Grid</h2>
+  <div class="two-col-60-40">
+    <div>
+      <p>YOLO divides the image into a <strong>grid</strong> (e.g., 7 × 7 = 49 cells). Each cell is responsible for detecting objects whose <em>centre</em> falls within it.</p>
+      <p style="margin-top:8px;">For each cell, the network predicts:</p>
+      <ul>
+        <li><strong>Bounding box coordinates</strong>: x, y (centre), width, height</li>
+        <li><strong>Confidence score</strong>: how sure is it that an object is here?</li>
+        <li><strong>Class probabilities</strong>: is it a car, person, dog, etc.?</li>
+      </ul>
+      <div class="definition" style="margin-top:10px;">
+        <div class="def-label">Bounding Box</div>
+        A rectangle defined by four numbers: the centre coordinates (x, y) and the box dimensions (width, height). Expressed as fractions of the image size (0 to 1).
+      </div>
+      <p style="margin-top:8px;">All 49 cells make their predictions <em>simultaneously</em> in a single forward pass — that's why it's "You Only Look Once."</p>
+    </div>
+    <div>
+      <div class="illustration">
+        <svg viewBox="0 0 220 230" xmlns="http://www.w3.org/2000/svg" width="210">
+          <!-- Grid image -->
+          <rect x="10" y="10" width="196" height="196" fill="#f0f0f0" stroke="#999" stroke-width="1.5" rx="2"/>
+          <!-- 7x7 grid lines -->
+          <g stroke="#ccc" stroke-width="0.8">
+            <line x1="38" y1="10" x2="38" y2="206"/>
+            <line x1="66" y1="10" x2="66" y2="206"/>
+            <line x1="94" y1="10" x2="94" y2="206"/>
+            <line x1="122" y1="10" x2="122" y2="206"/>
+            <line x1="150" y1="10" x2="150" y2="206"/>
+            <line x1="178" y1="10" x2="178" y2="206"/>
+            <line x1="10" y1="38" x2="206" y2="38"/>
+            <line x1="10" y1="66" x2="206" y2="66"/>
+            <line x1="10" y1="94" x2="206" y2="94"/>
+            <line x1="10" y1="122" x2="206" y2="122"/>
+            <line x1="10" y1="150" x2="206" y2="150"/>
+            <line x1="10" y1="178" x2="206" y2="178"/>
+          </g>
+          <!-- Object 1: car bounding box -->
+          <rect x="20" y="90" width="70" height="50" fill="none" stroke="#C8102E" stroke-width="2.5"/>
+          <text x="20" y="87" font-size="9" fill="#C8102E" font-weight="bold">car 0.91</text>
+          <!-- Centre dot for car -->
+          <circle cx="55" cy="115" r="3" fill="#C8102E"/>
+          <!-- Object 2: person bounding box -->
+          <rect x="130" y="40" width="35" height="80" fill="none" stroke="#2e7d52" stroke-width="2.5"/>
+          <text x="130" y="36" font-size="9" fill="#2e7d52" font-weight="bold">person 0.87</text>
+          <!-- Centre dot for person -->
+          <circle cx="148" cy="80" r="3" fill="#2e7d52"/>
+          <!-- responsible cells highlighted -->
+          <rect x="38" y="94" width="28" height="28" fill="rgba(200,16,46,0.12)" stroke="#C8102E" stroke-width="1.5"/>
+          <rect x="122" y="66" width="28" height="28" fill="rgba(46,125,82,0.12)" stroke="#2e7d52" stroke-width="1.5"/>
+
+          <text x="108" y="220" text-anchor="middle" font-size="9" fill="#888">7×7 grid — 49 cells total</text>
+        </svg>
+        <div class="illustration-caption">Highlighted cells are "responsible" for each detected object</div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 25: YOLO output -->
+<div class="slide" id="slide-25" data-toc="4.4 — YOLO Output and NMS">
+  <div class="slide-number">4.4</div>
+  <div class="slide-section-label">Section 4 · YOLO</div>
+  <h2>4.4 YOLO Output — Predictions and Filtering</h2>
+  <div class="two-col">
+    <div>
+      <h3>What the network outputs</h3>
+      <p>For each grid cell, YOLO outputs a vector:</p>
+      <div class="definition">
+        <div class="def-label">Per Cell Output</div>
+        [x, y, w, h, confidence, P(class₁), P(class₂), …, P(classN)]
+        <ul style="margin-top:6px; font-size:0.9rem;">
+          <li><strong>x, y</strong>: centre of the box (relative to the cell)</li>
+          <li><strong>w, h</strong>: width and height (relative to image)</li>
+          <li><strong>confidence</strong>: probability × overlap with ground truth</li>
+          <li><strong>P(classᵢ)</strong>: probability it belongs to each class</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <h3>Non-Maximum Suppression (NMS)</h3>
+      <p>Many cells near an object all predict a box. We end up with dozens of overlapping boxes.</p>
+      <p style="margin-top:8px;"><strong>NMS</strong> cleans this up:</p>
+      <ol>
+        <li>Keep the box with the <strong>highest confidence</strong></li>
+        <li>Remove any boxes that overlap it too much (IoU &gt; threshold)</li>
+        <li>Repeat for the next highest</li>
+      </ol>
+      <div class="key-point" style="margin-top:10px;">
+        <div class="kp-label">Result</div>
+        One clean, final bounding box per detected object.
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 26: YOLO versions -->
+<div class="slide" id="slide-26" data-toc="4.5 — YOLO Versions">
+  <div class="slide-number">4.5</div>
+  <div class="slide-section-label">Section 4 · YOLO</div>
+  <h2>4.5 YOLO Versions — A Brief History</h2>
+  <table>
+    <thead><tr><th>Version</th><th>Year</th><th>Key Improvement</th><th>Speed / Accuracy</th></tr></thead>
+    <tbody>
+      <tr><td><strong>YOLOv1</strong></td><td>2016</td><td>Original one-pass detection concept</td><td>Fast, struggled with small/clustered objects</td></tr>
+      <tr><td><strong>YOLOv3</strong></td><td>2018</td><td>Multi-scale detection (detects small objects better)</td><td>Good balance — popular baseline</td></tr>
+      <tr><td><strong>YOLOv5</strong></td><td>2020</td><td>PyTorch-native, easy to use and fine-tune</td><td>Very popular in industry</td></tr>
+      <tr><td><strong>YOLOv8</strong></td><td>2023</td><td>Unified framework: detection, segmentation, pose</td><td>State-of-the-art accuracy + speed</td></tr>
+      <tr><td><strong>YOLOv11</strong></td><td>2024</td><td>Further efficiency gains, edge-device optimised</td><td>Fastest yet; production deployments</td></tr>
+    </tbody>
+  </table>
+  <div class="example" style="margin-top:14px;">
+    <div class="ex-label">Code — running YOLOv8 in 3 lines</div>
+    <pre><span class="kw">from</span> ultralytics <span class="kw">import</span> YOLO
+model = YOLO(<span class="st">"yolov8n.pt"</span>)       <span class="cm"># load a pre-trained model</span>
+results = model(<span class="st">"street.jpg"</span>)      <span class="cm"># detect objects in one image</span>
+results[0].show()                    <span class="cm"># display with bounding boxes</span></pre>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 27: Knowledge Check Section 4 -->
+<div class="slide" id="slide-27" data-toc="Knowledge Check — Section 4">
+  <div class="slide-number">4.Q</div>
+  <div class="slide-section-label">Knowledge Check</div>
+  <h2>Knowledge Check — Section 4</h2>
+
+  <div class="quiz" id="quiz-5">
+    <div class="quiz-question">Q5: What does "You Only Look Once" mean in the context of YOLO?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) The model is only allowed to be trained on a dataset once</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) The model only detects one object per image</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) The CNN runs a single forward pass over the whole image to detect all objects at once</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) The bounding boxes are drawn once and cannot be updated</button>
+    <div class="quiz-explanation">YOLO's key innovation is running the CNN once on the full image (divided into a grid), predicting bounding boxes and class labels for all cells simultaneously — unlike older methods that ran the CNN separately on thousands of candidate regions.</div>
+  </div>
+
+  <div class="quiz" id="quiz-6" style="margin-top:14px;">
+    <div class="quiz-question">Q6: What problem does Non-Maximum Suppression (NMS) solve?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) It removes blurry images from the training dataset</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) It removes duplicate overlapping bounding boxes so only the best prediction for each object remains</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) It reduces the size of the model so it runs faster on edge devices</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) It normalises pixel values before passing the image to the CNN</button>
+    <div class="quiz-explanation">Since multiple neighbouring cells predict boxes for the same object, NMS keeps the highest-confidence box and suppresses all others that overlap it by more than a set threshold (IoU). The result is one clean bounding box per object.</div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- ═══════════════ SECTION 5 ═══════════════ -->
+<div class="slide section-divider" id="slide-28" data-toc-section="Section 5: Applications &amp; Wrap-up" data-toc="Section 5 — Real-World Applications">
+  <div class="slide-number">§5</div>
+  <div class="section-label">Section 5</div>
+  <h1>Real-World Applications</h1>
+  <p class="section-subtitle">Where are CNNs and YOLO actually used in business today?</p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 29: Business Applications -->
+<div class="slide" id="slide-29" data-toc="5.1 — Business Applications">
+  <div class="slide-number">5.1</div>
+  <div class="slide-section-label">Section 5 · Applications</div>
+  <h2>5.1 CNNs &amp; YOLO in Business</h2>
+  <div class="two-col">
+    <div>
+      <h3>CNNs — Classification &amp; Analysis</h3>
+      <ul>
+        <li><strong>Healthcare</strong>: Detecting tumours in X-rays and MRI scans (often matching specialist accuracy)</li>
+        <li><strong>Retail</strong>: Visual product search — "find similar shoes"</li>
+        <li><strong>Finance</strong>: Cheque and document verification; fraud detection via signature analysis</li>
+        <li><strong>Manufacturing</strong>: Defect detection on production lines (faster than human inspection)</li>
+        <li><strong>Agriculture</strong>: Identifying crop disease from drone imagery</li>
+      </ul>
+    </div>
+    <div>
+      <h3>YOLO — Real-Time Detection</h3>
+      <ul>
+        <li><strong>Autonomous vehicles</strong>: Detecting cars, pedestrians, cyclists, traffic signs in real time</li>
+        <li><strong>Retail analytics</strong>: Customer counting and shelf stock monitoring from CCTV</li>
+        <li><strong>Security</strong>: Intruder detection and perimeter monitoring</li>
+        <li><strong>Sport analytics</strong>: Tracking player positions and ball movement</li>
+        <li><strong>Logistics</strong>: Reading package labels and sorting items on conveyor belts</li>
+      </ul>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 30: Limitations -->
+<div class="slide" id="slide-30" data-toc="5.2 — Limitations and Considerations">
+  <div class="slide-number">5.2</div>
+  <div class="slide-section-label">Section 5 · Applications</div>
+  <h2>5.2 Limitations and Practical Considerations</h2>
+  <div class="two-col">
+    <div>
+      <h3>Technical limitations</h3>
+      <ul>
+        <li><strong>Data hungry</strong>: CNNs typically need thousands (or millions) of labelled images to train from scratch</li>
+        <li><strong>Computationally expensive</strong>: Training requires GPUs and significant time/cost</li>
+        <li><strong>Sensitive to distribution shift</strong>: A model trained on daytime images may fail on night images</li>
+        <li><strong>YOLO small object detection</strong>: Struggles to detect very small or tightly-clustered objects in early versions</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Ethical and business considerations</h3>
+      <ul>
+        <li><strong>Bias</strong>: Models trained on unrepresentative data embed that bias (e.g., facial recognition systems performing poorly on darker skin tones)</li>
+        <li><strong>Privacy</strong>: Real-time surveillance raises serious privacy and consent issues</li>
+        <li><strong>Interpretability</strong>: CNNs are largely "black boxes" — hard to explain why a decision was made</li>
+        <li><strong>Edge cases</strong>: High confidence ≠ correct — models can fail unexpectedly on unusual inputs</li>
+      </ul>
+      <div class="key-point" style="margin-top:10px;">
+        <div class="kp-label">Key Principle</div>
+        Always ask: What happens when the model is wrong? Who is affected?
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 31: CNN vs YOLO comparison -->
+<div class="slide" id="slide-31" data-toc="5.3 — CNN vs YOLO: When to Use Which">
+  <div class="slide-number">5.3</div>
+  <div class="slide-section-label">Section 5 · Applications</div>
+  <h2>5.3 CNN vs YOLO — When to Use Which?</h2>
+  <table>
+    <thead>
+      <tr><th></th><th>Standard CNN</th><th>YOLO</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Task</strong></td><td>Image classification</td><td>Object detection</td></tr>
+      <tr><td><strong>Output</strong></td><td>One label per image</td><td>Labels + bounding boxes for all objects</td></tr>
+      <tr><td><strong>Speed</strong></td><td>Fast</td><td>Real-time capable</td></tr>
+      <tr><td><strong>Use when</strong></td><td>You need to know <em>what</em> is in an image</td><td>You need to know <em>what and where</em></td></tr>
+      <tr><td><strong>Example</strong></td><td>Is this a defective product? (yes/no)</td><td>Mark every defect on the product image</td></tr>
+      <tr><td><strong>Training data</strong></td><td>Labels only</td><td>Labels + bounding box coordinates</td></tr>
+    </tbody>
+  </table>
+  <div class="example" style="margin-top:16px;">
+    <div class="ex-label">Business Scenario</div>
+    A retailer wants to check if shelves are stocked. <br>
+    → <strong>CNN</strong>: "Is this shelf full or empty?" (classification) <br>
+    → <strong>YOLO</strong>: "Which specific products are missing and where?" (detection)
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 32: Summary -->
+<div class="slide" id="slide-32" data-toc="5.4 — Week Summary">
+  <div class="slide-number">5.4</div>
+  <div class="slide-section-label">Week 5 · Summary</div>
+  <h2>Week 5 Summary — Key Takeaways</h2>
+  <div class="two-col">
+    <div>
+      <h3>CNNs</h3>
+      <ul>
+        <li>Images are grids of numbers (pixels)</li>
+        <li>Filters detect local patterns; shared weights make CNNs efficient</li>
+        <li>Pipeline: <strong>Conv → ReLU → Pool → Flatten → Dense → Output</strong></li>
+        <li>Early layers = edges; deep layers = complex objects</li>
+        <li>Transfer learning lets you reuse pre-trained models</li>
+      </ul>
+    </div>
+    <div>
+      <h3>YOLO</h3>
+      <ul>
+        <li>Object detection = <em>what</em> + <em>where</em></li>
+        <li>Divides image into a grid; each cell predicts boxes simultaneously</li>
+        <li>Single forward pass → real-time speed</li>
+        <li>NMS removes duplicate overlapping predictions</li>
+        <li>YOLOv8 / v11: state-of-the-art, 3-line Python API</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-point" style="margin-top:16px;">
+    <div class="kp-label">The Big Picture</div>
+    CNNs gave computers the ability to understand images. YOLO made that understanding fast enough for the real world. Together, they underpin much of modern AI in business — from medical imaging to autonomous vehicles to retail analytics.
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 33: Looking ahead -->
+<div class="slide" id="slide-33" data-toc="5.5 — Looking Ahead">
+  <div class="slide-number">5.5</div>
+  <div class="slide-section-label">Week 5 · Looking Ahead</div>
+  <h2>Looking Ahead</h2>
+  <div class="two-col">
+    <div>
+      <h3>Next Week — Week 6</h3>
+      <p>We move from vision to language: <strong>Generative AI and Large Language Models</strong>.</p>
+      <ul style="margin-top:8px;">
+        <li>How do models like GPT and Gemini generate text?</li>
+        <li>What is a Transformer? (attention mechanism)</li>
+        <li>Pre-training vs fine-tuning vs prompting</li>
+        <li>Business applications: summarisation, Q&amp;A, code generation</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Before Next Session</h3>
+      <div class="definition">
+        <div class="def-label">Recommended Practice</div>
+        <ul>
+          <li>Open the Week 5 Colab notebook and run the CNN demo</li>
+          <li>Try changing the number of filters and observe the effect on accuracy</li>
+          <li>Run the YOLO detection example on your own image</li>
+        </ul>
+      </div>
+      <div class="example" style="margin-top:10px;">
+        <div class="ex-label">Reflection question</div>
+        Think of a business problem in your industry where knowing <em>where</em> something is (not just what it is) would be valuable. Could YOLO address it?
+      </div>
+    </div>
+  </div>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+<!-- SLIDE 34: Q&A -->
+<div class="slide title-slide" id="slide-34" data-toc="Q&amp;A">
+  <div class="week-label">Week 5 · Data5000</div>
+  <h1>Questions?</h1>
+  <p class="subtitle">CNN Architecture &amp; YOLO</p>
+  <p class="course-info" style="margin-top:24px; color:#555;">
+    Key terms: pixel, filter, convolution, feature map, ReLU, max pooling,<br>
+    flatten, dense layer, transfer learning, bounding box, grid, NMS
+  </p>
+  <div class="logo-placeholder">KBS</div>
+</div>
+
+
+<!-- ════════════════════════════════════ JS ════════════════════════════════════ -->
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+    const pct = ((current + 1) / slides.length) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+    // reset quizzes on this slide
+    const quizzes = slides[current].querySelectorAll('.quiz');
+    quizzes.forEach(q => {
+      q.classList.remove('answered');
+      q.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('correct','incorrect','dimmed'));
+      const exp = q.querySelector('.quiz-explanation');
+      if (exp) exp.classList.remove('visible');
+    });
+  }
+
+  function toggleTOC() {
+    document.getElementById('tocOverlay').classList.toggle('active');
+  }
+
+  function buildTOC() {
+    const list = document.getElementById('tocList');
+    slides.forEach((s, i) => {
+      if (s.dataset.tocSection) {
+        const sec = document.createElement('div');
+        sec.className = 'toc-section';
+        sec.textContent = s.dataset.tocSection;
+        list.appendChild(sec);
+      }
+      if (s.dataset.toc) {
+        const item = document.createElement('div');
+        item.className = 'toc-item';
+        item.textContent = (i + 1) + '. ' + s.dataset.toc;
+        item.onclick = () => { showSlide(i); toggleTOC(); };
+        list.appendChild(item);
+      }
+    });
+  }
+
+  function checkAnswer(btn, isCorrect) {
+    const quiz = btn.closest('.quiz');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+      o.disabled = true;
+    });
+    const exp = quiz.querySelector('.quiz-explanation');
+    if (exp) exp.classList.add('visible');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') showSlide(current + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') showSlide(current - 1);
+    else if (e.key === 't' || e.key === 'T') toggleTOC();
+    else if (e.key === 'Escape') document.getElementById('tocOverlay').classList.remove('active');
+  });
+
+  showSlide(0);
+  buildTOC();
+
+  renderMathInElement(document.body, {
+    delimiters: [
+      { left: "$$", right: "$$", display: true },
+      { left: "\\(", right: "\\)", display: false }
+    ]
+  });
+</script>
+</body>
+</html>
