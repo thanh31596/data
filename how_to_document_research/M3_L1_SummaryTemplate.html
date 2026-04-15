@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3 · L1 — The Paper Summary Template</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --ink:#111111; --ink-light:#555555; --ink-dim:#AAAAAA;
+    --accent:#B45309; --accent2:#2563EB; --accent3:#059669;
+    --surface:#FAFAF7; --surface2:#F5F0E8; --border:#E8E0D0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--white);}
+  .deck{width:100%;height:100vh;position:relative;}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:5vh 8vw;opacity:0;pointer-events:none;transition:opacity 0.35s ease,transform 0.35s ease;transform:translateX(40px);background:var(--white);}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+  .slide.exit{opacity:0;transform:translateX(-40px);}
+  .progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width 0.3s ease;z-index:100;}
+  .nav{position:fixed;bottom:2rem;right:3rem;display:flex;gap:0.75rem;align-items:center;z-index:100;}
+  .nav button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:1rem;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .nav button:hover{background:var(--ink);color:var(--white);border-color:var(--ink);}
+  .nav .counter{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);min-width:50px;text-align:center;}
+  .lesson-tag{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:auto;padding-top:0.5rem;}
+  .slide-num{font-family:'Playfair Display',serif;font-size:8rem;font-weight:900;color:var(--surface);line-height:1;position:absolute;right:7vw;top:3vh;user-select:none;}
+  h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;line-height:1.1;color:var(--ink);margin-bottom:0.5rem;}
+  h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.5vw,2.8rem);font-weight:700;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+  h3{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:1.25rem;}
+  p,li{font-family:'DM Sans',sans-serif;font-size:clamp(0.92rem,1.7vw,1.08rem);color:var(--ink-light);line-height:1.7;}
+  strong{color:var(--ink);font-weight:500;}
+  em{color:var(--accent);font-style:normal;font-weight:500;}
+  .subtitle{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2vw,1.3rem);color:var(--ink-light);line-height:1.5;max-width:600px;margin-top:1rem;}
+  .accent-line{width:48px;height:3px;background:var(--accent);margin-bottom:2rem;border-radius:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:1rem;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;margin-top:1rem;}
+  .card{background:var(--surface);border-radius:12px;padding:1.5rem;border-left:4px solid var(--accent);}
+  .card.blue{border-left-color:var(--accent2);}
+  .card.green{border-left-color:var(--accent3);}
+  .card-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.5rem;}
+  .card h4{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:0.4rem;}
+  .card p{font-size:0.88rem;}
+  .big-quote{font-family:'Playfair Display',serif;font-size:clamp(1.2rem,2.5vw,1.9rem);font-weight:400;font-style:italic;line-height:1.4;color:var(--ink);border-left:4px solid var(--accent);padding-left:2rem;max-width:720px;margin:1.5rem 0;}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"→";color:var(--accent);font-weight:500;flex-shrink:0;margin-top:0.05rem;}
+  .highlight{background:var(--surface2);border:1.5px solid #D4A96A;border-radius:10px;padding:1.25rem 1.5rem;margin-top:1rem;}
+  .highlight p{font-size:0.92rem;}
+  .kbd-hint{position:fixed;bottom:2rem;left:3rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);}
+
+  /* Template visual */
+  .template-visual{display:flex;flex-direction:column;gap:0.35rem;margin-top:0.75rem;}
+  .tmpl-row{display:grid;grid-template-columns:160px 1fr;gap:0;border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+  .tmpl-label{background:var(--surface2);padding:0.55rem 0.85rem;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--accent);font-weight:500;display:flex;align-items:center;}
+  .tmpl-value{background:var(--white);padding:0.55rem 0.85rem;font-family:'DM Sans',sans-serif;font-size:0.82rem;color:var(--ink-light);display:flex;align-items:center;}
+  .tmpl-value.filled{color:var(--ink);}
+  .tmpl-value.empty{color:var(--ink-dim);font-style:italic;}
+
+  /* Before/after */
+  .ba-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;}
+  .ba-box{border-radius:10px;padding:1.25rem;}
+  .ba-before{background:#FEF2F2;border:1.5px solid #FECACA;}
+  .ba-after{background:#F0FDF4;border:1.5px solid #A7F3D0;}
+  .ba-label{font-family:'DM Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;}
+  .ba-before .ba-label{color:#DC2626;}
+  .ba-after .ba-label{color:#059669;}
+  .ba-box p{font-size:0.88rem;line-height:1.6;}
+
+  /* Why each field matters */
+  .field-row{display:flex;gap:1.5rem;align-items:flex-start;padding:0.75rem 0;border-bottom:1px solid var(--border);}
+  .field-row:last-child{border-bottom:none;}
+  .field-name{font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--accent);font-weight:500;width:140px;flex-shrink:0;padding-top:0.15rem;}
+  .field-why{font-size:0.88rem;color:var(--ink-light);}
+  .field-why strong{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+
+  <!-- S1: Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M3 · Lesson 1 — Documenting Findings</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>The Paper<br>Summary Template</h1>
+      <p class="subtitle">Reading without documenting is like cooking without a recipe.<br>You get it right once — and <em>can never reproduce it</em>.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- S2: The problem -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L1 — The Problem</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Why documentation matters</h3>
+      <h2>You will forget<br>what you read</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="big-quote">"Six months later you remember reading it, but not what it said — and you can't find the insight you need for your own paper."</div>
+        </div>
+        <div>
+          <p style="margin-bottom:1rem;">A systematic template solves this by forcing you to:</p>
+          <ul class="clean">
+            <li>Extract the core idea in your own words</li>
+            <li>Record your critical observations while they're fresh</li>
+            <li>Note relevance to your own work immediately</li>
+            <li>Build a searchable knowledge base over time</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- S3: The template -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L1 — The Template</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>One page per paper</h3>
+      <h2>The 6-field<br>summary template</h2>
+      <div class="accent-line"></div>
+      <div class="template-visual">
+        <div class="tmpl-row"><div class="tmpl-label">Problem</div><div class="tmpl-value empty">What gap does this paper address?</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Approach</div><div class="tmpl-value empty">What is their core method in one sentence?</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Key Idea</div><div class="tmpl-value empty">The single insight that makes this work</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Strengths</div><div class="tmpl-value empty">What does it do genuinely well?</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Weaknesses</div><div class="tmpl-value empty">What are the real limitations?</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Relevance</div><div class="tmpl-value empty">How does this connect to my work?</div></div>
+      </div>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- S4: Filled example -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L1 — Worked Example</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Applied to K-RagRec</h3>
+      <h2>What a filled<br>template looks like</h2>
+      <div class="accent-line"></div>
+      <div class="template-visual">
+        <div class="tmpl-row"><div class="tmpl-label">Problem</div><div class="tmpl-value filled">LLM-based RS suffers from hallucination and lack of domain knowledge. Vanilla RAG introduces noise and ignores KG structure.</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Approach</div><div class="tmpl-value filled">Retrieve hop-field KG subgraphs, filter by popularity, re-rank, then encode with GNN before injecting into LLM prompt.</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Key Idea</div><div class="tmpl-value filled">Multi-hop KG indexing + GNN encoder allows structured graph knowledge to be efficiently injected into frozen LLMs.</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Strengths</div><div class="tmpl-value filled">Efficient (near-direct inference speed). Strong hallucination reduction. Generalises zero-shot.</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Weaknesses</div><div class="tmpl-value filled">No traditional RS baselines. Weak negative sampling evaluation. Requires KG availability.</div></div>
+        <div class="tmpl-row"><div class="tmpl-label">Relevance</div><div class="tmpl-value filled">Relevant if extending LLM-RS with structured knowledge. GNN encoding approach potentially transferable.</div></div>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- S5: Why each field -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L1 — Each Field</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Why each field exists</h3>
+      <h2>Every row has<br>a purpose</h2>
+      <div class="accent-line"></div>
+      <div style="margin-top:0.5rem;">
+        <div class="field-row"><div class="field-name">Problem</div><div class="field-why">Forces you to separate <strong>what they claim to solve</strong> from what they actually solve — often different.</div></div>
+        <div class="field-row"><div class="field-name">Approach</div><div class="field-why">If you can't write this in one sentence, you haven't understood the paper yet.</div></div>
+        <div class="field-row"><div class="field-name">Key Idea</div><div class="field-why">The single transferable insight — often the most useful thing when writing your own related work.</div></div>
+        <div class="field-row"><div class="field-name">Strengths</div><div class="field-why">What to cite positively. What to build on.</div></div>
+        <div class="field-row"><div class="field-name">Weaknesses</div><div class="field-why">Your research opportunities live here. A weakness you can fix is a paper waiting to be written.</div></div>
+        <div class="field-row"><div class="field-name">Relevance</div><div class="field-why">Forces an explicit connection to your work. Without this, notes become a graveyard of unconnected readings.</div></div>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- S6: Before vs After -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L1 — Quality Check</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>The most common mistake</h3>
+      <h2>Summarising vs<br>understanding</h2>
+      <div class="accent-line"></div>
+      <p style="margin-bottom:1rem;">Bad summaries copy the abstract. Good summaries use <strong>your own words and your own judgement</strong>.</p>
+      <div class="ba-wrap">
+        <div class="ba-box ba-before">
+          <div class="ba-label">❌ Bad summary (copied)</div>
+          <p>"We propose K-RagRec, a novel framework that retrieves high-quality and up-to-date structure information from the knowledge graph to augment recommendations."</p>
+          <p style="margin-top:0.75rem; font-size:0.8rem; color:#DC2626;">This is just the abstract. Zero understanding demonstrated.</p>
+        </div>
+        <div class="ba-box ba-after">
+          <div class="ba-label">✅ Good summary (understood)</div>
+          <p>"The core bet is that graph structure (not just text) is what LLMs need for RS. They use multi-hop GNN indexing to encode neighbourhood context — removing this drops accuracy by 45%, so the GNN is the actual contribution."</p>
+          <p style="margin-top:0.75rem; font-size:0.8rem; color:#059669;">Shows the reader understood and evaluated the paper.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- S7: When to write it -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L1 — When to Document</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Timing matters</h3>
+      <h2>Write during<br>Pass 2, not after</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1.25rem;">The best moment to document is <strong>while reading</strong> — not the day after. Observations decay fast.</p>
+          <ul class="clean">
+            <li>Open your notes file before you open the paper</li>
+            <li>Fill each field as you reach that section</li>
+            <li>Write Weaknesses and Relevance last — after full Pass 2</li>
+            <li>Target: 15–20 min total per paper</li>
+          </ul>
+        </div>
+        <div>
+          <div class="highlight">
+            <p style="font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--accent); margin-bottom:0.5rem;">RULE OF THUMB</p>
+            <p>If you can't fill the <strong>Relevance</strong> row, either the paper isn't relevant — or you haven't thought hard enough about why you're reading it.</p>
+          </div>
+          <div class="card" style="margin-top:1rem;">
+            <p><strong>You already have a template</strong> — the Excel file from M2 has all 6 fields ready. Paper 01 is waiting for K-RagRec.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+  <!-- S8: Takeaways -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L1 — Key Takeaways</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>What to remember</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>One page per paper</h4>
+          <p>Six fields. Done during Pass 2. Written in your own words — not copied from the abstract.</p>
+        </div>
+        <div class="card blue">
+          <div class="card-num">02</div>
+          <h4>Weaknesses = opportunities</h4>
+          <p>The weaknesses row is where your next research idea lives. Never leave it empty.</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">03</div>
+          <h4>Relevance is the point</h4>
+          <p>A note without a relevance connection is an island. Force yourself to draw the line to your own work.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);">Next: M3 · L2 — The Literature Matrix</p>
+      </div>
+    </div>
+    <div class="slide-num">08</div>
+  </div>
+
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 8</span>
+  <button onclick="next()">→</button>
+</div>
+<script>
+  const slides=document.querySelectorAll('.slide');const total=slides.length;let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);}function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>

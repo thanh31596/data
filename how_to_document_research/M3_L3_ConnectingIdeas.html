@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3 · L3 — Connecting Ideas Across Papers</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --ink:#111111; --ink-light:#555555; --ink-dim:#AAAAAA;
+    --accent:#6D28D9; --accent2:#E8572A; --accent3:#0F766E;
+    --surface:#F8F5FF; --surface2:#EDE9FE; --border:#DDD6FE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--white);}
+  .deck{width:100%;height:100vh;position:relative;}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:5vh 8vw;opacity:0;pointer-events:none;transition:opacity 0.35s ease,transform 0.35s ease;transform:translateX(40px);background:var(--white);}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+  .slide.exit{opacity:0;transform:translateX(-40px);}
+  .progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width 0.3s ease;z-index:100;}
+  .nav{position:fixed;bottom:2rem;right:3rem;display:flex;gap:0.75rem;align-items:center;z-index:100;}
+  .nav button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:1rem;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .nav button:hover{background:var(--ink);color:var(--white);border-color:var(--ink);}
+  .nav .counter{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);min-width:50px;text-align:center;}
+  .lesson-tag{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:auto;padding-top:0.5rem;}
+  .slide-num{font-family:'Playfair Display',serif;font-size:8rem;font-weight:900;color:var(--surface);line-height:1;position:absolute;right:7vw;top:3vh;user-select:none;}
+  h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;line-height:1.1;color:var(--ink);}
+  h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.5vw,2.8rem);font-weight:700;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+  h3{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:1.25rem;}
+  p,li{font-family:'DM Sans',sans-serif;font-size:clamp(0.92rem,1.7vw,1.08rem);color:var(--ink-light);line-height:1.7;}
+  strong{color:var(--ink);font-weight:500;}
+  em{color:var(--accent);font-style:normal;font-weight:500;}
+  .subtitle{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2vw,1.3rem);color:var(--ink-light);line-height:1.5;max-width:620px;margin-top:1rem;}
+  .accent-line{width:48px;height:3px;background:var(--accent);margin-bottom:2rem;border-radius:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:1rem;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;margin-top:1rem;}
+  .card{background:var(--surface);border-radius:12px;padding:1.5rem;border-left:4px solid var(--accent);}
+  .card.orange{border-left-color:var(--accent2);}
+  .card.teal{border-left-color:var(--accent3);}
+  .card-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.5rem;}
+  .card h4{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:0.4rem;}
+  .card p{font-size:0.88rem;}
+  .big-quote{font-family:'Playfair Display',serif;font-size:clamp(1.2rem,2.5vw,1.9rem);font-weight:400;font-style:italic;line-height:1.4;color:var(--ink);border-left:4px solid var(--accent);padding-left:2rem;max-width:720px;margin:1.5rem 0;}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"→";color:var(--accent);font-weight:500;flex-shrink:0;margin-top:0.05rem;}
+  .highlight{background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-top:1rem;}
+  .highlight p{font-size:0.92rem;}
+  .kbd-hint{position:fixed;bottom:2rem;left:3rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);}
+
+  /* Lineage diagram */
+  .lineage{display:flex;align-items:center;gap:0;margin-top:1.5rem;overflow-x:auto;}
+  .lin-node{background:var(--surface2);border:2px solid var(--accent);border-radius:10px;padding:0.85rem 1.1rem;min-width:130px;text-align:center;flex-shrink:0;}
+  .lin-node .year{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.25rem;}
+  .lin-node .name{font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:600;color:var(--ink);margin-bottom:0.2rem;}
+  .lin-node .idea{font-family:'DM Sans',sans-serif;font-size:0.75rem;color:var(--ink-light);}
+  .lin-node.highlight-node{background:var(--accent);border-color:var(--accent);}
+  .lin-node.highlight-node .year,.lin-node.highlight-node .name,.lin-node.highlight-node .idea{color:white;}
+  .lin-arrow{font-size:1.5rem;color:var(--ink-dim);padding:0 0.75rem;flex-shrink:0;}
+  .lin-label{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--accent);text-align:center;padding:0 0.5rem;flex-shrink:0;max-width:80px;}
+
+  /* Connection types */
+  .conn-type{display:flex;align-items:flex-start;gap:1.25rem;padding:0.85rem 0;border-bottom:1px solid var(--border);}
+  .conn-type:last-child{border-bottom:none;}
+  .conn-badge{width:90px;flex-shrink:0;padding:0.3rem 0.5rem;border-radius:6px;font-family:'DM Mono',monospace;font-size:0.65rem;text-align:center;font-weight:500;}
+  .badge-evolves{background:#EDE9FE;color:var(--accent);}
+  .badge-same{background:#FEF3C7;color:#92400E;}
+  .badge-diff{background:#D1FAE5;color:#065F46;}
+  .badge-contra{background:#FEE2E2;color:#991B1B;}
+  .conn-type h4{font-family:'DM Sans',sans-serif;font-weight:500;font-size:0.9rem;color:var(--ink);margin-bottom:0.2rem;}
+  .conn-type p{font-size:0.84rem;}
+
+  /* Note card */
+  .note-card{background:var(--surface2);border-radius:10px;padding:1.25rem;border:1.5px solid var(--border);margin-top:0.75rem;}
+  .note-card .nc-title{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;}
+  .note-card p{font-size:0.88rem;}
+  .conn-line{display:flex;align-items:center;gap:0.75rem;margin:0.5rem 0;}
+  .conn-line .paper-pill{background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:0.25rem 0.75rem;font-family:'DM Sans',sans-serif;font-size:0.78rem;font-weight:500;color:var(--ink);}
+  .conn-line .conn-desc{font-family:'DM Sans',sans-serif;font-size:0.8rem;color:var(--ink-light);}
+  .conn-line .arrow-conn{color:var(--accent);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+
+  <!-- S1 Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M3 · Lesson 3 — Documenting Findings</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>Connecting Ideas<br>Across Papers</h1>
+      <p class="subtitle">Individual notes are observations. Connections between them are <em>understanding</em>.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- S2 Why connections -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L3 — Why This Matters</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>From isolated notes to a knowledge map</h3>
+      <h2>The field is a<br>conversation, not a list</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="big-quote">"Every paper responds to prior work. If you can't see the chain of influence, you can't position your own work in it."</div>
+        </div>
+        <div>
+          <p style="margin-bottom:1rem;">Connecting ideas helps you:</p>
+          <ul class="clean">
+            <li>Trace how an idea evolved over time</li>
+            <li>Identify when papers solve the <strong>same problem differently</strong></li>
+            <li>Spot when papers solve <strong>different problems similarly</strong></li>
+            <li>Write related work that <em>positions</em>, not just lists</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- S3 Lineage example -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L3 — Research Lineage</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Tracing an idea's evolution</h3>
+      <h2>MF → NeuMF → LightGCN<br>→ K-RagRec</h2>
+      <div class="accent-line"></div>
+      <div class="lineage">
+        <div class="lin-node">
+          <div class="year">2009</div>
+          <div class="name">MF</div>
+          <div class="idea">Dot product of latent vectors</div>
+        </div>
+        <div class="lin-label">adds neural layers</div>
+        <div class="lin-arrow">→</div>
+        <div class="lin-node">
+          <div class="year">2017</div>
+          <div class="name">NeuMF</div>
+          <div class="idea">MLP on top of MF</div>
+        </div>
+        <div class="lin-label">adds graph structure</div>
+        <div class="lin-arrow">→</div>
+        <div class="lin-node">
+          <div class="year">2020</div>
+          <div class="name">LightGCN</div>
+          <div class="idea">Simplified graph convolution</div>
+        </div>
+        <div class="lin-label">adds LLM + KG</div>
+        <div class="lin-arrow">→</div>
+        <div class="lin-node highlight-node">
+          <div class="year">2025</div>
+          <div class="name">K-RagRec</div>
+          <div class="idea">GNN + KG RAG for LLM</div>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top:1.5rem;">
+        <p><strong>What this lineage reveals:</strong> Each step solves a limitation of the previous. K-RagRec solves LightGCN's lack of semantic knowledge — but inherits LightGCN's graph structure insight. This is how to write a related work section.</p>
+      </div>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- S4 Types of connections -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L3 — Connection Types</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Four types of inter-paper connections</h3>
+      <h2>Not all connections<br>are the same</h2>
+      <div class="accent-line"></div>
+      <div style="margin-top:0.5rem;">
+        <div class="conn-type">
+          <div class="conn-badge badge-evolves">Evolves</div>
+          <div><h4>A directly extends B</h4><p>Same problem, stronger method. LightGCN → K-RagRec. The newer paper explicitly cites and improves upon the older.</p></div>
+        </div>
+        <div class="conn-type">
+          <div class="conn-badge badge-same">Same problem</div>
+          <div><h4>Different methods, same goal</h4><p>KAPING and K-RagRec both address LLM knowledge gaps in RS — but via triple retrieval vs. subgraph encoding. Compare their trade-offs.</p></div>
+        </div>
+        <div class="conn-type">
+          <div class="conn-badge badge-diff">Same method</div>
+          <div><h4>Same technique, different domain</h4><p>G-Retriever applies graph RAG to general QA; K-RagRec applies it to RS. Transferring a method is a valid contribution.</p></div>
+        </div>
+        <div class="conn-type">
+          <div class="conn-badge badge-contra">Contradicts</div>
+          <div><h4>Two papers disagree</h4><p>One claims LLMs need KGs; another shows text-only RAG is sufficient. Contradictions are the most valuable connections — they define open questions.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- S5 How to document connections -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L3 — Documenting Connections</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Practical method</h3>
+      <h2>How to record<br>a connection</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1rem;">For each paper you finish, ask:</p>
+          <ul class="clean">
+            <li>Which papers does this <strong>directly respond to</strong>?</li>
+            <li>Which papers solve a <strong>similar problem differently</strong>?</li>
+            <li>Which papers does this <strong>enable or enable extension of</strong>?</li>
+            <li>Does this paper <strong>contradict</strong> anything I've read?</li>
+          </ul>
+          <p style="margin-top:1rem; font-size:0.88rem;">Write 1–2 sentences per connection. That's enough.</p>
+        </div>
+        <div>
+          <div class="note-card">
+            <div class="nc-title">Connection notes — K-RagRec</div>
+            <div class="conn-line">
+              <div class="paper-pill">K-RagRec</div>
+              <div class="arrow-conn">evolves</div>
+              <div class="paper-pill">G-Retriever</div>
+            </div>
+            <p style="font-size:0.82rem; margin-bottom:0.75rem;">Applies same graph RAG idea to RS specifically, adds popularity filtering and re-ranking.</p>
+            <div class="conn-line">
+              <div class="paper-pill">K-RagRec</div>
+              <div class="arrow-conn">same goal as</div>
+              <div class="paper-pill">KAPING</div>
+            </div>
+            <p style="font-size:0.82rem; margin-bottom:0.75rem;">Both address LLM knowledge gap. K-RagRec uses subgraphs; KAPING uses triples. Subgraphs capture structure better.</p>
+            <div class="conn-line">
+              <div class="paper-pill">K-RagRec</div>
+              <div class="arrow-conn">misses</div>
+              <div class="paper-pill">LightGCN</div>
+            </div>
+            <p style="font-size:0.82rem;">No comparison to classical CF. This is a gap that could invalidate the paper's practical claim.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- S6 From connections to your paper -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L3 — From Connections to Research</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>The payoff</h3>
+      <h2>Connections become<br>your positioning</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="big-quote" style="font-size:1.25rem;">"In your related work section, every paragraph should end with: 'but none of these address X — which we solve'."</div>
+          <p style="margin-top:1rem; font-size:0.9rem;">Your connection notes are the raw material. Group them by theme, not chronology.</p>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">Bad related work</h3>
+          <div class="card" style="border-left-color:#EF4444; background:#FEF2F2; margin-bottom:1rem;">
+            <p style="font-size:0.85rem;">"MF was proposed in 2009. Then NeuMF in 2017. Then LightGCN in 2020. Then K-RagRec in 2025..."</p>
+            <p style="font-size:0.78rem; color:#DC2626; margin-top:0.5rem;">This is a list. It positions nothing.</p>
+          </div>
+          <h3 style="margin-bottom:0.75rem;">Good related work</h3>
+          <div class="card" style="border-left-color:var(--accent3); background:#F0FDF4;">
+            <p style="font-size:0.85rem;">"Graph-based methods (LightGCN, NGCF) capture collaborative structure but lack semantic knowledge. LLM-based methods (KAPING, G-Retriever) add semantics but ignore structure. We propose X which addresses both."</p>
+            <p style="font-size:0.78rem; color:#059669; margin-top:0.5rem;">This positions. It earns its space.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- S7 M3 Complete -->
+  <div class="slide">
+    <div class="lesson-tag">M3 Complete — Documenting Findings</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>Module 3 complete</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">L1 · Summary Template</div>
+          <h4>One page per paper</h4>
+          <p>Problem → Approach → Key Idea → Strengths → Weaknesses → Relevance. In your own words.</p>
+        </div>
+        <div class="card orange">
+          <div class="card-num">L2 · Literature Matrix</div>
+          <h4>See the field at a glance</h4>
+          <p>Rows = papers, Columns = dimensions. Consistent blanks = your research opportunity.</p>
+        </div>
+        <div class="card teal">
+          <div class="card-num">L3 · Connections</div>
+          <h4>Map the conversation</h4>
+          <p>Evolves / Same problem / Same method / Contradicts. Connections become related work positioning.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);">Next: M4 · Reproducing Works — from equations to pseudocode to implementation</p>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 7</span>
+  <button onclick="next()">→</button>
+</div>
+<script>
+  const slides=document.querySelectorAll('.slide');const total=slides.length;let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);}function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>

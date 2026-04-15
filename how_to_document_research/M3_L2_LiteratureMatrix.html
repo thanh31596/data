@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3 · L2 — The Literature Matrix</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --ink:#111111; --ink-light:#555555; --ink-dim:#AAAAAA;
+    --accent:#0F766E; --accent2:#B45309; --accent3:#7C3AED;
+    --surface:#F5FBFA; --surface2:#E6F7F5; --border:#B2DFDB;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--white);}
+  .deck{width:100%;height:100vh;position:relative;}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:5vh 8vw;opacity:0;pointer-events:none;transition:opacity 0.35s ease,transform 0.35s ease;transform:translateX(40px);background:var(--white);}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+  .slide.exit{opacity:0;transform:translateX(-40px);}
+  .progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width 0.3s ease;z-index:100;}
+  .nav{position:fixed;bottom:2rem;right:3rem;display:flex;gap:0.75rem;align-items:center;z-index:100;}
+  .nav button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:1rem;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .nav button:hover{background:var(--ink);color:var(--white);border-color:var(--ink);}
+  .nav .counter{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);min-width:50px;text-align:center;}
+  .lesson-tag{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:auto;padding-top:0.5rem;}
+  .slide-num{font-family:'Playfair Display',serif;font-size:8rem;font-weight:900;color:var(--surface);line-height:1;position:absolute;right:7vw;top:3vh;user-select:none;}
+  h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;line-height:1.1;color:var(--ink);}
+  h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.5vw,2.8rem);font-weight:700;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+  h3{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:1.25rem;}
+  p,li{font-family:'DM Sans',sans-serif;font-size:clamp(0.92rem,1.7vw,1.08rem);color:var(--ink-light);line-height:1.7;}
+  strong{color:var(--ink);font-weight:500;}
+  em{color:var(--accent);font-style:normal;font-weight:500;}
+  .subtitle{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2vw,1.3rem);color:var(--ink-light);line-height:1.5;max-width:620px;margin-top:1rem;}
+  .accent-line{width:48px;height:3px;background:var(--accent);margin-bottom:2rem;border-radius:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:1rem;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;margin-top:1rem;}
+  .card{background:var(--surface);border-radius:12px;padding:1.5rem;border-left:4px solid var(--accent);}
+  .card.amber{border-left-color:var(--accent2);}
+  .card.purple{border-left-color:var(--accent3);}
+  .card-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.5rem;}
+  .card h4{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:0.4rem;}
+  .card p{font-size:0.88rem;}
+  .big-quote{font-family:'Playfair Display',serif;font-size:clamp(1.2rem,2.5vw,1.9rem);font-weight:400;font-style:italic;line-height:1.4;color:var(--ink);border-left:4px solid var(--accent);padding-left:2rem;max-width:720px;margin:1.5rem 0;}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"→";color:var(--accent);font-weight:500;flex-shrink:0;margin-top:0.05rem;}
+  .highlight{background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-top:1rem;}
+  .highlight p{font-size:0.92rem;}
+  .kbd-hint{position:fixed;bottom:2rem;left:3rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);}
+
+  /* Matrix table */
+  .matrix-wrap{overflow-x:auto;margin-top:1rem;}
+  .matrix{border-collapse:collapse;width:100%;font-size:0.78rem;}
+  .matrix th{background:var(--ink);color:white;padding:0.55rem 0.85rem;font-family:'DM Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;text-align:left;white-space:nowrap;}
+  .matrix td{padding:0.55rem 0.85rem;border-bottom:1px solid var(--border);font-family:'DM Sans',sans-serif;color:var(--ink-light);vertical-align:top;white-space:nowrap;}
+  .matrix tr:nth-child(even) td{background:var(--surface);}
+  .matrix td:first-child{font-weight:500;color:var(--ink);}
+  .gap-cell{background:#FEF3C7 !important;color:#92400E !important;font-weight:500;}
+  .strong-cell{background:#D1FAE5 !important;color:#065F46 !important;font-weight:500;}
+
+  /* Gap finder visual */
+  .gap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem;margin-top:0.75rem;}
+  .gap-item{border-radius:6px;padding:0.6rem 0.75rem;font-family:'DM Sans',sans-serif;font-size:0.78rem;}
+  .gap-item.filled{background:var(--surface2);border:1px solid var(--border);color:var(--ink);}
+  .gap-item.gap{background:#FEF3C7;border:1.5px dashed #F59E0B;color:#92400E;font-weight:500;}
+  .gap-item.header{background:var(--ink);color:white;font-weight:500;font-size:0.72rem;}
+  .row-label{background:transparent !important;border:none !important;font-weight:600;color:var(--ink) !important;font-size:0.8rem !important;}
+
+  /* Column legend */
+  .col-legend{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;}
+  .legend-item{display:flex;align-items:center;gap:0.5rem;font-family:'DM Sans',sans-serif;font-size:0.8rem;color:var(--ink-light);}
+  .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+
+  <!-- S1 Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M3 · Lesson 2 — Documenting Findings</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>The Literature<br>Matrix</h1>
+      <p class="subtitle">Individual paper notes tell you what one paper says.<br>The matrix shows you <em>what the field hasn't done yet</em>.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- S2 What is it -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L2 — What Is It</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>From notes to structure</h3>
+      <h2>One row per paper,<br>one column per dimension</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1rem;">The literature matrix is a <strong>structured table</strong> where each row is one paper and each column is a research dimension:</p>
+          <ul class="clean">
+            <li>Problem type</li>
+            <li>Method category</li>
+            <li>Datasets used</li>
+            <li>Evaluation metrics</li>
+            <li>Key limitation</li>
+          </ul>
+        </div>
+        <div>
+          <div class="big-quote" style="font-size:1.3rem;">"When you see 5 papers in a row with the same gap in the same column — that's your research opportunity."</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- S3 Example matrix -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L2 — Example</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>KG + LLM recommendation papers</h3>
+      <h2>A mini matrix</h2>
+      <div class="accent-line"></div>
+      <div class="matrix-wrap">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>Paper</th>
+              <th>Problem</th>
+              <th>Method</th>
+              <th>Dataset</th>
+              <th>Cold-start?</th>
+              <th>Trad. Baselines?</th>
+              <th>Key Limitation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>K-RagRec (2025)</td>
+              <td>Hallucination + knowledge gap</td>
+              <td>KG subgraph RAG + GNN</td>
+              <td>ML-1M, ML-20M, Book</td>
+              <td class="strong-cell">✓ Yes</td>
+              <td class="gap-cell">✗ No</td>
+              <td>Requires KG availability</td>
+            </tr>
+            <tr>
+              <td>G-Retriever (2024)</td>
+              <td>LLM hallucination on graphs</td>
+              <td>Graph RAG + LLM</td>
+              <td>Various graphs</td>
+              <td class="gap-cell">✗ No</td>
+              <td class="gap-cell">✗ No</td>
+              <td>Not RS-specific</td>
+            </tr>
+            <tr>
+              <td>KAPING (2023)</td>
+              <td>LLM knowledge gap</td>
+              <td>KG triple retrieval</td>
+              <td>ML-1M</td>
+              <td class="gap-cell">✗ No</td>
+              <td class="gap-cell">✗ No</td>
+              <td>Text only, no structure</td>
+            </tr>
+            <tr>
+              <td>LightGCN (2020)</td>
+              <td>Over-parameterised GCN</td>
+              <td>Simplified GCN</td>
+              <td>Gowalla, Yelp</td>
+              <td class="gap-cell">✗ No</td>
+              <td class="strong-cell">✓ Yes</td>
+              <td>No side info, no KG</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="highlight" style="margin-top:1rem;">
+        <p><strong>Pattern visible immediately:</strong> The "Trad. Baselines?" column is almost entirely ✗. Three papers in the same sub-area all avoid comparing to classical CF. That's a systematic gap.</p>
+      </div>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- S4 How to spot gaps -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L2 — Gap Finding</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>The core skill</h3>
+      <h2>Gaps become<br>research questions</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1.25rem;">Once you have 5–10 papers in a matrix, scan each column vertically. Look for:</p>
+          <ul class="clean">
+            <li><strong>Consistent blanks</strong> — no one has addressed this</li>
+            <li><strong>Consistent same answer</strong> — everyone uses the same dataset; untested on others</li>
+            <li><strong>Gradual improvement</strong> — the field is converging; are you too late?</li>
+            <li><strong>Contradictions</strong> — two papers claim opposite things about the same method</li>
+          </ul>
+        </div>
+        <div>
+          <div class="gap-grid">
+            <div class="gap-item header">Paper</div>
+            <div class="gap-item header">Cold-start</div>
+            <div class="gap-item header">No-KG</div>
+            <div class="gap-item header">Dense eval</div>
+            <div class="row-label gap-item">K-RagRec</div>
+            <div class="gap-item filled">✓</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="row-label gap-item">G-Retriever</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="row-label gap-item">KAPING</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="row-label gap-item">LightGCN</div>
+            <div class="gap-item gap">✗ GAP</div>
+            <div class="gap-item filled">✓</div>
+            <div class="gap-item filled">✓</div>
+          </div>
+          <p style="margin-top:0.75rem; font-size:0.82rem; color:var(--ink-dim);">Yellow = gap. A column full of yellow = a research paper.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- S5 What columns to choose -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L2 — Column Design</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Designing your matrix</h3>
+      <h2>Choose columns<br>based on your research area</h2>
+      <div class="accent-line"></div>
+      <div class="three-col">
+        <div class="card">
+          <div class="card-num">Always include</div>
+          <h4>Fixed dimensions</h4>
+          <p>Problem type, Method category, Datasets, Metrics, Key limitation. These apply to every RS paper.</p>
+        </div>
+        <div class="card amber">
+          <div class="card-num">Add for your focus</div>
+          <h4>Domain dimensions</h4>
+          <p>Cold-start? Sequential? LLM-based? Graph-based? Knowledge-aware? Pick 3–4 that define your research space.</p>
+        </div>
+        <div class="card purple">
+          <div class="card-num">Add for positioning</div>
+          <h4>Comparison dimensions</h4>
+          <p>Does it compare to trad. CF? Does it test on sparse data? Does it evaluate fairness? These reveal community norms.</p>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top:1.25rem;">
+        <p><strong>Your Excel file already has the Literature Matrix sheet</strong> with standard columns. Add 2–3 columns specific to your research focus — that's where your unique insight comes from.</p>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- S6 How to maintain it -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L2 — Workflow</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Making it stick</h3>
+      <h2>The matrix only works<br>if you maintain it</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1rem;">Simple workflow:</p>
+          <ul class="clean">
+            <li>Fill one row <strong>immediately after</strong> each paper summary — while it's fresh</li>
+            <li>Review the full matrix <strong>once a month</strong> — look for emerging patterns</li>
+            <li>Before writing any paper section, <strong>sort by the relevant column</strong></li>
+            <li>Add a row even for papers you reject after Pass 1 — record why</li>
+          </ul>
+        </div>
+        <div>
+          <div class="big-quote" style="font-size:1.25rem;">"The matrix pays back 10× when you're writing your related work section and need to position your paper in the field."</div>
+          <p style="margin-top:1rem; font-size:0.9rem;">Instead of re-reading 20 papers, you scan the matrix in 5 minutes and immediately see where your work sits.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- S7 Takeaways -->
+  <div class="slide">
+    <div class="lesson-tag">M3 · L2 — Key Takeaways</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>What to remember</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>Rows = papers,<br>Columns = dimensions</h4>
+          <p>Fill one row per paper immediately after your summary. Consistency is everything.</p>
+        </div>
+        <div class="card amber">
+          <div class="card-num">02</div>
+          <h4>Scan columns for gaps</h4>
+          <p>A column with consistent blanks = a problem the field hasn't solved = your research opportunity.</p>
+        </div>
+        <div class="card purple">
+          <div class="card-num">03</div>
+          <h4>Design columns around your focus</h4>
+          <p>Standard columns track the field. Your custom columns track what matters to your specific research direction.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);">Next: M3 · L3 — Connecting Ideas Across Papers</p>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 7</span>
+  <button onclick="next()">→</button>
+</div>
+<script>
+  const slides=document.querySelectorAll('.slide');const total=slides.length;let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);}function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>
