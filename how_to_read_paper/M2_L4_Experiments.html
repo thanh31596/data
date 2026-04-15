@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M2 · L4 — Reading Experimental Sections</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --ink:#111111; --ink-light:#555555; --ink-dim:#AAAAAA;
+    --accent:#7C3AED; --accent2:#E8572A; --accent3:#059669;
+    --surface:#F7F6F3; --border:#E8E6E0;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { width:100%; height:100%; overflow:hidden; background:var(--white); }
+  .deck { width:100%; height:100vh; position:relative; }
+  .slide { position:absolute; inset:0; display:flex; flex-direction:column; padding:5vh 8vw; opacity:0; pointer-events:none; transition:opacity 0.35s ease,transform 0.35s ease; transform:translateX(40px); background:var(--white); }
+  .slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+  .slide.exit { opacity:0; transform:translateX(-40px); }
+  .progress-bar { position:fixed; top:0; left:0; height:3px; background:var(--accent); transition:width 0.3s ease; z-index:100; }
+  .nav { position:fixed; bottom:2rem; right:3rem; display:flex; gap:0.75rem; align-items:center; z-index:100; }
+  .nav button { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--border); background:var(--white); cursor:pointer; font-size:1rem; color:var(--ink); transition:all 0.15s; display:flex; align-items:center; justify-content:center; }
+  .nav button:hover { background:var(--ink); color:var(--white); border-color:var(--ink); }
+  .nav .counter { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--ink-dim); min-width:50px; text-align:center; }
+  .lesson-tag { font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:auto; padding-top:0.5rem; }
+  .slide-num { font-family:'Playfair Display',serif; font-size:8rem; font-weight:900; color:var(--surface); line-height:1; position:absolute; right:7vw; top:3vh; user-select:none; }
+  h1 { font-family:'Playfair Display',serif; font-size:clamp(2.2rem,5vw,4rem); font-weight:900; line-height:1.1; color:var(--ink); margin-bottom:0.5rem; }
+  h2 { font-family:'Playfair Display',serif; font-size:clamp(1.6rem,3.5vw,2.8rem); font-weight:700; line-height:1.15; color:var(--ink); margin-bottom:1.5rem; }
+  h3 { font-family:'DM Sans',sans-serif; font-size:0.75rem; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--ink-dim); margin-bottom:1.25rem; }
+  p,li { font-family:'DM Sans',sans-serif; font-size:clamp(0.95rem,1.8vw,1.1rem); color:var(--ink-light); line-height:1.7; }
+  strong { color:var(--ink); font-weight:500; }
+  em { color:var(--accent2); font-style:normal; font-weight:500; }
+  .subtitle { font-family:'DM Sans',sans-serif; font-size:clamp(1rem,2vw,1.3rem); color:var(--ink-light); line-height:1.5; max-width:600px; margin-top:1rem; }
+  .accent-line { width:48px; height:3px; background:var(--accent); margin-bottom:2rem; border-radius:2px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:3rem; margin-top:1rem; }
+  .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:2rem; margin-top:1rem; }
+  .card { background:var(--surface); border-radius:12px; padding:1.5rem; border-left:4px solid var(--accent); }
+  .card.orange { border-left-color:var(--accent2); }
+  .card.green { border-left-color:var(--accent3); }
+  .card-num { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--ink-dim); margin-bottom:0.5rem; }
+  .card h4 { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; color:var(--ink); margin-bottom:0.5rem; }
+  .card p { font-size:0.9rem; }
+  .big-quote { font-family:'Playfair Display',serif; font-size:clamp(1.2rem,2.5vw,1.9rem); font-weight:400; font-style:italic; line-height:1.4; color:var(--ink); border-left:4px solid var(--accent); padding-left:2rem; max-width:750px; margin:1.5rem 0; }
+  ul.clean { list-style:none; }
+  ul.clean li { padding:0.6rem 0; border-bottom:1px solid var(--border); display:flex; gap:1rem; align-items:flex-start; }
+  ul.clean li:last-child { border-bottom:none; }
+  ul.clean li::before { content:"→"; color:var(--accent); font-weight:500; flex-shrink:0; margin-top:0.05rem; }
+  .highlight { background:#F5F3FF; border:1.5px solid #DDD6FE; border-radius:10px; padding:1.25rem 1.5rem; margin-top:1rem; }
+  .highlight p { font-size:0.9rem; }
+  .warn { background:#FFF7ED; border:1.5px solid #FED7AA; border-radius:10px; padding:1.25rem 1.5rem; margin-top:1rem; }
+  .kbd-hint { position:fixed; bottom:2rem; left:3rem; font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--ink-dim); }
+
+  /* Fake table */
+  .fake-table { border:1.5px solid var(--border); border-radius:10px; overflow:hidden; margin-top:1rem; }
+  .ft-header { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; background:var(--ink); }
+  .ft-header div { font-family:'DM Mono',monospace; font-size:0.7rem; color:white; padding:0.6rem 1rem; text-transform:uppercase; letter-spacing:0.08em; }
+  .ft-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; border-top:1px solid var(--border); }
+  .ft-row:nth-child(even) { background:var(--surface); }
+  .ft-row div { font-family:'DM Sans',sans-serif; font-size:0.85rem; color:var(--ink-light); padding:0.65rem 1rem; display:flex; align-items:center; }
+  .ft-row .method { font-weight:500; color:var(--ink); }
+  .best { color:var(--accent2) !important; font-weight:700 !important; }
+  .ours { background:#F5F3FF !important; }
+  .ours div { font-weight:500; }
+
+  /* Ablation viz */
+  .ablation-bars { display:flex; flex-direction:column; gap:0.5rem; margin-top:0.75rem; }
+  .abl-row { display:flex; align-items:center; gap:1rem; }
+  .abl-label { font-family:'DM Sans',sans-serif; font-size:0.82rem; color:var(--ink); width:140px; flex-shrink:0; }
+  .abl-bar-wrap { flex:1; background:var(--surface); border-radius:4px; height:28px; overflow:hidden; position:relative; }
+  .abl-bar { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:0.75rem; }
+  .abl-bar span { font-family:'DM Mono',monospace; font-size:0.75rem; color:white; font-weight:500; }
+  .abl-bar.full { background:var(--accent); width:100%; }
+  .abl-bar.drop1 { background:#A78BFA; width:82%; }
+  .abl-bar.drop2 { background:#C4B5FD; width:63%; }
+  .abl-bar.drop3 { background:#DDD6FE; width:71%; }
+  .abl-bar.drop4 { background:#EDE9FE; width:55%; }
+  .abl-bar.drop4 span { color:var(--ink-dim); }
+  .abl-bar.drop3 span { color:var(--accent); }
+
+  /* Tricks checklist */
+  .trick-list { display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem; }
+  .trick { display:flex; gap:1rem; align-items:flex-start; padding:0.75rem 1rem; border-radius:8px; background:var(--surface); border:1px solid var(--border); }
+  .trick-icon { font-size:1.1rem; flex-shrink:0; }
+  .trick div h4 { font-family:'DM Sans',sans-serif; font-weight:500; font-size:0.9rem; color:var(--ink); margin-bottom:0.2rem; }
+  .trick div p { font-size:0.82rem; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+
+  <!-- Slide 1: Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M2 · Lesson 4 — Reading Papers Effectively</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>Reading<br>Experimental Sections</h1>
+      <p class="subtitle">Results tables look objective. They're not.<br>Learn to read <em>what they hide</em>, not just what they show.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- Slide 2: The structure of experiments -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L4 — Structure</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>What to look for</h3>
+      <h2>4 components in<br>every experiment section</h2>
+      <div class="accent-line"></div>
+      <div class="three-col">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>Datasets</h4>
+          <p>Standard benchmarks or cherry-picked? Dense or sparse? How old are they?</p>
+        </div>
+        <div class="card orange">
+          <div class="card-num">02</div>
+          <h4>Baselines</h4>
+          <p>Are the strongest recent methods included? Are implementations fair?</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">03</div>
+          <h4>Metrics</h4>
+          <p>Do they report only the metrics where they win? Are evaluation protocols valid?</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1.25rem; border-left-color:var(--ink);">
+        <div class="card-num">04 — most revealing</div>
+        <h4>Ablation Study</h4>
+        <p>Which component, when removed, hurts the most? That's where the real contribution is — and your research opportunity.</p>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- Slide 3: Reading a results table -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L4 — Results Tables</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>How to read a results table</h3>
+      <h2>Don't start at<br>the best number</h2>
+      <div class="accent-line"></div>
+      <div class="fake-table">
+        <div class="ft-header">
+          <div>Method</div><div>ACC</div><div>R@3</div><div>R@5</div>
+        </div>
+        <div class="ft-row">
+          <div class="method">KG-Text</div><div>0.076</div><div>—</div><div>—</div>
+        </div>
+        <div class="ft-row">
+          <div class="method">KAPING</div><div>0.079</div><div>—</div><div>—</div>
+        </div>
+        <div class="ft-row">
+          <div class="method">G-retriever</div><div class="best">0.274</div><div class="best">0.532</div><div class="best">0.650</div>
+        </div>
+        <div class="ft-row ours">
+          <div class="method" style="color:var(--accent);">K-RagRec (ours)</div><div>0.435</div><div>0.725</div><div>0.831</div>
+        </div>
+      </div>
+      <div class="two-col" style="margin-top:1rem;">
+        <div class="highlight">
+          <p><strong>Find the weakest result first.</strong> Which dataset, metric, or backbone shows the smallest gap over the best baseline? That's where the method is most fragile.</p>
+        </div>
+        <div class="warn">
+          <p><strong>K-RagRec on LLaMA-3:</strong> improvement is only 2.5% on R@5. Much weaker than the 27.8% on LLaMA-2. Why? The paper doesn't explain this clearly.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- Slide 4: Common tricks -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L4 — Common Tricks</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Patterns that inflate results</h3>
+      <h2>Tricks papers use<br>(sometimes unconsciously)</h2>
+      <div class="accent-line"></div>
+      <div class="trick-list">
+        <div class="trick">
+          <div class="trick-icon">🎯</div>
+          <div><h4>Random negative sampling</h4><p>Evaluating on 1 positive + 19 random negatives is much easier than full ranking. Numbers look good but don't reflect real recommendation quality.</p></div>
+        </div>
+        <div class="trick">
+          <div class="trick-icon">📊</div>
+          <div><h4>Cherry-picked datasets</h4><p>Old, dense datasets (MovieLens-1M is from 2003) don't reflect modern RS challenges. Results may not transfer.</p></div>
+        </div>
+        <div class="trick">
+          <div class="trick-icon">🔬</div>
+          <div><h4>Weak baseline implementations</h4><p>If authors reimplement baselines themselves instead of using original code, they may be suboptimal. Check if the paper cites the original implementation.</p></div>
+        </div>
+        <div class="trick">
+          <div class="trick-icon">📈</div>
+          <div><h4>Selective metric reporting</h4><p>If a paper reports Recall@3 and Recall@5 but not NDCG, ask why. Different metrics tell different stories.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- Slide 5: Ablation studies -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L4 — Ablation Studies</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>The most underread part of any paper</h3>
+      <h2>Ablation studies<br>reveal the truth</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1rem;">An ablation removes one component at a time to show its contribution. Read it as:</p>
+          <div class="big-quote" style="font-size:1.2rem; margin:1rem 0;">"If I remove X and performance drops a lot — X is the real contribution."</div>
+          <p style="font-size:0.9rem;">The component with the <strong>biggest drop</strong> is what the paper is actually about — and your best target for extension.</p>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">K-RagRec ablation (ML-1M ACC)</h3>
+          <div class="ablation-bars">
+            <div class="abl-row">
+              <div class="abl-label">K-RagRec (full)</div>
+              <div class="abl-bar-wrap"><div class="abl-bar full"><span>0.435</span></div></div>
+            </div>
+            <div class="abl-row">
+              <div class="abl-label">− Re-ranking</div>
+              <div class="abl-bar-wrap"><div class="abl-bar drop1"><span>0.357</span></div></div>
+            </div>
+            <div class="abl-row">
+              <div class="abl-label">− Indexing</div>
+              <div class="abl-bar-wrap"><div class="abl-bar drop2"><span>0.274</span></div></div>
+            </div>
+            <div class="abl-row">
+              <div class="abl-label">− Popularity</div>
+              <div class="abl-bar-wrap"><div class="abl-bar drop3"><span>0.309</span></div></div>
+            </div>
+            <div class="abl-row">
+              <div class="abl-label" style="font-weight:700;">− GNN Encoder</div>
+              <div class="abl-bar-wrap"><div class="abl-bar drop4"><span style="color:#7C3AED;">0.196 ← biggest drop</span></div></div>
+            </div>
+          </div>
+          <div class="highlight" style="margin-top:0.75rem;">
+            <p><strong>Insight:</strong> GNN Encoder is the core contribution. Everything else is supporting infrastructure.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- Slide 6: Putting it all together -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L4 — Synthesis</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Full picture on K-RagRec</h3>
+      <h2>Reading K-RagRec<br>experiments critically</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <h3 style="margin-bottom:0.75rem;">What they show well</h3>
+          <ul class="clean">
+            <li>Consistent improvement across 3 datasets</li>
+            <li>Efficiency comparison (Table 2) — inference time</li>
+            <li>Zero-shot generalisation study (Table 6)</li>
+            <li>Hallucination reduction (Table 7)</li>
+            <li>Multiple backbone LLMs tested</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">What they hide</h3>
+          <ul class="clean" style="--accent: var(--accent2);">
+            <li>No comparison to traditional CF baselines</li>
+            <li>Random negative evaluation inflates numbers</li>
+            <li>LLaMA-3 improvements much smaller — unexplained</li>
+            <li>p=50% threshold not rigorously justified</li>
+            <li>KG completeness not discussed</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- Slide 7: Your reading checklist -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L4 — Checklist</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Use every time</h3>
+      <h2>The experiment<br>reading checklist</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <ul class="clean">
+          <li>What datasets? Standard or cherry-picked?</li>
+          <li>What baselines? Any strong method missing?</li>
+          <li>What metrics? Any notable omissions?</li>
+          <li>What's the evaluation protocol? Random or hard negatives?</li>
+        </ul>
+        <ul class="clean">
+          <li>Find the weakest result — which row/column?</li>
+          <li>Read the ablation — what's the biggest drop?</li>
+          <li>Does the conclusion match what the tables show?</li>
+          <li>What would break this method?</li>
+        </ul>
+      </div>
+      <div class="highlight" style="margin-top:1.5rem;">
+        <p><strong>The last question is the most important.</strong> "What would break this method?" — your answer to that is the seed of your next research idea.</p>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+  <!-- Slide 8: M2 Complete -->
+  <div class="slide">
+    <div class="lesson-tag">M2 Complete — Reading Papers Effectively</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>Module 2 complete</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">L1 · Anatomy</div>
+          <h4>Know the skeleton</h4>
+          <p>Methodology is the paper. Contributions list is the contract. Read gaps, not just results.</p>
+        </div>
+        <div class="card orange">
+          <div class="card-num">L2 · 3-Pass</div>
+          <h4>Read efficiently</h4>
+          <p>5 min → 30 min → 2 hrs. Stop when you have what you need. Most papers only need Pass 2.</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">L3–L4 · Critical</div>
+          <h4>Question everything</h4>
+          <p>Hidden assumptions, missing baselines, weak evaluation. Ablations reveal the real contribution.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--ink-dim);">Next: M3 · Documenting Findings — building your systematic knowledge base</p>
+      </div>
+    </div>
+    <div class="slide-num">08</div>
+  </div>
+
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 8</span>
+  <button onclick="next()">→</button>
+</div>
+<script>
+  const slides=document.querySelectorAll('.slide'); const total=slides.length; let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);} function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M2 · L3 — Critical Questions</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --ink:#111111; --ink-light:#555555; --ink-dim:#AAAAAA;
+    --accent:#059669; --accent2:#E8572A; --accent3:#7C3AED;
+    --surface:#F7F6F3; --border:#E8E6E0;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { width:100%; height:100%; overflow:hidden; background:var(--white); }
+  .deck { width:100%; height:100vh; position:relative; }
+  .slide { position:absolute; inset:0; display:flex; flex-direction:column; padding:5vh 8vw; opacity:0; pointer-events:none; transition:opacity 0.35s ease,transform 0.35s ease; transform:translateX(40px); background:var(--white); }
+  .slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+  .slide.exit { opacity:0; transform:translateX(-40px); }
+  .progress-bar { position:fixed; top:0; left:0; height:3px; background:var(--accent); transition:width 0.3s ease; z-index:100; }
+  .nav { position:fixed; bottom:2rem; right:3rem; display:flex; gap:0.75rem; align-items:center; z-index:100; }
+  .nav button { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--border); background:var(--white); cursor:pointer; font-size:1rem; color:var(--ink); transition:all 0.15s; display:flex; align-items:center; justify-content:center; }
+  .nav button:hover { background:var(--ink); color:var(--white); border-color:var(--ink); }
+  .nav .counter { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--ink-dim); min-width:50px; text-align:center; }
+  .lesson-tag { font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:auto; padding-top:0.5rem; }
+  .slide-num { font-family:'Playfair Display',serif; font-size:8rem; font-weight:900; color:var(--surface); line-height:1; position:absolute; right:7vw; top:3vh; user-select:none; }
+  h1 { font-family:'Playfair Display',serif; font-size:clamp(2.2rem,5vw,4rem); font-weight:900; line-height:1.1; color:var(--ink); margin-bottom:0.5rem; }
+  h2 { font-family:'Playfair Display',serif; font-size:clamp(1.6rem,3.5vw,2.8rem); font-weight:700; line-height:1.15; color:var(--ink); margin-bottom:1.5rem; }
+  h3 { font-family:'DM Sans',sans-serif; font-size:0.75rem; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--ink-dim); margin-bottom:1.25rem; }
+  p, li { font-family:'DM Sans',sans-serif; font-size:clamp(0.95rem,1.8vw,1.1rem); color:var(--ink-light); line-height:1.7; }
+  strong { color:var(--ink); font-weight:500; }
+  em { color:var(--accent2); font-style:normal; font-weight:500; }
+  .subtitle { font-family:'DM Sans',sans-serif; font-size:clamp(1rem,2vw,1.3rem); color:var(--ink-light); line-height:1.5; max-width:600px; margin-top:1rem; }
+  .accent-line { width:48px; height:3px; background:var(--accent); margin-bottom:2rem; border-radius:2px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:3rem; margin-top:1rem; }
+  .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:2rem; margin-top:1rem; }
+  .card { background:var(--surface); border-radius:12px; padding:1.5rem; border-left:4px solid var(--accent); position:relative; }
+  .card.orange { border-left-color:var(--accent2); }
+  .card.purple { border-left-color:var(--accent3); }
+  .card-num { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--ink-dim); margin-bottom:0.5rem; }
+  .card h4 { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; color:var(--ink); margin-bottom:0.5rem; }
+  .card p { font-size:0.9rem; }
+  .big-quote { font-family:'Playfair Display',serif; font-size:clamp(1.3rem,3vw,2rem); font-weight:400; font-style:italic; line-height:1.4; color:var(--ink); border-left:4px solid var(--accent); padding-left:2rem; max-width:750px; margin:1.5rem 0; }
+  ul.clean { list-style:none; }
+  ul.clean li { padding:0.6rem 0; border-bottom:1px solid var(--border); display:flex; gap:1rem; align-items:flex-start; }
+  ul.clean li:last-child { border-bottom:none; }
+  ul.clean li::before { content:"→"; color:var(--accent); font-weight:500; flex-shrink:0; margin-top:0.05rem; }
+  .highlight { background:#ECFDF5; border:1.5px solid #A7F3D0; border-radius:10px; padding:1.25rem 1.5rem; margin-top:1.5rem; }
+  .highlight p { font-size:0.95rem; }
+  .warn { background:#FFF7ED; border:1.5px solid #FED7AA; border-radius:10px; padding:1.25rem 1.5rem; margin-top:1rem; }
+  .kbd-hint { position:fixed; bottom:2rem; left:3rem; font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--ink-dim); }
+
+  /* Q cards */
+  .q-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem; }
+  .q-card {
+    border:1.5px solid var(--border); border-radius:10px;
+    padding:1.25rem; position:relative; overflow:hidden;
+  }
+  .q-card::before {
+    content:attr(data-num);
+    font-family:'Playfair Display',serif;
+    font-size:4rem; font-weight:900;
+    color:var(--surface); position:absolute;
+    right:1rem; top:0.25rem; line-height:1;
+  }
+  .q-card h4 { font-family:'DM Sans',sans-serif; font-weight:500; font-size:0.95rem; color:var(--ink); margin-bottom:0.4rem; }
+  .q-card p { font-size:0.82rem; color:var(--ink-light); }
+  .q-card.active-q { border-color:var(--accent); background:#ECFDF5; }
+  .q-card.active-q::before { color:#D1FAE5; }
+
+  /* Example box */
+  .example-box {
+    background:var(--surface); border-radius:12px;
+    padding:1.5rem; margin-top:1.5rem;
+    border-top:3px solid var(--accent2);
+  }
+  .example-box .ex-label { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--accent2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.75rem; }
+  .example-box p { font-size:0.9rem; }
+
+  /* Verdict cards */
+  .verdict-row { display:flex; flex-direction:column; gap:0.6rem; margin-top:1rem; }
+  .verdict { display:grid; grid-template-columns:1fr 2fr 1fr; gap:1rem; align-items:center; padding:0.85rem 1.25rem; border-radius:8px; background:var(--surface); border:1px solid var(--border); }
+  .verdict .q { font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500; color:var(--ink); }
+  .verdict .a { font-size:0.85rem; color:var(--ink-light); }
+  .verdict .badge { font-family:'DM Mono',monospace; font-size:0.7rem; padding:0.25rem 0.6rem; border-radius:20px; text-align:center; }
+  .badge.warn-b { background:#FEF3C7; color:#92400E; }
+  .badge.ok { background:#D1FAE5; color:#065F46; }
+  .badge.red { background:#FEE2E2; color:#991B1B; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+
+  <!-- Slide 1: Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M2 · Lesson 3 — Reading Papers Effectively</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>Critical Questions<br>to Ask Every Paper</h1>
+      <p class="subtitle">Reading is passive. <em>Questioning</em> is what makes you a researcher.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- Slide 2: Why critical questions -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — Why This Matters</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>The difference between reading and researching</h3>
+      <h2>Papers are arguments,<br>not facts</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="big-quote">"Every paper is trying to convince you of something. Your job is to decide whether to be convinced."</div>
+        </div>
+        <div>
+          <p style="margin-bottom:1rem;">Critical questions help you:</p>
+          <ul class="clean">
+            <li>Spot hidden assumptions in formulations</li>
+            <li>Identify unfair comparisons in experiments</li>
+            <li>Find gaps that become your research opportunities</li>
+            <li>Write better reviews at venues</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- Slide 3: The 5 questions -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — The Framework</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Ask these every time</h3>
+      <h2>5 questions for<br>every paper</h2>
+      <div class="accent-line"></div>
+      <div class="q-grid">
+        <div class="q-card" data-num="1">
+          <h4>What is the actual problem?</h4>
+          <p>Not what they say — what do they actually solve? Are these the same thing?</p>
+        </div>
+        <div class="q-card" data-num="2">
+          <h4>What assumptions are hidden?</h4>
+          <p>Every formulation buries assumptions. What are they assuming is true?</p>
+        </div>
+        <div class="q-card" data-num="3">
+          <h4>Is the baseline comparison fair?</h4>
+          <p>Are hyperparameters tuned equally? Are strong recent baselines missing?</p>
+        </div>
+        <div class="q-card" data-num="4">
+          <h4>Would this generalise?</h4>
+          <p>Does it work on different datasets? Different domains? Cold-start?</p>
+        </div>
+        <div class="q-card active-q" data-num="5">
+          <h4>What does the ablation reveal?</h4>
+          <p>Remove each component — what actually drives the performance gain?</p>
+        </div>
+        <div class="q-card" data-num="">
+          <h4 style="color:var(--ink-dim);">Your own question</h4>
+          <p style="color:var(--ink-dim);">Add one specific to your research area.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- Slide 4: Q1 — Actual problem -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — Question 1</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Question 1</h3>
+      <h2>What is the<br>actual problem?</h2>
+      <div class="accent-line"></div>
+      <p style="margin-bottom:1.5rem;">Papers often <strong>claim</strong> to solve one problem while <strong>actually</strong> solving a narrower or different one. Look for the gap.</p>
+      <div class="example-box">
+        <div class="ex-label">K-RagRec example</div>
+        <div class="two-col" style="margin-top:0;">
+          <div>
+            <p><strong>Claimed:</strong> Addresses LLM hallucination and lack of domain knowledge in RS.</p>
+          </div>
+          <div>
+            <p><strong>Actual:</strong> Addresses this only when a KG exists for the domain — which is not always available in practice.</p>
+          </div>
+        </div>
+      </div>
+      <div class="warn">
+        <p><strong>Ask yourself:</strong> If I removed the KG, what problem is left? Is the problem actually the KG retrieval design, not LLM hallucination itself?</p>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- Slide 5: Q2 — Hidden assumptions -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — Question 2</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Question 2</h3>
+      <h2>What assumptions<br>are hidden?</h2>
+      <div class="accent-line"></div>
+      <p style="margin-bottom:1.5rem;">Authors rarely announce their assumptions. You have to find them by reading the formulation carefully.</p>
+      <div class="three-col">
+        <div class="card">
+          <div class="card-num">Assumption type 1</div>
+          <h4>Data assumptions</h4>
+          <p>Does the method assume explicit ratings? Dense interactions? A specific popularity distribution?</p>
+        </div>
+        <div class="card orange">
+          <div class="card-num">Assumption type 2</div>
+          <h4>Model assumptions</h4>
+          <p>Independence of ratings? Linear relationships? That the KG is complete and accurate?</p>
+        </div>
+        <div class="card purple">
+          <div class="card-num">Assumption type 3</div>
+          <h4>Evaluation assumptions</h4>
+          <p>Random negative sampling? Leave-one-out? These choices dramatically inflate reported numbers.</p>
+        </div>
+      </div>
+      <div class="example-box" style="margin-top:1.25rem;">
+        <div class="ex-label">K-RagRec hidden assumption</div>
+        <p>The popularity threshold p=50% assumes that popularity follows a clean binary split. In reality, popularity is a continuous power-law distribution — the threshold is a design choice presented as fact.</p>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- Slide 6: Q3 — Baseline fairness -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — Question 3</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Question 3 — the most commonly violated</h3>
+      <h2>Is the comparison fair?</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <ul class="clean">
+            <li>Were all baselines tuned with equal effort?</li>
+            <li>Are the strongest recent baselines included?</li>
+            <li>Are baseline implementations from their original papers or reimplemented (possibly weaker)?</li>
+            <li>Is the same train/test split used for all methods?</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">K-RagRec: fair or not?</h3>
+          <div class="verdict-row">
+            <div class="verdict">
+              <div class="q">Baselines included</div>
+              <div class="a">KG-Text, KAPING, G-retriever, GraphToken</div>
+              <div class="badge ok">Fair</div>
+            </div>
+            <div class="verdict">
+              <div class="q">Traditional RS baselines</div>
+              <div class="a">LightGCN, SASRec, BPR — none included</div>
+              <div class="badge red">Missing</div>
+            </div>
+            <div class="verdict">
+              <div class="q">Negative sampling</div>
+              <div class="a">19 random negatives — too easy</div>
+              <div class="badge warn-b">Weak</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- Slide 7: Q4 + Q5 -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — Questions 4 & 5</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Questions 4 and 5</h3>
+      <h2>Generalisation &<br>Ablation</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-num">Question 4 — Generalisation</div>
+            <h4>Would this work elsewhere?</h4>
+            <p style="margin-bottom:0.75rem;">Ask: different domain? Different language? No KG available? Cold-start users?</p>
+            <p><strong>K-RagRec:</strong> They do test generalisation (Table 6) — MovieLens→Amazon Book zero-shot. Good. But still only movie/book domains with KG coverage.</p>
+          </div>
+        </div>
+        <div>
+          <div class="card purple">
+            <div class="card-num">Question 5 — Ablation</div>
+            <h4>What drives the gain?</h4>
+            <p style="margin-bottom:0.75rem;">When they remove the GNN Encoder, accuracy drops 37–45%. That's the biggest single component.</p>
+            <p><strong>Implication:</strong> The graph encoding is doing most of the work — not the retrieval strategy itself.</p>
+          </div>
+          <div class="highlight" style="margin-top:1rem;">
+            <p><strong>💡 Research insight:</strong> If encoding matters most, could you get similar results with better text encoding instead of a KG?</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+  <!-- Slide 8: Putting it together -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — Practice</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>How to use these questions</h3>
+      <h2>Make it a habit,<br>not a checklist</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1rem;">The 5 questions aren't meant to be run mechanically. They're <strong>lenses</strong> — use the ones that apply.</p>
+          <ul class="clean">
+            <li>For any new paper: Q1 and Q3 always apply</li>
+            <li>For papers in your area: Q2 and Q5 matter most</li>
+            <li>For papers you're reviewing: all 5, systematically</li>
+            <li>For papers you want to extend: Q5 reveals the gap</li>
+          </ul>
+        </div>
+        <div>
+          <div class="big-quote">"The best research ideas come from taking a paper's ablation study seriously."</div>
+          <p style="margin-top:1rem; font-size:0.9rem;">Remove component X → performance drops → X is important → <strong>can you do X better?</strong> That's a paper.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">08</div>
+  </div>
+
+  <!-- Slide 9: Takeaways -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L3 — Key Takeaways</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>What to remember</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>Papers are arguments</h4>
+          <p>Decide whether to be convinced. Every result has a context that limits it.</p>
+        </div>
+        <div class="card orange">
+          <div class="card-num">02</div>
+          <h4>Missing baselines > weak baselines</h4>
+          <p>The most revealing thing about an experiment is often what was left out.</p>
+        </div>
+        <div class="card purple">
+          <div class="card-num">03</div>
+          <h4>Ablations reveal gaps</h4>
+          <p>The component with the biggest drop is often the best target for your extension idea.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--ink-dim);">Next: M2 · L4 — Reading Experimental Sections</p>
+      </div>
+    </div>
+    <div class="slide-num">09</div>
+  </div>
+
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 9</span>
+  <button onclick="next()">→</button>
+</div>
+<script>
+  const slides=document.querySelectorAll('.slide'); const total=slides.length; let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);} function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>

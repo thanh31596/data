@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M2 · L1 — Anatomy of an RS Paper</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #FFFFFF;
+    --ink: #111111;
+    --ink-light: #555555;
+    --ink-dim: #AAAAAA;
+    --accent: #E8572A;
+    --accent2: #2A7BE8;
+    --accent3: #27AE60;
+    --surface: #F7F6F3;
+    --border: #E8E6E0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--white); }
+
+  .deck { width: 100%; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 5vh 8vw;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transform: translateX(40px);
+    background: var(--white);
+  }
+  .slide.active {
+    opacity: 1; pointer-events: all; transform: translateX(0);
+  }
+  .slide.exit {
+    opacity: 0; transform: translateX(-40px);
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--accent); transition: width 0.3s ease;
+    z-index: 100;
+  }
+
+  /* Nav */
+  .nav {
+    position: fixed; bottom: 2rem; right: 3rem;
+    display: flex; gap: 0.75rem; align-items: center;
+    z-index: 100;
+  }
+  .nav button {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--white); cursor: pointer;
+    font-size: 1rem; color: var(--ink);
+    transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+  }
+  .nav button:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .nav .counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem; color: var(--ink-dim);
+    min-width: 50px; text-align: center;
+  }
+
+  /* Lesson tag */
+  .lesson-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: auto;
+    padding-top: 0.5rem;
+  }
+
+  /* Slide number */
+  .slide-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 8rem; font-weight: 900;
+    color: var(--surface); line-height: 1;
+    position: absolute; right: 7vw; top: 3vh;
+    user-select: none;
+  }
+
+  /* Typography */
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 5vw, 4rem);
+    font-weight: 900; line-height: 1.1;
+    color: var(--ink); margin-bottom: 0.5rem;
+  }
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+    font-weight: 700; line-height: 1.15;
+    color: var(--ink); margin-bottom: 1.5rem;
+  }
+  h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-dim); margin-bottom: 1.25rem;
+  }
+  p, li {
+    font-family: 'DM Sans', sans-serif;
+    font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+    color: var(--ink-light); line-height: 1.7;
+  }
+  strong { color: var(--ink); font-weight: 500; }
+  em { color: var(--accent); font-style: normal; font-weight: 500; }
+
+  /* Subtitle */
+  .subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    color: var(--ink-light); line-height: 1.5;
+    max-width: 600px; margin-top: 1rem;
+  }
+
+  /* Divider accent */
+  .accent-line {
+    width: 48px; height: 3px;
+    background: var(--accent);
+    margin-bottom: 2rem;
+    border-radius: 2px;
+  }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; margin-top: 1rem; }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border-radius: 12px; padding: 1.5rem;
+    border-left: 4px solid var(--accent);
+    position: relative;
+  }
+  .card.blue { border-left-color: var(--accent2); }
+  .card.green { border-left-color: var(--accent3); }
+  .card-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; color: var(--ink-dim);
+    margin-bottom: 0.5rem;
+  }
+  .card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--ink); margin-bottom: 0.5rem;
+  }
+  .card p { font-size: 0.9rem; }
+
+  /* Big quote */
+  .big-quote {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.3rem, 3vw, 2.2rem);
+    font-weight: 400; font-style: italic;
+    line-height: 1.4; color: var(--ink);
+    border-left: 4px solid var(--accent);
+    padding-left: 2rem; max-width: 750px;
+    margin: 1.5rem 0;
+  }
+
+  /* Table */
+  .truth-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  .truth-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-dim); padding: 0.6rem 1rem;
+    border-bottom: 2px solid var(--border); text-align: left;
+  }
+  .truth-table td {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink-light); vertical-align: top;
+  }
+  .truth-table td:first-child { font-weight: 500; color: var(--ink); }
+  .truth-table tr:last-child td { border-bottom: none; }
+
+  /* Highlight box */
+  .highlight {
+    background: #FFF4F0;
+    border: 1.5px solid #F4C5B5;
+    border-radius: 10px; padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .highlight p { font-size: 0.95rem; }
+
+  /* List */
+  ul.clean { list-style: none; }
+  ul.clean li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 1rem; align-items: flex-start;
+  }
+  ul.clean li:last-child { border-bottom: none; }
+  ul.clean li::before {
+    content: "→";
+    color: var(--accent); font-weight: 500;
+    flex-shrink: 0; margin-top: 0.05rem;
+  }
+
+  /* Funnel visual */
+  .funnel { display: flex; flex-direction: column; gap: 0.4rem; max-width: 480px; }
+  .funnel-step {
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+  .f1 { background: #111; color: #fff; }
+  .f2 { background: #333; color: #fff; }
+  .f3 { background: #666; color: #fff; }
+  .f4 { background: #999; color: #fff; }
+  .f5 { background: #E8E6E0; color: var(--ink); }
+
+  .funnel-arrow {
+    text-align: center; color: var(--accent);
+    font-size: 1.2rem; line-height: 1;
+  }
+
+  /* Keyboard hint */
+  .kbd-hint {
+    position: fixed; bottom: 2rem; left: 3rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; color: var(--ink-dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- Slide 1: Title -->
+  <div class="slide active" id="s1">
+    <div class="lesson-tag">M2 · Lesson 1 — Reading Papers Effectively</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>Anatomy of<br>an RS Paper</h1>
+      <p class="subtitle">Every RS paper follows the same skeleton.<br>Knowing what each section <em>really</em> does changes how you read.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- Slide 2: The structure -->
+  <div class="slide" id="s2">
+    <div class="lesson-tag">M2 · L1 — The Structure</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h2>Every paper has<br>the same 6 sections</h2>
+      <div class="accent-line"></div>
+      <div class="funnel">
+        <div class="funnel-step f1">Abstract</div>
+        <div class="funnel-arrow">↓</div>
+        <div class="funnel-step f2">Introduction</div>
+        <div class="funnel-arrow">↓</div>
+        <div class="funnel-step f3">Related Work</div>
+        <div class="funnel-arrow">↓</div>
+        <div class="funnel-step f3">Methodology</div>
+        <div class="funnel-arrow">↓</div>
+        <div class="funnel-step f4">Experiments</div>
+        <div class="funnel-arrow">↓</div>
+        <div class="funnel-step f5">Conclusion</div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- Slide 3: Official vs Real -->
+  <div class="slide" id="s3">
+    <div class="lesson-tag">M2 · L1 — Official vs Reality</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>What they say vs what they mean</h3>
+      <h2>The hidden layer</h2>
+      <div class="accent-line"></div>
+      <table class="truth-table">
+        <thead>
+          <tr><th>Section</th><th>Official Purpose</th><th>What It's Really Doing</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Abstract</td><td>Summarise the paper</td><td>Sell you on reading further</td></tr>
+          <tr><td>Introduction</td><td>Motivate the problem</td><td>Establish the gap they claim to fill</td></tr>
+          <tr><td>Related Work</td><td>Survey prior work</td><td>Argue why existing work is insufficient</td></tr>
+          <tr><td>Methodology</td><td>Present the model</td><td><strong>The actual contribution ← slow down here</strong></td></tr>
+          <tr><td>Experiments</td><td>Validate the model</td><td>Selectively show where it works best</td></tr>
+          <tr><td>Conclusion</td><td>Summarise findings</td><td>Restate + hint at future work</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- Slide 4: Abstract -->
+  <div class="slide" id="s4">
+    <div class="lesson-tag">M2 · L1 — Abstract</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Section 1</h3>
+      <h2>The Abstract</h2>
+      <div class="accent-line"></div>
+      <p style="margin-bottom:1.5rem;">Three things always hide in the abstract. Find them in 60 seconds.</p>
+      <div class="three-col">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>The Problem</h4>
+          <p>What gap or failure in existing work motivates this paper?</p>
+        </div>
+        <div class="card blue">
+          <div class="card-num">02</div>
+          <h4>The Approach</h4>
+          <p>What did they propose in one sentence?</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">03</div>
+          <h4>The Claim</h4>
+          <p>What improvement, on what dataset, by how much?</p>
+        </div>
+      </div>
+      <div class="highlight">
+        <p><strong>K-RagRec example:</strong> Problem = LLM hallucination + noisy RAG · Approach = KG subgraph retrieval with GNN encoder · Claim = 41.6% avg improvement over sub-optimal baseline</p>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- Slide 5: Introduction funnel -->
+  <div class="slide" id="s5">
+    <div class="lesson-tag">M2 · L1 — Introduction</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Section 2</h3>
+      <h2>The Introduction<br>always follows a funnel</h2>
+      <div class="accent-line"></div>
+      <div class="two-col" style="align-items:start;">
+        <div class="funnel">
+          <div class="funnel-step f1">Broad context<br><small style="opacity:0.7">"RS is important because..."</small></div>
+          <div class="funnel-arrow">↓</div>
+          <div class="funnel-step f2">Specific problem<br><small style="opacity:0.7">"Existing methods fail at X..."</small></div>
+          <div class="funnel-arrow">↓</div>
+          <div class="funnel-step f3">Their solution<br><small style="opacity:0.7">"We propose Y which..."</small></div>
+          <div class="funnel-arrow">↓</div>
+          <div class="funnel-step f4">Results preview</div>
+          <div class="funnel-arrow">↓</div>
+          <div class="funnel-step f5" style="border: 2px solid var(--accent);">
+            <strong>Contributions list ← READ THIS</strong>
+          </div>
+        </div>
+        <div>
+          <div class="big-quote">"The contributions list is gold. Authors are forced to be explicit here."</div>
+          <p style="margin-top:1rem; font-size:0.9rem;">It tells you exactly what they're <strong>claiming to have done</strong> — and you can hold them accountable to it in the experiments section.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- Slide 6: Related Work -->
+  <div class="slide" id="s6">
+    <div class="lesson-tag">M2 · L1 — Related Work</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Section 3</h3>
+      <h2>Related Work —<br>skim, don't read</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <p style="margin-bottom:1rem;">You're only looking for <strong>3 things</strong>:</p>
+          <ul class="clean">
+            <li>Which clusters of prior work do they identify?</li>
+            <li>Which papers do they cite most?</li>
+            <li>What's their argument for why nothing prior solves their problem?</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left-color: #F0B429;">
+          <div class="card-num">⚠️ WATCH OUT</div>
+          <h4>Authors sometimes misrepresent prior work</h4>
+          <p>To make their contribution look bigger, they may understate what existing methods already do. You'll learn to spot this in L3.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- Slide 7: Methodology -->
+  <div class="slide" id="s7">
+    <div class="lesson-tag">M2 · L1 — Methodology</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Section 4 — slow down here</h3>
+      <h2>Methodology is<br>the actual paper</h2>
+      <div class="accent-line"></div>
+      <p style="margin-bottom:1.5rem;">Everything else is scaffolding. This is where the contribution lives.</p>
+      <div class="three-col">
+        <div class="card">
+          <h4>Problem Formulation</h4>
+          <p>How do they formally define the task? What are the inputs and outputs?</p>
+        </div>
+        <div class="card blue">
+          <h4>Key Equation</h4>
+          <p>Usually one central formula defines the model. Find it and decode it.</p>
+        </div>
+        <div class="card green">
+          <h4>Training Objective</h4>
+          <p>What loss function? What optimiser? What's being minimised?</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+  <!-- Slide 8: Experiments -->
+  <div class="slide" id="s8">
+    <div class="lesson-tag">M2 · L1 — Experiments</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Section 5 — second slow-down zone</h3>
+      <h2>Experiments:<br>read critically</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <ul class="clean">
+          <li><strong>Datasets</strong> — standard benchmarks or cherry-picked?</li>
+          <li><strong>Baselines</strong> — are strong recent methods included?</li>
+          <li><strong>Ablation</strong> — what happens when each component is removed?</li>
+          <li><strong>Metrics</strong> — do they report the ones where they win?</li>
+        </ul>
+        <div class="card" style="border-left-color: var(--accent);">
+          <div class="card-num">K-RagRec example</div>
+          <h4>What's missing?</h4>
+          <p>No traditional RS baselines like LightGCN or SASRec. All comparisons are within the KG-RAG-for-LLM family only.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">08</div>
+  </div>
+
+  <!-- Slide 9: Red flags -->
+  <div class="slide" id="s9">
+    <div class="lesson-tag">M2 · L1 — Reading Between the Lines</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Common patterns to watch for</h3>
+      <h2>What papers don't<br>say explicitly</h2>
+      <div class="accent-line"></div>
+      <table class="truth-table">
+        <thead><tr><th>What You See</th><th>What It Often Means</th></tr></thead>
+        <tbody>
+          <tr><td>"Outperforms all baselines"</td><td>On these specific datasets, with these hyperparameters</td></tr>
+          <tr><td>"Simple and efficient"</td><td>Simpler than the most complex competitor</td></tr>
+          <tr><td>"Novel framework"</td><td>We combined two existing ideas</td></tr>
+          <tr><td>Weak baselines only</td><td>The strongest competitor wasn't included for a reason</td></tr>
+          <tr><td>Single dataset experiments</td><td>Didn't generalise to other datasets</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1rem; font-size:0.85rem; color:var(--ink-dim);">This isn't cynicism — it's critical reading. Good researchers write this way due to space constraints and competition.</p>
+    </div>
+    <div class="slide-num">09</div>
+  </div>
+
+  <!-- Slide 10: Key takeaways -->
+  <div class="slide" id="s10">
+    <div class="lesson-tag">M2 · L1 — Key Takeaways</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>3 things to<br>remember forever</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>Methodology is the paper</h4>
+          <p>Intro and Related Work are rhetoric. Slow down at Methodology and Experiments.</p>
+        </div>
+        <div class="card blue">
+          <div class="card-num">02</div>
+          <h4>Contributions list = contract</h4>
+          <p>Authors must defend every bullet. Hold them to it in experiments.</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">03</div>
+          <h4>Read the gaps</h4>
+          <p>What baselines are missing? What datasets weren't tested? Gaps tell you more than results.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--ink-dim);">Next: M2 · L2 — The 3-Pass Reading Method</p>
+      </div>
+    </div>
+    <div class="slide-num">10</div>
+  </div>
+
+</div><!-- /deck -->
+
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 10</span>
+  <button onclick="next()">→</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+
+  function go(n) {
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('exit');
+    setTimeout(() => slides[cur < n ? cur : n + 1]?.classList.remove('exit'), 350);
+    cur = n;
+    slides[cur].classList.remove('exit');
+    slides[cur].classList.add('active');
+    document.getElementById('counter').textContent = `${cur+1} / ${total}`;
+    document.getElementById('progress').style.width = `${((cur+1)/total)*100}%`;
+  }
+
+  function next() { if (cur < total-1) go(cur+1); }
+  function prev() { if (cur > 0) go(cur-1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prev();
+  });
+
+  // Init progress
+  document.getElementById('progress').style.width = `${(1/total)*100}%`;
+
+  // Fix exit cleanup
+  slides.forEach(s => s.addEventListener('transitionend', function() {
+    if (!this.classList.contains('active')) this.classList.remove('exit');
+  }));
+</script>
+</body>
+</html>

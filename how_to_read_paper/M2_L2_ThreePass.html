@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M2 · L2 — The 3-Pass Reading Method</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #FFFFFF; --ink: #111111; --ink-light: #555555; --ink-dim: #AAAAAA;
+    --accent: #2563EB; --accent2: #E8572A; --accent3: #059669;
+    --surface: #F7F6F3; --border: #E8E6E0;
+    --p1: #1E3A5F; --p2: #2563EB; --p3: #93C5FD;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--white); }
+  .deck { width: 100%; height: 100vh; position: relative; }
+  .slide {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    padding: 5vh 8vw; opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transform: translateX(40px); background: var(--white);
+  }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+  .slide.exit { opacity: 0; transform: translateX(-40px); }
+  .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); transition: width 0.3s ease; z-index: 100; }
+  .nav { position: fixed; bottom: 2rem; right: 3rem; display: flex; gap: 0.75rem; align-items: center; z-index: 100; }
+  .nav button { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--white); cursor: pointer; font-size: 1rem; color: var(--ink); transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+  .nav button:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .nav .counter { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--ink-dim); min-width: 50px; text-align: center; }
+  .lesson-tag { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: auto; padding-top: 0.5rem; }
+  .slide-num { font-family: 'Playfair Display', serif; font-size: 8rem; font-weight: 900; color: var(--surface); line-height: 1; position: absolute; right: 7vw; top: 3vh; user-select: none; }
+  h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 900; line-height: 1.1; color: var(--ink); margin-bottom: 0.5rem; }
+  h2 { font-family: 'Playfair Display', serif; font-size: clamp(1.6rem, 3.5vw, 2.8rem); font-weight: 700; line-height: 1.15; color: var(--ink); margin-bottom: 1.5rem; }
+  h3 { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-dim); margin-bottom: 1.25rem; }
+  p, li { font-family: 'DM Sans', sans-serif; font-size: clamp(0.95rem, 1.8vw, 1.1rem); color: var(--ink-light); line-height: 1.7; }
+  strong { color: var(--ink); font-weight: 500; }
+  em { color: var(--accent2); font-style: normal; font-weight: 500; }
+  .subtitle { font-family: 'DM Sans', sans-serif; font-size: clamp(1rem, 2vw, 1.3rem); color: var(--ink-light); line-height: 1.5; max-width: 600px; margin-top: 1rem; }
+  .accent-line { width: 48px; height: 3px; background: var(--accent); margin-bottom: 2rem; border-radius: 2px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; margin-top: 1rem; }
+  .card { background: var(--surface); border-radius: 12px; padding: 1.5rem; border-left: 4px solid var(--accent); position: relative; }
+  .card.orange { border-left-color: var(--accent2); }
+  .card.green { border-left-color: var(--accent3); }
+  .card-num { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--ink-dim); margin-bottom: 0.5rem; }
+  .card h4 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); margin-bottom: 0.5rem; }
+  .card p { font-size: 0.9rem; }
+  .big-quote { font-family: 'Playfair Display', serif; font-size: clamp(1.3rem, 3vw, 2rem); font-weight: 400; font-style: italic; line-height: 1.4; color: var(--ink); border-left: 4px solid var(--accent); padding-left: 2rem; max-width: 750px; margin: 1.5rem 0; }
+  ul.clean { list-style: none; }
+  ul.clean li { padding: 0.6rem 0; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; align-items: flex-start; }
+  ul.clean li:last-child { border-bottom: none; }
+  ul.clean li::before { content: "→"; color: var(--accent); font-weight: 500; flex-shrink: 0; margin-top: 0.05rem; }
+  .highlight { background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 10px; padding: 1.25rem 1.5rem; margin-top: 1.5rem; }
+  .highlight p { font-size: 0.95rem; }
+  .kbd-hint { position: fixed; bottom: 2rem; left: 3rem; font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--ink-dim); }
+
+  /* Pass cards */
+  .pass-strip {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem; margin-top: 1.5rem;
+  }
+  .pass-card {
+    border-radius: 12px; padding: 1.5rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .pass-1 { background: var(--p1); }
+  .pass-2 { background: var(--p2); }
+  .pass-3 { background: #DBEAFE; }
+  .pass-card .pass-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; opacity: 0.7;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .pass-1 .pass-num, .pass-2 .pass-num { color: rgba(255,255,255,0.7); }
+  .pass-3 .pass-num { color: var(--p1); }
+  .pass-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem; font-weight: 700;
+  }
+  .pass-1 h4, .pass-2 h4 { color: white; }
+  .pass-3 h4 { color: var(--p1); }
+  .pass-card .time {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+  }
+  .pass-1 .time, .pass-2 .time { color: rgba(255,255,255,0.8); }
+  .pass-3 .time { color: var(--p2); }
+  .pass-card p { font-size: 0.85rem; }
+  .pass-1 p, .pass-2 p { color: rgba(255,255,255,0.85); }
+  .pass-3 p { color: var(--p1); }
+
+  /* Decision tree */
+  .decision-box {
+    padding: 1rem 1.5rem; border-radius: 8px;
+    border: 1.5px solid var(--border);
+    margin-bottom: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem; color: var(--ink-light);
+  }
+  .decision-box.stop { border-color: #FCA5A5; background: #FEF2F2; color: #991B1B; }
+  .decision-box.go   { border-color: #6EE7B7; background: #ECFDF5; color: #065F46; }
+
+  /* Timeline */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: grid; grid-template-columns: 120px 1fr; gap: 1.5rem; align-items: start; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-time { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent); font-weight: 500; padding-top: 0.2rem; }
+  .tl-content h4 { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.95rem; color: var(--ink); margin-bottom: 0.25rem; }
+  .tl-content p { font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- Slide 1: Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M2 · Lesson 2 — Reading Papers Effectively</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>The 3-Pass<br>Reading Method</h1>
+      <p class="subtitle">Don't read papers from start to finish.<br>Invest <em>only as much time</em> as the paper deserves.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- Slide 2: The problem with linear reading -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — The Problem</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Why most people read wrong</h3>
+      <h2>Linear reading is<br>slow and inefficient</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="big-quote">"You try to understand everything at once, get lost in equations, and finish 2 hours later unsure what the paper even argued."</div>
+        </div>
+        <div>
+          <p style="margin-bottom:1rem;">The 3-pass method gives you a <strong>decision framework</strong>:</p>
+          <ul class="clean">
+            <li>Each pass answers one specific question</li>
+            <li>You stop when you have what you need</li>
+            <li>Most papers only deserve Pass 1 or Pass 2</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- Slide 3: Overview of 3 passes -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — Overview</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>The framework</h3>
+      <h2>Three passes,<br>three questions</h2>
+      <div class="accent-line"></div>
+      <div class="pass-strip">
+        <div class="pass-card pass-1">
+          <div class="pass-num">Pass 01</div>
+          <h4>The Skim</h4>
+          <div class="time">5–10 min</div>
+          <p>Should I even read this paper?</p>
+        </div>
+        <div class="pass-card pass-2">
+          <div class="pass-num">Pass 02</div>
+          <h4>The Read</h4>
+          <div class="time">30–60 min</div>
+          <p>What are they claiming?</p>
+        </div>
+        <div class="pass-card pass-3">
+          <div class="pass-num">Pass 03</div>
+          <h4>The Deep Read</h4>
+          <div class="time">1–2 hrs</div>
+          <p>Do I believe them?</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- Slide 4: Pass 1 detail -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — Pass 1</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Pass 1 · 5–10 minutes</h3>
+      <h2>The Skim</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <h3 style="margin-bottom:0.75rem;">What you read</h3>
+          <ul class="clean">
+            <li>Title + Abstract</li>
+            <li>First and last paragraph of Introduction</li>
+            <li>Section headings only</li>
+            <li><strong>Every figure caption</strong></li>
+            <li>Conclusion</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">Output</h3>
+          <p style="margin-bottom:1rem;">A <strong>3-sentence summary</strong>. If you can't write it after Pass 1 — the paper is poorly written or not worth your time.</p>
+          <div class="highlight">
+            <p><strong>💡 Figure captions are gold.</strong> Most papers tell their entire story through 2–3 figures. Read captions before reading equations.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- Slide 5: Pass 2 detail -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — Pass 2</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Pass 2 · 30–60 minutes</h3>
+      <h2>The Read</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <h3 style="margin-bottom:0.75rem;">What you read</h3>
+          <ul class="clean">
+            <li>Everything except proofs + appendices</li>
+            <li>Every equation — don't derive, just understand what it says</li>
+            <li>Experimental setup + results tables carefully</li>
+            <li>Related work quickly</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">Output</h3>
+          <p style="margin-bottom:1rem;">Filled <strong>paper notes template</strong>. You should be able to explain this paper to a colleague after Pass 2.</p>
+          <div class="highlight" style="background:#FFF7ED; border-color:#FED7AA;">
+            <p><strong>💡 Read experiments critically.</strong> Which dataset shows the weakest improvement? Which baseline is closest to theirs? These are the cracks.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- Slide 6: Pass 3 detail -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — Pass 3</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Pass 3 · 1–2 hours</h3>
+      <h2>The Deep Read</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <h3 style="margin-bottom:0.75rem;">What you read</h3>
+          <ul class="clean">
+            <li>Every proof and derivation</li>
+            <li>Appendix details</li>
+            <li>Implementation details</li>
+            <li>Every footnote</li>
+          </ul>
+          <p style="margin-top:1rem; font-size:0.9rem;"><strong>Reserve Pass 3 for:</strong> papers in your direct research area, papers you plan to reproduce, or papers you're reviewing.</p>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">Output</h3>
+          <ul class="clean">
+            <li>Are the assumptions valid?</li>
+            <li>Do the derivations hold?</li>
+            <li>Could I reproduce this?</li>
+            <li>What would I do differently?</li>
+          </ul>
+          <div class="card" style="margin-top:1rem; border-left-color: var(--accent3);">
+            <p><strong>Most papers don't need Pass 3.</strong> After Pass 2 you already have 90% of what you need.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- Slide 7: When to stop -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — Decision Points</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>The key skill</h3>
+      <h2>Knowing when<br>to stop</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <h3 style="margin-bottom:0.75rem;">After Pass 1 — STOP if:</h3>
+          <div class="decision-box stop">Not relevant to my research</div>
+          <div class="decision-box stop">I already know this approach well</div>
+          <div class="decision-box stop">Weak venue + suspicious claims</div>
+          <h3 style="margin-top:1.5rem; margin-bottom:0.75rem;">After Pass 2 — STOP if:</h3>
+          <div class="decision-box stop">I understand the contribution</div>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0.75rem;">Continue to Pass 3 only if:</h3>
+          <div class="decision-box go">I need to reproduce this paper</div>
+          <div class="decision-box go">I'm reviewing this for a venue</div>
+          <div class="decision-box go">I want to propose an extension</div>
+          <div class="decision-box go">This is directly in my research area</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+  <!-- Slide 8: K-RagRec example -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — Worked Example</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <h3>Applied to K-RagRec</h3>
+      <h2>What each pass<br>would look like</h2>
+      <div class="accent-line"></div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-time">Pass 1 · 8 min</div>
+          <div class="tl-content">
+            <h4>You already did this</h4>
+            <p>LLM hallucination → noisy RAG → K-RagRec fixes this with KG subgraph retrieval. Relevant to me. Continue.</p>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Pass 2 · 45 min</div>
+          <div class="tl-content">
+            <h4>Read methodology + experiments</h4>
+            <p>Decode Eq. 3 (hop-field indexing), Eq. 5 (retrieval). Notice LLaMA-3 improvements are smaller. Spot missing traditional RS baselines. Fill paper notes.</p>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Pass 3 · if needed</div>
+          <div class="tl-content">
+            <h4>Deep dive for extension work</h4>
+            <p>Is the GNN indexing actually novel vs GraphSAGE? Is p=50% threshold justified? Would this work without a KG?</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">08</div>
+  </div>
+
+  <!-- Slide 9: Key takeaways -->
+  <div class="slide">
+    <div class="lesson-tag">M2 · L2 — Key Takeaways</div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>What to remember</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="pass-card pass-1" style="background: var(--p1);">
+          <div class="pass-num">Pass 1</div>
+          <h4>5–10 min</h4>
+          <p>Figure captions tell the whole story. If you can't write 3 sentences after — stop.</p>
+        </div>
+        <div class="pass-card pass-2">
+          <div class="pass-num">Pass 2</div>
+          <h4>30–60 min</h4>
+          <p>Fill your notes template. Read experiments critically. This is enough for 90% of papers.</p>
+        </div>
+        <div class="pass-card pass-3">
+          <div class="pass-num">Pass 3</div>
+          <h4>1–2 hrs</h4>
+          <p>Reserve for papers you'll reproduce, review, or extend. Don't default here.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--ink-dim);">Next: M2 · L3 — Critical Questions to Ask Every Paper</p>
+      </div>
+    </div>
+    <div class="slide-num">09</div>
+  </div>
+
+</div>
+
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 9</span>
+  <button onclick="next()">→</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+  function go(n) {
+    slides[cur].classList.remove('active'); slides[cur].classList.add('exit');
+    cur = n; slides[cur].classList.remove('exit'); slides[cur].classList.add('active');
+    document.getElementById('counter').textContent = `${cur+1} / ${total}`;
+    document.getElementById('progress').style.width = `${((cur+1)/total)*100}%`;
+  }
+  function next() { if (cur < total-1) go(cur+1); }
+  function prev() { if (cur > 0) go(cur-1); }
+  document.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight'||e.key==='ArrowDown') next();
+    if (e.key==='ArrowLeft'||e.key==='ArrowUp') prev();
+  });
+  document.getElementById('progress').style.width = `${(1/total)*100}%`;
+</script>
+</body>
+</html>
