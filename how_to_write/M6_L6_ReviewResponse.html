@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M6 · L6 — Responding to Reviews</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#111111;--ink-light:#4A4A5A;--ink-dim:#AAAAAA;--accent:#374151;--accent2:#4B5563;--surface:#F9FAFB;--border:#D1D5DB;}
+  
+  *{box-sizing:border-box;margin:0;padding:0;}html,body{width:100%;height:100%;overflow:hidden;background:#FFFFFF;}
+  .deck{width:100%;height:100vh;position:relative;}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:5vh 8vw;opacity:0;pointer-events:none;transition:opacity 0.35s ease,transform 0.35s ease;transform:translateX(40px);background:#FFFFFF;}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}.slide.exit{opacity:0;transform:translateX(-40px);}
+  .progress-bar{position:fixed;top:0;left:0;height:3px;transition:width 0.3s ease;z-index:100;}
+  .nav{position:fixed;bottom:2rem;right:3rem;display:flex;gap:0.75rem;align-items:center;z-index:100;}
+  .nav button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:#FFFFFF;cursor:pointer;font-size:1rem;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .nav button:hover{background:var(--ink);color:#FFFFFF;border-color:var(--ink);}
+  .nav .counter{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);min-width:50px;text-align:center;}
+  .lesson-tag{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:auto;padding-top:0.5rem;}
+  .slide-num{font-family:'Playfair Display',serif;font-size:8rem;font-weight:900;color:var(--surface);line-height:1;position:absolute;right:7vw;top:3vh;user-select:none;}
+  h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;line-height:1.1;color:var(--ink);}
+  h2{font-family:'Playfair Display',serif;font-size:clamp(1.5rem,3.5vw,2.6rem);font-weight:700;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+  h3{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:1.25rem;}
+  p,li{font-family:'DM Sans',sans-serif;font-size:clamp(0.9rem,1.6vw,1.05rem);color:var(--ink-light);line-height:1.7;}
+  strong{color:var(--ink);font-weight:500;}em{color:var(--accent);font-style:normal;font-weight:500;}
+  .subtitle{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2vw,1.3rem);color:var(--ink-light);line-height:1.5;max-width:620px;margin-top:1rem;}
+  .accent-line{width:48px;height:3px;background:var(--accent);margin-bottom:2rem;border-radius:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin-top:1rem;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;margin-top:1rem;}
+  .card{background:var(--surface);border-radius:12px;padding:1.4rem;border-left:4px solid var(--accent);}
+  .card.alt{border-left-color:var(--accent2);}.card.dark{border-left-color:#374151;}
+  .card-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.5rem;}
+  .card h4{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:0.4rem;}
+  .card p{font-size:0.88rem;}
+  .big-quote{font-family:'Playfair Display',serif;font-size:clamp(1.1rem,2.2vw,1.7rem);font-weight:400;font-style:italic;line-height:1.4;color:var(--ink);border-left:4px solid var(--accent);padding-left:2rem;max-width:720px;margin:1.5rem 0;}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;font-size:0.92rem;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"→";color:var(--accent);font-weight:500;flex-shrink:0;margin-top:0.05rem;}
+  .highlight{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-top:1rem;}
+  .highlight p{font-size:0.92rem;}
+  .bad-good{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1rem;}
+  .bg-box{border-radius:10px;padding:1.1rem 1.25rem;}
+  .bg-bad{background:#FEF2F2;border:1.5px solid #FECACA;}
+  .bg-good{background:#F0FDF4;border:1.5px solid #A7F3D0;}
+  .bg-label{font-family:'DM Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;}
+  .bg-bad .bg-label{color:#DC2626;}.bg-good .bg-label{color:#059669;}
+  .bg-box p{font-size:0.88rem;line-height:1.6;}
+  .kbd-hint{position:fixed;bottom:2rem;left:3rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:#AAAAAA;}
+
+  .progress-bar{background:var(--accent);}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+<div class="slide active">
+  <div class="lesson-tag">M6 · Lesson 6 — Writing Research Papers</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="accent-line"></div>
+    <h1>Responding<br>to Reviews</h1>
+    <p class="subtitle">A rejection is not the end of a paper.<br>A rebuttal is a <em>negotiation</em> — and most researchers do it badly.</p>
+  </div>
+  <div class="slide-num">01</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L6 — Reading Reviews</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h3>Before you write a single word</h3>
+    <h2>Read the reviews<br>before reacting to them</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div>
+        <p style="margin-bottom:1rem;">Most researchers react emotionally to reviews. That's human. But wait 24 hours, then read again asking:</p>
+        <ul class="clean">
+          <li>What is the reviewer <strong>actually concerned about</strong> — not what they wrote literally?</li>
+          <li>Is this concern <strong>valid</strong> — even if poorly worded?</li>
+          <li>Is this concern about the <strong>paper or the research</strong>?</li>
+          <li>What is the <strong>minimum change</strong> that addresses this concern?</li>
+        </ul>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:0.75rem;">
+          <div class="card-num">What reviewers really mean</div>
+          <h4>"The baselines are weak"</h4>
+          <p style="font-size:0.85rem;">Often means: "I don't believe the improvement is real because I know a stronger method you didn't compare to." Add the method, or explain why it's not comparable.</p>
+        </div>
+        <div class="card alt">
+          <div class="card-num">What reviewers really mean</div>
+          <h4>"The novelty is limited"</h4>
+          <p style="font-size:0.85rem;">Often means: "I can't see why this combination needed a paper." Reframe your contribution — the research may be fine but the framing is failing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">02</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L6 — Rebuttal Structure</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h3>The three-part response</h3>
+    <h2>Acknowledge → Address<br>→ Evidence</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div>
+        <div class="card" style="margin-bottom:0.75rem;">
+          <div class="card-num">Part 1 — Acknowledge</div>
+          <h4>Show you understood the concern</h4>
+          <p>"The reviewer raises a valid concern about our evaluation protocol. We acknowledge that..."</p>
+          <p style="font-size:0.8rem;margin-top:0.5rem;color:#555;">Do not start with "We disagree." Even if you disagree — acknowledge first.</p>
+        </div>
+        <div class="card alt" style="margin-bottom:0.75rem;">
+          <div class="card-num">Part 2 — Address</div>
+          <h4>Provide the specific response</h4>
+          <p>"To address this, we added experiments with [method] as a baseline. Results show..."</p>
+        </div>
+        <div class="card dark">
+          <div class="card-num">Part 3 — Evidence</div>
+          <h4>Point to concrete support</h4>
+          <p>"See Table X (revised) and Appendix Y. The improvement holds across all three datasets."</p>
+        </div>
+      </div>
+      <div>
+        <div class="bad-good" style="margin-top:0;grid-template-columns:1fr;">
+          <div class="bg-box bg-bad">
+            <div class="bg-label">❌ Defensive rebuttal</div>
+            <p>"The reviewer misunderstood our method. We clearly explained in Section 3 that our approach is different from what the reviewer describes."</p>
+            <p style="font-size:0.8rem;color:#DC2626;margin-top:0.5rem;">Telling a reviewer they misunderstood never works.</p>
+          </div>
+          <div class="bg-box bg-good" style="margin-top:0.75rem;">
+            <div class="bg-label">✅ Constructive rebuttal</div>
+            <p>"We thank the reviewer for highlighting this. We have clarified Section 3 to make this distinction explicit, and added Figure X which visualises the difference."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L6 — Prioritising Concerns</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h3>Not all concerns are equal</h3>
+    <h2>What to fix vs<br>what to argue</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div>
+        <h3 style="margin-bottom:0.75rem;">Fix these without arguing:</h3>
+        <ul class="clean">
+          <li>Missing baselines the reviewer names specifically</li>
+          <li>Unclear writing or presentation issues</li>
+          <li>Missing ablation studies on key components</li>
+          <li>Incorrect or missing citations</li>
+        </ul>
+        <h3 style="margin-top:1.5rem;margin-bottom:0.75rem;">These you can argue — carefully:</h3>
+        <ul class="clean">
+          <li>Reviewer requests a baseline that is architecturally incompatible</li>
+          <li>Reviewer misunderstands your task definition</li>
+          <li>Reviewer compares to a concurrent unpublished paper</li>
+        </ul>
+      </div>
+      <div>
+        <div class="big-quote" style="font-size:1.15rem;">"Never argue about whether your improvement is significant. Add the experiment. Let the numbers argue for you."</div>
+        <div class="highlight" style="margin-top:1rem;">
+          <p><strong>Prioritisation rule:</strong> Fix everything that can be fixed in the revision period. Argue only what genuinely cannot be addressed with more experiments or clearer writing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L6 — After Rejection</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h3>The long game</h3>
+    <h2>Rejection is<br>a data point, not a verdict</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div>
+        <p style="margin-bottom:1rem;">Every rejection contains information. Extract it:</p>
+        <ul class="clean">
+          <li>Which concern appeared in <strong>multiple reviews</strong>? That's the real problem.</li>
+          <li>Which concern appeared in only <strong>one review</strong>? That might be noise.</li>
+          <li>Did reviewers <strong>understand your contribution</strong>? If not — framing problem, not research problem.</li>
+          <li>Did reviewers ask for experiments <strong>you can do</strong>? Then do them before resubmitting.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-num">The honest question</div>
+          <h4>Is this a framing rejection or a research rejection?</h4>
+          <p style="font-size:0.85rem;">Framing rejection: reviewers couldn't see the contribution. Fix the introduction and related work. Resubmit to a better-fit venue.<br><br>Research rejection: the method has a genuine flaw. Fix the method. Don't resubmit the same paper.</p>
+        </div>
+        <div class="highlight">
+          <p><strong>Most rejections are framing rejections.</strong> The research is fine. The paper didn't help reviewers see it clearly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">05</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 Complete — Writing Research Papers</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="accent-line"></div>
+    <h2>Module 6 complete</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-top:2rem;">
+      <div class="card"><div class="card-num">L1–L2</div><h4>Contribution + Introduction</h4><p>Gap → Bridge. 3-sentence formula. Funnel structure. Specific first sentence. Contributions list as contract.</p></div>
+      <div class="card alt"><div class="card-num">L3–L4</div><h4>Related Work + Method</h4><p>Position don't list. Theme over chronology. Problem formulation → Overview → Components → Training.</p></div>
+      <div class="card dark"><div class="card-num">L5–L6</div><h4>Novelty + Reviews</h4><p>Replace "novel" with specifics. Impact = enables + opens. Reviews: Acknowledge → Address → Evidence.</p></div>
+    </div>
+    <div style="margin-top:2rem;padding:1.25rem;background:var(--surface);border-radius:10px;border:1.5px solid var(--border);">
+      <p style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--accent);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.1em;">Final thought</p>
+      <p style="font-size:0.92rem;color:var(--ink-light);">The skills in M1–M6 compound. Notation fluency (M1) enables equation writing (M5). Critical reading (M2–M3) builds positioning instincts (M6). Reproduction experience (M4) gives you the credibility to claim novelty (M6-L5). You now have the full toolkit. Use it. 🎯</p>
+    </div>
+    <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+      <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);">Next: M7 · Integration — end-to-end analysis of a real RS paper</p>
+    </div>
+  </div>
+  <div class="slide-num">06</div>
+</div>
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav"><button onclick="prev()">←</button><span class="counter" id="counter">1 / 6</span><button onclick="next()">→</button></div>
+<script>
+  const slides=document.querySelectorAll('.slide');const total=slides.length;let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);}function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>

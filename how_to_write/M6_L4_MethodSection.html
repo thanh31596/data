@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M6 · L4 — Writing the Method Section</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#111111;--ink-light:#4A4A5A;--ink-dim:#AAAAAA;--accent:#1E40AF;--accent2:#2563EB;--surface:#EFF6FF;--border:#BFDBFE;}
+  
+  *{box-sizing:border-box;margin:0;padding:0;}html,body{width:100%;height:100%;overflow:hidden;background:#FFFFFF;}
+  .deck{width:100%;height:100vh;position:relative;}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:5vh 8vw;opacity:0;pointer-events:none;transition:opacity 0.35s ease,transform 0.35s ease;transform:translateX(40px);background:#FFFFFF;}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}.slide.exit{opacity:0;transform:translateX(-40px);}
+  .progress-bar{position:fixed;top:0;left:0;height:3px;transition:width 0.3s ease;z-index:100;}
+  .nav{position:fixed;bottom:2rem;right:3rem;display:flex;gap:0.75rem;align-items:center;z-index:100;}
+  .nav button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:#FFFFFF;cursor:pointer;font-size:1rem;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .nav button:hover{background:var(--ink);color:#FFFFFF;border-color:var(--ink);}
+  .nav .counter{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);min-width:50px;text-align:center;}
+  .lesson-tag{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:auto;padding-top:0.5rem;}
+  .slide-num{font-family:'Playfair Display',serif;font-size:8rem;font-weight:900;color:var(--surface);line-height:1;position:absolute;right:7vw;top:3vh;user-select:none;}
+  h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;line-height:1.1;color:var(--ink);}
+  h2{font-family:'Playfair Display',serif;font-size:clamp(1.5rem,3.5vw,2.6rem);font-weight:700;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+  h3{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:1.25rem;}
+  p,li{font-family:'DM Sans',sans-serif;font-size:clamp(0.9rem,1.6vw,1.05rem);color:var(--ink-light);line-height:1.7;}
+  strong{color:var(--ink);font-weight:500;}em{color:var(--accent);font-style:normal;font-weight:500;}
+  .subtitle{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2vw,1.3rem);color:var(--ink-light);line-height:1.5;max-width:620px;margin-top:1rem;}
+  .accent-line{width:48px;height:3px;background:var(--accent);margin-bottom:2rem;border-radius:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin-top:1rem;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;margin-top:1rem;}
+  .card{background:var(--surface);border-radius:12px;padding:1.4rem;border-left:4px solid var(--accent);}
+  .card.alt{border-left-color:var(--accent2);}.card.dark{border-left-color:#374151;}
+  .card-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.5rem;}
+  .card h4{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:0.4rem;}
+  .card p{font-size:0.88rem;}
+  .big-quote{font-family:'Playfair Display',serif;font-size:clamp(1.1rem,2.2vw,1.7rem);font-weight:400;font-style:italic;line-height:1.4;color:var(--ink);border-left:4px solid var(--accent);padding-left:2rem;max-width:720px;margin:1.5rem 0;}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;font-size:0.92rem;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"→";color:var(--accent);font-weight:500;flex-shrink:0;margin-top:0.05rem;}
+  .highlight{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-top:1rem;}
+  .highlight p{font-size:0.92rem;}
+  .bad-good{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1rem;}
+  .bg-box{border-radius:10px;padding:1.1rem 1.25rem;}
+  .bg-bad{background:#FEF2F2;border:1.5px solid #FECACA;}
+  .bg-good{background:#F0FDF4;border:1.5px solid #A7F3D0;}
+  .bg-label{font-family:'DM Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;}
+  .bg-bad .bg-label{color:#DC2626;}.bg-good .bg-label{color:#059669;}
+  .bg-box p{font-size:0.88rem;line-height:1.6;}
+  .kbd-hint{position:fixed;bottom:2rem;left:3rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:#AAAAAA;}
+
+  .progress-bar{background:var(--accent);}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+<div class="slide active">
+  <div class="lesson-tag">M6 · Lesson 4 — Writing Research Papers</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="accent-line"></div>
+    <h1>Writing the<br>Method Section</h1>
+    <p class="subtitle">The method section is where you prove the claim you made in the introduction.<br>Formalism and intuition must <em>work together</em>.</p>
+  </div>
+  <div class="slide-num">01</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L4 — Structure</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h3>Standard structure</h3>
+    <h2>Four subsections in<br>every method section</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:0.6rem;">
+        <div class="card"><div class="card-num">3.1</div><h4>Problem Formulation</h4><p>Formal definitions. Inputs, outputs, objective. This is where M5 skills apply.</p></div>
+        <div class="card alt"><div class="card-num">3.2</div><h4>Overview</h4><p>A figure + 1 paragraph. High-level picture before the details. Most papers skip this — don't.</p></div>
+        <div class="card"><div class="card-num">3.3</div><h4>Detailed Components</h4><p>Each equation explained. Each design choice justified. This is the heart of the section.</p></div>
+        <div class="card dark"><div class="card-num">3.4</div><h4>Training Objective</h4><p>Loss function. Optimisation algorithm. Complexity analysis if relevant.</p></div>
+      </div>
+      <div>
+        <div class="big-quote" style="font-size:1.1rem;">"The overview figure is the most underused tool in methods writing. A single diagram can replace three paragraphs of architecture description."</div>
+        <div class="highlight" style="margin-top:1rem;">
+          <p><strong>Common mistake:</strong> Diving into equations without telling the reader what you're trying to achieve. Always provide the intuition before the formalism — not after.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">02</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L4 — Problem Formulation</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h3>The foundation of everything</h3>
+    <h2>Problem formulation:<br>be precise before being clever</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div>
+        <p style="margin-bottom:1rem;">A good problem formulation defines:</p>
+        <ul class="clean">
+          <li><strong>Entities</strong> — users 𝒰, items ℐ, interactions 𝒪</li>
+          <li><strong>Input</strong> — what the model receives at inference time</li>
+          <li><strong>Output</strong> — what the model returns</li>
+          <li><strong>Objective</strong> — what you're optimising for and why</li>
+        </ul>
+        <div class="highlight" style="margin-top:1rem;">
+          <p><strong>Test:</strong> Could a reader implement your model's input/output interface from the formulation alone, before reading your architecture? If not — formalise further.</p>
+        </div>
+      </div>
+      <div>
+        <div style="background:#0F172A;border-radius:10px;padding:1.25rem;font-family:'DM Mono',monospace;font-size:0.78rem;line-height:1.8;color:#94A3B8;">
+          <span style="color:#7DD3FC;">Definition 1.</span> Let 𝒰 = {u₁,...,uₙ} and ℐ = {i₁,...,iₘ}.<br>
+          Observed interactions: 𝒪 ⊆ 𝒰 × ℐ where (u,i) ∈ 𝒪 indicates u interacted with i.<br><br>
+          <span style="color:#7DD3FC;">Task.</span> Given user u and 𝒪, learn f: 𝒰 × ℐ → ℝ such that<br>
+          ∀i ∈ ℐ⁺_u, ∀j ∉ ℐ⁺_u: f(u,i) > f(u,j).<br><br>
+          <span style="color:#475569;"># Inputs, outputs, and objective — all explicit.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L4 — Balancing Formalism and Intuition</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h3>The hardest writing balance</h3>
+    <h2>When to use equations,<br>when to use words</h2>
+    <div class="accent-line"></div>
+    <div class="two-col">
+      <div>
+        <h3 style="margin-bottom:0.75rem;">Use equations when:</h3>
+        <ul class="clean">
+          <li>The exact operation matters for reproducibility</li>
+          <li>A diagram alone is ambiguous</li>
+          <li>You're making a claim about optimality or convergence</li>
+        </ul>
+        <h3 style="margin-top:1.5rem;margin-bottom:0.75rem;">Use words when:</h3>
+        <ul class="clean">
+          <li>Explaining why a design choice was made</li>
+          <li>Connecting the formal definition to the intuition</li>
+          <li>Describing something whose exact form is not critical</li>
+        </ul>
+      </div>
+      <div>
+        <div class="bad-good" style="margin-top:0;grid-template-columns:1fr;">
+          <div class="bg-box bg-bad">
+            <div class="bg-label">❌ Formalism without intuition</div>
+            <p>"z^(l)_u = σ(W^(l) · AGG({z^(l-1)_i : i ∈ 𝒩_u}) + b^(l))"</p>
+            <p style="font-size:0.8rem;color:#DC2626;margin-top:0.5rem;">What is this doing? Why this aggregation? Why σ here? Silence.</p>
+          </div>
+          <div class="bg-box bg-good" style="margin-top:0.75rem;">
+            <div class="bg-label">✅ Equation + intuition</div>
+            <p>"We aggregate each user's neighbours (Eq. 3) to capture collaborative signals. A non-linear activation σ is applied to model higher-order interactions that linear aggregation misses."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04</div>
+</div>
+
+<div class="slide">
+  <div class="lesson-tag">M6 · L4 — Key Takeaways</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="accent-line"></div>
+    <h2>What to remember</h2>
+    <div class="three-col" style="margin-top:2rem;">
+      <div class="card"><div class="card-num">01</div><h4>Four subsections</h4><p>Problem formulation → Overview → Components → Training. Use this order every time.</p></div>
+      <div class="card alt"><div class="card-num">02</div><h4>Intuition before formalism</h4><p>Tell the reader what you're trying to achieve before showing the equation. Never the reverse.</p></div>
+      <div class="card dark"><div class="card-num">03</div><h4>Justify design choices</h4><p>For every non-obvious decision: "We use X instead of Y because Z." Silence on design choices invites reviewer speculation.</p></div>
+    </div>
+    <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+      <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);">Next: M6 · L5 — Novelty and Impact Statements</p>
+    </div>
+  </div>
+  <div class="slide-num">05</div>
+</div>
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav"><button onclick="prev()">←</button><span class="counter" id="counter">1 / 5</span><button onclick="next()">→</button></div>
+<script>
+  const slides=document.querySelectorAll('.slide');const total=slides.length;let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);}function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>
