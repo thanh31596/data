@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M4 · L2 — Spotting Missing Details</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --ink:#111111; --ink-light:#555555; --ink-dim:#AAAAAA;
+    --accent:#B91C1C; --accent2:#0E7490; --accent3:#059669;
+    --surface:#FFF5F5; --surface2:#FEE2E2; --border:#FECACA;
+    --code-bg:#0F172A; --code-text:#94A3B8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--white);}
+  .deck{width:100%;height:100vh;position:relative;}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:5vh 8vw;opacity:0;pointer-events:none;transition:opacity 0.35s ease,transform 0.35s ease;transform:translateX(40px);background:var(--white);}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+  .slide.exit{opacity:0;transform:translateX(-40px);}
+  .progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width 0.3s ease;z-index:100;}
+  .nav{position:fixed;bottom:2rem;right:3rem;display:flex;gap:0.75rem;align-items:center;z-index:100;}
+  .nav button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:1rem;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .nav button:hover{background:var(--ink);color:var(--white);border-color:var(--ink);}
+  .nav .counter{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);min-width:50px;text-align:center;}
+  .lesson-tag{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:auto;padding-top:0.5rem;}
+  .slide-num{font-family:'Playfair Display',serif;font-size:8rem;font-weight:900;color:var(--surface);line-height:1;position:absolute;right:7vw;top:3vh;user-select:none;}
+  h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;line-height:1.1;color:var(--ink);}
+  h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.5vw,2.8rem);font-weight:700;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+  h3{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:1.25rem;}
+  p,li{font-family:'DM Sans',sans-serif;font-size:clamp(0.92rem,1.7vw,1.08rem);color:var(--ink-light);line-height:1.7;}
+  strong{color:var(--ink);font-weight:500;}
+  em{color:var(--accent);font-style:normal;font-weight:500;}
+  .subtitle{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2vw,1.3rem);color:var(--ink-light);line-height:1.5;max-width:620px;margin-top:1rem;}
+  .accent-line{width:48px;height:3px;background:var(--accent);margin-bottom:2rem;border-radius:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin-top:1rem;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;margin-top:1rem;}
+  .card{background:var(--surface);border-radius:12px;padding:1.4rem;border-left:4px solid var(--accent);}
+  .card.teal{border-left-color:var(--accent2);}
+  .card.green{border-left-color:var(--accent3);}
+  .card-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.5rem;}
+  .card h4{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:0.4rem;}
+  .card p{font-size:0.88rem;}
+  .big-quote{font-family:'Playfair Display',serif;font-size:clamp(1.2rem,2.5vw,1.85rem);font-weight:400;font-style:italic;line-height:1.4;color:var(--ink);border-left:4px solid var(--accent);padding-left:2rem;max-width:720px;margin:1.5rem 0;}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;font-size:0.95rem;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"→";color:var(--accent);font-weight:500;flex-shrink:0;margin-top:0.05rem;}
+  .highlight{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-top:1rem;}
+  .highlight p{font-size:0.92rem;}
+  .kbd-hint{position:fixed;bottom:2rem;left:3rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);}
+
+  /* Missing detail card */
+  .miss-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;}
+  .miss-card{border-radius:10px;padding:1.2rem;border:1.5px solid var(--border);background:var(--surface);}
+  .miss-card .miss-tag{font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;}
+  .miss-card h4{font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:600;color:var(--ink);margin-bottom:0.3rem;}
+  .miss-card p{font-size:0.82rem;}
+  .miss-card .question{font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--accent2);margin-top:0.5rem;}
+
+  /* Paper quote */
+  .paper-quote{background:var(--code-bg);border-radius:10px;padding:1.25rem 1.5rem;margin-top:0.75rem;}
+  .pq-label{font-family:'DM Mono',monospace;font-size:0.62rem;color:#7DD3FC;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;}
+  .pq-text{font-family:'DM Sans',sans-serif;font-size:0.88rem;color:#CBD5E1;line-height:1.6;font-style:italic;}
+  .pq-missing{font-family:'DM Mono',monospace;font-size:0.8rem;color:#FCA5A5;margin-top:0.75rem;}
+
+  /* Checklist */
+  .checklist{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.75rem;}
+  .check-item{display:flex;gap:0.85rem;align-items:flex-start;padding:0.6rem 1rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);}
+  .check-box{width:18px;height:18px;border-radius:4px;flex-shrink:0;margin-top:0.15rem;display:flex;align-items:center;justify-content:center;font-size:0.75rem;}
+  .check-box.empty{border:2px solid var(--border);}
+  .check-box.done{background:var(--accent3);color:white;border:none;}
+  .check-box.warn{background:#F59E0B;color:white;border:none;}
+  .check-item p{font-size:0.85rem;}
+
+  /* K-RagRec missing */
+  .missing-list{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.75rem;}
+  .ml-item{display:flex;gap:1rem;align-items:flex-start;padding:0.75rem 1rem;border-radius:8px;border:1.5px solid;}
+  .ml-item.gap{border-color:#FECACA;background:#FFF5F5;}
+  .ml-item.note{border-color:#BAE6FD;background:#F0FBFF;}
+  .ml-icon{font-size:1rem;flex-shrink:0;}
+  .ml-item h4{font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:600;color:var(--ink);margin-bottom:0.15rem;}
+  .ml-item p{font-size:0.82rem;}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+
+  <!-- S1 Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M4 · Lesson 2 — Reproducing Works</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>Spotting<br>Missing Details</h1>
+      <p class="subtitle">Every paper omits something important.<br>Learning to find what's <em>not written</em> is a core research skill.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- S2 Why papers omit -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L2 — Why Papers Omit</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>It's not always dishonesty</h3>
+      <h2>Why details go missing</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <ul class="clean">
+            <li><strong>Page limits</strong> — 8-page venue forces brutal cuts</li>
+            <li><strong>Assumed knowledge</strong> — authors assume readers know standard tricks</li>
+            <li><strong>Competitive advantage</strong> — some details are deliberately vague</li>
+            <li><strong>Tuned but not justified</strong> — hyperparameters found by grid search, not theory</li>
+            <li><strong>Bugs or mistakes</strong> — occasionally, the omission hides an inconsistency</li>
+          </ul>
+        </div>
+        <div>
+          <div class="big-quote">"The paper says 'we train with Adam'. What learning rate? What decay schedule? What batch size? What weight initialisation?"</div>
+          <p style="margin-top:1rem; font-size:0.9rem;">These details can change results by <strong>10–20%</strong>. They matter enormously for reproduction.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- S3 Six categories of missing details -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L2 — Six Categories</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>What's usually missing</h3>
+      <h2>Six categories of<br>omitted details</h2>
+      <div class="accent-line"></div>
+      <div class="miss-grid">
+        <div class="miss-card">
+          <div class="miss-tag">Category 01</div>
+          <h4>Initialisation</h4>
+          <p>How are embeddings initialised? Random normal? Xavier? Zero?</p>
+          <div class="question">→ Ask: what is E^(0) at t=0?</div>
+        </div>
+        <div class="miss-card">
+          <div class="miss-tag">Category 02</div>
+          <h4>Negative Sampling</h4>
+          <p>How is j sampled? Uniformly? Popularity-weighted? How many per positive?</p>
+          <div class="question">→ Ask: how is I⁻_u constructed?</div>
+        </div>
+        <div class="miss-card">
+          <div class="miss-tag">Category 03</div>
+          <h4>Learning Rate Schedule</h4>
+          <p>Is lr constant? Does it decay? When does early stopping trigger?</p>
+          <div class="question">→ Ask: how does α change over time?</div>
+        </div>
+        <div class="miss-card">
+          <div class="miss-tag">Category 04</div>
+          <h4>Embedding Dimensions</h4>
+          <p>What is d? Is it the same for users and items? Is it tuned?</p>
+          <div class="question">→ Ask: what is the shape of P and Q?</div>
+        </div>
+        <div class="miss-card">
+          <div class="miss-tag">Category 05</div>
+          <h4>Data Preprocessing</h4>
+          <p>How are ratings normalised? What threshold defines an implicit positive?</p>
+          <div class="question">→ Ask: what does r_{ui} = 1 mean exactly?</div>
+        </div>
+        <div class="miss-card">
+          <div class="miss-tag">Category 06</div>
+          <h4>Hyperparameter Tuning</h4>
+          <p>Which values were grid-searched? On which split — validation or test?</p>
+          <div class="question">→ Ask: were baselines tuned equally?</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- S4 Reading between lines -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L2 — Reading Between the Lines</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>The "implementation details" section</h3>
+      <h2>What the paper says vs<br>what you need to know</h2>
+      <div class="accent-line"></div>
+      <div class="paper-quote">
+        <div class="pq-label">K-RagRec — Section 4.1.4 Parameter Settings</div>
+        <div class="pq-text">"We use the 3 layers Graph Transformer as the GNN_Indexing and GNN_Encoding for MovieLens-1M and 4 layers for MovieLens-20M and Amazon Book. The layer dimension is set to 1024, and the head number is set to 4. The popularity selective retrieval policy threshold p is set to 50%."</div>
+        <div class="pq-missing">❌ Missing: initialisation of E^(0) · negative sampling strategy · learning rate schedule · how KG triples are filtered to match each dataset</div>
+      </div>
+      <div class="highlight" style="margin-top:1rem;">
+        <p><strong>Rule of thumb:</strong> If you can't reproduce the exact experiment from the paper's "implementation details" section alone — details are missing. Check the appendix, then the code repository if available.</p>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- S5 K-RagRec missing list -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L2 — K-RagRec Applied</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Applied to our running example</h3>
+      <h2>5 missing details in<br>K-RagRec</h2>
+      <div class="accent-line"></div>
+      <div class="missing-list">
+        <div class="ml-item gap">
+          <div class="ml-icon">❌</div>
+          <div><h4>GNN initialisation</h4><p>How are node embeddings z_n initialised before GNN_Indexing runs? Random? Pre-trained PLM only?</p></div>
+        </div>
+        <div class="ml-item gap">
+          <div class="ml-icon">❌</div>
+          <div><h4>Negative sampling for cross-entropy loss</h4><p>Section 3.8 trains with cross-entropy on (Y, A). How are negative candidate items selected during training?</p></div>
+        </div>
+        <div class="ml-item gap">
+          <div class="ml-icon">❌</div>
+          <div><h4>KG filtering process</h4><p>Freebase has millions of triples. The paper says "filter out triples related to the three datasets" — what is the exact filtering criterion?</p></div>
+        </div>
+        <div class="ml-item gap">
+          <div class="ml-icon">❌</div>
+          <div><h4>Re-ranking similarity metric</h4><p>Eq. 6 uses sim(p, z_g) for re-ranking. Is this cosine similarity or dot product? This changes results.</p></div>
+        </div>
+        <div class="ml-item note">
+          <div class="ml-icon">⚠️</div>
+          <div><h4>p=50% threshold justification</h4><p>Stated in Table 4 but Figure 4 shows performance is sensitive to p. Why 50% specifically? Grid searched on validation set?</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- S6 What to do when details are missing -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L2 — What To Do</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Practical recovery strategies</h3>
+      <h2>When details are missing,<br>go in this order</h2>
+      <div class="accent-line"></div>
+      <div class="checklist">
+        <div class="check-item"><div class="check-box done">1</div><p><strong>Check the appendix</strong> — most papers move implementation details here under page pressure</p></div>
+        <div class="check-item"><div class="check-box done">2</div><p><strong>Check the GitHub repo</strong> — if code is released, it is the ground truth implementation</p></div>
+        <div class="check-item"><div class="check-box warn">3</div><p><strong>Check cited papers</strong> — if they use another paper's method, the details may be in the original paper</p></div>
+        <div class="check-item"><div class="check-box warn">4</div><p><strong>Use field conventions</strong> — e.g., Xavier initialisation and Adam with lr=0.001 are defaults in most RS work</p></div>
+        <div class="check-item"><div class="check-box empty"></div><p><strong>Email the authors</strong> — a polite, specific question usually gets a response. Attach your pseudocode.</p></div>
+        <div class="check-item"><div class="check-box empty"></div><p><strong>Document your assumptions</strong> — if you fill in a gap yourself, write it down clearly. This is important for reproducibility of your own work.</p></div>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- S7 Takeaways -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L2 — Key Takeaways</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>What to remember</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>Six categories to check</h4>
+          <p>Initialisation · Negative sampling · LR schedule · Embedding dims · Preprocessing · Hyperparameter tuning</p>
+        </div>
+        <div class="card teal">
+          <div class="card-num">02</div>
+          <h4>Code > paper</h4>
+          <p>When a repo exists, it is the true implementation. The paper is a description — often incomplete.</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">03</div>
+          <h4>Document your assumptions</h4>
+          <p>When you fill in a gap yourself, write it down. Your reproduction is only trustworthy if you know exactly what you assumed.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);">Next: M4 · L3 — Building an Implementation Plan</p>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 7</span>
+  <button onclick="next()">→</button>
+</div>
+<script>
+  const slides=document.querySelectorAll('.slide');const total=slides.length;let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);}function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>

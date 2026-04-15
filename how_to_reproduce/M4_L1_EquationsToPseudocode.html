@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M4 · L1 — From Equations to Pseudocode</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --ink:#111111; --ink-light:#555555; --ink-dim:#AAAAAA;
+    --accent:#0E7490; --accent2:#E8572A; --accent3:#059669;
+    --surface:#F0FBFF; --surface2:#E0F5FA; --border:#BAE6FD;
+    --code-bg:#0F172A; --code-text:#94A3B8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--white);}
+  .deck{width:100%;height:100vh;position:relative;}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:5vh 8vw;opacity:0;pointer-events:none;transition:opacity 0.35s ease,transform 0.35s ease;transform:translateX(40px);background:var(--white);}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+  .slide.exit{opacity:0;transform:translateX(-40px);}
+  .progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width 0.3s ease;z-index:100;}
+  .nav{position:fixed;bottom:2rem;right:3rem;display:flex;gap:0.75rem;align-items:center;z-index:100;}
+  .nav button{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:1rem;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .nav button:hover{background:var(--ink);color:var(--white);border-color:var(--ink);}
+  .nav .counter{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);min-width:50px;text-align:center;}
+  .lesson-tag{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:auto;padding-top:0.5rem;}
+  .slide-num{font-family:'Playfair Display',serif;font-size:8rem;font-weight:900;color:var(--surface);line-height:1;position:absolute;right:7vw;top:3vh;user-select:none;}
+  h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;line-height:1.1;color:var(--ink);}
+  h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.5vw,2.8rem);font-weight:700;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+  h3{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:1.25rem;}
+  p,li{font-family:'DM Sans',sans-serif;font-size:clamp(0.92rem,1.7vw,1.08rem);color:var(--ink-light);line-height:1.7;}
+  strong{color:var(--ink);font-weight:500;}
+  em{color:var(--accent);font-style:normal;font-weight:500;}
+  .subtitle{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2vw,1.3rem);color:var(--ink-light);line-height:1.5;max-width:620px;margin-top:1rem;}
+  .accent-line{width:48px;height:3px;background:var(--accent);margin-bottom:2rem;border-radius:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin-top:1rem;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;margin-top:1rem;}
+  .card{background:var(--surface);border-radius:12px;padding:1.4rem;border-left:4px solid var(--accent);}
+  .card.orange{border-left-color:var(--accent2);}
+  .card.green{border-left-color:var(--accent3);}
+  .card-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);margin-bottom:0.5rem;}
+  .card h4{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:0.4rem;}
+  .card p{font-size:0.88rem;}
+  .big-quote{font-family:'Playfair Display',serif;font-size:clamp(1.2rem,2.5vw,1.85rem);font-weight:400;font-style:italic;line-height:1.4;color:var(--ink);border-left:4px solid var(--accent);padding-left:2rem;max-width:720px;margin:1.5rem 0;}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;font-size:0.95rem;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"→";color:var(--accent);font-weight:500;flex-shrink:0;margin-top:0.05rem;}
+  .highlight{background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-top:1rem;}
+  .highlight p{font-size:0.92rem;}
+  .kbd-hint{position:fixed;bottom:2rem;left:3rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--ink-dim);}
+
+  /* Code block */
+  .code-block{background:var(--code-bg);border-radius:10px;padding:1.25rem 1.5rem;font-family:'DM Mono',monospace;font-size:0.8rem;line-height:1.7;color:var(--code-text);overflow-x:auto;margin-top:0.75rem;}
+  .code-kw{color:#7DD3FC;}   /* keywords */
+  .code-fn{color:#86EFAC;}   /* functions */
+  .code-var{color:#FCA5A5;}  /* variables */
+  .code-cmt{color:#475569;}  /* comments */
+  .code-num{color:#FDE68A;}  /* numbers */
+  .code-str{color:#A5B4FC;}  /* strings */
+
+  /* Math display */
+  .math-box{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:1rem 1.5rem;margin-top:0.75rem;font-family:'DM Mono',monospace;font-size:0.9rem;color:var(--ink);text-align:center;}
+
+  /* Mapping table */
+  .map-table{width:100%;border-collapse:collapse;margin-top:0.75rem;font-size:0.85rem;}
+  .map-table th{background:var(--code-bg);color:#7DD3FC;padding:0.6rem 1rem;font-family:'DM Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;text-align:left;}
+  .map-table td{padding:0.65rem 1rem;border-bottom:1px solid var(--border);vertical-align:top;}
+  .map-table tr:last-child td{border-bottom:none;}
+  .map-table tr:nth-child(even) td{background:var(--surface);}
+  .map-table td:first-child{font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--accent2);}
+  .map-table td:nth-child(2){color:var(--ink);font-weight:500;}
+  .map-table td:nth-child(3){color:var(--ink-light);}
+
+  /* Step indicator */
+  .steps{display:flex;gap:0;margin-top:1.5rem;align-items:stretch;}
+  .step{flex:1;padding:1rem;background:var(--surface);border-right:1px solid var(--border);position:relative;}
+  .step:last-child{border-right:none;}
+  .step-num{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--accent);margin-bottom:0.4rem;}
+  .step h4{font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:600;color:var(--ink);margin-bottom:0.3rem;}
+  .step p{font-size:0.8rem;}
+  .steps{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<div class="deck">
+
+  <!-- S1 Title -->
+  <div class="slide active">
+    <div class="lesson-tag">M4 · Lesson 1 — Reproducing Works</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h1>From Equations<br>to Pseudocode</h1>
+      <p class="subtitle">You don't truly understand a paper until you can<br>translate its math into <em>step-by-step logic</em>.</p>
+    </div>
+    <div class="slide-num">01</div>
+  </div>
+
+  <!-- S2 Why this matters -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — Why This Matters</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>The gap between reading and doing</h3>
+      <h2>Understanding math ≠<br>knowing how to implement it</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="big-quote">"I understood the equation. Then I tried to implement it and realised I didn't know what to initialise, which loop goes first, or what the actual input shape was."</div>
+        </div>
+        <div>
+          <p style="margin-bottom:1rem;">Pseudocode forces you to answer questions equations avoid:</p>
+          <ul class="clean">
+            <li>What are the <strong>inputs and outputs</strong>?</li>
+            <li>What is the <strong>loop structure</strong>?</li>
+            <li>What is the <strong>order of operations</strong>?</li>
+            <li>What needs to be <strong>initialised</strong> before training?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">02</div>
+  </div>
+
+  <!-- S3 The mapping -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — The Mapping</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>Math → Code vocabulary</h3>
+      <h2>Every math construct<br>maps to a code construct</h2>
+      <div class="accent-line"></div>
+      <table class="map-table">
+        <thead><tr><th>Math notation</th><th>Code construct</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>∑_{i∈I_u}</td><td>for loop over set</td><td>for i in user_items[u]:</td></tr>
+          <tr><td>argmin_θ L(θ)</td><td>optimiser.step()</td><td>optimizer.step() after loss.backward()</td></tr>
+          <tr><td>θ ← θ − α∇L</td><td>parameter update</td><td>param -= lr * param.grad</td></tr>
+          <tr><td>P ∈ ℝ^{m×d}</td><td>matrix initialisation</td><td>P = nn.Embedding(m, d)</td></tr>
+          <tr><td>p_u^⊤ q_i</td><td>dot product</td><td>torch.dot(p_u, q_i)</td></tr>
+          <tr><td>σ(x)</td><td>activation function</td><td>torch.sigmoid(x)</td></tr>
+          <tr><td>e_u^{(l+1)} = AGG(...)</td><td>message passing layer</td><td>h = conv_layer(h, edge_index)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="slide-num">03</div>
+  </div>
+
+  <!-- S4 The 4 elements -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — Four Elements</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>What to identify before writing pseudocode</h3>
+      <h2>Four elements in<br>every algorithm</h2>
+      <div class="accent-line"></div>
+      <div class="three-col">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>Inputs</h4>
+          <p>What data goes in? User IDs, item IDs, ratings, embeddings, adjacency matrices — list them all explicitly.</p>
+        </div>
+        <div class="card orange">
+          <div class="card-num">02</div>
+          <h4>Outputs</h4>
+          <p>What does it return? A score, a ranked list, updated embeddings, a loss value?</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">03</div>
+          <h4>Loop structure</h4>
+          <p>What iterates over what? Epochs → batches → user-item pairs. Nested Σ = nested loop.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1.25rem; border-left-color:var(--ink); background:var(--surface);">
+        <div class="card-num">04 — most commonly missed</div>
+        <h4>Updates — what changes each step?</h4>
+        <p style="font-size:0.88rem;">Which variables are being modified? Embeddings? Parameters? Gradient accumulators? Papers often describe the loss but skip describing what exactly gets updated and when.</p>
+      </div>
+    </div>
+    <div class="slide-num">04</div>
+  </div>
+
+  <!-- S5 BPR example equation -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — Worked Example</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>MF-BPR — the equation</h3>
+      <h2>Step 1: decode<br>what the math says</h2>
+      <div class="accent-line"></div>
+      <div class="math-box">
+        ℒ_BPR = −∑_{(u,i,j)∈𝒟} ln σ(p_u^⊤q_i − p_u^⊤q_j) + λ(‖P‖²_F + ‖Q‖²_F)
+      </div>
+      <div style="margin-top:1.25rem;">
+        <table class="map-table">
+          <thead><tr><th>Piece</th><th>Meaning</th><th>In code</th></tr></thead>
+          <tbody>
+            <tr><td>∑_{(u,i,j)∈𝒟}</td><td>loop over training triples</td><td>for u, i, j in dataloader:</td></tr>
+            <tr><td>p_u^⊤q_i − p_u^⊤q_j</td><td>positive score minus negative score</td><td>score = dot(p[u],q[i]) - dot(p[u],q[j])</td></tr>
+            <tr><td>ln σ(·)</td><td>log-sigmoid of score diff</td><td>F.logsigmoid(score)</td></tr>
+            <tr><td>−∑ ···</td><td>negate for minimisation</td><td>loss = -logsigmoid.sum()</td></tr>
+            <tr><td>λ‖P‖²_F + λ‖Q‖²_F</td><td>L2 regularisation on embeddings</td><td>loss += λ * (P.norm()**2 + Q.norm()**2)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="slide-num">05</div>
+  </div>
+
+  <!-- S6 BPR pseudocode -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — Worked Example</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>MF-BPR — the pseudocode</h3>
+      <h2>Step 2: write<br>the algorithm</h2>
+      <div class="accent-line"></div>
+      <div class="code-block">
+<span class="code-cmt"># Inputs: user set U, item set I, observed interactions O</span>
+<span class="code-cmt"># Hyperparams: d (dims), α (lr), λ (reg), epochs</span>
+
+<span class="code-kw">INITIALISE</span> P ∈ ℝ^{m×d}, Q ∈ ℝ^{n×d}  <span class="code-cmt"># random small values</span>
+
+<span class="code-kw">FOR</span> epoch = 1 <span class="code-kw">to</span> epochs:
+  <span class="code-kw">FOR</span> each (u, i, j) <span class="code-kw">in</span> <span class="code-fn">sample_triples</span>(O):   <span class="code-cmt"># j is negative sample</span>
+    score = <span class="code-fn">dot</span>(P[u], Q[i]) - <span class="code-fn">dot</span>(P[u], Q[j])
+    loss  = -<span class="code-fn">log_sigmoid</span>(score)
+    loss += λ * (‖P[u]‖² + ‖Q[i]‖² + ‖Q[j]‖²)
+
+    <span class="code-cmt"># Gradient step</span>
+    P[u] ← P[u] - α * ∂loss/∂P[u]
+    Q[i] ← Q[i] - α * ∂loss/∂Q[i]
+    Q[j] ← Q[j] - α * ∂loss/∂Q[j]
+
+<span class="code-kw">RETURN</span> P, Q
+      </div>
+      <div class="highlight" style="margin-top:1rem;">
+        <p><strong>Notice what the equation didn't say:</strong> P and Q are initialised randomly. Only the embeddings of u, i, j are updated per step (not the full matrices). j is sampled — the paper leaves out how.</p>
+      </div>
+    </div>
+    <div class="slide-num">06</div>
+  </div>
+
+  <!-- S7 LightGCN forward pass -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — Second Example</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>LightGCN forward pass</h3>
+      <h2>Equations → pseudocode<br>for graph propagation</h2>
+      <div class="accent-line"></div>
+      <div class="two-col">
+        <div>
+          <div class="math-box" style="margin-bottom:1rem; text-align:left; font-size:0.8rem;">
+            e_u^{(l+1)} = ∑_{i∈𝒩_u} (1/√|𝒩_u|√|𝒩_i|) · e_i^{(l)}<br><br>
+            e_u^* = (1/L+1) ∑_{l=0}^{L} e_u^{(l)}
+          </div>
+          <p style="font-size:0.88rem;">Two equations. They encode: one propagation step + final aggregation.</p>
+        </div>
+        <div class="code-block" style="font-size:0.75rem;">
+<span class="code-cmt"># Forward pass</span>
+<span class="code-kw">INPUT</span>: E^(0) ∈ ℝ^{(m+n)×d}, graph A
+
+all_embeddings = [E^(0)]
+
+<span class="code-kw">FOR</span> l = 1 <span class="code-kw">to</span> L:
+  <span class="code-cmt"># Normalised graph convolution</span>
+  E^(l) = D^{-1/2} · A · D^{-1/2} · E^(l-1)
+  all_embeddings.<span class="code-fn">append</span>(E^(l))
+
+<span class="code-cmt"># Average across all layers</span>
+E_final = <span class="code-fn">mean</span>(all_embeddings, axis=0)
+
+<span class="code-cmt"># Split back into user / item</span>
+P = E_final[:m]
+Q = E_final[m:]
+
+<span class="code-kw">RETURN</span> P, Q
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">07</div>
+  </div>
+
+  <!-- S8 The process -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — The Process</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <h3>A repeatable workflow</h3>
+      <h2>Equation to pseudocode<br>in 4 steps</h2>
+      <div class="accent-line"></div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h4>List all symbols</h4>
+          <p>What is every variable? What is its shape? Is it learned or computed?</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h4>Find the loops</h4>
+          <p>Every Σ is a loop. What does it range over? What is accumulated?</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h4>Identify updates</h4>
+          <p>Which variables change? What is the ← assignment? What triggers it?</p>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <h4>Write inputs/outputs</h4>
+          <p>State explicitly: what goes in, what comes out. If you can't — re-read the paper.</p>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top:1.5rem;">
+        <p><strong>The test:</strong> hand your pseudocode to someone else. If they could implement it without reading the paper — you've done it right.</p>
+      </div>
+    </div>
+    <div class="slide-num">08</div>
+  </div>
+
+  <!-- S9 Takeaways -->
+  <div class="slide">
+    <div class="lesson-tag">M4 · L1 — Key Takeaways</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div class="accent-line"></div>
+      <h2>What to remember</h2>
+      <div class="three-col" style="margin-top:2rem;">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h4>Σ = for loop</h4>
+          <p>Every summation is a loop. Every nested Σ is a nested loop. Translate mechanically.</p>
+        </div>
+        <div class="card orange">
+          <div class="card-num">02</div>
+          <h4>Equations hide context</h4>
+          <p>Initialisations, loop order, negative sampling strategy — equations assume you know these. You don't, until you ask.</p>
+        </div>
+        <div class="card green">
+          <div class="card-num">03</div>
+          <h4>Pseudocode is understanding</h4>
+          <p>If you can write pseudocode for a paper, you understand it. If you can't, you don't — regardless of how fluent the math looks.</p>
+        </div>
+      </div>
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+        <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--ink-dim);">Next: M4 · L2 — Spotting Missing Details</p>
+      </div>
+    </div>
+    <div class="slide-num">09</div>
+  </div>
+
+</div>
+<div class="kbd-hint">← → arrow keys to navigate</div>
+<div class="nav">
+  <button onclick="prev()">←</button>
+  <span class="counter" id="counter">1 / 9</span>
+  <button onclick="next()">→</button>
+</div>
+<script>
+  const slides=document.querySelectorAll('.slide');const total=slides.length;let cur=0;
+  function go(n){slides[cur].classList.remove('active');slides[cur].classList.add('exit');cur=n;slides[cur].classList.remove('exit');slides[cur].classList.add('active');document.getElementById('counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress').style.width=`${((cur+1)/total)*100}%`;}
+  function next(){if(cur<total-1)go(cur+1);}function prev(){if(cur>0)go(cur-1);}
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+  document.getElementById('progress').style.width=`${(1/total)*100}%`;
+</script>
+</body>
+</html>
