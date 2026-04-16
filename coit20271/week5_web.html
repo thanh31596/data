@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COIT20271 · PA1 Lab Worksheet</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --red:    #C0392B;
+  --red-lt: #FDECEA;
+  --red-dk: #96291F;
+  --blue:   #2C3E8E;
+  --blu-lt: #EEF2FF;
+  --green:  #2E7D32;
+  --grn-lt: #F1F8F1;
+  --amber:  #E65100;
+  --amb-lt: #FFF3E0;
+  --ink:    #1A1A2E;
+  --ink-2:  #3D3D5C;
+  --ink-3:  #6B6B8A;
+  --rule:   #E2E2EE;
+  --bg:     #F7F7FB;
+  --white:  #FFFFFF;
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans:  'DM Sans', system-ui, sans-serif;
+  --mono:  'DM Mono', 'Courier New', monospace;
+  --sidebar: 280px;
+  --radius: 8px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar);
+  min-height: 100vh;
+  background: var(--white);
+  border-right: 1.5px solid var(--rule);
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.sidebar-header {
+  padding: 28px 24px 20px;
+  border-bottom: 1.5px solid var(--rule);
+}
+.sidebar-course {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--red);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.sidebar-title {
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+/* progress ring */
+.progress-section {
+  padding: 20px 24px;
+  border-bottom: 1.5px solid var(--rule);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ring-wrap { position: relative; width: 54px; height: 54px; flex-shrink: 0; }
+.ring-wrap svg { transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--rule); stroke-width: 4; }
+.ring-fg { fill: none; stroke: var(--red); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+.ring-pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: var(--red);
+}
+.progress-text { flex: 1; }
+.progress-label { font-size: 11px; color: var(--ink-3); margin-bottom: 2px; }
+.progress-count { font-size: 14px; font-weight: 600; color: var(--ink); }
+
+/* nav items */
+.nav-section { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.nav-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 4px 24px 8px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 24px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.nav-item:hover { background: var(--bg); }
+.nav-item.active { background: var(--red-lt); color: var(--red); font-weight: 500; }
+.nav-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  flex-shrink: 0;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.nav-dot.done { background: var(--green); border-color: var(--green); color: white; }
+.nav-dot.active { border-color: var(--red); color: var(--red); }
+
+/* time tracker */
+.sidebar-timer {
+  margin-top: auto;
+  padding: 16px 24px;
+  border-top: 1.5px solid var(--rule);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.timer-clock {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.timer-bar { height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.timer-fill { height: 100%; background: var(--red); transition: width 1s linear; border-radius: 2px; }
+
+/* ── Main content ────────────────────────────────────────────────────── */
+#main {
+  margin-left: var(--sidebar);
+  flex: 1;
+  max-width: 860px;
+  padding: 48px 52px 80px;
+}
+
+/* Page header */
+.page-hero {
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 2px solid var(--rule);
+}
+.page-eyebrow {
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--red); font-weight: 600; margin-bottom: 10px;
+}
+.page-hero h1 {
+  font-family: var(--serif);
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.page-hero p {
+  font-size: 16px;
+  color: var(--ink-2);
+  max-width: 620px;
+  line-height: 1.65;
+}
+.meta-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.meta-pill {
+  background: var(--white);
+  border: 1.5px solid var(--rule);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  display: flex; align-items: center; gap: 6px;
+}
+.meta-pill span { color: var(--red); font-weight: 600; }
+
+/* Sections */
+.worksheet-section {
+  margin-bottom: 52px;
+  scroll-margin-top: 32px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.section-badge {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--red);
+  color: white;
+  font-family: var(--serif);
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.section-badge.blue { background: var(--blue); }
+.section-badge.green { background: var(--green); }
+.section-badge.amber { background: var(--amber); }
+
+.section-heading-group h2 {
+  font-family: var(--serif);
+  font-size: 24px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.section-marks {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+/* Callout boxes */
+.callout {
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  display: flex;
+  gap: 12px;
+}
+.callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.callout.example  { background: var(--grn-lt); border-left: 3px solid var(--green); }
+.callout.tip      { background: var(--blu-lt); border-left: 3px solid var(--blue); }
+.callout.warn     { background: var(--amb-lt); border-left: 3px solid var(--amber); }
+.callout.marks    { background: var(--red-lt); border-left: 3px solid var(--red); }
+.callout b { color: var(--ink); }
+
+/* Question blocks */
+.question-block {
+  background: var(--white);
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.question-block:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(44,62,142,0.08);
+}
+.question-block.filled { border-color: var(--green); }
+
+.q-header {
+  padding: 14px 18px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.q-num {
+  width: 22px; height: 22px;
+  background: var(--blue);
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.q-num.red-num { background: var(--red); }
+.q-num.grn-num { background: var(--green); }
+.q-num.amb-num { background: var(--amber); }
+.q-label { font-weight: 600; font-size: 14px; color: var(--ink); line-height: 1.4; }
+.q-hint  { font-size: 12px; color: var(--ink-3); margin-top: 3px; }
+
+.q-example {
+  margin: 10px 18px;
+  background: var(--bg);
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  border: 1px dashed var(--rule);
+}
+.q-example .ex-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+  font-weight: 700; color: var(--green); margin-bottom: 5px;
+}
+
+.q-input-wrap { padding: 10px 18px 14px; }
+textarea.q-input {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1.5px solid var(--rule);
+  border-radius: 5px;
+  padding: 10px 12px;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.2s;
+  line-height: 1.6;
+}
+textarea.q-input:focus { border-color: var(--blue); background: var(--white); }
+textarea.q-input.tall { min-height: 130px; }
+textarea.q-input.short { min-height: 52px; }
+
+.char-count { font-size: 11px; color: var(--ink-3); text-align: right; margin-top: 4px; }
+.char-count.warn { color: var(--amber); }
+
+/* Requirement builder */
+.req-table { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
+.req-table th {
+  background: var(--bg); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3);
+  padding: 8px 10px; border: 1px solid var(--rule); text-align: left;
+}
+.req-table td { border: 1px solid var(--rule); padding: 0; vertical-align: top; }
+.req-cell {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  outline: none;
+  color: var(--ink);
+  resize: none;
+  line-height: 1.5;
+}
+.req-cell:focus { background: var(--blu-lt); }
+.add-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--blue);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  font-family: var(--sans);
+}
+.add-row-btn:hover { color: var(--red); }
+
+/* Priority badge selects */
+select.priority-sel {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--rule);
+  margin: 40px 0;
+}
+
+/* Section divider with label */
+.part-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 56px 0 40px;
+}
+.part-divider-line { flex: 1; height: 1px; background: var(--rule); }
+.part-divider-label {
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  font-style: italic;
+}
+
+/* Export section */
+.export-card {
+  background: var(--ink);
+  color: white;
+  border-radius: 12px;
+  padding: 32px 36px;
+  margin-top: 48px;
+}
+.export-card h3 {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin-bottom: 10px;
+  color: white;
+}
+.export-card p { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 22px; }
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+.export-btn:hover { opacity: 0.88; }
+.export-btn.primary { background: var(--red); color: white; margin-right: 10px; }
+.export-btn.secondary { background: rgba(255,255,255,0.12); color: white; }
+
+/* Unity plan grid */
+.plan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 14px 0;
+}
+.plan-cell {
+  background: var(--white);
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.plan-cell h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+.plan-cell textarea {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1.5px solid var(--rule);
+  border-radius: 5px;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 70px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.plan-cell textarea:focus { border-color: var(--blue); background: white; }
+
+/* Checklist */
+.checklist-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.checklist-row:last-child { border-bottom: none; }
+.check-input { margin-top: 3px; accent-color: var(--green); width: 15px; height: 15px; flex-shrink: 0; }
+.checklist-row.checked { color: var(--ink-3); text-decoration: line-through; }
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 32px; right: 32px;
+  background: var(--ink);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  z-index: 999;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+
+/* Print styles */
+@media print {
+  #sidebar, .export-card, .callout.tip, .add-row-btn { display: none; }
+  #main { margin-left: 0; padding: 24px; max-width: 100%; }
+  textarea, .req-cell { border: 1px solid #ccc !important; background: white !important; }
+  .question-block { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══════════════════════════════════════════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-course">COIT20271 · PA1</div>
+    <div class="sidebar-title">Lab Worksheet<br><em>Game Design Sprint</em></div>
+  </div>
+
+  <div class="progress-section">
+    <div class="ring-wrap">
+      <svg width="54" height="54" viewBox="0 0 54 54">
+        <circle class="ring-bg" cx="27" cy="27" r="22"/>
+        <circle class="ring-fg" id="ringFg" cx="27" cy="27" r="22"
+                stroke-dasharray="138.2" stroke-dashoffset="138.2"/>
+      </svg>
+      <div class="ring-pct" id="ringPct">0%</div>
+    </div>
+    <div class="progress-text">
+      <div class="progress-label">Questions answered</div>
+      <div class="progress-count" id="progressCount">0 of 20</div>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-group-label">Overview</div>
+    <a class="nav-item" href="#overview">
+      <div class="nav-dot" id="dot-overview">·</div>Session Guide
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-group-label">Part 1 · Concept (6 marks)</div>
+    <a class="nav-item" href="#game-type">
+      <div class="nav-dot" id="dot-type">1</div>Game Type &amp; Mode
+    </a>
+    <a class="nav-item" href="#objectives">
+      <div class="nav-dot" id="dot-obj">2</div>Objectives &amp; Rules
+    </a>
+    <a class="nav-item" href="#challenges">
+      <div class="nav-dot" id="dot-chal">3</div>Challenges &amp; Difficulty
+    </a>
+    <a class="nav-item" href="#environment">
+      <div class="nav-dot" id="dot-env">4</div>Environment &amp; Audience
+    </a>
+    <a class="nav-item" href="#mobile-case">
+      <div class="nav-dot" id="dot-mob">5</div>Mobile Rationale
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-group-label">Part 2 · Design (6 marks)</div>
+    <a class="nav-item" href="#func-req">
+      <div class="nav-dot" id="dot-fr">6</div>Functional Requirements
+    </a>
+    <a class="nav-item" href="#nonfunc-req">
+      <div class="nav-dot" id="dot-nfr">7</div>Non-Functional Req.
+    </a>
+    <a class="nav-item" href="#ui-design">
+      <div class="nav-dot" id="dot-ui">8</div>UI Design
+    </a>
+    <a class="nav-item" href="#use-cases">
+      <div class="nav-dot" id="dot-uc">9</div>Use Cases
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-group-label">Part 3 · Unity Plan</div>
+    <a class="nav-item" href="#unity-plan">
+      <div class="nav-dot" id="dot-unity">10</div>Unity Prototype Plan
+    </a>
+  </div>
+
+  <div class="sidebar-timer">
+    <div class="timer-clock" id="clock">2:00:00</div>
+    <div>Lab session remaining</div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill" style="width:100%"></div></div>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- ── HERO ── -->
+  <div class="page-hero" id="overview">
+    <div class="page-eyebrow">Practical Assignment 1 · Lab Sprint</div>
+    <h1>Turn your game idea<br>into a written plan</h1>
+    <p>You already have a game in mind. This worksheet walks you through every section of the marking guide — one question at a time — so you leave today with the backbone of your design report written.</p>
+    <div class="meta-pills">
+      <div class="meta-pill">⏱ <span>2 hours</span></div>
+      <div class="meta-pill">📋 <span>20 marks</span> total</div>
+      <div class="meta-pill">📅 Due <span>Week 6 Friday 11:45 pm</span></div>
+      <div class="meta-pill">📄 Submit a Word doc + Unity project</div>
+    </div>
+
+    <div class="callout tip" style="margin-top:24px;">
+      <span class="callout-icon">💡</span>
+      <div><b>How to use this worksheet:</b> Work through each section in order. Type directly into the boxes — your answers are saved in your browser. When you're done, use the Export button at the bottom to copy everything into your Word document. Each answer you write here can go almost directly into your submission.</div>
+    </div>
+
+    <div class="callout marks" style="margin-top:12px;">
+      <span class="callout-icon">🎯</span>
+      <div><b>Session goal:</b> Complete Parts 1 and 2 (the design report sections) today, and sketch your Unity prototype plan. Part 1 + Part 2 = <b>12 marks</b> — the majority of this assignment is written planning, not just building.</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       PART 1 — GAME CONCEPT DOCUMENT
+  ═══════════════════════════════════════════════════════════════════ -->
+
+  <div class="worksheet-section" id="game-type">
+    <div class="section-header">
+      <div class="section-badge">1</div>
+      <div class="section-heading-group">
+        <h2>Game Type &amp; Mode</h2>
+        <div class="section-marks">Part 1 · Game Concept Document</div>
+      </div>
+    </div>
+
+    <!-- Q1 -->
+    <div class="question-block" id="qb-1">
+      <div class="q-header">
+        <div class="q-num red-num">1</div>
+        <div>
+          <div class="q-label">What type of game is it? And is it single-player or multiplayer?</div>
+          <div class="q-hint">e.g. runner, platformer, puzzle, strategy, shooter, simulation…</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        Gravity Shift is a single-player 3D <b>puzzle platformer</b>. The player controls a robot navigating floating platforms by reversing gravity with a hold-to-activate button.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input short" id="q1" placeholder="[Your game name] is a [single/multi-player] [game type]. The player controls…" oninput="onInput(this,'1')"></textarea>
+        <div class="char-count" id="cc-1">0 characters</div>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block" id="qb-2">
+      <div class="q-header">
+        <div class="q-num red-num">2</div>
+        <div>
+          <div class="q-label">In one sentence: what is the player's main objective?</div>
+          <div class="q-hint">What are they trying to achieve? This becomes the opening line of your objectives section.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        The player must guide the robot from the Start Platform to the Goal Portal on each level by collecting all Energy Cells and avoiding Danger Spikes.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input short" id="q2" placeholder="The player must…" oninput="onInput(this,'2')"></textarea>
+        <div class="char-count" id="cc-2">0 characters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Q3–5: Objectives & Rules ── -->
+  <div class="worksheet-section" id="objectives">
+    <div class="section-header">
+      <div class="section-badge">2</div>
+      <div class="section-heading-group">
+        <h2>Objectives &amp; Rules</h2>
+        <div class="section-marks">Part 1 · Game Concept Document</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">📌</span>
+      <div>The marking guide checks each of these individually. A vague paragraph covering all of them scores lower than specific, separate answers for each. Write a short paragraph (3–5 sentences) for each box.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-block" id="qb-3">
+      <div class="q-header">
+        <div class="q-num red-num">3</div>
+        <div>
+          <div class="q-label">Winning and losing conditions — what exactly ends the game?</div>
+          <div class="q-hint">Be specific. What event triggers a win? What event triggers a loss?</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        <b>Win:</b> Reaching the Goal Portal after collecting all Energy Cells completes the level and unlocks the next one.<br>
+        <b>Lose:</b> Falling into the void or touching a Danger Spike resets the level. There is no life counter — the game encourages experimentation.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q3" placeholder="Win condition: …&#10;Lose condition: …" oninput="onInput(this,'3')"></textarea>
+        <div class="char-count" id="cc-3">0 characters</div>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-block" id="qb-4">
+      <div class="q-header">
+        <div class="q-num red-num">4</div>
+        <div>
+          <div class="q-label">What can the player do? What can they NOT do?</div>
+          <div class="q-hint">List specific actions and restrictions — not general descriptions. Think: controls, abilities, prohibited actions.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        <b>Can do:</b> Tap left/right to move; swipe up to jump; hold Gravity Button to reverse gravity; double-tap to dash.<br>
+        <b>Cannot do:</b> Jump while gravity is reversed; move during the 0.5s gravity flip animation; revisit a collected Energy Cell.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q4" placeholder="Can do:&#10;- …&#10;- …&#10;&#10;Cannot do:&#10;- …&#10;- …" oninput="onInput(this,'4')"></textarea>
+        <div class="char-count" id="cc-4">0 characters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Q5–6: Challenges & Difficulty ── -->
+  <div class="worksheet-section" id="challenges">
+    <div class="section-header">
+      <div class="section-badge">3</div>
+      <div class="section-heading-group">
+        <h2>Challenges &amp; Difficulty</h2>
+        <div class="section-marks">Part 1 · Game Concept Document</div>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-block" id="qb-5">
+      <div class="q-header">
+        <div class="q-num red-num">5</div>
+        <div>
+          <div class="q-label">What challenges prevent players from achieving their goals?</div>
+          <div class="q-hint">List at least 4 distinct obstacles, hazards, or mechanics that create difficulty.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        Moving platforms requiring precise timing · Danger Spikes on both floors and ceilings (critical when gravity flips) · Energy Cells in hard-to-reach positions requiring creative gravity use · Narrow corridors where a misstep causes a fall · Time pressure on Hard difficulty
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q5" placeholder="- Challenge 1: …&#10;- Challenge 2: …&#10;- Challenge 3: …&#10;- Challenge 4: …" oninput="onInput(this,'5')"></textarea>
+        <div class="char-count" id="cc-5">0 characters</div>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question-block" id="qb-6">
+      <div class="q-header">
+        <div class="q-num red-num">6</div>
+        <div>
+          <div class="q-label">Describe your difficulty levels. How does the game get harder?</div>
+          <div class="q-hint">Name the levels (Easy / Medium / Hard) and describe what changes between them.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        <b>Easy:</b> Wide platforms, fast gravity recharge, no time limit.<br>
+        <b>Medium:</b> Standard platform width, normal recharge rate, optional time-bonus scoring.<br>
+        <b>Hard:</b> Narrow platforms, slow gravity recharge, moving Danger Spikes, optional time limit.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q6" placeholder="Easy: …&#10;Medium: …&#10;Hard: …" oninput="onInput(this,'6')"></textarea>
+        <div class="char-count" id="cc-6">0 characters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Q7–8: Environment & Audience ── -->
+  <div class="worksheet-section" id="environment">
+    <div class="section-header">
+      <div class="section-badge">4</div>
+      <div class="section-heading-group">
+        <h2>Environment &amp; Audience</h2>
+        <div class="section-marks">Part 1 · Game Concept Document</div>
+      </div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="question-block" id="qb-7">
+      <div class="q-header">
+        <div class="q-num red-num">7</div>
+        <div>
+          <div class="q-label">Describe the game environment and context. Where and when is the game set?</div>
+          <div class="q-hint">Visual setting, artistic style, narrative backdrop. Give the marker a clear mental picture.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        Set in a decommissioned space station drifting in low orbit, featuring a low-poly metallic aesthetic with glowing blue energy conduits and a star-filled void background. Each of the 10 levels represents a different station section (Engine Room, Research Lab, Command Deck) providing visual variety within a coherent sci-fi theme.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q7" placeholder="The game is set in… The visual style is… The narrative context is…" oninput="onInput(this,'7')"></textarea>
+        <div class="char-count" id="cc-7">0 characters</div>
+      </div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="question-block" id="qb-8">
+      <div class="q-header">
+        <div class="q-num red-num">8</div>
+        <div>
+          <div class="q-label">Who is your intended audience? Be specific about age, interests, and comparable games.</div>
+          <div class="q-hint">Mention age range, gamer type (casual/core), and 1–2 existing games your audience likely plays.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        Primary: Casual mobile gamers aged 16–35 who enjoy puzzle or platformer games. Secondary: Players of Monument Valley, Alto's Odyssey. Rated G — suitable for all ages despite the primary demographic.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input short" id="q8" placeholder="Primary audience: … Secondary audience: … Similar games: …" oninput="onInput(this,'8')"></textarea>
+        <div class="char-count" id="cc-8">0 characters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Q9: Mobile Rationale ── -->
+  <div class="worksheet-section" id="mobile-case">
+    <div class="section-header">
+      <div class="section-badge">5</div>
+      <div class="section-heading-group">
+        <h2>Why It Is a Good Mobile Game</h2>
+        <div class="section-marks">Part 1 · Game Concept Document — 1 paragraph required</div>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-icon">⚠️</span>
+      <div><b>This paragraph is explicitly listed in the marking guide.</b> It needs to go beyond "it's fun" — reference actual properties of good mobile games. Use the prompts below as a framework.</div>
+    </div>
+
+    <div style="background:var(--white); border:1.5px solid var(--rule); border-radius:var(--radius); padding:16px 20px; margin:14px 0;">
+      <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-3); margin-bottom:12px;">What makes a good mobile game? Tick all that apply to yours:</div>
+      <div id="mobile-checklist">
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> Short play sessions (3–10 minutes each)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> Intuitive touch controls (minimal learning curve)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> Clear, immediate feedback to player actions</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> Easy to pause and resume at any point</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> Runs on varied hardware (low performance requirements)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> "One more try" loop that encourages replaying</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> Simple to learn, hard to master</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input mob-check"> Designed around portrait/one-hand play</div>
+      </div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="question-block" id="qb-9">
+      <div class="q-header">
+        <div class="q-num red-num">9</div>
+        <div>
+          <div class="q-label">Write your "why it is a good mobile game" paragraph (4–6 sentences).</div>
+          <div class="q-hint">Use the checklist above. Explain HOW your specific game design delivers each quality — don't just list them.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example (opening sentences)</div>
+        Gravity Shift suits mobile because each level is completable in 3–7 minutes — matching typical commute-length sessions. Controls use only tap, swipe, and hold gestures, requiring no complex on-screen buttons. The instant respawn on failure creates a strong "one more try" loop without punishing the player's time investment…
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input tall" id="q9" placeholder="[Your game] is well-suited to mobile for several reasons. First, … Second, … Finally, …" oninput="onInput(this,'9')"></textarea>
+        <div class="char-count" id="cc-9">0 characters</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       PART 2 — GAME DESIGN DOCUMENT
+  ═══════════════════════════════════════════════════════════════════ -->
+
+  <div class="part-divider">
+    <div class="part-divider-line"></div>
+    <div class="part-divider-label">Part 2 · Game Design Document</div>
+    <div class="part-divider-line"></div>
+  </div>
+
+  <!-- ── Functional Requirements ── -->
+  <div class="worksheet-section" id="func-req">
+    <div class="section-header">
+      <div class="section-badge blue">6</div>
+      <div class="section-heading-group">
+        <h2>Functional Requirements</h2>
+        <div class="section-marks">Part 2 · Game Design Document</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">📌</span>
+      <div><b>Functional = what the system does.</b> Each requirement is a specific feature or behaviour your game will have. Aim for 6–8 requirements. Write them as: "The game shall…" or "The player can…"</div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="question-block" id="qb-10">
+      <div class="q-header">
+        <div class="q-num" style="background:var(--blue)">10</div>
+        <div>
+          <div class="q-label">Write your Functional Requirements (6–8 minimum)</div>
+          <div class="q-hint">Click "Add row" to grow the table. ID format: FR-01, FR-02… Priority: High / Medium / Low</div>
+        </div>
+      </div>
+      <div class="q-input-wrap" style="padding-top:14px;">
+        <table class="req-table" id="fr-table">
+          <thead>
+            <tr>
+              <th style="width:70px;">ID</th>
+              <th>Requirement description</th>
+              <th style="width:90px;">Priority</th>
+            </tr>
+          </thead>
+          <tbody id="fr-body">
+            <tr>
+              <td><input class="req-cell" value="FR-01" oninput="onFRInput()"></td>
+              <td><textarea class="req-cell" rows="2" placeholder="The player can…" oninput="onFRInput()"></textarea></td>
+              <td><select class="priority-sel" onchange="onFRInput()"><option>High</option><option>Medium</option><option>Low</option></select></td>
+            </tr>
+            <tr>
+              <td><input class="req-cell" value="FR-02" oninput="onFRInput()"></td>
+              <td><textarea class="req-cell" rows="2" placeholder="The game shall…" oninput="onFRInput()"></textarea></td>
+              <td><select class="priority-sel" onchange="onFRInput()"><option>High</option><option>Medium</option><option>Low</option></select></td>
+            </tr>
+            <tr>
+              <td><input class="req-cell" value="FR-03" oninput="onFRInput()"></td>
+              <td><textarea class="req-cell" rows="2" placeholder="When the player…" oninput="onFRInput()"></textarea></td>
+              <td><select class="priority-sel" onchange="onFRInput()"><option>High</option><option>Medium</option><option>Low</option></select></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="add-row-btn" onclick="addFRRow()">＋ Add requirement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Non-Functional Requirements ── -->
+  <div class="worksheet-section" id="nonfunc-req">
+    <div class="section-header">
+      <div class="section-badge blue">7</div>
+      <div class="section-heading-group">
+        <h2>Non-Functional Requirements</h2>
+        <div class="section-marks">Part 2 · Game Design Document</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">📌</span>
+      <div><b>Non-functional = how the system performs.</b> Think: performance, hardware targets, file size, platform version, orientation. Aim for 3–5.</div>
+    </div>
+
+    <!-- Q11 -->
+    <div class="question-block" id="qb-11">
+      <div class="q-header">
+        <div class="q-num" style="background:var(--blue)">11</div>
+        <div>
+          <div class="q-label">Write your Non-Functional Requirements (3–5 minimum)</div>
+        </div>
+      </div>
+      <div class="q-input-wrap" style="padding-top:14px;">
+        <table class="req-table" id="nfr-table">
+          <thead>
+            <tr>
+              <th style="width:70px;">ID</th>
+              <th>Requirement</th>
+            </tr>
+          </thead>
+          <tbody id="nfr-body">
+            <tr>
+              <td><input class="req-cell" value="NFR-01" oninput="onNFRInput()"></td>
+              <td><textarea class="req-cell" rows="2" placeholder="The game must run at ≥ 30 FPS on Android 10+ devices." oninput="onNFRInput()"></textarea></td>
+            </tr>
+            <tr>
+              <td><input class="req-cell" value="NFR-02" oninput="onNFRInput()"></td>
+              <td><textarea class="req-cell" rows="2" placeholder="Target hardware: minimum 3 GB RAM, mid-range GPU." oninput="onNFRInput()"></textarea></td>
+            </tr>
+            <tr>
+              <td><input class="req-cell" value="NFR-03" oninput="onNFRInput()"></td>
+              <td><textarea class="req-cell" rows="2" placeholder="Built in Unity 2022.3 LTS targeting Android SDK 33." oninput="onNFRInput()"></textarea></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="add-row-btn" onclick="addNFRRow()">＋ Add requirement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── UI Design ── -->
+  <div class="worksheet-section" id="ui-design">
+    <div class="section-header">
+      <div class="section-badge blue">8</div>
+      <div class="section-heading-group">
+        <h2>User Interface Design</h2>
+        <div class="section-marks">Part 2 · Game Design Document</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">📌</span>
+      <div>Describe every screen in your game. For each: name the screen, list every UI element and its function. You'll add screenshots from Unity later — describe the design intent here.</div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="question-block" id="qb-12">
+      <div class="q-header">
+        <div class="q-num" style="background:var(--blue)">12</div>
+        <div>
+          <div class="q-label">Main Menu screen — list every element and its function</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        Game Title logo (top third, centred) — branding. Play Button (large, centre) — navigates to Level Select. Settings Button — opens difficulty and audio settings. Credits Button — shows developer info. Background: animated starfield particle system.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q12" placeholder="Element: [name] — Function: [what it does]&#10;Element: …" oninput="onInput(this,'12')"></textarea>
+        <div class="char-count" id="cc-12">0 characters</div>
+      </div>
+    </div>
+
+    <!-- Q13 -->
+    <div class="question-block" id="qb-13">
+      <div class="q-header">
+        <div class="q-num" style="background:var(--blue)">13</div>
+        <div>
+          <div class="q-label">Gameplay HUD — list every on-screen element and its function</div>
+          <div class="q-hint">Score display, health bar, controls, pause button — whatever your game shows during play.</div>
+        </div>
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q13" placeholder="Element: [name] — Position: [where on screen] — Function: [what it does]&#10;Element: …" oninput="onInput(this,'13')"></textarea>
+        <div class="char-count" id="cc-13">0 characters</div>
+      </div>
+    </div>
+
+    <!-- Q14 -->
+    <div class="question-block" id="qb-14">
+      <div class="q-header">
+        <div class="q-num" style="background:var(--blue)">14</div>
+        <div>
+          <div class="q-label">Any other screens (Game Over, Level Complete, Pause Menu, Settings) — describe each briefly</div>
+        </div>
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q14" placeholder="Game Over screen: …&#10;Level Complete screen: …&#10;Pause Menu: …" oninput="onInput(this,'14')"></textarea>
+        <div class="char-count" id="cc-14">0 characters</div>
+      </div>
+    </div>
+
+    <!-- Q15 -->
+    <div class="question-block" id="qb-15">
+      <div class="q-header">
+        <div class="q-num" style="background:var(--blue)">15</div>
+        <div>
+          <div class="q-label">Why does your interface have a good design? (1 paragraph — required by marking guide)</div>
+          <div class="q-hint">Reference real mobile UI principles: touch target size (≥44px), thumb reach zones, contrast ratios, minimal cognitive load, immediate feedback.</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong opening</div>
+        The interface follows mobile UI best practices in three key ways. First, all interactive elements meet the 44×44px minimum touch target (Material Design guidelines), ensuring accurate tapping during fast gameplay. Second, primary controls are positioned in the lower third of the screen within the natural thumb reach zone…
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input tall" id="q15" placeholder="The interface design of [your game] follows established mobile UI principles. First, … Second, … Finally, …" oninput="onInput(this,'15')"></textarea>
+        <div class="char-count" id="cc-15">0 characters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Use Cases ── -->
+  <div class="worksheet-section" id="use-cases">
+    <div class="section-header">
+      <div class="section-badge blue">9</div>
+      <div class="section-heading-group">
+        <h2>Use Cases — Screen Navigation</h2>
+        <div class="section-marks">Part 2 · Game Design Document</div>
+      </div>
+    </div>
+
+    <!-- Q16 -->
+    <div class="question-block" id="qb-16">
+      <div class="q-header">
+        <div class="q-num" style="background:var(--blue)">16</div>
+        <div>
+          <div class="q-label">Describe how a player navigates through all your screens. Trace two paths: (a) normal play, (b) pausing and retrying.</div>
+          <div class="q-hint">Write it as a flow: "Player launches app → Main Menu → taps Play → Level Select → taps Level 1 → Gameplay…"</div>
+        </div>
+      </div>
+      <div class="q-example">
+        <div class="ex-label">Strong Example</div>
+        <b>Path A (Normal play):</b> App launch → Main Menu → [Play] → Level Select → [Tap Level] → Gameplay → [Collect all cells + reach portal] → Level Complete → [Next Level] → Gameplay (next level).<br>
+        <b>Path B (Pause &amp; retry):</b> Gameplay → [Pause button] → Pause Menu → [Retry] → Gameplay (level resets) OR [Menu] → Main Menu.
+      </div>
+      <div class="q-input-wrap">
+        <textarea class="q-input" id="q16" placeholder="Path A (Normal play): …&#10;&#10;Path B (Pause / Retry): …" oninput="onInput(this,'16')"></textarea>
+        <div class="char-count" id="cc-16">0 characters</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       PART 3 — UNITY PROTOTYPE PLAN
+  ═══════════════════════════════════════════════════════════════════ -->
+
+  <div class="part-divider">
+    <div class="part-divider-line"></div>
+    <div class="part-divider-label">Part 3 · Unity Prototype Plan</div>
+    <div class="part-divider-line"></div>
+  </div>
+
+  <div class="worksheet-section" id="unity-plan">
+    <div class="section-header">
+      <div class="section-badge green">10</div>
+      <div class="section-heading-group">
+        <h2>Unity Prototype Plan</h2>
+        <div class="section-marks">Part 3 · 6 marks — use this section to plan your build</div>
+      </div>
+    </div>
+
+    <div class="callout marks">
+      <span class="callout-icon">🎮</span>
+      <div>The marker checks for: game objects, materials, lighting, camera, physics, C# scripts, touch/sensor input, and external assets. You don't need everything perfect — but you need <b>evidence of each skill area</b>.</div>
+    </div>
+
+    <div class="plan-grid">
+      <div class="plan-cell">
+        <h4>Scene &amp; Game Objects</h4>
+        <textarea id="q17" placeholder="e.g. Player character (Rigidbody + CapsuleCollider), Platform prefabs, Enemy objects, Goal trigger zone…" oninput="onInput(this,'17')"></textarea>
+      </div>
+      <div class="plan-cell">
+        <h4>Scripts I Will Write</h4>
+        <textarea id="q18" placeholder="e.g. PlayerController.cs (movement + touch input), GameManager.cs (score/state), EnemyAI.cs…" oninput="onInput(this,'18')"></textarea>
+      </div>
+      <div class="plan-cell">
+        <h4>Mobile Input Implementation</h4>
+        <textarea id="q19" placeholder="e.g. Input.touchCount for tap detection, touch.deltaPosition for swipe, accelerometer for tilt…" oninput="onInput(this,'19')"></textarea>
+      </div>
+      <div class="plan-cell">
+        <h4>External Assets to Import</h4>
+        <textarea id="q20" placeholder="e.g. Character model from Asset Store (free), Environment kit, Skybox, Sound effects…" oninput="onInput(this,'20')"></textarea>
+      </div>
+    </div>
+
+    <!-- Unity skills checklist -->
+    <div style="background:var(--white); border:1.5px solid var(--rule); border-radius:var(--radius); padding:16px 20px; margin-top:16px;">
+      <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-3); margin-bottom:12px;">Unity Skill Coverage — check each area you plan to demonstrate:</div>
+      <div id="unity-checklist">
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> Game objects with parent/child hierarchy</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> Materials and textures applied to 3D objects</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> Lighting (directional light, shadows, or ambient)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> Camera setup (follow cam or Cinemachine)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> Physics (Rigidbody, Collider, triggers)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> C# scripts using MonoBehaviour lifecycle (Start, Update)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> Touch screen input (Input.GetTouch / touchCount)</div>
+        <div class="checklist-row"><input type="checkbox" class="check-input unity-check"> External asset imported and used in scene</div>
+      </div>
+    </div>
+
+    <div class="callout warn" style="margin-top:20px;">
+      <span class="callout-icon">📅</span>
+      <div><b>Recommended build order for Weeks 5–6:</b> Set up your scene and game objects first → get basic movement working with touch input → add physics and collisions → import external assets → implement game logic (score, win/lose) → add UI screens last. Start with what is hardest to learn, not what looks nicest.</div>
+    </div>
+  </div>
+
+
+  <!-- ═══ EXPORT SECTION ═══════════════════════════════════════════════ -->
+  <div class="export-card">
+    <h3>Ready to write your report?</h3>
+    <p>Your answers above form the backbone of your Word document. Copy them into Microsoft Word, expand each answer into full paragraphs, and add your Unity screenshots. The sample submission file shows how the finished document should look.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+      <button class="export-btn primary" onclick="copyAll()">Copy all answers</button>
+      <button class="export-btn secondary" onclick="window.print()">Print worksheet</button>
+    </div>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.12); font-size:13px; color:rgba(255,255,255,0.5);">
+      Your answers are stored in your browser. If you close the tab, they will still be here when you return on the same device.
+    </div>
+  </div>
+
+</main>
+
+<div id="toast">Copied to clipboard</div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════ -->
+<script>
+// ── Persistence ────────────────────────────────────────────────────────
+const STORAGE_KEY = 'coit20271_pa1_worksheet';
+
+function saveAll() {
+  const data = {};
+  for (let i = 1; i <= 20; i++) {
+    const el = document.getElementById('q' + i);
+    if (el) data['q' + i] = el.value;
+  }
+  // FR rows
+  data.frRows = collectTableRows('fr-body');
+  data.nfrRows = collectTableRows('nfr-body');
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function collectTableRows(tbodyId) {
+  const rows = [];
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(tr => {
+    const cells = [];
+    tr.querySelectorAll('input, textarea, select').forEach(el => cells.push(el.value));
+    rows.push(cells);
+  });
+  return rows;
+}
+
+function loadAll() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    for (let i = 1; i <= 20; i++) {
+      const el = document.getElementById('q' + i);
+      if (el && data['q' + i]) { el.value = data['q' + i]; updateCharCount(el, String(i)); }
+    }
+  } catch(e) {}
+}
+
+// ── Progress tracking ──────────────────────────────────────────────────
+const TOTAL_QUESTIONS = 20;
+let filled = new Set();
+
+function onInput(el, id) {
+  updateCharCount(el, id);
+  const block = document.getElementById('qb-' + id);
+  if (el.value.trim().length > 10) {
+    filled.add(id);
+    if (block) block.classList.add('filled');
+  } else {
+    filled.delete(id);
+    if (block) block.classList.remove('filled');
+  }
+  updateProgress();
+  saveAll();
+}
+
+function updateCharCount(el, id) {
+  const cc = document.getElementById('cc-' + id);
+  if (!cc) return;
+  const n = el.value.length;
+  cc.textContent = n + ' characters';
+  cc.className = 'char-count' + (n > 0 && n < 50 ? ' warn' : '');
+}
+
+function onFRInput() {
+  const hasFR = [...document.querySelectorAll('#fr-body textarea')].some(t => t.value.trim().length > 5);
+  if (hasFR) filled.add('10'); else filled.delete('10');
+  const block10 = document.getElementById('qb-10');
+  if (block10) block10.classList.toggle('filled', hasFR);
+  updateProgress();
+  saveAll();
+}
+
+function onNFRInput() {
+  const hasNFR = [...document.querySelectorAll('#nfr-body textarea')].some(t => t.value.trim().length > 5);
+  if (hasNFR) filled.add('11'); else filled.delete('11');
+  const block11 = document.getElementById('qb-11');
+  if (block11) block11.classList.toggle('filled', hasNFR);
+  updateProgress();
+  saveAll();
+}
+
+function updateProgress() {
+  const n = filled.size;
+  const pct = Math.round((n / TOTAL_QUESTIONS) * 100);
+  document.getElementById('progressCount').textContent = n + ' of ' + TOTAL_QUESTIONS;
+  document.getElementById('ringPct').textContent = pct + '%';
+  const circ = 138.2;
+  document.getElementById('ringFg').style.strokeDashoffset = circ - (circ * pct / 100);
+  updateNavDots();
+}
+
+function updateNavDots() {
+  const groups = {
+    'type': ['1','2'], 'obj': ['3','4'], 'chal': ['5','6'],
+    'env': ['7','8'], 'mob': ['9'], 'fr': ['10'], 'nfr': ['11'],
+    'ui': ['12','13','14','15'], 'uc': ['16'],
+    'unity': ['17','18','19','20']
+  };
+  Object.entries(groups).forEach(([key, ids]) => {
+    const dot = document.getElementById('dot-' + key);
+    if (!dot) return;
+    const allDone = ids.every(id => filled.has(id));
+    dot.classList.toggle('done', allDone);
+  });
+}
+
+// ── Requirement table helpers ──────────────────────────────────────────
+let frCount = 3;
+function addFRRow() {
+  frCount++;
+  const tbody = document.getElementById('fr-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="req-cell" value="FR-0${frCount}" oninput="onFRInput()"></td>
+    <td><textarea class="req-cell" rows="2" placeholder="The game shall…" oninput="onFRInput()"></textarea></td>
+    <td><select class="priority-sel" onchange="onFRInput()"><option>High</option><option>Medium</option><option>Low</option></select></td>`;
+  tbody.appendChild(tr);
+}
+
+let nfrCount = 3;
+function addNFRRow() {
+  nfrCount++;
+  const tbody = document.getElementById('nfr-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="req-cell" value="NFR-0${nfrCount}" oninput="onNFRInput()"></td>
+    <td><textarea class="req-cell" rows="2" placeholder="The game must…" oninput="onNFRInput()"></textarea></td>`;
+  tbody.appendChild(tr);
+}
+
+// ── Export / copy ──────────────────────────────────────────────────────
+function copyAll() {
+  const labels = {
+    '1': 'Q1. Game type & mode',
+    '2': 'Q2. Main objective',
+    '3': 'Q3. Win/lose conditions',
+    '4': 'Q4. Can/cannot do',
+    '5': 'Q5. Challenges',
+    '6': 'Q6. Difficulty levels',
+    '7': 'Q7. Environment',
+    '8': 'Q8. Intended audience',
+    '9': 'Q9. Why good mobile game',
+    '12':'Q12. Main Menu UI',
+    '13':'Q13. Gameplay HUD',
+    '14':'Q14. Other screens',
+    '15':'Q15. Good UI rationale',
+    '16':'Q16. Use cases / navigation',
+    '17':'Unity: Scene & game objects',
+    '18':'Unity: Scripts to write',
+    '19':'Unity: Mobile input plan',
+    '20':'Unity: External assets',
+  };
+  let out = 'COIT20271 PA1 — My Design Notes\n' + '='.repeat(40) + '\n\n';
+  out += '── PART 1: GAME CONCEPT DOCUMENT ──\n\n';
+  ['1','2','3','4','5','6','7','8','9'].forEach(id => {
+    const el = document.getElementById('q' + id);
+    if (el && el.value.trim()) out += labels[id] + '\n' + el.value.trim() + '\n\n';
+  });
+  out += '── PART 2: FUNCTIONAL REQUIREMENTS ──\n\n';
+  document.querySelectorAll('#fr-body tr').forEach(tr => {
+    const cells = [...tr.querySelectorAll('input, textarea, select')].map(e => e.value.trim());
+    if (cells[1]) out += cells[0] + '. ' + cells[1] + ' [' + cells[2] + ']\n';
+  });
+  out += '\n── PART 2: NON-FUNCTIONAL REQUIREMENTS ──\n\n';
+  document.querySelectorAll('#nfr-body tr').forEach(tr => {
+    const cells = [...tr.querySelectorAll('input, textarea')].map(e => e.value.trim());
+    if (cells[1]) out += cells[0] + '. ' + cells[1] + '\n';
+  });
+  out += '\n── PART 2: UI DESIGN ──\n\n';
+  ['12','13','14','15','16'].forEach(id => {
+    const el = document.getElementById('q' + id);
+    if (el && el.value.trim()) out += labels[id] + '\n' + el.value.trim() + '\n\n';
+  });
+  out += '── PART 3: UNITY PLAN ──\n\n';
+  ['17','18','19','20'].forEach(id => {
+    const el = document.getElementById('q' + id);
+    if (el && el.value.trim()) out += labels[id] + '\n' + el.value.trim() + '\n\n';
+  });
+  navigator.clipboard.writeText(out).then(() => showToast('All answers copied to clipboard!'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ── Timer (2 hours countdown) ──────────────────────────────────────────
+const SESSION_SECONDS = 2 * 60 * 60;
+let elapsed = parseInt(localStorage.getItem('coit20271_timer_start') || '0');
+if (elapsed === 0) localStorage.setItem('coit20271_timer_start', Date.now());
+const startTime = parseInt(localStorage.getItem('coit20271_timer_start'));
+
+function updateTimer() {
+  const now = Date.now();
+  const spent = Math.floor((now - startTime) / 1000);
+  const remaining = Math.max(0, SESSION_SECONDS - spent);
+  const h = Math.floor(remaining / 3600);
+  const m = Math.floor((remaining % 3600) / 60);
+  const s = remaining % 60;
+  document.getElementById('clock').textContent =
+    String(h).padStart(1,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  const pct = ((SESSION_SECONDS - remaining) / SESSION_SECONDS) * 100;
+  const fill = document.getElementById('timerFill');
+  fill.style.width = (100 - pct) + '%';
+  fill.style.background = remaining < 1800 ? '#E65100' : 'var(--red)';
+}
+setInterval(updateTimer, 1000);
+updateTimer();
+
+// ── Active nav highlight on scroll ───────────────────────────────────
+const sections = ['overview','game-type','objectives','challenges','environment','mobile-case','func-req','nonfunc-req','ui-design','use-cases','unity-plan'];
+const sectionNavMap = {
+  'overview': null,
+  'game-type': 'dot-type', 'objectives': 'dot-obj',
+  'challenges': 'dot-chal', 'environment': 'dot-env',
+  'mobile-case': 'dot-mob', 'func-req': 'dot-fr',
+  'nonfunc-req': 'dot-nfr', 'ui-design': 'dot-ui',
+  'use-cases': 'dot-uc', 'unity-plan': 'dot-unity'
+};
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const href = '#' + entry.target.id;
+      const navEl = document.querySelector('.nav-item[href="' + href + '"]');
+      if (navEl) navEl.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observer.observe(el);
+});
+
+// ── Init ──────────────────────────────────────────────────────────────
+loadAll();
+updateProgress();
+</script>
+</body>
+</html>
