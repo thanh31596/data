@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VFX Workshop — Unity 3D Particle Systems | COIT20271 Week 8</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Code+Pro:wght@400;600&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream:      #FFF8F0;
+  --parchment:  #FCEAD7;
+  --text:       #1F0E07;
+  --slate:      #1F0E07;
+  --ember:      #4D1A0F;
+  --flame:      #C73E0E;
+  --rust:       #8B2D0A;
+  --gold:       #F4A261;
+  --amber:      #FFB627;
+  --wheat:      #FFE6B0;
+  --smoke:      #6B6058;
+  --mint:       #06D6A0;
+  --code-bg:    #1A0F0A;
+  --code-text:  #F5E6D3;
+  --code-kw:    #FFB1BB;
+  --code-str:   #FFD79A;
+  --code-cmt:   #8E7060;
+  --code-type:  #FFB627;
+  --sidebar-w:  285px;
+  --radius:     10px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w); min-height: 100vh;
+  background: var(--slate);
+  position: fixed; top: 0; left: 0;
+  display: flex; flex-direction: column;
+  overflow-y: auto; z-index: 100;
+}
+
+#sidebar-header { padding: 28px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+#sidebar-header .logo { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--wheat); line-height: 1.2; margin-bottom: 4px; }
+#sidebar-header .subtitle { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1.5px; }
+
+#progress-wrap { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+#progress-label { font-size: 11px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+#progress-bar-bg { height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+#progress-bar-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.4s ease; width: 0%; }
+
+#sidebar nav { padding: 12px 0 80px; }
+.nav-group { margin-bottom: 4px; }
+.nav-group-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); padding: 12px 20px 6px; font-weight: 700; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 20px;
+  color: rgba(255,255,255,0.65); text-decoration: none;
+  font-size: 13px; font-weight: 600;
+  transition: all 0.2s; cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.07); color: white; }
+.nav-item.active { background: rgba(244,162,97,0.15); color: var(--wheat); border-left-color: var(--gold); }
+.nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+
+#main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
+
+/* ─── Hero ─────────────────────────────────────────────────────── */
+#hero {
+  background: linear-gradient(135deg, var(--slate) 0%, var(--ember) 50%, var(--flame) 100%);
+  padding: 70px 60px 60px;
+  position: relative; overflow: hidden;
+}
+#hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 80% 50%, rgba(255,182,39,0.18) 0%, transparent 60%),
+    radial-gradient(circle at 20% 80%, rgba(244,162,97,0.12) 0%, transparent 50%);
+}
+#hero .tag {
+  display: inline-block;
+  background: rgba(244,162,97,0.2);
+  color: var(--wheat);
+  font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 20px;
+  border: 1px solid rgba(244,162,97,0.3);
+  margin-bottom: 20px;
+}
+#hero h1 { font-family: 'Playfair Display', serif; font-size: 52px; color: white; line-height: 1.1; margin-bottom: 8px; position: relative; }
+#hero h1 span { color: var(--wheat); }
+#hero .hero-sub { font-size: 17px; color: rgba(255,255,255,0.55); margin-bottom: 40px; position: relative; }
+
+.hero-pills { display: flex; gap: 10px; flex-wrap: wrap; position: relative; }
+.hero-pill {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.75);
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+
+.content-area { max-width: 900px; padding: 50px 60px; margin: 0 auto; }
+
+/* ─── Sections ─────────────────────────────────────────────── */
+.section { margin-bottom: 70px; scroll-margin-top: 30px; }
+
+.section-eyebrow {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+  color: var(--flame); font-weight: 700; margin-bottom: 8px;
+}
+
+.section h2 { font-family: 'Playfair Display', serif; font-size: 34px; color: var(--text); line-height: 1.2; margin-bottom: 20px; }
+.section h3 { font-size: 18px; font-weight: 700; color: var(--ember); margin: 32px 0 12px; }
+.section h4 { font-size: 14px; font-weight: 700; color: var(--flame); margin: 24px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.section p  { margin-bottom: 14px; color: #2A1810; }
+
+/* ─── Callouts ─────────────────────────────────────────────── */
+.callout { border-radius: var(--radius); padding: 16px 20px; margin: 18px 0; display: flex; gap: 14px; align-items: flex-start; }
+.callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.callout-body { flex: 1; }
+.callout-body > strong { display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.callout-body p { margin: 0; font-size: 13.5px; }
+
+.callout.info    { background: #F0F9FF; border-left: 4px solid #61DAFB; }
+.callout.info > .callout-body > strong { color: #1A5F8A; }
+.callout.warn    { background: #FFF4E0; border-left: 4px solid var(--amber); }
+.callout.warn > .callout-body > strong { color: #8A5A10; }
+.callout.success { background: #E8FFF6; border-left: 4px solid var(--mint); }
+.callout.success > .callout-body > strong { color: #057A5B; }
+.callout.danger  { background: #FFE9E0; border-left: 4px solid var(--flame); }
+.callout.danger > .callout-body > strong { color: var(--flame); }
+.callout.tip     { background: #FFF5E8; border-left: 4px solid var(--gold); }
+.callout.tip > .callout-body > strong { color: var(--rust); }
+
+/* ─── Step List ─────────────────────────────────────────────── */
+.step-list { list-style: none; margin: 18px 0; }
+.step-item { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
+.step-num {
+  width: 32px; height: 32px;
+  background: var(--ember); color: var(--wheat);
+  border-radius: 50%;
+  font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+.step-body { flex: 1; padding-top: 2px; font-size: 14px; }
+.step-body strong { color: var(--text); }
+
+/* ─── Checklist ─────────────────────────────────────────────── */
+.checklist { list-style: none; margin: 14px 0; }
+.checklist li {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 9px 14px; border-radius: 8px; margin-bottom: 4px;
+  cursor: pointer; transition: background 0.15s;
+}
+.checklist li:hover { background: rgba(0,0,0,0.03); }
+.checklist li input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--ember);
+  flex-shrink: 0; margin-top: 2px; cursor: pointer;
+}
+.checklist li label { font-size: 14px; color: var(--text); cursor: pointer; flex: 1; }
+.checklist li.checked label { text-decoration: line-through; color: #999; }
+
+/* ─── Tables ─────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px; }
+th { background: var(--ember); color: var(--wheat); padding: 10px 14px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 10px 14px; border-bottom: 1px solid #ECDFD0; vertical-align: top; }
+tr:nth-child(even) td { background: #FBF5EE; }
+tr:last-child td { border-bottom: none; }
+td code { font-size: 12px; }
+
+/* ─── Inline code ─────────────────────────────────────────── */
+code {
+  font-family: 'Source Code Pro', monospace;
+  background: rgba(199,62,14,0.1); color: var(--ember);
+  padding: 1px 6px; border-radius: 4px; font-size: 13px;
+}
+
+/* ─── Code blocks ─────────────────────────────────────────── */
+.code-block {
+  background: var(--code-bg);
+  border-radius: var(--radius);
+  margin: 18px 0; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 18px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.code-filename { font-family: 'Source Code Pro', monospace; font-size: 12px; color: var(--wheat); font-weight: 600; }
+.code-lang { font-size: 11px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
+.copy-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6);
+  font-size: 11px; font-weight: 700;
+  padding: 4px 12px; border-radius: 5px; cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+}
+.copy-btn:hover { background: rgba(255,255,255,0.14); color: white; }
+.copy-btn.copied { background: rgba(6,214,160,0.2); color: var(--mint); border-color: var(--mint); }
+
+.code-scroll { overflow-x: auto; }
+pre {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 13px; line-height: 1.6;
+  padding: 18px 22px;
+  color: var(--code-text);
+  white-space: pre; tab-size: 4;
+}
+.kw { color: var(--code-kw); font-weight: 600; }
+.tp { color: var(--code-type); }
+.st { color: var(--code-str); }
+.cm { color: var(--code-cmt); font-style: italic; }
+.nm { color: #FFC8A8; }
+.nb { color: #F89B6E; }
+
+/* ─── Exercise Cards ─────────────────────────────────────────── */
+.exercise-card {
+  background: white;
+  border: 1px solid #ECDFD0;
+  border-radius: 12px;
+  margin: 24px 0; overflow: hidden;
+}
+.exercise-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 26px;
+  background: linear-gradient(135deg, var(--ember), var(--flame));
+}
+.exercise-num {
+  width: 44px; height: 44px;
+  background: rgba(244,162,97,0.25);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  color: var(--wheat);
+  font-weight: 700; font-size: 17px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.exercise-title-wrap .exercise-name { font-family: 'Playfair Display', serif; font-size: 22px; color: white; line-height: 1.2; }
+.exercise-title-wrap .exercise-desc { font-size: 12.5px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.exercise-time {
+  margin-left: auto;
+  background: rgba(244,162,97,0.2);
+  border: 1px solid rgba(244,162,97,0.3);
+  color: var(--wheat);
+  font-size: 11px; font-weight: 700;
+  padding: 4px 12px; border-radius: 20px;
+}
+.exercise-body { padding: 24px 28px; }
+
+.concept-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 18px; }
+.concept-tag {
+  background: var(--parchment);
+  border: 1px solid #ECDFD0;
+  color: var(--ember);
+  font-size: 11.5px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+}
+
+/* ─── Modules grid ─────────────────────────────────── */
+.module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0; }
+.module-card {
+  border: 1px solid #ECDFD0;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: white;
+}
+.module-card .mod-icon { font-size: 22px; margin-bottom: 4px; }
+.module-card .mod-name { font-weight: 700; font-size: 14px; color: var(--text); }
+.module-card .mod-tag  { font-size: 11px; color: var(--gold); font-weight: 700; margin: 2px 0 6px; font-family: 'Source Code Pro', monospace; }
+.module-card .mod-note { font-size: 12.5px; color: #5A4A40; line-height: 1.5; }
+
+/* ─── Setting table for params ─────────────────────────── */
+.setting-table {
+  background: var(--parchment);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 14px 0;
+  font-size: 13.5px;
+}
+.setting-table .setting-row {
+  display: flex; gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed #DBC9B5;
+}
+.setting-table .setting-row:last-child { border-bottom: none; }
+.setting-table .setting-key {
+  flex: 0 0 200px;
+  font-weight: 700;
+  color: var(--ember);
+  font-family: 'Source Code Pro', monospace;
+  font-size: 12.5px;
+}
+.setting-table .setting-val {
+  flex: 1;
+  color: var(--text);
+}
+.setting-table .setting-val code { background: rgba(199,62,14,0.08); }
+
+/* ─── Two-col ─────────────────────────────────────────── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; }
+.info-box {
+  background: var(--parchment);
+  border: 1px solid #ECDFD0;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.info-box h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.info-box ul { list-style: none; padding: 0; }
+.info-box li { font-size: 13px; color: var(--ember); padding: 3px 0; }
+.info-box li::before { content: '→  '; color: var(--gold); font-weight: 700; }
+
+/* ─── Divider ─────────────────────────────────────── */
+.divider { height: 1px; background: linear-gradient(to right, transparent, #ECDFD0, transparent); margin: 50px 0; }
+
+/* ─── Footer ─────────────────────────────────────── */
+#footer {
+  background: var(--slate);
+  color: rgba(255,255,255,0.4);
+  text-align: center; padding: 30px; font-size: 12px;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────── */
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-track { background: transparent; }
+#sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+/* ─── Keyboard chip ─────────────────────────────── */
+kbd {
+  display: inline-block;
+  background: var(--slate);
+  color: var(--wheat);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'Source Code Pro', monospace;
+  font-size: 11.5px; font-weight: 600;
+  border: 1px solid var(--rust);
+}
+
+/* ─── Reading list cards ─────────────────────────── */
+.reading-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--parchment);
+  border: 1px solid #ECDFD0;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.reading-card .read-icon { font-size: 24px; flex-shrink: 0; }
+.reading-card .read-body { flex: 1; }
+.reading-card .read-title { font-weight: 700; color: var(--ember); font-size: 14px; margin-bottom: 3px; }
+.reading-card .read-cite { font-size: 12.5px; color: #5A4A40; font-style: italic; margin-bottom: 6px; }
+.reading-card .read-note { font-size: 12.5px; color: #2A1810; }
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <div class="logo">🔥 VFX Workshop</div>
+    <div class="subtitle">COIT20271 · Week 8 Tutorial</div>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label"><span>Progress</span><span id="progress-pct">0%</span></div>
+    <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+  </div>
+
+  <nav>
+    <div class="nav-group">
+      <div class="nav-group-label">Getting Started</div>
+      <a class="nav-item" href="#overview"><span class="nav-icon">🗺️</span> Overview</a>
+      <a class="nav-item" href="#setup"><span class="nav-icon">⚙️</span> Project Setup</a>
+      <a class="nav-item" href="#anatomy"><span class="nav-icon">🧩</span> System Anatomy</a>
+      <a class="nav-item" href="#modules"><span class="nav-icon">🎚️</span> Module Cheatsheet</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Sandbox Exercises</div>
+      <a class="nav-item" href="#ex1"><span class="nav-icon">🔥</span> Ex 1: Campfire</a>
+      <a class="nav-item" href="#ex2"><span class="nav-icon">✨</span> Ex 2: Magic Glow</a>
+      <a class="nav-item" href="#ex3"><span class="nav-icon">💥</span> Ex 3: Explosion</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Going Further</div>
+      <a class="nav-item" href="#scripting"><span class="nav-icon">⌨️</span> Triggering by Script</a>
+      <a class="nav-item" href="#troubleshoot"><span class="nav-icon">🔧</span> Troubleshooting</a>
+      <a class="nav-item" href="#extensions"><span class="nav-icon">🚀</span> Extensions</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Theory</div>
+      <a class="nav-item" href="#readings"><span class="nav-icon">📚</span> Required Readings</a>
+    </div>
+  </nav>
+</aside>
+
+<main id="main">
+
+  <div id="hero">
+    <div class="tag">COIT20271 · Week 8 Lab Tutorial</div>
+    <h1>🔥 <span>VFX Workshop</span></h1>
+    <p class="hero-sub">Build three production-style visual effects with Unity's Particle System — a flickering campfire, a magical pickup glow, and a one-shot explosion you can trigger from code.</p>
+    <div class="hero-pills">
+      <div class="hero-pill">Particle System</div>
+      <div class="hero-pill">Main Module</div>
+      <div class="hero-pill">Emission</div>
+      <div class="hero-pill">Shape</div>
+      <div class="hero-pill">Color over Lifetime</div>
+      <div class="hero-pill">Bursts</div>
+      <div class="hero-pill">3 Exercises</div>
+    </div>
+  </div>
+
+  <div class="content-area">
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- OVERVIEW                                                     -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="overview">
+    <div class="section-eyebrow">Introduction</div>
+    <h2>What You'll Build</h2>
+
+    <p>One tool, three different effects. Each exercise teaches a different combination of modules — by the end you'll have a mental map of which modules to reach for when you want a specific look.</p>
+
+    <table>
+      <thead><tr><th>Effect</th><th>Modules Used</th><th>Skill Built</th></tr></thead>
+      <tbody>
+        <tr><td>🔥 <strong>Campfire</strong></td><td>Main · Emission · Shape · Color over Lifetime · Size over Lifetime</td><td>Looping ambient effects, gradient editor</td></tr>
+        <tr><td>✨ <strong>Magic Glow</strong></td><td>Main · Emission · Shape · Velocity over Lifetime · Rotation over Lifetime</td><td>Orbiting particles, additive blending</td></tr>
+        <tr><td>💥 <strong>Explosion</strong></td><td>Main · Emission (Bursts) · Shape · Sub Emitters</td><td>One-shot effects, scripted triggering</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-icon">🎯</div>
+      <div class="callout-body">
+        <strong>This week is hands-on</strong>
+        <p>Hour 15 is a demo of <em>Captain Blaster</em>, not a build-along — there's no specific activity file. Hour 16 introduces the Particle System. This tutorial is your practical lab. There are also two scholarly readings due this week — see the <a href="#readings" style="color:var(--flame);">Required Readings</a> section at the bottom.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- PROJECT SETUP                                                -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="setup">
+    <div class="section-eyebrow">Step 0</div>
+    <h2>Project Setup</h2>
+
+    <ol class="step-list">
+      <li class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body">Open <strong>Unity Hub → New Project → 3D (Core)</strong>. Name it <strong>VFXWorkshop</strong>.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body">Create folders: <code>Assets/Scripts</code>, <code>Assets/Effects</code>, <code>Assets/Materials</code>.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body">Save the open scene as <strong>WorkshopScene</strong>.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-body">Add a <strong>Plane</strong> at origin as a ground reference (GameObject → 3D Object → Plane). This makes effects easier to see.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">5</div>
+        <div class="step-body"><strong>Optional but recommended</strong> — set the scene's ambient to dark so glowing effects pop. Window → Rendering → <strong>Lighting</strong> → Environment tab → set <strong>Environment Lighting → Source</strong> to <strong>Color</strong>, then choose a dark grey/blue.</div>
+      </li>
+    </ol>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- ANATOMY                                                      -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="anatomy">
+    <div class="section-eyebrow">Step 1</div>
+    <h2>Anatomy of a Particle System</h2>
+
+    <p>A Particle System is one component made of stacked <strong>modules</strong>. Each module is a section in the Inspector with a checkbox to enable/disable it. The first four modules below are <strong>always on</strong> — the rest are optional.</p>
+
+    <h3>Create your first Particle System</h3>
+
+    <ol class="step-list">
+      <li class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body">Top menu → <strong>GameObject → Effects → Particle System</strong>. A white smoke-like effect appears, drifting upward.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body">Look at the Inspector — you'll see the Particle System component with multiple collapsible sections (modules). Click any header to expand/collapse it.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body">Notice the small floating <strong>Particle Effect</strong> panel at the bottom-right of the Scene view. This contains <strong>Pause</strong>, <strong>Restart</strong>, <strong>Stop</strong>, and <strong>Playback Time</strong> controls — use these instead of pressing Play to preview your effect.</div>
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <div class="callout-icon">🎬</div>
+      <div class="callout-body">
+        <strong>You don't need Play mode to preview particles</strong>
+        <p>The Scene view's Particle Effect panel plays the system live as you edit it. Adjust a slider — the particles update instantly. This makes iterating on effects much faster than entering Play mode every time.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- MODULES CHEATSHEET                                           -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="modules">
+    <div class="section-eyebrow">Reference</div>
+    <h2>Module Cheatsheet</h2>
+
+    <p>You won't memorise these today. Skim now, then refer back during the exercises.</p>
+
+    <h3>Always-on modules</h3>
+
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-icon">⚙️</div>
+        <div class="mod-name">Main</div>
+        <div class="mod-tag">Required · top section</div>
+        <div class="mod-note">Duration, Looping, Start Lifetime, Start Speed, Start Size, Start Color, Gravity Multiplier. Sets the initial state of every particle.</div>
+      </div>
+      <div class="module-card">
+        <div class="mod-icon">📤</div>
+        <div class="mod-name">Emission</div>
+        <div class="mod-tag">Required</div>
+        <div class="mod-note">How many and how often. <strong>Rate over Time</strong> for steady streams; <strong>Bursts</strong> for sudden one-shot bursts of particles.</div>
+      </div>
+      <div class="module-card">
+        <div class="mod-icon">📐</div>
+        <div class="mod-name">Shape</div>
+        <div class="mod-tag">Required</div>
+        <div class="mod-note">Where particles spawn from. Cone (default), Sphere, Box, Hemisphere, Circle, Edge, Mesh. Also sets the initial direction.</div>
+      </div>
+      <div class="module-card">
+        <div class="mod-icon">🎨</div>
+        <div class="mod-name">Renderer</div>
+        <div class="mod-tag">Required · bottom</div>
+        <div class="mod-note">How particles are drawn. Material (Default-Particle is the built-in placeholder), billboard mode, sort mode.</div>
+      </div>
+    </div>
+
+    <h3>Optional "Over Lifetime" modules</h3>
+    <p>These modify a particle as it ages. Tick the checkbox next to the module name to enable.</p>
+
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-icon">🌈</div>
+        <div class="mod-name">Color over Lifetime</div>
+        <div class="mod-tag">Gradient editor</div>
+        <div class="mod-note">Particle's colour and alpha over its life. The most common module — used to fade particles in and out.</div>
+      </div>
+      <div class="module-card">
+        <div class="mod-icon">📏</div>
+        <div class="mod-name">Size over Lifetime</div>
+        <div class="mod-tag">Curve editor</div>
+        <div class="mod-note">Particle grows or shrinks over time. Combine with Color over Lifetime for puffs that grow and fade.</div>
+      </div>
+      <div class="module-card">
+        <div class="mod-icon">💨</div>
+        <div class="mod-name">Velocity over Lifetime</div>
+        <div class="mod-tag">XYZ values</div>
+        <div class="mod-note">Adds extra velocity in chosen directions. Use Orbital values to make particles spin around the centre.</div>
+      </div>
+      <div class="module-card">
+        <div class="mod-icon">🔄</div>
+        <div class="mod-name">Rotation over Lifetime</div>
+        <div class="mod-tag">Degrees per second</div>
+        <div class="mod-note">Each particle rotates as it lives. Subtle but adds organic movement to smoke and flame particles.</div>
+      </div>
+    </div>
+
+    <h3>Advanced modules (covered briefly later)</h3>
+
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-icon">🎲</div>
+        <div class="mod-name">Noise</div>
+        <div class="mod-tag">Turbulence</div>
+        <div class="mod-note">Adds wobbly random motion to particles. Great for fire flicker and smoke turbulence.</div>
+      </div>
+      <div class="module-card">
+        <div class="mod-icon">👶</div>
+        <div class="mod-name">Sub Emitters</div>
+        <div class="mod-tag">Particle spawns particles</div>
+        <div class="mod-note">When a particle dies, spawn a new Particle System at its position. Used for explosion → smoke trails.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- EXERCISE 1: CAMPFIRE                                         -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="ex1">
+    <div class="section-eyebrow">Exercise 1</div>
+    <h2>🔥 Build a Campfire</h2>
+
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <div class="exercise-num">1</div>
+        <div class="exercise-title-wrap">
+          <div class="exercise-name">Campfire</div>
+          <div class="exercise-desc">A looping flame with rising sparks</div>
+        </div>
+        <div class="exercise-time">~15 min</div>
+      </div>
+      <div class="exercise-body">
+        <div class="concept-tags">
+          <span class="concept-tag">Cone shape</span>
+          <span class="concept-tag">Color over Lifetime</span>
+          <span class="concept-tag">Size over Lifetime</span>
+          <span class="concept-tag">Looping</span>
+        </div>
+
+        <ol class="step-list">
+          <li class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body"><strong>Create the system.</strong> GameObject → Effects → Particle System. Rename it <strong>Campfire</strong>. Position at <code>(0, 0, 0)</code>.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body"><strong>Configure the Main module</strong> in the Inspector with these settings:</div>
+          </li>
+        </ol>
+
+        <div class="setting-table">
+          <div class="setting-row"><div class="setting-key">Duration</div><div class="setting-val"><code>5.00</code> (loop length)</div></div>
+          <div class="setting-row"><div class="setting-key">Looping</div><div class="setting-val">✅ ticked</div></div>
+          <div class="setting-row"><div class="setting-key">Start Lifetime</div><div class="setting-val"><code>1.5</code> seconds</div></div>
+          <div class="setting-row"><div class="setting-key">Start Speed</div><div class="setting-val"><code>1.5</code></div></div>
+          <div class="setting-row"><div class="setting-key">Start Size</div><div class="setting-val">Click the dropdown arrow → choose <strong>Random Between Two Constants</strong> → set <code>0.3</code> and <code>0.6</code></div></div>
+          <div class="setting-row"><div class="setting-key">Start Color</div><div class="setting-val">Click the colour swatch → set to bright <strong>orange</strong> (e.g. <code>#FF8800</code>)</div></div>
+          <div class="setting-row"><div class="setting-key">Gravity Modifier</div><div class="setting-val"><code>-0.1</code> (negative = particles drift up faster than gravity)</div></div>
+        </div>
+
+        <ol class="step-list" start="3">
+          <li class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body"><strong>Configure the Emission module:</strong> set <strong>Rate over Time</strong> to <code>30</code>.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-body"><strong>Configure the Shape module:</strong> set <strong>Shape</strong> to <strong>Cone</strong>, <strong>Angle</strong> to <code>15</code>, <strong>Radius</strong> to <code>0.3</code>. The cone defines a small upward-pointing emitter.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">5</div>
+            <div class="step-body"><strong>Enable Color over Lifetime.</strong> Tick the checkbox next to the module name. Click the <strong>Color</strong> bar to open the gradient editor.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">6</div>
+            <div class="step-body"><strong>Set up the gradient:</strong>
+              <div style="margin-top:8px;font-size:13px;line-height:1.6;">
+                <strong>Top row (alpha):</strong> click left edge marker → Alpha <code>255</code>. Click right edge marker → Alpha <code>0</code>. This makes particles fade out.<br>
+                <strong>Bottom row (color):</strong> click left edge marker → bright yellow <code>#FFEE44</code>. Click right edge marker → dark red <code>#990000</code>. Click in the middle of the bar to add a third stop → orange <code>#FF6600</code>.
+              </div>
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">7</div>
+            <div class="step-body"><strong>Enable Size over Lifetime.</strong> Tick the module. Click the curve preview to open the curve editor. At the bottom of the editor click the curve preset that goes <strong>down from left to right</strong> — particles start big and shrink as they rise.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">8</div>
+            <div class="step-body"><strong>Optional polish — enable Noise.</strong> Tick the Noise module. Set <strong>Strength</strong> to <code>0.3</code> and <strong>Frequency</strong> to <code>1</code>. This adds the irregular flicker real fire has.</div>
+          </li>
+        </ol>
+
+        <div class="callout success">
+          <div class="callout-icon">✅</div>
+          <div class="callout-body">
+            <strong>Result</strong>
+            <p>You should see flame-coloured particles rising from a small cone, growing, and fading out as they cool. Increase <strong>Rate over Time</strong> to 60 for a more intense fire, decrease to 15 for a small candle.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- EXERCISE 2: MAGIC GLOW                                       -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="ex2">
+    <div class="section-eyebrow">Exercise 2</div>
+    <h2>✨ Magic Pickup Glow</h2>
+
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <div class="exercise-num">2</div>
+        <div class="exercise-title-wrap">
+          <div class="exercise-name">Magic Glow</div>
+          <div class="exercise-desc">Particles orbiting around a magical item</div>
+        </div>
+        <div class="exercise-time">~12 min</div>
+      </div>
+      <div class="exercise-body">
+        <div class="concept-tags">
+          <span class="concept-tag">Sphere shape</span>
+          <span class="concept-tag">Velocity over Lifetime</span>
+          <span class="concept-tag">Orbital motion</span>
+          <span class="concept-tag">Additive material</span>
+        </div>
+
+        <ol class="step-list">
+          <li class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body"><strong>Create a target object.</strong> GameObject → 3D Object → Sphere. Name it <strong>MagicGem</strong>. Position at <code>(3, 1, 0)</code>. Apply a bright cyan/blue material.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body"><strong>Add a Particle System as a child.</strong> Right-click MagicGem in Hierarchy → Effects → Particle System. The new system is parented to the gem and inherits its position.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body"><strong>Main module settings:</strong></div>
+          </li>
+        </ol>
+
+        <div class="setting-table">
+          <div class="setting-row"><div class="setting-key">Looping</div><div class="setting-val">✅ ticked</div></div>
+          <div class="setting-row"><div class="setting-key">Start Lifetime</div><div class="setting-val"><code>2.0</code></div></div>
+          <div class="setting-row"><div class="setting-key">Start Speed</div><div class="setting-val"><code>0</code> (particles start motionless — Velocity over Lifetime drives them)</div></div>
+          <div class="setting-row"><div class="setting-key">Start Size</div><div class="setting-val">Random Between Two Constants → <code>0.05</code> and <code>0.15</code></div></div>
+          <div class="setting-row"><div class="setting-key">Start Color</div><div class="setting-val">Bright cyan <code>#88E8FF</code></div></div>
+          <div class="setting-row"><div class="setting-key">Gravity Modifier</div><div class="setting-val"><code>0</code></div></div>
+        </div>
+
+        <ol class="step-list" start="4">
+          <li class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-body"><strong>Emission:</strong> Rate over Time = <code>20</code>.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">5</div>
+            <div class="step-body"><strong>Shape module:</strong> set Shape to <strong>Sphere</strong>, Radius to <code>0.6</code>. Particles spawn anywhere on the sphere's surface around the gem.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">6</div>
+            <div class="step-body"><strong>Enable Velocity over Lifetime.</strong> Find the <strong>Orbital</strong> values (Y axis): set Y to <code>2</code>. The particles now orbit around the Y axis of the system.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">7</div>
+            <div class="step-body"><strong>Enable Color over Lifetime</strong> with an alpha that ramps from 0 → 255 → 0 (fade in then out). Keep colour cyan throughout.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">8</div>
+            <div class="step-body"><strong>Make the particles glow — Renderer module.</strong> Scroll to the bottom of the Particle System. Click the Material field circle → search for and select <strong>Default-Particle</strong> (the built-in particle material). Then in the Project window, right-click → Create → Material. Name it <strong>Mat_GlowParticle</strong>. Set its Shader to <strong>Particles/Standard Unlit</strong> (or <strong>Mobile/Particles/Additive</strong> if available). Set its Color Mode to <strong>Additive</strong>. Drag this new material into the Particle System's Renderer → Material slot.</div>
+          </li>
+        </ol>
+
+        <div class="callout tip">
+          <div class="callout-icon">💡</div>
+          <div class="callout-body">
+            <strong>Why "Additive" blending?</strong>
+            <p>Additive blending makes overlapping particles brighten the pixels behind them rather than just covering them. The result looks like glowing light — perfect for magic effects, fireflies, lasers, sparks. For dark/opaque effects (smoke, dust), use the default Alpha Blend instead.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- EXERCISE 3: EXPLOSION                                        -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="ex3">
+    <div class="section-eyebrow">Exercise 3</div>
+    <h2>💥 One-Shot Explosion</h2>
+
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <div class="exercise-num">3</div>
+        <div class="exercise-title-wrap">
+          <div class="exercise-name">Explosion</div>
+          <div class="exercise-desc">A burst of particles triggered on demand</div>
+        </div>
+        <div class="exercise-time">~15 min</div>
+      </div>
+      <div class="exercise-body">
+        <div class="concept-tags">
+          <span class="concept-tag">Bursts</span>
+          <span class="concept-tag">Non-looping</span>
+          <span class="concept-tag">Hemisphere shape</span>
+          <span class="concept-tag">Stop Action</span>
+          <span class="concept-tag">Script triggering</span>
+        </div>
+
+        <ol class="step-list">
+          <li class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body"><strong>Create the system.</strong> GameObject → Effects → Particle System. Rename to <strong>Explosion</strong>. Position at <code>(-3, 0.5, 0)</code>.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body"><strong>Main module:</strong></div>
+          </li>
+        </ol>
+
+        <div class="setting-table">
+          <div class="setting-row"><div class="setting-key">Duration</div><div class="setting-val"><code>1.00</code></div></div>
+          <div class="setting-row"><div class="setting-key">Looping</div><div class="setting-val">❌ unticked (this is a one-shot)</div></div>
+          <div class="setting-row"><div class="setting-key">Start Lifetime</div><div class="setting-val">Random Between Two Constants → <code>0.5</code> and <code>1.5</code></div></div>
+          <div class="setting-row"><div class="setting-key">Start Speed</div><div class="setting-val">Random Between Two Constants → <code>3</code> and <code>8</code></div></div>
+          <div class="setting-row"><div class="setting-key">Start Size</div><div class="setting-val">Random Between Two Constants → <code>0.3</code> and <code>0.7</code></div></div>
+          <div class="setting-row"><div class="setting-key">Start Color</div><div class="setting-val">Bright orange <code>#FF6600</code></div></div>
+          <div class="setting-row"><div class="setting-key">Gravity Modifier</div><div class="setting-val"><code>0.5</code> (debris falls)</div></div>
+          <div class="setting-row"><div class="setting-key">Play On Awake</div><div class="setting-val">❌ unticked (we'll trigger from script)</div></div>
+          <div class="setting-row"><div class="setting-key">Stop Action</div><div class="setting-val"><strong>Destroy</strong> (system removes itself when finished)</div></div>
+        </div>
+
+        <ol class="step-list" start="3">
+          <li class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body"><strong>Emission — switch to Bursts only.</strong> Set <strong>Rate over Time</strong> to <code>0</code>. Under <strong>Bursts</strong>, click <strong>+</strong>. Set Time = <code>0.00</code>, Count = <code>50</code>. This emits 50 particles at the start, then stops.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-body"><strong>Shape:</strong> Shape = <strong>Hemisphere</strong>, Radius = <code>0.2</code>. Particles fly outward in a half-sphere — nothing goes underground.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">5</div>
+            <div class="step-body"><strong>Enable Color over Lifetime</strong> — gradient from yellow → orange → red → black, with alpha fading to 0 at the end.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">6</div>
+            <div class="step-body"><strong>Enable Size over Lifetime</strong> — start large, shrink as particles cool and disperse.</div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">7</div>
+            <div class="step-body"><strong>Test it.</strong> In the Scene view's Particle Effect panel, click <strong>Restart</strong> — you should see a single burst of debris that then settles. (You won't see anything if you press Play because <strong>Play On Awake</strong> is off — that's by design.)</div>
+          </li>
+        </ol>
+
+        <div class="callout warn">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-body">
+            <strong>Make this a Prefab</strong>
+            <p>Drag the <strong>Explosion</strong> GameObject from the Hierarchy into the <code>Assets/Effects</code> folder. It becomes a blue prefab. Now your script (next section) can spawn copies of this explosion anywhere in the scene at runtime.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- SCRIPTING                                                    -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="scripting">
+    <div class="section-eyebrow">Step 4</div>
+    <h2>Triggering Particles from a Script</h2>
+
+    <p>The most common pattern: spawn an explosion (or any one-shot effect) at a location at runtime. Two approaches.</p>
+
+    <h3>Approach A — Instantiate a prefab</h3>
+    <p>Best when you want the effect at a specific position and you don't need to keep referencing it afterwards.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">ExplosionSpawner.cs</span>
+        <span class="code-lang">C# · attach to any GameObject</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-scroll">
+<pre><span class="cm">// ExplosionSpawner.cs
+// ─────────────────────────────────────────────────────────────────────────────
+// Press Space to spawn a copy of the Explosion prefab at a given position.
+// Because the prefab's Stop Action is set to Destroy, the spawned copy
+// removes itself from the scene after it finishes playing — no cleanup needed.
+// ─────────────────────────────────────────────────────────────────────────────</span>
+
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="tp">ExplosionSpawner</span> : <span class="tp">MonoBehaviour</span>
+{
+    [<span class="tp">SerializeField</span>] <span class="kw">private</span> <span class="tp">GameObject</span> explosionPrefab;
+    [<span class="tp">SerializeField</span>] <span class="kw">private</span> <span class="tp">Transform</span>  spawnPoint;
+
+    <span class="kw">void</span> <span class="nm">Update</span>()
+    {
+        <span class="kw">if</span> (<span class="tp">Input</span>.<span class="nm">GetKeyDown</span>(<span class="tp">KeyCode</span>.Space))
+        {
+            <span class="kw">if</span> (explosionPrefab != <span class="kw">null</span> &amp;&amp; spawnPoint != <span class="kw">null</span>)
+                <span class="tp">Instantiate</span>(explosionPrefab, spawnPoint.position, <span class="tp">Quaternion</span>.identity);
+        }
+    }
+}</pre>
+      </div>
+    </div>
+
+    <h3>Approach B — Call Play() on an existing system</h3>
+    <p>Best when the effect lives on a specific GameObject (e.g. a gun's muzzle flash) and replays often.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">EffectTrigger.cs</span>
+        <span class="code-lang">C#</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-scroll">
+<pre><span class="cm">// EffectTrigger.cs
+// ─────────────────────────────────────────────────────────────────────────────
+// Calls Play() on a referenced ParticleSystem when the player presses E.
+// The ParticleSystem must have Play On Awake unticked.
+// ─────────────────────────────────────────────────────────────────────────────</span>
+
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="tp">EffectTrigger</span> : <span class="tp">MonoBehaviour</span>
+{
+    [<span class="tp">SerializeField</span>] <span class="kw">private</span> <span class="tp">ParticleSystem</span> effect;
+
+    <span class="kw">void</span> <span class="nm">Update</span>()
+    {
+        <span class="kw">if</span> (<span class="tp">Input</span>.<span class="nm">GetKeyDown</span>(<span class="tp">KeyCode</span>.E) &amp;&amp; effect != <span class="kw">null</span>)
+        {
+            effect.<span class="nm">Play</span>();   <span class="cm">// triggers the burst</span>
+            <span class="cm">// effect.Stop();    // would stop emission</span>
+            <span class="cm">// effect.Clear();   // would remove all live particles instantly</span>
+        }
+    }
+}</pre>
+      </div>
+    </div>
+
+    <ul class="checklist">
+      <li><input type="checkbox" id="sc1"><label for="sc1">Create an empty GameObject called <strong>Spawner</strong>. Attach <strong>ExplosionSpawner.cs</strong>.</label></li>
+      <li><input type="checkbox" id="sc2"><label for="sc2">Drag the <strong>Explosion prefab</strong> from your Effects folder into the Explosion Prefab field in the Inspector.</label></li>
+      <li><input type="checkbox" id="sc3"><label for="sc3">Drag the <strong>Spawner</strong> GameObject itself into the Spawn Point field (or use a separate empty GameObject as the spawn marker).</label></li>
+      <li><input type="checkbox" id="sc4"><label for="sc4">Press Play. Press Space repeatedly — explosions spawn at the location you chose.</label></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- TROUBLESHOOTING                                              -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="troubleshoot">
+    <div class="section-eyebrow">Help</div>
+    <h2>Common Problems</h2>
+
+    <table>
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>No particles visible</td><td>System is paused, Stopped, or playhead at end</td><td>Click <strong>Restart</strong> in the Scene view's Particle Effect panel</td></tr>
+        <tr><td>Particles are pink/magenta squares</td><td>Material missing or shader incompatible with render pipeline</td><td>Renderer module → Material → assign <strong>Default-Particle</strong> or create a new Particles/Standard Unlit material</td></tr>
+        <tr><td>Particles look flat / not glowing</td><td>Material is using Alpha Blend instead of Additive</td><td>Open the material → set Color Mode / Blend Mode to <strong>Additive</strong></td></tr>
+        <tr><td>Explosion plays as soon as scene starts</td><td>Play On Awake is ticked</td><td>Main module → untick <strong>Play On Awake</strong>. Trigger via script or Restart button.</td></tr>
+        <tr><td>Particles continue after expected stop</td><td>Looping is on, or Duration is too long</td><td>Untick Looping for one-shots; reduce Duration for short bursts</td></tr>
+        <tr><td>Particles spawn but don't move</td><td>Start Speed is 0 and no Velocity over Lifetime enabled</td><td>Set Start Speed &gt; 0, or enable Velocity over Lifetime module</td></tr>
+        <tr><td>Particles fall through the ground</td><td>Particle System has no collision module</td><td>Enable the <strong>Collision</strong> module → Type = World → Bounce / Lifetime Loss as needed</td></tr>
+        <tr><td>Effect spawns at wrong location after Instantiate</td><td>Pass a position to Instantiate, or set transform.position manually after spawning</td><td><code>Instantiate(prefab, somePosition, Quaternion.identity)</code></td></tr>
+        <tr><td>Spawned explosion never disappears</td><td>Stop Action set to None on the prefab</td><td>Edit the prefab → Main module → Stop Action = <strong>Destroy</strong></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- EXTENSIONS                                                   -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="extensions">
+    <div class="section-eyebrow">Going Further</div>
+    <h2>Extension Challenges</h2>
+
+    <table>
+      <thead><tr><th>⭐ Difficulty</th><th>Challenge</th><th>New Concept</th></tr></thead>
+      <tbody>
+        <tr><td>⭐</td><td>Add a smoke trail to your Campfire by making a second Particle System with grey, slow-rising particles</td><td>Layered effects (multiple systems on same object)</td></tr>
+        <tr><td>⭐</td><td>Make the Magic Glow change colour by tweening the Color over Lifetime gradient between blue and purple</td><td>Gradient editor mastery</td></tr>
+        <tr><td>⭐⭐</td><td>Add a Sub Emitter to your Explosion so that each main particle leaves a tiny smoke trail when it dies</td><td>Sub Emitters module · Death event</td></tr>
+        <tr><td>⭐⭐</td><td>Build a footstep dust effect using Rate over Distance — particles only emit when the parent moves</td><td>Emission · Rate over Distance</td></tr>
+        <tr><td>⭐⭐</td><td>Add a Collision module to your Explosion so debris bounces off the ground plane</td><td>Particle Collision · World mode</td></tr>
+        <tr><td>⭐⭐⭐</td><td>Create a flamethrower attached to a moving GameObject, with the flames trailing behind realistically</td><td>Simulation Space (Local vs World)</td></tr>
+        <tr><td>⭐⭐⭐</td><td>Build a snow effect that fills a large area, falls realistically, and fades out before hitting the ground</td><td>Box shape · Gravity · Color over Lifetime alpha</td></tr>
+        <tr><td>⭐⭐⭐⭐</td><td>Replicate the muzzle flash + smoke + impact spark sequence from a typical shooter, all triggered by one script call</td><td>Coordinated multi-system effects</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- READINGS                                                     -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <section class="section" id="readings">
+    <div class="section-eyebrow">Theory</div>
+    <h2>📚 Required Readings</h2>
+
+    <p>Two scholarly articles accompany this week's practical work. They build the theoretical side of game development — how researchers analyse and critique games as media. Read both before next week's session.</p>
+
+    <div class="reading-card">
+      <div class="read-icon">📄</div>
+      <div class="read-body">
+        <div class="read-title">Game Analysis: Developing a Methodological Toolkit for the Qualitative Study of Games</div>
+        <div class="read-cite">Consalvo, M. &amp; Dutton, N. (2006). <em>Game Studies</em>, Volume 6, Issue 1.</div>
+        <div class="read-note">Proposes a structured framework for analysing games qualitatively — the object inventory, interface study, interaction map, and gameplay log. Useful for thinking about your own projects systematically. Available via Moodle.</div>
+      </div>
+    </div>
+
+    <div class="reading-card">
+      <div class="read-icon">📄</div>
+      <div class="read-body">
+        <div class="read-title">Computer Game Criticism: A Method for Computer Game Analysis</div>
+        <div class="read-cite">Konzack, L. (2002). <em>CGDC Conf. Proceedings.</em></div>
+        <div class="read-note">A seven-layer model for criticising games — hardware, program code, functionality, gameplay, meaning, referentiality, socio-culture. Complements Consalvo &amp; Dutton with a more vertical analytical lens. Available via Moodle.</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">📝</div>
+      <div class="callout-body">
+        <strong>Reading prompt — try this while you read</strong>
+        <p>Pick one game you've played recently. As you read each article, attempt to apply the framework to that game in your head. Which categories does it fit easily? Which categories feel forced? Bring a 2-minute observation to next week's session.</p>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">🎉</div>
+      <div class="callout-body">
+        <strong>You've completed VFX Workshop!</strong>
+        <p>You've built a looping ambient effect, an orbiting glow, and a script-triggered explosion. Combined with this week's readings, you now have both the practical and theoretical foundation that game design courses build on.</p>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+  <div id="footer">
+    COIT20271 Mobile Game Development · VFX Workshop Tutorial · Week 8
+  </div>
+
+</main>
+
+<script>
+const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+const progressFill  = document.getElementById('progress-bar-fill');
+const progressPct   = document.getElementById('progress-pct');
+
+function updateProgress() {
+  const total   = allCheckboxes.length;
+  const checked = [...allCheckboxes].filter(cb => cb.checked).length;
+  const pct     = total === 0 ? 0 : Math.round((checked / total) * 100);
+  progressFill.style.width = pct + '%';
+  progressPct.textContent  = pct + '%';
+  allCheckboxes.forEach(cb => {
+    const li = cb.closest('li');
+    if (li) li.classList.toggle('checked', cb.checked);
+  });
+}
+allCheckboxes.forEach(cb => cb.addEventListener('change', updateProgress));
+updateProgress();
+
+const sections = document.querySelectorAll('.section');
+const navItems = document.querySelectorAll('.nav-item');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navItems.forEach(item => {
+        item.classList.toggle('active', item.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+sections.forEach(s => observer.observe(s));
+
+function copyCode(btn) {
+  const pre  = btn.closest('.code-block').querySelector('pre');
+  const text = pre.textContent;
+  function onSuccess() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  }
+  function onFail() {
+    btn.textContent = 'Select All';
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy') ? onSuccess() : onFail(); }
+    catch(e) { onFail(); }
+    document.body.removeChild(ta);
+  }
+}
+</script>
+</body>
+</html>
