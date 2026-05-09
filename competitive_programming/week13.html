@@ -1,28 +1,931 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Competitive Programming — Week 13</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
-    a { color: #3b82f6; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; background: #fafafa; }
-    h1 { margin: 0 0 10px; }
-    p { margin: 10px 0; }
-    .links { margin-top: 14px; display: flex; gap: 12px; flex-wrap: wrap; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 13 — Dynamic Programming 2D</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+.dp-table th, .dp-table td { font-family: 'Courier New', monospace; font-size: 0.92rem; text-align: center; padding: 6px 10px; min-width: 36px; }
+.dp-table .header { background: #f0f4ff; font-weight: 600; }
+</style>
 </head>
 <body>
-  <h1>Competitive Programming — Week 13</h1>
-  <div class="card">
-    <p>This is a placeholder lesson page for Week 13. Replace this content when you’re ready.</p>
-    <div class="links">
-      <a href="../competitive_programming.html">← Back to Competitive Programming course</a>
-      <a href="../index.html">Home</a>
-    </div>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 13</div>
+  <h1>Dynamic Programming — 2D</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Mở rộng từ 1D state lên 2D — hai chuỗi, knapsack 0/1, grid, interval. Bộ công cụ hoàn chỉnh
+    cho mọi bài DP cấp Medium/Hard trên LeetCode.
+  </p>
+  <div class="meta">10 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng 2D DP</h1>
+  <div class="subtitle">Khi 1D không đủ — cần thêm chiều thứ hai</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Khi nào cần 2D state?</h2>
+  <p>1D DP đủ khi state chỉ phụ thuộc vào "ta đang ở đâu" (vị trí i). 2D cần thiết khi state có <em>hai chiều độc lập</em>:</p>
+  <table>
+    <tr><th>Loại bài</th><th>Hai chiều</th><th>Ví dụ</th></tr>
+    <tr><td>Hai chuỗi</td><td>Vị trí trên chuỗi 1, vị trí trên chuỗi 2</td><td>LCS, Edit Distance</td></tr>
+    <tr><td>Knapsack 0/1</td><td>Item đang xét, capacity còn lại</td><td>Partition Subset Sum</td></tr>
+    <tr><td>Grid</td><td>Hàng, cột</td><td>Unique Paths, Min Path Sum</td></tr>
+    <tr><td>Interval</td><td>Biên trái, biên phải</td><td>Burst Balloons, Matrix Chain</td></tr>
+    <tr><td>Game / Decision với state phụ</td><td>Vị trí, trạng thái thêm</td><td>Stock with Multiple Transactions</td></tr>
+  </table>
+  <h3>Quy tắc nhận biết</h3>
+  <p>Khi state cần "ghi nhớ" cả vị trí + một chiều khác → 2D. Khi không thể tóm gọn vào 1 số → 2D.</p>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 State Design cho hai chuỗi</h2>
+  <div class="definition">
+    <div class="definition-label">Mẫu chung:</div>
+    Cho hai chuỗi <code>s1</code>, <code>s2</code> có độ dài m, n. State <code>dp[i][j]</code> đại diện cho
+    <em>"câu trả lời cho bài con trên prefix s1[0..i-1] và prefix s2[0..j-1]"</em>.
   </div>
+  <h3>Quy ước padding</h3>
+  <p>Bảng <code>dp</code> có kích thước <code>(m+1) × (n+1)</code>. Hàng/cột 0 đại diện cho "chuỗi rỗng" — đơn giản hoá base case.</p>
+  <h3>Recurrence chung</h3>
+  <pre><code>if s1[i-1] == s2[j-1]:
+    dp[i][j] = dp[i-1][j-1] + something      # ký tự khớp
+else:
+    dp[i][j] = combine(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])</code></pre>
+  <p>Cụ thể "combine" tuỳ bài: max cho LCS, min cho Edit Distance, add cho Distinct Subsequences.</p>
+  <div class="key-point">
+    <div class="key-point-label">Tinh thần "i ↔ s1[i-1]":</div>
+    Với padding +1, dp index <code>i</code> tương ứng với s1 character <code>s1[i-1]</code> (1-indexed view của bảng dp = 0-indexed view của chuỗi).
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 DP Table — Trực quan</h2>
+  <p>Hình dung bảng dp giúp viết recurrence nhanh và đúng:</p>
+  <div class="illustration">
+    <table class="dp-table" style="margin: 0 auto;">
+      <tr><td class="header"></td><td class="header">""</td><td class="header">a</td><td class="header">b</td><td class="header">c</td></tr>
+      <tr><td class="header">""</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td class="header">a</td><td>0</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td class="header">c</td><td>0</td><td>1</td><td>1</td><td>2</td></tr>
+      <tr><td class="header">e</td><td>0</td><td>1</td><td>1</td><td>2</td></tr>
+    </table>
+  </div>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">DP table cho LCS("ace", "abc") = 2</p>
+  <h3>Ba mũi tên cốt lõi</h3>
+  <ul>
+    <li>↖ <code>dp[i-1][j-1]</code>: kết quả khi cả hai chuỗi giảm 1 ký tự cuối.</li>
+    <li>↑ <code>dp[i-1][j]</code>: chỉ s1 giảm 1 ký tự.</li>
+    <li>← <code>dp[i][j-1]</code>: chỉ s2 giảm 1 ký tự.</li>
+  </ul>
+  <p>Recurrence dùng ↖ khi ký tự khớp; dùng ↑/← khi không khớp. Nhìn vào bảng → dễ debug.</p>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Tối ưu Space — Rolling Array</h2>
+  <p>2D DP tốn O(m × n) space. Khi recurrence chỉ phụ thuộc vào hàng <code>i-1</code> hoặc cell <code>(i-1, j-1)</code>, có thể giảm xuống O(min(m, n)).</p>
+  <h3>Hai biến thể tối ưu</h3>
+  <ul>
+    <li><strong>Hai hàng</strong>: giữ hàng <code>i-1</code> và hàng <code>i</code>, swap qua mỗi vòng. O(2n).</li>
+    <li><strong>Một hàng</strong>: cập nhật in-place, tận dụng giá trị cũ trước khi ghi đè. O(n) — khó hơn nhưng ít space nhất.</li>
+  </ul>
+  <pre><code># Two rows version cho LCS
+def lcs(s1, s2):
+    m, n = len(s1), len(s2)
+    if m &lt; n: s1, s2, m, n = s2, s1, n, m    # đảm bảo n nhỏ
+    prev = [0] * (n + 1)
+    cur = [0] * (n + 1)
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if s1[i-1] == s2[j-1]:
+                cur[j] = prev[j-1] + 1
+            else:
+                cur[j] = max(prev[j], cur[j-1])
+        prev, cur = cur, prev
+    return prev[n]</code></pre>
+  <p>Time vẫn O(m × n); Space O(min(m, n)).</p>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Two-string DP</h1>
+  <div class="subtitle">LCS, Edit Distance — pattern then chốt cho phỏng vấn senior</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Pattern Two-string DP</h2>
+  <div class="definition">
+    <div class="definition-label">State:</div>
+    <code>dp[i][j]</code> = câu trả lời cho prefix s1[0..i-1] và prefix s2[0..j-1].
+  </div>
+  <h3>Logic chung khi gặp ký tự</h3>
+  <pre><code>if s1[i-1] == s2[j-1]:
+    # KHỚP — kế thừa từ dp[i-1][j-1] (cả hai prefix giảm 1)
+    dp[i][j] = dp[i-1][j-1] + (1 nếu cần đếm)
+else:
+    # KHÔNG KHỚP — phải "bỏ" 1 ký tự ở 1 trong 2 bên
+    dp[i][j] = combine(dp[i-1][j], dp[i][j-1])
+    # combine = max cho LCS, min cho Edit Distance, sum cho count</code></pre>
+  <h3>Bốn bài kinh điển</h3>
+  <ul>
+    <li>Longest Common Subsequence (#1143) — đếm độ dài chuỗi chung dài nhất.</li>
+    <li>Edit Distance (#72) — số phép biến đổi tối thiểu.</li>
+    <li>Distinct Subsequences (#115) — đếm số cách s1 xuất hiện trong s2.</li>
+    <li>Longest Palindromic Subsequence (#516) — LCS giữa s và reverse(s).</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 1 — Longest Common Subsequence</h2>
+  <p><strong>Đề (LeetCode #1143):</strong> Hai chuỗi <code>text1</code>, <code>text2</code>. Tìm độ dài chuỗi con chung dài nhất (subsequence, không cần liên tiếp).</p>
+  <p><strong>Ví dụ:</strong> "abcde", "ace" → 3 ("ace").</p>
+  <pre><code>def longestCommonSubsequence(text1, text2):
+    m, n = len(text1), len(text2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if text1[i-1] == text2[j-1]:
+                dp[i][j] = dp[i-1][j-1] + 1
+            else:
+                dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+    return dp[m][n]</code></pre>
+  <p>Time <strong>O(m × n)</strong>, Space <strong>O(m × n)</strong> (hoặc O(min(m,n)) với rolling).</p>
+  <h3>Recurrence trực giác</h3>
+  <ul>
+    <li>Khớp ký tự: cả hai chuỗi "tiêu thụ" 1 ký tự → kế thừa <code>dp[i-1][j-1]</code> + 1.</li>
+    <li>Không khớp: phải "bỏ" 1 ký tự ở 1 trong 2 chuỗi → max của dp[i-1][j] và dp[i][j-1].</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 LCS — DP Table đầy đủ</h2>
+  <p>text1 = "abcde", text2 = "ace". Kỳ vọng: 3.</p>
+  <div class="illustration">
+    <table class="dp-table" style="margin: 0 auto;">
+      <tr><td class="header"></td><td class="header">""</td><td class="header">a</td><td class="header">c</td><td class="header">e</td></tr>
+      <tr><td class="header">""</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td class="header">a</td><td>0</td><td><b>1</b></td><td>1</td><td>1</td></tr>
+      <tr><td class="header">b</td><td>0</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td class="header">c</td><td>0</td><td>1</td><td><b>2</b></td><td>2</td></tr>
+      <tr><td class="header">d</td><td>0</td><td>1</td><td>2</td><td>2</td></tr>
+      <tr><td class="header">e</td><td>0</td><td>1</td><td>2</td><td><b>3</b></td></tr>
+    </table>
+  </div>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">Các cell <b>bold</b> là điểm "khớp" (text1[i-1] == text2[j-1])</p>
+  <p>Đáp án ở góc dưới phải = 3.</p>
+  <div class="example">
+    <div class="example-label">Truy hồi LCS thực sự:</div>
+    Nếu cần biết LCS là gì (không chỉ độ dài), backtrack từ (m, n): nếu khớp → đi ↖ và prepend ký tự; ngược lại đi theo ↑ hoặc ← lớn hơn.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Worked Example 2 — Edit Distance (#72)</h2>
+  <p><strong>Đề:</strong> Hai chuỗi <code>word1</code>, <code>word2</code>. Tìm số phép biến đổi tối thiểu để biến word1 thành word2. Ba loại phép:</p>
+  <ol>
+    <li><strong>Insert</strong>: chèn 1 ký tự.</li>
+    <li><strong>Delete</strong>: xoá 1 ký tự.</li>
+    <li><strong>Replace</strong>: thay 1 ký tự.</li>
+  </ol>
+  <p><strong>Ví dụ:</strong> "horse" → "ros" cần 3 phép (rorse → rose → ros).</p>
+  <h3>State</h3>
+  <p><code>dp[i][j] = số phép tối thiểu để biến word1[0..i-1] thành word2[0..j-1]</code>.</p>
+  <h3>Base case</h3>
+  <ul>
+    <li><code>dp[i][0] = i</code> (xoá i ký tự để rỗng).</li>
+    <li><code>dp[0][j] = j</code> (insert j ký tự).</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 Edit Distance — Recurrence chi tiết</h2>
+  <p>Khi <code>word1[i-1] == word2[j-1]</code>: ký tự khớp, không cần biến đổi → <code>dp[i][j] = dp[i-1][j-1]</code>.</p>
+  <p>Khi không khớp, ba lựa chọn:</p>
+  <ul>
+    <li><strong>Replace</strong>: thay word1[i-1] thành word2[j-1] → 1 + dp[i-1][j-1].</li>
+    <li><strong>Delete</strong>: xoá word1[i-1] → 1 + dp[i-1][j].</li>
+    <li><strong>Insert</strong>: chèn word2[j-1] vào word1 → 1 + dp[i][j-1].</li>
+  </ul>
+  $$ dp[i][j] = 1 + \min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]) $$
+  <pre><code>def minDistance(word1, word2):
+    m, n = len(word1), len(word2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(m + 1): dp[i][0] = i
+    for j in range(n + 1): dp[0][j] = j
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if word1[i-1] == word2[j-1]:
+                dp[i][j] = dp[i-1][j-1]
+            else:
+                dp[i][j] = 1 + min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1])
+    return dp[m][n]</code></pre>
+  <p>Time <strong>O(m × n)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.6 ===== -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 Edit Distance — DP Table</h2>
+  <p>word1 = "horse", word2 = "ros". Kỳ vọng: 3.</p>
+  <div class="illustration">
+    <table class="dp-table" style="margin: 0 auto;">
+      <tr><td class="header"></td><td class="header">""</td><td class="header">r</td><td class="header">o</td><td class="header">s</td></tr>
+      <tr><td class="header">""</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+      <tr><td class="header">h</td><td>1</td><td>1</td><td>2</td><td>3</td></tr>
+      <tr><td class="header">o</td><td>2</td><td>2</td><td><b>1</b></td><td>2</td></tr>
+      <tr><td class="header">r</td><td>3</td><td><b>2</b></td><td>2</td><td>2</td></tr>
+      <tr><td class="header">s</td><td>4</td><td>3</td><td>3</td><td><b>2</b></td></tr>
+      <tr><td class="header">e</td><td>5</td><td>4</td><td>4</td><td><b>3</b></td></tr>
+    </table>
+  </div>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">Đáp án ở góc dưới phải = 3</p>
+  <div class="key-point">
+    <div class="key-point-label">Tinh thần phỏng vấn:</div>
+    Khi giải bài này trong phỏng vấn, vẽ bảng dp ra giấy + giải thích "ý nghĩa của 3 mũi tên" (insert/delete/replace).
+    Đó là cách thuyết phục interviewer rằng bạn hiểu sâu, không chỉ nhớ template.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.7 ===== -->
+<div class="slide">
+  <div class="slide-number">2.7</div>
+  <h2>2.7 Worked Example 3 — Distinct Subsequences (#115)</h2>
+  <p><strong>Đề (Hard):</strong> Hai chuỗi <code>s</code>, <code>t</code>. Đếm số cách <code>t</code> xuất hiện trong <code>s</code> dưới dạng subsequence.</p>
+  <p><strong>Ví dụ:</strong> s = "rabbbit", t = "rabbit" → 3 (3 cách chọn các ký tự).</p>
+  <h3>State</h3>
+  <p><code>dp[i][j] = số cách t[0..j-1] xuất hiện trong s[0..i-1]</code>.</p>
+  <h3>Recurrence</h3>
+  <p>Khi <code>s[i-1] == t[j-1]</code>: hai lựa chọn — dùng s[i-1] hoặc bỏ qua nó:</p>
+  $$ dp[i][j] = \underbrace{dp[i-1][j-1]}_{\text{dùng}} + \underbrace{dp[i-1][j]}_{\text{bỏ qua}} $$
+  <p>Khi không khớp: phải bỏ qua <code>s[i-1]</code> → <code>dp[i][j] = dp[i-1][j]</code>.</p>
+  <pre><code>def numDistinct(s, t):
+    m, n = len(s), len(t)
+    if n &gt; m: return 0
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(m + 1): dp[i][0] = 1     # 1 cách ghép chuỗi rỗng
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            dp[i][j] = dp[i-1][j]
+            if s[i-1] == t[j-1]:
+                dp[i][j] += dp[i-1][j-1]
+    return dp[m][n]</code></pre>
+</div>
+
+<!-- ===== SLIDE 2.8 ===== -->
+<div class="slide">
+  <div class="slide-number">2.8</div>
+  <h2>2.8 Worked Example 4 — Longest Palindromic Subsequence (#516)</h2>
+  <p><strong>Đề:</strong> Cho string <code>s</code>. Tìm độ dài subsequence palindrome dài nhất.</p>
+  <p><strong>Ví dụ:</strong> "bbbab" → 4 ("bbbb").</p>
+  <h3>Mẹo: Quy về LCS</h3>
+  <p>Subsequence palindrome của s = subsequence chung của <code>s</code> và <code>reverse(s)</code>.</p>
+  <pre><code>def longestPalindromeSubseq(s):
+    return longestCommonSubsequence(s, s[::-1])</code></pre>
+  <p>Time <strong>O(n²)</strong>.</p>
+  <h3>Approach trực tiếp — Interval DP</h3>
+  <p>State: <code>dp[i][j] = độ dài LPS trong s[i..j]</code>. Đây là Interval DP (xem Phần 5):</p>
+  <pre><code>def longestPalindromeSubseq(s):
+    n = len(s)
+    dp = [[0] * n for _ in range(n)]
+    for i in range(n): dp[i][i] = 1
+    for length in range(2, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            if s[i] == s[j]:
+                dp[i][j] = (dp[i+1][j-1] if length &gt; 2 else 0) + 2
+            else:
+                dp[i][j] = max(dp[i+1][j], dp[i][j-1])
+    return dp[0][n-1]</code></pre>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Two-string DP</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong DP table cho 2 chuỗi, vì sao kích thước là <code>(m+1) × (n+1)</code> chứ không phải <code>m × n</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để chạy nhanh hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Hàng/cột 0 đại diện chuỗi rỗng → đơn giản hoá base case</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì Python yêu cầu</button>
+    <div class="quiz-explanation">Padding với "" giúp recurrence dp[i-1][j-1] không bị out-of-bounds khi i=1 hoặc j=1. Ngoài ra, dp[i][0] và dp[0][j] có ý nghĩa rõ (so sánh với chuỗi rỗng) → base case viết được trong 1 dòng.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Edit Distance, recurrence khi không khớp ký tự là?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) <code>dp[i-1][j-1]</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <code>1 + min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1])</code> — replace, delete, insert</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) <code>max(dp[i-1][j], dp[i][j-1])</code></button>
+    <div class="quiz-explanation">3 phép biến đổi tương ứng 3 hướng trên bảng dp: ↖ replace, ↑ delete, ← insert. Tất cả đều +1. Lấy min vì cần ít phép nhất.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Longest Palindromic Subsequence có thể quy về LCS như thế nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) LPS(s) = LCS(s, reverse(s))</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) LPS(s) = LCS(s, s)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) LPS không liên quan LCS</button>
+    <div class="quiz-explanation">Subsequence palindrome đọc xuôi và ngược như nhau → là phần chung giữa s và đảo của s. Đây là kỹ thuật "reduce to known problem" — pattern phỏng vấn quan trọng.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. Knapsack 0/1</h1>
+  <div class="subtitle">Items với capacity — mỗi item dùng tối đa 1 lần</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 0/1 Knapsack — Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Bài toán cổ điển:</div>
+    n items, mỗi item có weight và value. Knapsack capacity W. Chọn subset items sao cho tổng weight ≤ W và tổng value max. Mỗi item chỉ được chọn 0 hoặc 1 lần.
+  </div>
+  <h3>State 2D</h3>
+  <p><code>dp[i][w] = value max khi xét i items đầu tiên với capacity w</code>.</p>
+  <h3>Recurrence — choose or skip</h3>
+  $$ dp[i][w] = \max\left(\underbrace{dp[i-1][w]}_{\text{skip item } i}, \, \underbrace{dp[i-1][w-w_i] + v_i}_{\text{take item } i}\right) $$
+  <p>Take chỉ khả dĩ khi <code>w ≥ w_i</code>. Khi đảo ngược (unbounded), thay <code>dp[i-1][w-w_i]</code> bằng <code>dp[i][w-w_i]</code> để cho phép dùng lại.</p>
+  <h3>Tối ưu space — 1D</h3>
+  <p>Có thể giảm xuống <code>dp[w]</code> bằng cách <strong>lặp w từ phải sang trái</strong> (đảm bảo dp[w-w_i] vẫn là giá trị "trước khi xét item i"):</p>
+  <pre><code>for i in range(n):
+    for w in range(W, weights[i] - 1, -1):    # ngược lại
+        dp[w] = max(dp[w], dp[w - weights[i]] + values[i])</code></pre>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Worked Example 5 — Partition Equal Subset Sum</h2>
+  <p><strong>Đề (LeetCode #416):</strong> Mảng số dương <code>nums</code>. Trả True nếu có thể chia thành 2 subset có tổng bằng nhau.</p>
+  <h3>Quy về 0/1 Knapsack</h3>
+  <p>Tổng = S. Nếu S lẻ → False. Nếu S chẵn → tìm subset có tổng = S/2.</p>
+  <p>State boolean: <code>dp[w] = True nếu có subset tổng = w</code>.</p>
+  <pre><code>def canPartition(nums):
+    s = sum(nums)
+    if s % 2: return False
+    target = s // 2
+    dp = [False] * (target + 1)
+    dp[0] = True
+    for num in nums:
+        for w in range(target, num - 1, -1):    # 0/1 → ngược
+            dp[w] = dp[w] or dp[w - num]
+    return dp[target]</code></pre>
+  <p>Time <strong>O(n × target)</strong>, Space <strong>O(target)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Kỹ thuật quan trọng — loop ngược cho 0/1:</div>
+    Khi loop xuôi, <code>dp[w - num]</code> đã được cập nhật ở vòng lặp này → dùng item nhiều lần → unbounded. Loop ngược giữ <code>dp[w - num]</code> là giá trị "trước item này" → 0/1 đúng.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Worked Example 6 — Target Sum</h2>
+  <p><strong>Đề (LeetCode #494):</strong> Mảng số dương <code>nums</code>, số <code>target</code>. Đặt + hoặc - trước mỗi số. Đếm số cách để tổng = target.</p>
+  <h3>Quy về 0/1 Knapsack đếm</h3>
+  <p>Đặt P = tập các số có dấu +, N = tập có dấu -. Khi đó:</p>
+  <ul>
+    <li>P + N = sum(nums) = S</li>
+    <li>P - N = target</li>
+    <li>→ P = (S + target) / 2</li>
+  </ul>
+  <p>Quy về: đếm số cách chọn subset có tổng = (S + target) / 2.</p>
+  <pre><code>def findTargetSumWays(nums, target):
+    s = sum(nums)
+    if (s + target) % 2 or s &lt; abs(target): return 0
+    new_target = (s + target) // 2
+    dp = [0] * (new_target + 1)
+    dp[0] = 1
+    for num in nums:
+        for w in range(new_target, num - 1, -1):
+            dp[w] += dp[w - num]
+    return dp[new_target]</code></pre>
+  <p>Time <strong>O(n × target)</strong>, Space <strong>O(target)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 0/1 vs Unbounded — So sánh đầy đủ</h2>
+  <table>
+    <tr><th>Aspect</th><th>0/1 Knapsack</th><th>Unbounded Knapsack</th></tr>
+    <tr><td>Dùng item nhiều lần?</td><td>Không (max 1)</td><td>Có</td></tr>
+    <tr><td>Loop direction trong 1D</td><td>Ngược (W → 0)</td><td>Xuôi (0 → W)</td></tr>
+    <tr><td>Ví dụ bài</td><td>Partition Subset Sum, Target Sum, Last Stone II</td><td>Coin Change, Word Break</td></tr>
+    <tr><td>Recurrence 2D</td><td>dp[i][w] dùng dp[<b>i-1</b>][w-w_i]</td><td>dp[i][w] dùng dp[<b>i</b>][w-w_i]</td></tr>
+  </table>
+  <h3>Quy tắc nhanh để debug</h3>
+  <p>Nếu kết quả <em>vượt</em> kỳ vọng (đếm trùng) → bạn đang vô tình unbounded. Check loop direction.</p>
+  <p>Nếu kết quả <em>thấp</em> hơn kỳ vọng → bạn đang vô tình 0/1 nhưng bài cho phép unbounded. Đảo loop direction.</p>
+  <div class="example">
+    <div class="example-label">Trick nhớ:</div>
+    "0/1 ngược, Unbounded xuôi" — vần điệu giúp nhớ lâu. Loop ngược "bảo vệ" giá trị cũ; loop xuôi "tận dụng" giá trị đã cập nhật.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Knapsack 0/1</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong 0/1 Knapsack 1D, vì sao loop capacity từ phải sang trái?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để code đẹp</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để giữ <code>dp[w-num]</code> là giá trị "trước item này" — không cho phép dùng lại</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để tăng tốc</button>
+    <div class="quiz-explanation">Khi loop xuôi từ trái, dp[w-num] được cập nhật trước → khi đến dp[w], dp[w-num] đã chứa "item này đã dùng". Thành unbounded. Loop ngược đảm bảo dp[w-num] vẫn là giá trị từ vòng for trước → 0/1.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Target Sum, kỹ thuật "đặt P = (S + target) / 2" làm gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Tăng tốc</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Quy về bài 0/1 Knapsack đếm "số cách chọn subset có tổng = P"</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để code đơn giản</button>
+    <div class="quiz-explanation">Bài gốc có dấu ±, không phải subset sum. Bằng đại số, ta thấy "chọn dấu +" tương đương "chọn subset có tổng P = (S+target)/2". Đây là kỹ thuật reduction quan trọng — biến bài lạ thành bài quen.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Grid DP</h1>
+  <div class="subtitle">DP trên ma trận — Unique Paths, Min Path Sum</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Grid DP — Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Đặc trưng:</div>
+    <code>dp[r][c]</code> đại diện cho "câu trả lời cho subproblem trên submatrix top-left là (r, c)" hoặc "đến ô (r, c) như thế nào".
+  </div>
+  <p>Recurrence thường:</p>
+  $$ dp[r][c] = f(dp[r-1][c], dp[r][c-1], dp[r-1][c-1]) $$
+  <p>Tuỳ bài: tổng (Min Path Sum), đếm cách (Unique Paths), boolean (Dungeon Game).</p>
+  <h3>Khi nào ưu tiên Grid DP?</h3>
+  <ul>
+    <li>Bài đề là grid và yêu cầu đường đi/khoảng cách/tổng.</li>
+    <li>Hướng di chuyển hạn chế (chỉ phải/xuống) → DP áp dụng được.</li>
+    <li>Hướng tự do (4 hướng) → cần BFS/DFS thay vì DP.</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Worked Example 7 — Unique Paths (#62)</h2>
+  <p><strong>Đề:</strong> Lưới m × n. Robot ở (0,0), cần đến (m-1, n-1). Mỗi bước chỉ phải hoặc xuống. Đếm số đường đi.</p>
+  <h3>State</h3>
+  <p><code>dp[r][c] = số đường từ (0,0) đến (r,c)</code>.</p>
+  <p>Recurrence: đến (r,c) chỉ có thể từ (r-1,c) hoặc (r,c-1):</p>
+  $$ dp[r][c] = dp[r-1][c] + dp[r][c-1] $$
+  <pre><code>def uniquePaths(m, n):
+    dp = [[1] * n for _ in range(m)]    # hàng/cột 0 đều có 1 cách
+    for r in range(1, m):
+        for c in range(1, n):
+            dp[r][c] = dp[r-1][c] + dp[r][c-1]
+    return dp[m-1][n-1]</code></pre>
+  <p>Time <strong>O(m × n)</strong>, Space <strong>O(m × n)</strong> hoặc O(n) với rolling.</p>
+  <div class="example">
+    <div class="example-label">Combinatorial alternative:</div>
+    Mỗi đường có (m-1) bước xuống và (n-1) bước phải. Số đường = <code>C(m+n-2, m-1)</code>. Time O(m+n) — nhưng DP rõ ràng hơn cho phỏng vấn.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 Worked Example 8 — Minimum Path Sum (#64)</h2>
+  <p><strong>Đề:</strong> Lưới <code>grid[i][j]</code> &gt; 0. Tìm đường từ top-left đến bottom-right có tổng nhỏ nhất. Mỗi bước phải hoặc xuống.</p>
+  <pre><code>def minPathSum(grid):
+    m, n = len(grid), len(grid[0])
+    # in-place modification
+    for r in range(m):
+        for c in range(n):
+            if r == 0 and c == 0: continue
+            elif r == 0: grid[r][c] += grid[r][c-1]
+            elif c == 0: grid[r][c] += grid[r-1][c]
+            else: grid[r][c] += min(grid[r-1][c], grid[r][c-1])
+    return grid[m-1][n-1]</code></pre>
+  <p>Time <strong>O(m × n)</strong>, Space <strong>O(1)</strong> (in-place).</p>
+  <h3>Trace với grid = [[1,3,1],[1,5,1],[4,2,1]]</h3>
+  <table class="dp-table" style="margin: 0 auto;">
+    <tr><td>1</td><td>4</td><td>5</td></tr>
+    <tr><td>2</td><td>7</td><td>6</td></tr>
+    <tr><td>6</td><td>8</td><td><b>7</b></td></tr>
+  </table>
+  <p>Đường tối ưu: 1→3→1→1→1 = 7.</p>
+</div>
+
+<!-- ===== SECTION 5 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 5. Interval DP</h1>
+  <div class="subtitle">DP trên khoảng [i, j] — Burst Balloons, Palindromic Substrings</div>
+</div>
+
+<!-- ===== SLIDE 5.1 ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 Interval DP — Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Đặc trưng:</div>
+    <code>dp[i][j]</code> = câu trả lời cho subproblem trên khoảng [i..j]. Recurrence thường lặp qua điểm "split" k bên trong khoảng:
+    $$ dp[i][j] = \min/\max_{i \leq k \leq j} \{ \text{combine}(dp[i][k], dp[k+1][j]) \} $$
+  </div>
+  <h3>Tín hiệu nhận biết</h3>
+  <ul>
+    <li>"Boundary [i, j]", "interval", "kết hợp 2 khoảng".</li>
+    <li>"Burst balloons", "matrix chain multiplication".</li>
+    <li>"Palindrome questions" thường có thể giải bằng interval DP.</li>
+  </ul>
+  <h3>Thứ tự tính</h3>
+  <p>Tính theo <strong>chiều dài khoảng tăng dần</strong>: dp[i][i] (size 1), dp[i][i+1] (size 2), …</p>
+  <pre><code>for length in range(1, n + 1):
+    for i in range(n - length + 1):
+        j = i + length - 1
+        # tính dp[i][j] dựa trên dp con (length nhỏ hơn)</code></pre>
+  <p>Time thường <strong>O(n³)</strong> (n² cells × n splits).</p>
+</div>
+
+<!-- ===== SLIDE 5.2 ===== -->
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>5.2 Worked Example 9 — Burst Balloons (#312, Hard)</h2>
+  <p><strong>Đề:</strong> Mảng <code>nums</code> (giá trị bóng bay). Mỗi lần nổ bóng i được <code>nums[i-1] × nums[i] × nums[i+1]</code> điểm (với biên giả lập = 1). Tìm tổng điểm tối đa khi nổ hết.</p>
+  <h3>Tinh thần "ngược" — Bóng nào nổ CUỐI?</h3>
+  <p>Quan trọng: nghĩ "nổ ngược" — chọn bóng nổ cuối cùng trong khoảng [i, j].</p>
+  <p>Khi nổ k cuối cùng trong [i, j], hai biên là nums[i-1] và nums[j+1] (đã được "bảo vệ" trong các bài con):</p>
+  $$ dp[i][j] = \max_{i \leq k \leq j} \{ dp[i][k-1] + dp[k+1][j] + \text{nums}[i-1] \cdot \text{nums}[k] \cdot \text{nums}[j+1] \} $$
+  <pre><code>def maxCoins(nums):
+    nums = [1] + nums + [1]                # padding biên
+    n = len(nums)
+    dp = [[0] * n for _ in range(n)]
+    for length in range(1, n - 1):
+        for i in range(1, n - length):
+            j = i + length - 1
+            for k in range(i, j + 1):
+                dp[i][j] = max(dp[i][j],
+                    dp[i][k-1] + dp[k+1][j] + nums[i-1]*nums[k]*nums[j+1])
+    return dp[1][n-2]</code></pre>
+  <p>Time <strong>O(n³)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 5.3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.3</div>
+  <h2>5.3 Burst Balloons — Vì sao "nổ ngược"?</h2>
+  <p>Cách tự nhiên — "nổ xuôi" — nghĩ bóng nào nổ trước. Nhưng có vấn đề:</p>
+  <ul>
+    <li>Khi nổ bóng đầu tiên k, nó tách [i, j] thành [i, k-1] và [k+1, j]. Nhưng <em>biên của hai khoảng con thay đổi</em> tuỳ vào bóng kế bên.</li>
+    <li>Hai khoảng con không độc lập → khó viết recurrence.</li>
+  </ul>
+  <h3>Đảo lại — bóng nào nổ CUỐI</h3>
+  <p>Khi k là bóng cuối trong [i, j], lúc đó hai bóng kế là nums[i-1] và nums[j+1] (vì mọi bóng trong [i,j] đã bị nổ).</p>
+  <p>Hai khoảng con [i, k-1] và [k+1, j] giải <em>độc lập</em> — không "ăn vào" nhau vì k còn nguyên.</p>
+  <div class="key-point">
+    <div class="key-point-label">Bài học design state:</div>
+    Khi gặp bài interval DP mà recurrence "có vẻ" rối, thử <strong>đảo thứ tự thao tác</strong>. Nổ ngược, xếp ngược, ghép ngược — đôi khi cách "ngược" cho recurrence sạch.
+  </div>
+</div>
+
+<!-- ===== SLIDE 5.4 ===== -->
+<div class="slide">
+  <div class="slide-number">5.4</div>
+  <h2>5.4 Worked Example 10 — Palindromic Substrings (#647)</h2>
+  <p><strong>Đề:</strong> Cho string <code>s</code>. Đếm số substring là palindrome.</p>
+  <h3>Approach Interval DP</h3>
+  <p><code>dp[i][j] = True nếu s[i..j] là palindrome</code>.</p>
+  <p>Recurrence: s[i..j] palindrome ⟺ s[i] == s[j] và s[i+1..j-1] palindrome (hoặc length ≤ 2):</p>
+  <pre><code>def countSubstrings(s):
+    n = len(s)
+    dp = [[False] * n for _ in range(n)]
+    count = 0
+    for i in range(n):
+        dp[i][i] = True
+        count += 1                           # single char palindromes
+    for length in range(2, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            if s[i] == s[j]:
+                if length == 2 or dp[i+1][j-1]:
+                    dp[i][j] = True
+                    count += 1
+    return count</code></pre>
+  <p>Time <strong>O(n²)</strong>, Space <strong>O(n²)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Approach thay thế — "Expand around center":</div>
+    Với mỗi vị trí i, expand ra hai phía cho đến khi không còn palindrome. Time O(n²) nhưng O(1) space. Trong phỏng vấn, đôi khi đáng để biết cả hai.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.Q</div>
+  <h2>Knowledge Check — Grid &amp; Interval DP</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Grid DP, khi nào không áp dụng được — phải dùng BFS/DFS?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Khi grid lớn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi hướng di chuyển tự do (4 hướng) — dp có cycles, không thể compute monotonically</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khi có chướng ngại</button>
+    <div class="quiz-explanation">DP yêu cầu thứ tự tính (topological order). Hướng phải/xuống là DAG nên DP OK. Hướng 4 phía có cycle (đi lên rồi đi xuống) → không có thứ tự → cần BFS/DFS với visited.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Tại sao Burst Balloons phải nghĩ "bóng nổ cuối cùng" thay vì đầu tiên?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để code đẹp</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để hai subproblem độc lập — biên không thay đổi tuỳ thuộc bóng đã nổ</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để tăng tốc</button>
+    <div class="quiz-explanation">Nổ trước: biên của subproblem thay đổi tuỳ bóng nổ trước → 2 subproblem dependent. Nổ cuối: bóng k còn nguyên cho đến cuối, nên 2 subproblem [i, k-1] và [k+1, j] giải độc lập với biên cố định nums[i-1] và nums[j+1].</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Interval DP thường có time complexity gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) O(n²)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) O(n³) — n² cells × n split points</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) O(n log n)</button>
+    <div class="quiz-explanation">Bảng dp có n² cells. Mỗi cell xét n điểm split khả dĩ → O(n³). Một số bài (Palindromic Substrings) chỉ cần O(n²) vì recurrence không cần split point. Nhưng pattern chung là O(n³).</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6 ===== -->
+<div class="slide">
+  <div class="slide-number">6.0</div>
+  <h2>6.0 Decision Tree — 2D DP</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Pattern</th></tr>
+    <tr><td>"hai chuỗi": LCS, edit, transform</td><td>Two-string DP với dp[i][j]</td></tr>
+    <tr><td>"đếm số cách"</td><td>Two-string DP cộng (Distinct Subsequences)</td></tr>
+    <tr><td>"palindrome"</td><td>LCS với reverse, hoặc Interval DP</td></tr>
+    <tr><td>"chia subset bằng nhau", "target sum với ±"</td><td>0/1 Knapsack với boolean/count dp</td></tr>
+    <tr><td>"unique paths / min path sum trên grid"</td><td>Grid DP với hướng phải/xuống</td></tr>
+    <tr><td>"interval [i, j], split point"</td><td>Interval DP O(n³)</td></tr>
+    <tr><td>"burst balloons / merge stones"</td><td>Interval DP với "thao tác ngược"</td></tr>
+    <tr><td>"matrix chain multiplication"</td><td>Interval DP cổ điển</td></tr>
+    <tr><td>"stock with K transactions"</td><td>State machine 2D — dp[k][i]</td></tr>
+  </table>
+  <h3>Quy trình code 2D DP</h3>
+  <ol>
+    <li>Định nghĩa dp[i][j] và padding chuẩn (m+1) × (n+1) cho two-string.</li>
+    <li>Vẽ bảng dp với input nhỏ trên giấy.</li>
+    <li>Viết recurrence dựa trên 3 mũi tên (↖, ↑, ←).</li>
+    <li>Cài tabulation.</li>
+    <li>Tối ưu space (rolling array) nếu cần.</li>
+  </ol>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">6.1</div>
+  <h2>Tổng kết Tuần 13</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>2D DP fundamentals</strong>: padding (m+1) × (n+1), 3 mũi tên trên bảng dp, rolling array tối ưu space.</li>
+    <li><strong>Two-string DP</strong>: LCS, Edit Distance (3 phép), Distinct Subsequences (đếm), LPS (quy về LCS với reverse).</li>
+    <li><strong>Knapsack 0/1</strong>: loop ngược trong 1D — quy tắc "0/1 ngược, Unbounded xuôi"; reduction Target Sum → Subset Sum.</li>
+    <li><strong>Grid DP</strong>: hướng phải/xuống (DAG); Unique Paths, Min Path Sum.</li>
+    <li><strong>Interval DP</strong>: dp[i][j] với split point k, time O(n³); Burst Balloons với tinh thần "thao tác ngược".</li>
+    <li><strong>Pattern reduction</strong>: LPS = LCS(s, reverse(s)); Target Sum → 0/1 Knapsack đếm.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #1143 — Longest Common Subsequence</li>
+    <li>LeetCode #72 — Edit Distance (Hard)</li>
+    <li>LeetCode #115 — Distinct Subsequences (Hard)</li>
+    <li>LeetCode #516 — Longest Palindromic Subsequence</li>
+    <li>LeetCode #416 — Partition Equal Subset Sum</li>
+    <li>LeetCode #494 — Target Sum</li>
+    <li>LeetCode #62 — Unique Paths</li>
+    <li>LeetCode #64 — Minimum Path Sum</li>
+    <li>LeetCode #312 — Burst Balloons (Hard)</li>
+    <li>LeetCode #647 — Palindromic Substrings</li>
+    <li>LeetCode #5 — Longest Palindromic Substring</li>
+    <li>LeetCode #1035 — Uncrossed Lines (LCS variant)</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 14 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>Bit Manipulation, Trie và Mock Interview</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Tuần cuối cùng. Học các kỹ thuật bitwise (XOR, bitmask DP), cấu trúc Trie cho bài về string nâng cao,
+    và đặc biệt là <em>quy trình mock interview chuẩn</em> — phân tích đề, viết pseudocode, code, debug, complexity.
+    Tổng hợp lại 13 tuần và chuẩn bị tâm thế phỏng vấn thực tế.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 13 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
 </body>
 </html>
-

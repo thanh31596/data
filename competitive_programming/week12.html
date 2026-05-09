@@ -1,28 +1,899 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Competitive Programming — Week 12</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
-    a { color: #3b82f6; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; background: #fafafa; }
-    h1 { margin: 0 0 10px; }
-    p { margin: 10px 0; }
-    .links { margin-top: 14px; display: flex; gap: 12px; flex-wrap: wrap; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 12 — Dynamic Programming 1D</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+</style>
 </head>
 <body>
-  <h1>Competitive Programming — Week 12</h1>
-  <div class="card">
-    <p>This is a placeholder lesson page for Week 12. Replace this content when you’re ready.</p>
-    <div class="links">
-      <a href="../competitive_programming.html">← Back to Competitive Programming course</a>
-      <a href="../index.html">Home</a>
-    </div>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 12</div>
+  <h1>Dynamic Programming — 1D</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Pattern then chốt cho phỏng vấn senior. Học cách thiết kế <em>state</em> và <em>recurrence</em> —
+    nền tảng cho mọi bài DP từ Climbing Stairs đến Edit Distance.
+  </p>
+  <div class="meta">10 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng DP</h1>
+  <div class="subtitle">Memoisation vs Tabulation, quy trình thiết kế 5 bước</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Dynamic Programming là gì?</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa:</div>
+    DP áp dụng được khi bài toán có hai tính chất:
+    <ol>
+      <li><strong>Optimal substructure</strong>: nghiệm tối ưu của bài lớn = combine nghiệm tối ưu của bài con.</li>
+      <li><strong>Overlapping subproblems</strong>: cùng bài con xuất hiện nhiều lần trong cây đệ quy.</li>
+    </ol>
+    DP = đệ quy + cache kết quả bài con đã tính.
   </div>
+  <h3>Ví dụ Fibonacci</h3>
+  <p>Tính <code>fib(n) = fib(n-1) + fib(n-2)</code>. Đệ quy ngây thơ tính <code>fib(2)</code> rất nhiều lần (overlapping).
+  Cache → mỗi state tính 1 lần → từ O(2ⁿ) xuống O(n).</p>
+  <h3>Tín hiệu nhận biết DP</h3>
+  <ul>
+    <li>"Đếm số cách", "tìm tối ưu (min/max)" với input có cấu trúc tuần tự.</li>
+    <li>Bài có thể giải bằng đệ quy nhưng tốn exp time vì lặp lại.</li>
+    <li>Decision tại mỗi bước phụ thuộc vào kết quả các bước trước.</li>
+    <li>Có thể đặt câu hỏi: <em>"Nếu biết kết quả của các state nhỏ hơn, làm sao tính state hiện tại?"</em>
+    Trả lời được = DP áp dụng được.</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Memoisation (Top-down) vs Tabulation (Bottom-up)</h2>
+  <table>
+    <tr><th>Aspect</th><th>Memoisation</th><th>Tabulation</th></tr>
+    <tr><td>Hướng tính</td><td>Lớn → nhỏ (đệ quy với cache)</td><td>Nhỏ → lớn (vòng for điền bảng)</td></tr>
+    <tr><td>Cú pháp</td><td>Đệ quy + dict/<code>@lru_cache</code></td><td>Mảng <code>dp[]</code> + nested loops</td></tr>
+    <tr><td>Khởi tạo</td><td>Cache rỗng + base case trong if</td><td>Init bảng + base case explicit</td></tr>
+    <tr><td>Chỉ tính state cần</td><td>✓</td><td>✗ Tính hết</td></tr>
+    <tr><td>Stack overflow</td><td>Có thể với n lớn</td><td>Không bao giờ</td></tr>
+    <tr><td>Space optimisation</td><td>Khó</td><td>Dễ — rolling array O(1)</td></tr>
+    <tr><td>Phỏng vấn</td><td>Dễ viết hơn từ recursion</td><td>Production-ready</td></tr>
+  </table>
+  <h3>Quy tắc chuyển đổi</h3>
+  <ul>
+    <li>Memoisation thường viết trước — chuyển recursion + cache là đủ.</li>
+    <li>Tabulation = unroll memoisation theo chiều ngược.</li>
+    <li>Khi đã có tabulation, có thể tối ưu space bằng cách giữ chỉ các state cần.</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Quy trình thiết kế DP — 5 bước</h2>
+  <ol>
+    <li><strong>Định nghĩa state</strong>: <code>dp[i]</code> nghĩa là gì?
+    Ví dụ: "dp[i] = số cách lên tới bậc thứ i".</li>
+
+    <li><strong>Viết recurrence</strong>: <code>dp[i] = ?</code> dựa trên <code>dp[i-1]</code>, <code>dp[i-2]</code>, ...
+    Ví dụ: dp[i] = dp[i-1] + dp[i-2].</li>
+
+    <li><strong>Xác định base case</strong>: <code>dp[0]</code>, <code>dp[1]</code>, ...
+    Ví dụ: dp[0] = 1, dp[1] = 1.</li>
+
+    <li><strong>Quyết định thứ tự tính</strong>: từ nhỏ đến lớn (tabulation) hay đệ quy (memoisation).</li>
+
+    <li><strong>Tối ưu space</strong> (nếu có thể): chỉ giữ các state cần. Ví dụ Fibonacci chỉ cần 2 biến.</li>
+  </ol>
+  <div class="key-point">
+    <div class="key-point-label">Bước khó nhất:</div>
+    <strong>Bước 1 — định nghĩa state</strong>. State đúng → recurrence tự nhiên ra. State sai → recurrence không có.
+    <br>Trong phỏng vấn, dành ít nhất 50% thời gian cho bước này. Đừng vội code khi chưa rõ state nghĩa là gì.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Backtracking vs DP — Khi nào chuyển?</h2>
+  <p>Tuần 11 đã thấy backtracking giải mọi bài "liệt kê khả năng". Khi nào chuyển sang DP?</p>
+  <table>
+    <tr><th>Backtracking</th><th>DP</th></tr>
+    <tr><td>Cần liệt kê <em>tất cả</em> nghiệm</td><td>Cần đếm hoặc tìm tối ưu</td></tr>
+    <tr><td>Mỗi state thăm 1 lần</td><td>Cùng state thăm nhiều lần (overlapping)</td></tr>
+    <tr><td>Output lớn (exp)</td><td>Output nhỏ (số / boolean)</td></tr>
+    <tr><td>Time exp</td><td>Time poly nhờ cache</td></tr>
+  </table>
+  <h3>Quy trình chuyển đổi</h3>
+  <ol>
+    <li>Bắt đầu với backtracking (ngây thơ).</li>
+    <li>Nhận diện state <em>state</em> = các tham số tham gia quyết định kết quả.</li>
+    <li>Add <code>@lru_cache</code> vào hàm đệ quy → instant memoisation.</li>
+    <li>Convert sang tabulation nếu cần tối ưu space.</li>
+  </ol>
+  <p>Đa số bài DP có lời giải Memoisation viết được trong &lt; 5 phút từ backtracking. Đó là lý do nên thuộc backtracking trước (Tuần 11).</p>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Linear DP</h1>
+  <div class="subtitle">Dạng đơn giản nhất — dp[i] phụ thuộc vào dp[i-1], dp[i-2]</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Linear DP Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Đặc trưng:</div>
+    State <code>dp[i]</code> đại diện cho "câu trả lời cho subproblem trên prefix [0..i]". Recurrence chỉ phụ thuộc vào <code>dp[i-1]</code> hoặc vài state liền kề.
+  </div>
+  <h3>Mẫu chung</h3>
+  <pre><code>n = len(input)
+dp = [0] * (n + 1)
+dp[0] = base_case
+for i in range(1, n + 1):
+    dp[i] = recurrence(dp[i-1], dp[i-2], ..., input[i-1])
+return dp[n]</code></pre>
+  <h3>Tối ưu space O(1)</h3>
+  <p>Khi recurrence chỉ dùng vài state cuối, có thể bỏ mảng dp, chỉ giữ vài biến:</p>
+  <pre><code>prev2, prev1 = base_0, base_1
+for i in range(2, n + 1):
+    cur = recurrence(prev1, prev2)
+    prev2, prev1 = prev1, cur
+return prev1</code></pre>
+  <p>Pattern này giảm O(n) space xuống O(1) — lợi rõ khi n lớn.</p>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 1 — Climbing Stairs (#70)</h2>
+  <p><strong>Đề:</strong> n bậc thang. Mỗi bước có thể leo 1 hoặc 2 bậc. Có bao nhiêu cách lên đỉnh?</p>
+  <h3>Phân tích</h3>
+  <p>State: <code>dp[i] = số cách lên đến bậc i</code>. Recurrence: để đến bậc i, hoặc từ bậc <code>i-1</code> (1 bước) hoặc từ <code>i-2</code> (2 bước):</p>
+  $$ dp[i] = dp[i-1] + dp[i-2] $$
+  <p>Đây <em>chính là</em> Fibonacci.</p>
+  <h3>Ba cách</h3>
+  <pre><code># Cách 1 — Đệ quy ngây thơ — O(2ⁿ), TLE
+def climbStairs_naive(n):
+    if n &lt;= 2: return n
+    return climbStairs_naive(n-1) + climbStairs_naive(n-2)
+
+# Cách 2 — Memoisation — O(n)
+from functools import lru_cache
+@lru_cache(None)
+def climbStairs_memo(n):
+    if n &lt;= 2: return n
+    return climbStairs_memo(n-1) + climbStairs_memo(n-2)
+
+# Cách 3 — Tabulation O(1) space — chuẩn vàng
+def climbStairs(n):
+    if n &lt;= 2: return n
+    a, b = 1, 2                      # dp[1], dp[2]
+    for _ in range(3, n + 1):
+        a, b = b, a + b
+    return b</code></pre>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Fibonacci (#509) — Cây đệ quy minh hoạ</h2>
+  <p>Tại sao đệ quy ngây thơ là O(2ⁿ)?</p>
+  <div class="illustration">
+    <svg viewBox="0 0 540 200" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#1a1a1a" fill="#f8f9fa">
+        <circle cx="270" cy="30" r="20"/>
+        <circle cx="170" cy="90" r="20"/>
+        <circle cx="370" cy="90" r="20"/>
+        <circle cx="100" cy="150" r="20"/>
+        <circle cx="220" cy="150" r="20"/>
+        <circle cx="320" cy="150" r="20"/>
+        <circle cx="420" cy="150" r="20"/>
+      </g>
+      <text x="270" y="35" font-size="13" text-anchor="middle">fib(5)</text>
+      <text x="170" y="95" font-size="13" text-anchor="middle">fib(4)</text>
+      <text x="370" y="95" font-size="13" text-anchor="middle">fib(3)</text>
+      <text x="100" y="155" font-size="13" text-anchor="middle">fib(3)</text>
+      <text x="220" y="155" font-size="13" text-anchor="middle">fib(2)</text>
+      <text x="320" y="155" font-size="13" text-anchor="middle">fib(2)</text>
+      <text x="420" y="155" font-size="13" text-anchor="middle">fib(1)</text>
+      <line x1="255" y1="45" x2="185" y2="80" stroke="#1a1a1a"/>
+      <line x1="285" y1="45" x2="355" y2="80" stroke="#1a1a1a"/>
+      <line x1="155" y1="105" x2="115" y2="140" stroke="#1a1a1a"/>
+      <line x1="185" y1="105" x2="205" y2="140" stroke="#1a1a1a"/>
+      <line x1="355" y1="105" x2="335" y2="140" stroke="#1a1a1a"/>
+      <line x1="385" y1="105" x2="405" y2="140" stroke="#1a1a1a"/>
+    </svg>
+  </div>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">Cây đệ quy fib(5) — fib(3) tính 2 lần, fib(2) tính 3 lần. Với n lớn, sự lặp lại phát triển theo cấp số mũ.</p>
+  <p>Memoisation cache fib(3) sau lần đầu → các lần sau tra O(1) → tổng O(n). Đây là tinh thần cốt lõi của DP.</p>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Worked Example 3 — House Robber (#198)</h2>
+  <p><strong>Đề:</strong> Mảng <code>nums[i]</code> = giá trị nhà thứ i. Không được cướp hai nhà liền kề. Tìm giá trị tối đa cướp được.</p>
+  <h3>Phân tích state</h3>
+  <p>State: <code>dp[i] = giá trị tối đa cướp được trong nums[0..i]</code>.</p>
+  <p>Recurrence — tại nhà i, có 2 lựa chọn:</p>
+  <ul>
+    <li><strong>Cướp nhà i</strong>: phải bỏ qua nhà i-1 → giá trị = dp[i-2] + nums[i].</li>
+    <li><strong>Bỏ qua nhà i</strong>: dp[i] = dp[i-1].</li>
+  </ul>
+  $$ dp[i] = \max(dp[i-1], \, dp[i-2] + \text{nums}[i]) $$
+  <pre><code>def rob(nums):
+    if not nums: return 0
+    if len(nums) == 1: return nums[0]
+    prev2 = nums[0]
+    prev1 = max(nums[0], nums[1])
+    for i in range(2, len(nums)):
+        cur = max(prev1, prev2 + nums[i])
+        prev2, prev1 = prev1, cur
+    return prev1</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(1)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 House Robber — Trace tay</h2>
+  <p><code>nums = [2, 7, 9, 3, 1]</code>. Kỳ vọng: 12 (nhà 1, 3, 5: 2+9+1, hoặc 2, 4: 7+3 = 10 — kết quả tối ưu là 2+9+1 = 12).</p>
+  <table class="trace-table">
+    <tr><th>i</th><th>nums[i]</th><th>prev2</th><th>prev1</th><th>cur = max(prev1, prev2+nums[i])</th></tr>
+    <tr><td>0</td><td>2</td><td>—</td><td>2</td><td>—</td></tr>
+    <tr><td>1</td><td>7</td><td>2</td><td>7</td><td>—</td></tr>
+    <tr><td>2</td><td>9</td><td>2</td><td>7</td><td>max(7, 2+9) = 11</td></tr>
+    <tr><td>3</td><td>3</td><td>7</td><td>11</td><td>max(11, 7+3) = 11</td></tr>
+    <tr><td>4</td><td>1</td><td>11</td><td>11</td><td>max(11, 11+1) = 12</td></tr>
+  </table>
+  <p>Trả 12 ✓. Đường: cướp nhà 0 (2) + nhà 2 (9) + nhà 4 (1) = 12.</p>
+  <div class="example">
+    <div class="example-label">Pattern "include or skip":</div>
+    Tại mỗi i, lựa chọn nhị phân (cướp hoặc bỏ qua) — DP take max. Pattern xuất hiện ở Best Time to Buy and Sell Stock series, Decode Ways, Paint House.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.6 ===== -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 Worked Example 4 — House Robber II (Circular) (#213)</h2>
+  <p><strong>Đề:</strong> Như #198 nhưng các nhà nối thành <em>vòng tròn</em> — nhà 0 và nhà n-1 liền kề.</p>
+  <h3>Mẹo: Chia thành 2 bài tuyến tính</h3>
+  <p>Vì nhà 0 và nhà n-1 không thể cướp cùng lúc, đáp án = max của:</p>
+  <ul>
+    <li>Cướp trên <code>nums[0..n-2]</code> (bao gồm 0, không có n-1).</li>
+    <li>Cướp trên <code>nums[1..n-1]</code> (không có 0, bao gồm n-1).</li>
+  </ul>
+  <pre><code>def rob(nums):
+    if len(nums) == 1: return nums[0]
+    def rob_linear(arr):
+        prev2 = prev1 = 0
+        for x in arr:
+            prev2, prev1 = prev1, max(prev1, prev2 + x)
+        return prev1
+    return max(rob_linear(nums[:-1]), rob_linear(nums[1:]))</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(1)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Tinh thần "tách bài tuần hoàn":</div>
+    Mọi bài tuần hoàn (circular) có thể chuyển về 2-3 bài tuyến tính qua việc cố định lựa chọn cho 1 phần tử. Pattern xuất hiện ở Maximum Sum Circular Subarray.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Linear DP</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: DP áp dụng được khi bài có 2 tính chất nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Mảng đã sort</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Optimal substructure + Overlapping subproblems</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Input lớn</button>
+    <div class="quiz-explanation">Optimal substructure: nghiệm bài lớn = combine nghiệm bài con. Overlapping: cùng bài con xuất hiện nhiều lần. Cả hai mới đảm bảo DP giảm exp → poly. Greedy có optimal substructure nhưng không có overlapping (mỗi state tính 1 lần).</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Bước khó nhất khi thiết kế DP là?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Code recurrence</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Định nghĩa state — dp[i] nghĩa là gì</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khởi tạo base case</button>
+    <div class="quiz-explanation">State đúng → recurrence tự nhiên. State sai → recurrence không có hoặc phức tạp. Trong phỏng vấn, dành ít nhất nửa thời gian cho bước này, đừng vội code.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Trong House Robber, recurrence <code>dp[i] = max(dp[i-1], dp[i-2] + nums[i])</code> phản ánh quyết định gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Tại nhà i: bỏ qua (dp[i-1]) hoặc cướp (dp[i-2] + nums[i])</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Sort lại</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Lấy trung bình</button>
+    <div class="quiz-explanation">Pattern "include or skip" — lựa chọn nhị phân tại mỗi bước. Khi cướp, không thể cướp i-1 (cấm liền kề), nên dùng dp[i-2]. Khi bỏ qua, kết quả vẫn là dp[i-1].</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. Knapsack-like DP</h1>
+  <div class="subtitle">"Choose or skip" với mỗi item — Coin Change, Word Break</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Choice DP — Pattern Knapsack</h2>
+  <div class="definition">
+    <div class="definition-label">Đặc trưng:</div>
+    Có một <em>tập items</em> và một <em>capacity</em>. Tìm cách chọn items thoả điều kiện capacity với tối ưu (giá trị max, số coins min, đếm số cách...).
+  </div>
+  <h3>Hai loại knapsack</h3>
+  <ul>
+    <li><strong>0/1 Knapsack</strong>: mỗi item chỉ được dùng 0 hoặc 1 lần.</li>
+    <li><strong>Unbounded Knapsack</strong>: mỗi item được dùng nhiều lần.</li>
+  </ul>
+  <h3>Tín hiệu nhận biết</h3>
+  <ul>
+    <li>"Tổng = target với items đã cho", "min number to reach target".</li>
+    <li>"Có thể chọn lại item không?" → quyết định 0/1 hay unbounded.</li>
+    <li>Coin Change (#322) — unbounded; Partition Equal Subset Sum (#416) — 0/1.</li>
+  </ul>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc thứ tự loop:</div>
+    <strong>Outer = items, Inner = capacity</strong> cho 0/1 knapsack (đếm cách).
+    <br><strong>Outer = capacity, Inner = items</strong> cho unbounded (đếm hoán vị).
+    Chi tiết ở 3.5.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Worked Example 5 — Coin Change (#322, Min Coins)</h2>
+  <p><strong>Đề:</strong> Mảng <code>coins</code> (mệnh giá), số <code>amount</code>. Tìm số coins <em>tối thiểu</em> để cấu thành amount. Mỗi coin có thể dùng nhiều lần. -1 nếu không thể.</p>
+  <h3>State design</h3>
+  <p><code>dp[i] = số coins tối thiểu để cấu thành i</code>. Base: <code>dp[0] = 0</code>.</p>
+  <p>Recurrence: với mỗi coin, nếu <code>i ≥ coin</code>, có thể dùng coin đó:</p>
+  $$ dp[i] = \min_{c \in \text{coins}} \{ dp[i - c] + 1 \} $$
+  <pre><code>def coinChange(coins, amount):
+    INF = amount + 1                       # giá trị "không thể đạt"
+    dp = [INF] * (amount + 1)
+    dp[0] = 0
+    for i in range(1, amount + 1):
+        for c in coins:
+            if c &lt;= i:
+                dp[i] = min(dp[i], dp[i - c] + 1)
+    return dp[amount] if dp[amount] != INF else -1</code></pre>
+  <p>Time <strong>O(amount × len(coins))</strong>, Space <strong>O(amount)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Coin Change — Trace tay</h2>
+  <p><code>coins = [1, 2, 5]</code>, <code>amount = 11</code>. Kỳ vọng: 3 (5+5+1).</p>
+  <table class="trace-table">
+    <tr><th>i</th><th>dp[i] = min(dp[i-1]+1, dp[i-2]+1, dp[i-5]+1)</th><th>Kết quả</th></tr>
+    <tr><td>0</td><td>—</td><td>0</td></tr>
+    <tr><td>1</td><td>min(dp[0]+1) = 1</td><td>1</td></tr>
+    <tr><td>2</td><td>min(dp[1]+1, dp[0]+1) = 1</td><td>1</td></tr>
+    <tr><td>3</td><td>min(dp[2]+1, dp[1]+1) = 2</td><td>2</td></tr>
+    <tr><td>4</td><td>min(dp[3]+1, dp[2]+1) = 2</td><td>2</td></tr>
+    <tr><td>5</td><td>min(dp[4]+1, dp[3]+1, dp[0]+1) = 1</td><td>1</td></tr>
+    <tr><td>6</td><td>min(dp[5]+1, dp[4]+1, dp[1]+1) = 2</td><td>2</td></tr>
+    <tr><td>7</td><td>min(...) = 2 (5+2)</td><td>2</td></tr>
+    <tr><td>...</td><td>...</td><td>...</td></tr>
+    <tr><td>10</td><td>min(...) = 2 (5+5)</td><td>2</td></tr>
+    <tr><td>11</td><td>min(dp[10]+1, dp[9]+1, dp[6]+1) = 3</td><td>3 ✓</td></tr>
+  </table>
+  <p>Đường: 11 = 5 + 5 + 1 → 3 coins.</p>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Worked Example 6 — Coin Change 2 (#518, Number of Ways)</h2>
+  <p><strong>Đề:</strong> Mảng <code>coins</code>, <code>amount</code>. Đếm <em>số cách</em> cấu thành amount. Mỗi coin dùng nhiều lần. Combinations (không quan tâm thứ tự).</p>
+  <pre><code>def change(amount, coins):
+    dp = [0] * (amount + 1)
+    dp[0] = 1                              # 1 cách: không dùng coin nào
+    for c in coins:                        # OUTER: coins
+        for i in range(c, amount + 1):     # INNER: amount
+            dp[i] += dp[i - c]
+    return dp[amount]</code></pre>
+  <h3>Trace với <code>coins = [1, 2, 5]</code>, <code>amount = 5</code></h3>
+  <table class="trace-table">
+    <tr><th>Sau</th><th>dp[0]</th><th>dp[1]</th><th>dp[2]</th><th>dp[3]</th><th>dp[4]</th><th>dp[5]</th></tr>
+    <tr><td>Init</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>Coin 1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+    <tr><td>Coin 2</td><td>1</td><td>1</td><td>2</td><td>2</td><td>3</td><td>3</td></tr>
+    <tr><td>Coin 5</td><td>1</td><td>1</td><td>2</td><td>2</td><td>3</td><td>4</td></tr>
+  </table>
+  <p>Kết quả: 4 cách (5; 2+2+1; 2+1+1+1; 1+1+1+1+1).</p>
+</div>
+
+<!-- ===== SLIDE 3.5 ===== -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 #322 vs #518 — Khác biệt loop order</h2>
+  <p>Hai bài cùng pattern unbounded knapsack nhưng <strong>thứ tự loop khác nhau</strong>:</p>
+  <table>
+    <tr><th>Bài</th><th>Outer loop</th><th>Inner loop</th><th>Lý do</th></tr>
+    <tr><td>#322 (min coins)</td><td>amount</td><td>coins</td><td>Mỗi i, thử mọi coin → tìm min</td></tr>
+    <tr><td>#518 (đếm cách)</td><td>coins</td><td>amount</td><td>Tránh đếm trùng cùng combination</td></tr>
+  </table>
+  <h3>Vì sao #518 phải outer = coins?</h3>
+  <p>Nếu đảo (outer = amount, inner = coins), sẽ đếm <em>permutations</em> (1+2 và 2+1 là 2 cách khác).
+  Outer = coins thì khi xử lý coin 2, ta dùng dp[i-2] đã là kết quả "chỉ dùng coin 1 và 2", không có coin 5 — đảm bảo combination unique.</p>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc:</div>
+    Bài đếm <strong>combinations</strong> (không quan tâm thứ tự) → <em>outer = items, inner = capacity</em>.
+    <br>Bài đếm <strong>permutations</strong> (thứ tự khác nhau) → <em>outer = capacity, inner = items</em>.
+    <br>Bài tối ưu min/max → loop order thường không quan trọng (như #322).
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.6 ===== -->
+<div class="slide">
+  <div class="slide-number">3.6</div>
+  <h2>3.6 Worked Example 7 — Word Break (#139)</h2>
+  <p><strong>Đề:</strong> String <code>s</code>, <code>wordDict</code>. Trả True nếu có thể chia s thành chuỗi từ trong dict (cho phép dùng lại).</p>
+  <p><strong>Ví dụ:</strong> s = "leetcode", wordDict = ["leet", "code"] → True.</p>
+  <h3>State</h3>
+  <p><code>dp[i] = True</code> nếu <code>s[0..i-1]</code> có thể phân chia.</p>
+  <p>Recurrence: <code>dp[i] = True</code> nếu tồn tại j &lt; i sao cho <code>dp[j] = True</code> và <code>s[j..i-1]</code> ∈ wordDict.</p>
+  <pre><code>def wordBreak(s, wordDict):
+    word_set = set(wordDict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break                      # tìm thấy một cách là đủ
+    return dp[n]</code></pre>
+  <p>Time <strong>O(n² × L)</strong> (L = chi phí slice + lookup), Space <strong>O(n)</strong>.</p>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Knapsack DP</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Coin Change 2 (#518), vì sao outer = coins, không phải amount?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để chạy nhanh hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Tránh đếm permutations — combinations là không quan tâm thứ tự (1+2 và 2+1 là CÙNG combination)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì coins ngắn hơn</button>
+    <div class="quiz-explanation">Outer = coins giúp đảm bảo "khi xử lý coin c, kết quả chỉ dùng các coin 0..c-1". Đảo lại sẽ đếm cùng combination ở các thứ tự khác nhau như cách khác.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Bài Word Break có thể giải bằng backtracking nhưng tại sao DP nhanh hơn?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Cùng prefix s[0..i-1] có thể được kiểm tra qua nhiều con đường — overlapping subproblems</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) DP luôn nhanh hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì dùng set</button>
+    <div class="quiz-explanation">Backtracking thử mọi cách phân chia → exp time. Cùng "đến vị trí i được không" có thể xảy ra qua nhiều đường. DP cache kết quả này → mỗi i chỉ tính 1 lần.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Subsequence DP</h1>
+  <div class="subtitle">LIS, Maximum Subarray, State Machine DP</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Subsequence DP — Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Đặc trưng:</div>
+    Bài có dạng "tìm subsequence (không liên tiếp) hoặc subarray (liên tiếp) tốt nhất". State đại diện cho "đang đứng ở phần tử thứ i".
+  </div>
+  <h3>Tín hiệu</h3>
+  <ul>
+    <li>"Longest increasing/common subsequence".</li>
+    <li>"Maximum subarray sum".</li>
+    <li>"Number of ways with constraint at each step".</li>
+  </ul>
+  <h3>Hai loại state design phổ biến</h3>
+  <ol>
+    <li><strong>dp[i] = best ending at i</strong>: phần tử cuối cùng là i. Cần lấy max(dp) cuối cùng. Áp dụng cho LIS, Maximum Subarray.</li>
+    <li><strong>dp[i] = best in prefix [0..i]</strong>: bao gồm bất kỳ phần tử nào trong tiền tố. Ans = dp[n-1]. Áp dụng cho House Robber.</li>
+  </ol>
+  <p>Khi nào chọn cái nào? Nếu recurrence cần biết "phần tử cuối là gì" (như LIS so sánh giá trị) → loại 1. Nếu không cần → loại 2.</p>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Worked Example 8 — Longest Increasing Subsequence (LIS)</h2>
+  <p><strong>Đề (LeetCode #300):</strong> Mảng <code>nums</code>. Tìm độ dài subsequence tăng dài nhất (không nhất thiết liên tiếp).</p>
+  <p><strong>Ví dụ:</strong> <code>[10, 9, 2, 5, 3, 7, 101, 18]</code> → 4 (chuỗi [2,3,7,101] hoặc [2,5,7,18]).</p>
+  <h3>Approach DP O(n²)</h3>
+  <p>State: <code>dp[i] = độ dài LIS kết thúc tại i</code>.</p>
+  <p>Recurrence: <code>dp[i] = max(dp[j]) + 1</code> với j &lt; i và nums[j] &lt; nums[i].</p>
+  <pre><code>def lengthOfLIS(nums):
+    n = len(nums)
+    dp = [1] * n
+    for i in range(1, n):
+        for j in range(i):
+            if nums[j] &lt; nums[i]:
+                dp[i] = max(dp[i], dp[j] + 1)
+    return max(dp)</code></pre>
+  <p>Time <strong>O(n²)</strong>, Space <strong>O(n)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 LIS — Tối ưu O(n log n) bằng Patience Sorting</h2>
+  <p>Khi n = 10⁵, O(n²) = 10¹⁰ → TLE. Cần O(n log n).</p>
+  <h3>Ý tưởng</h3>
+  <p>Duy trì mảng <code>tails</code> với <code>tails[k]</code> = phần tử nhỏ nhất có thể là cuối của subsequence dài k+1.</p>
+  <p>Với mỗi <code>x</code>: tìm vị trí trong tails để thay (lower_bound):</p>
+  <ul>
+    <li>Nếu x lớn hơn mọi phần tử trong tails → append (tăng độ dài LIS).</li>
+    <li>Ngược lại → thay phần tử đầu tiên ≥ x.</li>
+  </ul>
+  <pre><code>from bisect import bisect_left
+def lengthOfLIS(nums):
+    tails = []
+    for x in nums:
+        idx = bisect_left(tails, x)
+        if idx == len(tails):
+            tails.append(x)
+        else:
+            tails[idx] = x
+    return len(tails)</code></pre>
+  <p>Time <strong>O(n log n)</strong>, Space <strong>O(n)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Lưu ý:</div>
+    <code>tails</code> KHÔNG phải LIS thực sự — chỉ đúng độ dài. Để truy hồi LIS thực, cần lưu thêm parent pointers — phức tạp hơn.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.4 ===== -->
+<div class="slide">
+  <div class="slide-number">4.4</div>
+  <h2>4.4 Worked Example 9 — Maximum Subarray (Kadane's)</h2>
+  <p><strong>Đề (LeetCode #53):</strong> Mảng <code>nums</code>. Tìm subarray liên tiếp có tổng lớn nhất.</p>
+  <h3>Kadane's Algorithm — DP O(n) O(1)</h3>
+  <p>State: <code>dp[i] = tổng max của subarray kết thúc tại i</code>.</p>
+  <p>Recurrence: tại i, hoặc kế tục subarray cũ (dp[i-1] + nums[i]) hoặc bắt đầu mới (nums[i]):</p>
+  $$ dp[i] = \max(dp[i-1] + \text{nums}[i], \, \text{nums}[i]) $$
+  <pre><code>def maxSubArray(nums):
+    cur = best = nums[0]
+    for x in nums[1:]:
+        cur = max(x, cur + x)
+        best = max(best, cur)
+    return best</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(1)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Tinh thần "tiếp tục hoặc bắt đầu mới":</div>
+    Nếu <code>cur + x &lt; x</code> nghĩa là cur âm — đang "kéo" tổng xuống. Bắt đầu mới từ x. Đây là pattern xuất hiện ở nhiều bài "max sum subarray" với biến thể.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.5 ===== -->
+<div class="slide">
+  <div class="slide-number">4.5</div>
+  <h2>4.5 Worked Example 10 — Best Time to Buy and Sell Stock with Cooldown</h2>
+  <p><strong>Đề (LeetCode #309):</strong> Mảng <code>prices</code>. Mua/bán cổ phiếu nhiều lần. Sau khi bán, phải nghỉ 1 ngày trước khi mua lại. Tối đa lợi nhuận.</p>
+  <h3>State Machine DP</h3>
+  <p>3 trạng thái có thể tại mỗi ngày:</p>
+  <ul>
+    <li><code>hold[i]</code> — đang giữ cổ phiếu cuối ngày i.</li>
+    <li><code>sold[i]</code> — vừa bán hôm nay (ngày i).</li>
+    <li><code>rest[i]</code> — không giữ + không vừa bán.</li>
+  </ul>
+  $$ \text{hold}[i] = \max(\text{hold}[i-1], \text{rest}[i-1] - \text{prices}[i]) $$
+  $$ \text{sold}[i] = \text{hold}[i-1] + \text{prices}[i] $$
+  $$ \text{rest}[i] = \max(\text{rest}[i-1], \text{sold}[i-1]) $$
+  <pre><code>def maxProfit(prices):
+    if not prices: return 0
+    hold = -prices[0]; sold = 0; rest = 0
+    for i in range(1, len(prices)):
+        new_hold = max(hold, rest - prices[i])
+        new_sold = hold + prices[i]
+        new_rest = max(rest, sold)
+        hold, sold, rest = new_hold, new_sold, new_rest
+    return max(sold, rest)</code></pre>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.Q</div>
+  <h2>Knowledge Check — Subsequence DP</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong LIS, vì sao state là "dp[i] = LIS kết thúc TẠI i" thay vì "dp[i] = LIS trong prefix [0..i]"?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để code ngắn hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Recurrence cần biết "phần tử cuối là gì" để so sánh nums[j] &lt; nums[i]</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để dễ debug</button>
+    <div class="quiz-explanation">Định nghĩa "kết thúc tại i" cho phép so sánh nums[j] &lt; nums[i]. Định nghĩa "trong prefix" thì không biết phần tử cuối → không kiểm tra được tăng dần. Đáp án cuối là max(dp).</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Kadane's Algorithm O(n) O(1) áp dụng tinh thần gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Tại mỗi i: tiếp tục subarray cũ (cur + x) hoặc bắt đầu mới (x)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Sort lại</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Sliding window</button>
+    <div class="quiz-explanation">Kadane = DP với state máy. Khi cur âm → "kéo" tổng xuống → reset. Khi cur dương → tiếp tục có lợi. Pattern này tổng quát cho bài subarray sum với biến thể.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: State machine DP (như Cooldown) phù hợp khi nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Khi input lớn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi tại mỗi bước có nhiều trạng thái có thể (hold/sold/rest), mỗi trạng thái có recurrence riêng</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Luôn dùng</button>
+    <div class="quiz-explanation">State machine DP có nhiều state cho mỗi i (hold, sold, rest), mỗi state có công thức riêng. Áp dụng cho stock series, escape problems, knapsack với constraints phức tạp.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5 ===== -->
+<div class="slide">
+  <div class="slide-number">5.0</div>
+  <h2>5.0 Decision Tree — 1D DP</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Pattern</th></tr>
+    <tr><td>"số cách lên bậc/đếm path"</td><td>Linear DP: dp[i] = dp[i-1] + dp[i-2]</td></tr>
+    <tr><td>"max/min với constraint liền kề"</td><td>House Robber pattern: dp[i] = max(dp[i-1], dp[i-2]+x)</td></tr>
+    <tr><td>"vòng tròn / circular"</td><td>Tách thành 2 bài tuyến tính</td></tr>
+    <tr><td>"min coins/items để đạt target"</td><td>Coin Change (#322): dp[i] = min(dp[i-c]+1)</td></tr>
+    <tr><td>"đếm số cách combinations"</td><td>Coin Change 2 (#518): outer items, inner capacity</td></tr>
+    <tr><td>"đếm số cách permutations"</td><td>Climbing Stairs / Combination Sum IV</td></tr>
+    <tr><td>"có thể phân chia / break"</td><td>Word Break: dp[i] = OR(dp[j] AND s[j:i] valid)</td></tr>
+    <tr><td>"longest increasing/non-decreasing"</td><td>LIS: O(n²) DP hoặc O(n log n) patience</td></tr>
+    <tr><td>"max subarray sum"</td><td>Kadane's: O(n) O(1)</td></tr>
+    <tr><td>"buy/sell stock với constraint"</td><td>State Machine DP (hold/sold/rest)</td></tr>
+  </table>
+  <h3>Quy trình code DP</h3>
+  <ol>
+    <li>Định nghĩa state.</li>
+    <li>Viết recurrence (kèm base case).</li>
+    <li>Cài memoisation trước (dễ hơn).</li>
+    <li>Convert tabulation nếu cần tối ưu space.</li>
+    <li>Tối ưu O(1) space nếu chỉ dùng vài state cuối.</li>
+  </ol>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>Tổng kết Tuần 12</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>DP fundamentals</strong>: optimal substructure + overlapping subproblems; memoisation vs tabulation.</li>
+    <li><strong>Quy trình 5 bước</strong>: state → recurrence → base case → thứ tự tính → tối ưu space.</li>
+    <li><strong>Linear DP</strong>: Climbing Stairs, Fibonacci, House Robber I/II — tối ưu O(1) space.</li>
+    <li><strong>Knapsack-like DP</strong>: Coin Change min/count, Word Break — quy tắc loop order combinations vs permutations.</li>
+    <li><strong>Subsequence DP</strong>: LIS O(n²) và O(n log n) patience sorting; Kadane's O(n) O(1).</li>
+    <li><strong>State Machine DP</strong>: Stock with Cooldown — nhiều state mỗi bước.</li>
+    <li><strong>Cầu nối từ Backtracking</strong>: thêm <code>@lru_cache</code> để biến exp → poly khi có overlapping.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #70 — Climbing Stairs</li>
+    <li>LeetCode #509 — Fibonacci Number</li>
+    <li>LeetCode #198 — House Robber</li>
+    <li>LeetCode #213 — House Robber II</li>
+    <li>LeetCode #322 — Coin Change (min)</li>
+    <li>LeetCode #518 — Coin Change 2 (count)</li>
+    <li>LeetCode #139 — Word Break</li>
+    <li>LeetCode #300 — Longest Increasing Subsequence (cả 2 approach)</li>
+    <li>LeetCode #53 — Maximum Subarray (Kadane's)</li>
+    <li>LeetCode #309 — Best Time to Buy and Sell Stock with Cooldown</li>
+    <li>LeetCode #91 — Decode Ways</li>
+    <li>LeetCode #152 — Maximum Product Subarray</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 13 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>2D DP — Edit Distance, LCS, Knapsack 0/1, Interval DP</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Mở rộng từ 1D sang 2D state. Học thiết kế state (i, j) cho hai chuỗi (Edit Distance, LCS, Distinct Subsequences),
+    knapsack 0/1 với capacity (Partition Equal Subset Sum), interval DP (Burst Balloons, Matrix Chain Multiplication).
+    Tuần cuối cùng về thuật toán — Tuần 14 sẽ tổng hợp với mock interviews.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 12 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
 </body>
 </html>
-
