@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 6 — Stack &amp; Queue, Monotonic Stack</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 6</div>
+  <h1>Stack &amp; Queue,<br>Monotonic Stack</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Hai cấu trúc dữ liệu cơ bản với ứng dụng nâng cao. <em>Monotonic Stack</em> là pattern then chốt
+    giải bài "next greater/smaller" trong O(n).
+  </p>
+  <div class="meta">9 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng Stack &amp; Queue</h1>
+  <div class="subtitle">Hai cấu trúc, hai triết lý: LIFO vs FIFO</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Stack vs Queue — Hai triết lý</h2>
+  <div class="illustration">
+    <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg">
+      <!-- Stack -->
+      <text x="80" y="25" font-size="14" font-weight="bold" fill="#1a1a1a" text-anchor="middle">STACK (LIFO)</text>
+      <rect x="40" y="40" width="80" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+      <rect x="40" y="80" width="80" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+      <rect x="40" y="120" width="80" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+      <rect x="40" y="160" width="80" height="40" fill="#1a1a1a"/>
+      <text x="80" y="65" font-size="14" text-anchor="middle">D (top)</text>
+      <text x="80" y="105" font-size="14" text-anchor="middle">C</text>
+      <text x="80" y="145" font-size="14" text-anchor="middle">B</text>
+      <text x="80" y="185" font-size="14" text-anchor="middle" fill="#fff">A (bottom)</text>
+      <text x="160" y="62" font-size="13" fill="#3b5998">↑ push/pop</text>
+      <text x="160" y="80" font-size="11" fill="#666">Last In, First Out</text>
+
+      <!-- Queue -->
+      <text x="430" y="25" font-size="14" font-weight="bold" fill="#1a1a1a" text-anchor="middle">QUEUE (FIFO)</text>
+      <rect x="280" y="80" width="60" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+      <rect x="340" y="80" width="60" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+      <rect x="400" y="80" width="60" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+      <rect x="460" y="80" width="60" height="40" fill="#1a1a1a"/>
+      <text x="310" y="105" font-size="14" text-anchor="middle">D</text>
+      <text x="370" y="105" font-size="14" text-anchor="middle">C</text>
+      <text x="430" y="105" font-size="14" text-anchor="middle">B</text>
+      <text x="490" y="105" font-size="14" text-anchor="middle" fill="#fff">A</text>
+      <text x="285" y="145" font-size="13" fill="#3b5998">enqueue ↓</text>
+      <text x="465" y="145" font-size="13" fill="#c0392b">↑ dequeue</text>
+      <text x="370" y="180" font-size="11" fill="#666" text-anchor="middle">First In, First Out</text>
+    </svg>
+  </div>
+  <h3>Khi nào dùng cái nào?</h3>
+  <ul>
+    <li><strong>Stack</strong>: matching cặp, recursion thay thế, monotonic sequence, undo history.</li>
+    <li><strong>Queue</strong>: BFS, lập lịch FIFO, level-order traversal trên cây.</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Stack trong Python — list</h2>
+  <p>Python dùng <code>list</code> làm stack qua <code>append</code> và <code>pop</code>:</p>
+  <pre><code>stack = []
+stack.append(x)        # push      O(1) amortised
+stack.pop()            # pop top   O(1)
+stack[-1]              # peek      O(1)
+len(stack) == 0        # check empty</code></pre>
+  <h3>Bẫy phổ biến</h3>
+  <pre><code>stack[0]               # SAI — đây là bottom, không phải top
+stack.pop(0)           # SAI — pop ở đầu là O(n), không phải O(1)</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc:</div>
+    Khi dùng list làm stack, <em>luôn</em> thao tác ở cuối list (<code>append</code>, <code>pop</code>, <code>[-1]</code>).
+    Nếu cần thao tác cả hai đầu, dùng <code>collections.deque</code> để giữ O(1).
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Queue trong Python — collections.deque</h2>
+  <p><code>list.pop(0)</code> là O(n) → không phù hợp cho queue. Dùng <code>deque</code>:</p>
+  <pre><code>from collections import deque
+q = deque()
+q.append(x)            # enqueue   O(1)
+q.popleft()            # dequeue   O(1)
+q[0]                   # front     O(1)
+
+# deque cũng hỗ trợ thao tác hai đầu:
+q.appendleft(x)        # O(1)
+q.pop()                # O(1) — pop ở phải</code></pre>
+  <h3>Tại sao deque mạnh?</h3>
+  <p>Deque cài đặt bằng <em>doubly linked list của block</em>. Mọi thao tác ở hai đầu là O(1).
+  Đây cũng là cấu trúc dùng cho <strong>Monotonic Deque</strong> (Phần 4).</p>
+  <div class="example">
+    <div class="example-label">Khi nào dùng list, khi nào dùng deque?</div>
+    list: stack thuần (chỉ thêm/bớt ở cuối). deque: queue, hai đầu, sliding window. Khi nghi ngờ → deque.
+    Deque không có nhược điểm gì so với list khi chỉ dùng làm stack.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Bảng tổng hợp Big-O</h2>
+  <table>
+    <tr><th>Thao tác</th><th><code>list</code> (stack)</th><th><code>deque</code> (queue/two-end)</th></tr>
+    <tr><td>append (cuối)</td><td>O(1) amortised</td><td>O(1)</td></tr>
+    <tr><td>pop (cuối)</td><td>O(1)</td><td>O(1)</td></tr>
+    <tr><td>appendleft (đầu)</td><td>—</td><td>O(1)</td></tr>
+    <tr><td>popleft (đầu)</td><td>O(n) — list.pop(0)</td><td>O(1)</td></tr>
+    <tr><td>Truy cập index giữa</td><td>O(1)</td><td>O(n)</td></tr>
+    <tr><td>Bộ nhớ tương đối</td><td>Thấp</td><td>Cao hơn ~30%</td></tr>
+  </table>
+  <p>Đa số bài thuật toán không quan tâm "truy cập index giữa" — nên deque ổn cho cả stack và queue.
+  Tuy nhiên, vì <code>list</code> nhẹ hơn, đa số code Python idiom dùng <code>list</code> cho stack
+  thuần và <code>deque</code> chỉ khi cần thao tác hai đầu.</p>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Stack — Ứng dụng cơ bản</h1>
+  <div class="subtitle">Matching cặp, design data structure, evaluate biểu thức</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Pattern: Matching Pairs với Stack</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình tổng quát:</div>
+    Khi bài có <em>cấu trúc lồng nhau</em> (ngoặc, HTML tags, biểu thức), stack là lựa chọn tự nhiên.
+    Push khi gặp "mở", pop khi gặp "đóng" và kiểm tra khớp.
+  </div>
+  <h3>Ba câu hỏi cần trả lời</h3>
+  <ol>
+    <li>Cái gì coi là "mở" → push.</li>
+    <li>Cái gì coi là "đóng" → pop và kiểm tra.</li>
+    <li>Trạng thái cuối hợp lệ là gì? (thường: stack rỗng).</li>
+  </ol>
+  <p>Pattern này áp dụng cho: parentheses, brackets, HTML tags, function call simulation, undo/redo,
+  expression evaluation.</p>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 1 — Valid Parentheses</h2>
+  <p><strong>Đề (LeetCode #20):</strong> Cho string chỉ gồm <code>()[]{}</code>. Trả True nếu mọi ngoặc khớp đúng.</p>
+  <pre><code>def isValid(s):
+    pair = {')': '(', ']': '[', '}': '{'}
+    stack = []
+    for ch in s:
+        if ch in '([{':
+            stack.append(ch)
+        else:
+            if not stack or stack[-1] != pair[ch]:
+                return False
+            stack.pop()
+    return len(stack) == 0</code></pre>
+  <h3>Trace với <code>"({[]})"</code></h3>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>ch</th><th>Hành động</th><th>Stack sau</th></tr>
+    <tr><td>1</td><td>(</td><td>push</td><td>[(]</td></tr>
+    <tr><td>2</td><td>{</td><td>push</td><td>[(, {]</td></tr>
+    <tr><td>3</td><td>[</td><td>push</td><td>[(, {, []</td></tr>
+    <tr><td>4</td><td>]</td><td>top = [, khớp → pop</td><td>[(, {]</td></tr>
+    <tr><td>5</td><td>}</td><td>top = {, khớp → pop</td><td>[(]</td></tr>
+    <tr><td>6</td><td>)</td><td>top = (, khớp → pop</td><td>[]</td></tr>
+  </table>
+  <p>Stack rỗng → True. Time <strong>O(n)</strong>, Space <strong>O(n)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Worked Example 2 — Min Stack (Design)</h2>
+  <p><strong>Đề (LeetCode #155):</strong> Thiết kế stack hỗ trợ thêm <code>getMin()</code> trong O(1).</p>
+  <h3>Thách thức</h3>
+  <p>Stack thường có push/pop/top O(1), nhưng tìm min là O(n). Làm sao biến min cũng thành O(1)?</p>
+  <h3>Approach: Stack phụ lưu min</h3>
+  <pre><code>class MinStack:
+    def __init__(self):
+        self.stack = []
+        self.min_stack = []           # đỉnh = min hiện tại
+
+    def push(self, x):
+        self.stack.append(x)
+        m = min(x, self.min_stack[-1] if self.min_stack else x)
+        self.min_stack.append(m)
+
+    def pop(self):
+        self.stack.pop()
+        self.min_stack.pop()
+
+    def top(self):
+        return self.stack[-1]
+
+    def getMin(self):
+        return self.min_stack[-1]</code></pre>
+  <p>Mọi thao tác <strong>O(1)</strong>. Space <strong>O(n)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Bài học design:</div>
+    Khi cần truy vấn O(1) một thuộc tính tổng hợp (min, max, sum) trên stack → giữ một stack phụ song song.
+    Đây là trade-off space O(n) lấy time O(1) — tinh thần xuyên suốt khoá học.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Worked Example 3 — Evaluate Reverse Polish Notation</h2>
+  <p><strong>Đề (LeetCode #150):</strong> Tính giá trị biểu thức RPN.</p>
+  <p><strong>Ví dụ:</strong> <code>["2","1","+","3","*"]</code> = <code>(2+1) * 3 = 9</code>.</p>
+  <pre><code>def evalRPN(tokens):
+    stack = []
+    ops = {'+', '-', '*', '/'}
+    for t in tokens:
+        if t in ops:
+            b = stack.pop()
+            a = stack.pop()
+            if t == '+': stack.append(a + b)
+            elif t == '-': stack.append(a - b)
+            elif t == '*': stack.append(a * b)
+            else: stack.append(int(a / b))     # Python truncate khác C++
+        else:
+            stack.append(int(t))
+    return stack[0]</code></pre>
+  <h3>Quan sát</h3>
+  <p>RPN là dạng "tự nhiên" cho stack: số → push, toán tử → pop 2 số, tính, push lại. Không có ngoặc, không có ưu tiên — đơn giản hoá hoàn toàn.</p>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(n)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Bẫy chia số nguyên:</div>
+    Đề yêu cầu chia <em>truncate về 0</em> (như C). Python <code>//</code> chia làm tròn xuống cho số âm
+    (−7 // 2 = −4 thay vì −3). Dùng <code>int(a / b)</code> để truncate đúng.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Stack Basics</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Khi nào pattern matching pairs với stack phù hợp?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Khi cần sort dữ liệu</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi đề có cấu trúc lồng nhau (ngoặc, tags, biểu thức nested)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khi cần truy cập ngẫu nhiên</button>
+    <div class="quiz-explanation">Stack tự nhiên hợp với cấu trúc lồng vì LIFO khớp với "đóng cái mở gần nhất". Ngoặc, HTML tags, function calls đều có cấu trúc này.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Min Stack giữ getMin() ở O(1) bằng kỹ thuật gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Sort lại stack mỗi lần push</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Stack phụ song song lưu min hiện tại tại mỗi tầng</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Heap để tra min</button>
+    <div class="quiz-explanation">Stack phụ có cùng kích thước với stack chính. Khi push x, push min(x, current_min) vào stack phụ. Pop đồng thời. Truy vấn min = đỉnh stack phụ.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. Monotonic Stack</h1>
+  <div class="subtitle">Pattern then chốt cho "next greater/smaller" — biến O(n²) thành O(n)</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Monotonic Stack là gì?</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa:</div>
+    <strong>Monotonic Stack</strong> là stack mà các phần tử bên trong luôn theo một thứ tự đơn điệu
+    — tăng (monotonic increasing) hoặc giảm (monotonic decreasing) từ đáy lên đỉnh.
+    Tính chất này được duy trì bằng cách: trước khi push x, pop hết các phần tử <em>vi phạm</em> thứ tự.
+  </div>
+  <h3>Hai biến thể</h3>
+  <table>
+    <tr><th>Biến thể</th><th>Quy tắc</th><th>Dùng cho</th></tr>
+    <tr><td>Decreasing (đỉnh nhỏ nhất)</td><td>Pop khi top &lt; x</td><td>Next Greater Element</td></tr>
+    <tr><td>Increasing (đỉnh lớn nhất)</td><td>Pop khi top &gt; x</td><td>Next Smaller Element</td></tr>
+  </table>
+  <h3>Mỗi phần tử push 1 lần, pop tối đa 1 lần</h3>
+  <p>→ Tổng số thao tác qua toàn thuật toán ≤ 2n → <strong>O(n)</strong> (phân tích amortised).</p>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Tín hiệu nhận biết Monotonic Stack</h2>
+  <p>Khi đọc đề, các "mùi" sau gợi ý mạnh:</p>
+  <table>
+    <tr><th>Cụm từ trong đề</th><th>Pattern</th></tr>
+    <tr><td>"next greater element"</td><td>Decreasing stack</td></tr>
+    <tr><td>"next smaller element"</td><td>Increasing stack</td></tr>
+    <tr><td>"days until warmer temperature"</td><td>Decreasing stack</td></tr>
+    <tr><td>"largest rectangle in histogram"</td><td>Increasing stack (boundary trick)</td></tr>
+    <tr><td>"trapping rain water" (O(1) variant)</td><td>Two pointer (hoặc Monotonic)</td></tr>
+    <tr><td>"sliding window max/min"</td><td>Monotonic Deque (Phần 4)</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc:</div>
+    Nếu bài có thể giải brute force O(n²) bằng cách "với mỗi i, tìm j &gt; i thoả X" → 80% là Monotonic Stack.
+    Bí quyết: tự hỏi "với mỗi phần tử, mình đang tìm phần tử lớn/nhỏ hơn gần nhất theo hướng nào?"
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Worked Example 4 — Daily Temperatures</h2>
+  <p><strong>Đề (LeetCode #739):</strong> Mảng <code>temps</code>. Trả mảng <code>res</code> với
+  <code>res[i]</code> = số ngày phải chờ đến ngày có nhiệt độ <em>cao hơn</em>. 0 nếu không có.</p>
+  <p><strong>Ví dụ:</strong> <code>[73,74,75,71,69,72,76,73]</code> → <code>[1,1,4,2,1,1,0,0]</code>.</p>
+  <h3>Brute force</h3>
+  <p>Với mỗi i, scan j &gt; i tìm temp lớn hơn → O(n²). Với n = 10⁵ → TLE.</p>
+  <h3>Monotonic Stack (Decreasing)</h3>
+  <pre><code>def dailyTemperatures(temps):
+    res = [0] * len(temps)
+    stack = []                          # lưu index
+    for i, t in enumerate(temps):
+        while stack and temps[stack[-1]] &lt; t:
+            j = stack.pop()
+            res[j] = i - j              # tìm thấy "next greater"
+        stack.append(i)
+    return res</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(n)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Daily Temperatures — Trace tay</h2>
+  <p><code>temps = [73, 74, 75, 71, 69, 72, 76, 73]</code></p>
+  <table class="trace-table">
+    <tr><th>i</th><th>t</th><th>Stack trước</th><th>Pop &amp; gán</th><th>Stack sau push</th><th>res sau</th></tr>
+    <tr><td>0</td><td>73</td><td>[]</td><td>—</td><td>[0]</td><td>[0,0,0,0,0,0,0,0]</td></tr>
+    <tr><td>1</td><td>74</td><td>[0]</td><td>pop 0, res[0]=1</td><td>[1]</td><td>[1,0,0,0,0,0,0,0]</td></tr>
+    <tr><td>2</td><td>75</td><td>[1]</td><td>pop 1, res[1]=1</td><td>[2]</td><td>[1,1,0,0,0,0,0,0]</td></tr>
+    <tr><td>3</td><td>71</td><td>[2]</td><td>—</td><td>[2,3]</td><td>[1,1,0,0,0,0,0,0]</td></tr>
+    <tr><td>4</td><td>69</td><td>[2,3]</td><td>—</td><td>[2,3,4]</td><td>[1,1,0,0,0,0,0,0]</td></tr>
+    <tr><td>5</td><td>72</td><td>[2,3,4]</td><td>pop 4 (res[4]=1), pop 3 (res[3]=2)</td><td>[2,5]</td><td>[1,1,0,2,1,0,0,0]</td></tr>
+    <tr><td>6</td><td>76</td><td>[2,5]</td><td>pop 5 (res[5]=1), pop 2 (res[2]=4)</td><td>[6]</td><td>[1,1,4,2,1,1,0,0]</td></tr>
+    <tr><td>7</td><td>73</td><td>[6]</td><td>—</td><td>[6,7]</td><td>[1,1,4,2,1,1,0,0]</td></tr>
+  </table>
+  <p>Index còn trên stack ([6,7]) là không có "next greater" → res = 0.</p>
+</div>
+
+<!-- ===== SLIDE 3.5 ===== -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 Vì sao Monotonic Stack là O(n)? Phân tích amortised</h2>
+  <p>Lo lắng: vòng <code>while</code> bên trong <code>for</code> có thể tốn nhiều bước → tổng có thể O(n²)?</p>
+  <h3>Lập luận</h3>
+  <p>Mỗi index <code>i</code>:</p>
+  <ul>
+    <li>Được <strong>push lên stack đúng 1 lần</strong>.</li>
+    <li>Được <strong>pop khỏi stack tối đa 1 lần</strong>.</li>
+  </ul>
+  <p>Tổng số thao tác push + pop qua n vòng for ≤ <code>2n</code>. Do đó tổng thời gian là <strong>O(n)</strong>
+  bất kể vòng while có vẻ tốn nhiều.</p>
+  $$ T(n) = O(\text{push}_\text{total}) + O(\text{pop}_\text{total}) \leq O(2n) = O(n) $$
+  <div class="example">
+    <div class="example-label">Pattern phân tích này quen rồi:</div>
+    Tuần 3 (Longest Consecutive Sequence), Tuần 4 (Sliding Window) đều dùng cùng tinh thần amortised.
+    Đây là kỹ năng phải thuộc để giải thích phỏng vấn.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.6 ===== -->
+<div class="slide">
+  <div class="slide-number">3.6</div>
+  <h2>3.6 Worked Example 5 — Next Greater Element II (Circular)</h2>
+  <p><strong>Đề (LeetCode #503):</strong> Mảng <em>circular</em> (vòng tròn). Tìm next greater cho mỗi phần tử.
+  Nếu không có, trả -1.</p>
+  <p><strong>Ví dụ:</strong> <code>[1,2,1]</code> → <code>[2,-1,2]</code> (phần tử cuối quay lại từ đầu).</p>
+  <h3>Mẹo "duyệt mảng 2 lần"</h3>
+  <p>Để mô phỏng vòng tròn, duyệt index từ 0 đến 2n−1, dùng <code>i % n</code> để truy cập:</p>
+  <pre><code>def nextGreaterElements(nums):
+    n = len(nums)
+    res = [-1] * n
+    stack = []
+    for i in range(2 * n):
+        x = nums[i % n]
+        while stack and nums[stack[-1]] &lt; x:
+            res[stack.pop()] = x
+        if i &lt; n:                          # chỉ push trong vòng đầu
+            stack.append(i)
+    return res</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(n)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Mẹo "duyệt 2 lần":</div>
+    Áp dụng cho mọi bài circular array — duyệt 2n phần tử là đủ để phần tử cuối "thấy" được phần tử đầu.
+    Mẹo này gặp lại ở Tuần 7 (Binary Search trên rotated array).
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.7 ===== -->
+<div class="slide">
+  <div class="slide-number">3.7</div>
+  <h2>3.7 Worked Example 6 — Largest Rectangle in Histogram</h2>
+  <p><strong>Đề (LeetCode #84, Hard):</strong> Mảng <code>heights</code> các cột. Tìm hình chữ nhật diện tích lớn nhất chứa trong histogram.</p>
+  <p><strong>Ví dụ:</strong> <code>[2,1,5,6,2,3]</code> → 10 (cột 5 và 6 cao 5 → 5×2 = 10).</p>
+  <h3>Quan sát then chốt</h3>
+  <p>Hình chữ nhật lớn nhất "đặt trên" cột <code>i</code> có:</p>
+  <ul>
+    <li>Chiều cao = <code>heights[i]</code>.</li>
+    <li>Chiều rộng = khoảng cách từ <em>cột thấp hơn gần nhất bên trái</em> đến <em>cột thấp hơn gần nhất bên phải</em>.</li>
+  </ul>
+  <p>"Cột thấp hơn gần nhất" = bài Next Smaller. Dùng Monotonic Increasing Stack.</p>
+  <pre><code>def largestRectangleArea(heights):
+    stack = []                              # index, monotonic increasing
+    best = 0
+    heights.append(0)                       # sentinel để đẩy hết stack ở cuối
+    for i, h in enumerate(heights):
+        while stack and heights[stack[-1]] &gt; h:
+            top = stack.pop()
+            left = stack[-1] if stack else -1
+            width = i - left - 1
+            best = max(best, heights[top] * width)
+        stack.append(i)
+    return best</code></pre>
+</div>
+
+<!-- ===== SLIDE 3.8 ===== -->
+<div class="slide">
+  <div class="slide-number">3.8</div>
+  <h2>3.8 Largest Rectangle — Phân tích chi tiết</h2>
+  <h3>Vai trò sentinel <code>heights.append(0)</code></h3>
+  <p>Sau vòng for thường, stack có thể còn phần tử (các cột chưa "gặp cột thấp hơn"). Append 0 ở cuối
+  buộc mọi cột pop ra để xử lý. Không có sentinel sẽ cần xử lý sau vòng for.</p>
+  <h3>Vì sao <code>width = i - left - 1</code>?</h3>
+  <p>Khi pop <code>top</code>:</p>
+  <ul>
+    <li><code>i</code> là cột thấp hơn gần nhất <em>bên phải</em> của <code>top</code>.</li>
+    <li><code>stack[-1]</code> (nếu có) là cột thấp hơn gần nhất <em>bên trái</em>.</li>
+    <li>Cột <code>top</code> "thống trị" toàn bộ khoảng <code>(left, i)</code>, tức i − left − 1 cột.</li>
+  </ul>
+  <h3>Trace với <code>[2,1,5,6,2,3,0]</code> (đã append sentinel)</h3>
+  <table class="trace-table">
+    <tr><th>i</th><th>h</th><th>Pop nào?</th><th>width</th><th>area</th><th>best</th></tr>
+    <tr><td>0</td><td>2</td><td>—</td><td>—</td><td>—</td><td>0</td></tr>
+    <tr><td>1</td><td>1</td><td>pop 0 (h=2)</td><td>1−(−1)−1=1</td><td>2×1=2</td><td>2</td></tr>
+    <tr><td>2</td><td>5</td><td>—</td><td>—</td><td>—</td><td>2</td></tr>
+    <tr><td>3</td><td>6</td><td>—</td><td>—</td><td>—</td><td>2</td></tr>
+    <tr><td>4</td><td>2</td><td>pop 3 (h=6); pop 2 (h=5)</td><td>1; 2</td><td>6; 10</td><td>10</td></tr>
+    <tr><td>5</td><td>3</td><td>—</td><td>—</td><td>—</td><td>10</td></tr>
+    <tr><td>6</td><td>0</td><td>pop tất cả</td><td>...</td><td>...</td><td>10</td></tr>
+  </table>
+</div>
+
+<!-- ===== SLIDE 3.9 ===== -->
+<div class="slide">
+  <div class="slide-number">3.9</div>
+  <h2>3.9 Worked Example 7 — Trapping Rain Water (Monotonic Stack)</h2>
+  <p>Tuần 2 đã giải #42 bằng <strong>Prefix Max</strong> O(n) time, O(n) space. Giờ giải bằng Monotonic Stack —
+  đây là approach phổ biến trong phỏng vấn.</p>
+  <h3>Ý tưởng — "Vũng nước" giữa hai cột cao</h3>
+  <p>Duy trì decreasing stack các index. Khi gặp cột cao hơn đỉnh stack, phần "vũng" được tính:</p>
+  <pre><code>def trap(height):
+    stack = []
+    water = 0
+    for i, h in enumerate(height):
+        while stack and height[stack[-1]] &lt; h:
+            bottom = stack.pop()
+            if not stack: break
+            left = stack[-1]
+            width = i - left - 1
+            bounded_height = min(height[left], h) - height[bottom]
+            water += width * bounded_height
+        stack.append(i)
+    return water</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(n)</strong> — cùng O(n) như Prefix Max nhưng tinh thần khác.</p>
+  <div class="key-point">
+    <div class="key-point-label">Ba cách giải #42:</div>
+    Prefix Max (Tuần 2, intuitive), Monotonic Stack (tuần này, phỏng vấn ưa), và Two Pointer O(1) space (xem 3.10).
+    Biết cả ba thể hiện chiều sâu kỹ thuật.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.10 ===== -->
+<div class="slide">
+  <div class="slide-number">3.10</div>
+  <h2>3.10 Trapping Rain Water — Two Pointer O(1) Space</h2>
+  <p>Approach thứ ba, O(1) space, kết hợp tinh thần Container With Most Water (Tuần 2):</p>
+  <pre><code>def trap(height):
+    left, right = 0, len(height) - 1
+    left_max = right_max = 0
+    water = 0
+    while left &lt; right:
+        if height[left] &lt; height[right]:
+            if height[left] &gt;= left_max:
+                left_max = height[left]
+            else:
+                water += left_max - height[left]
+            left += 1
+        else:
+            if height[right] &gt;= right_max:
+                right_max = height[right]
+            else:
+                water += right_max - height[right]
+            right -= 1
+    return water</code></pre>
+  <h3>Trực giác</h3>
+  <p>Tại mỗi bước, dịch pointer của bên thấp hơn — vì bên đó "biết" nước có thể đọng đến đâu (giới hạn bởi
+  <code>left_max</code> hoặc <code>right_max</code> đã thấy). Bên cao hơn vẫn còn "chưa chắc" — không thể quyết định.</p>
+  <p>Cùng tinh thần "luôn dịch cột thấp hơn" như Container With Most Water.</p>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Monotonic Stack</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Monotonic Stack giảm O(n²) → O(n) bằng cơ chế nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Sort lại stack</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Mỗi phần tử push 1 lần, pop tối đa 1 lần — tổng thao tác ≤ 2n</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Dùng heap</button>
+    <div class="quiz-explanation">Đây là phân tích amortised. Vòng while có thể tốn nhiều bước trong một vòng for, nhưng tổng số bước qua tất cả các vòng for ≤ 2n. Cùng tinh thần với Sliding Window và Longest Consecutive Sequence.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Largest Rectangle in Histogram, vai trò của <code>heights.append(0)</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Đánh dấu kết thúc input</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Sentinel để buộc mọi phần tử còn trên stack được pop ra và xử lý</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Tránh out-of-bounds</button>
+    <div class="quiz-explanation">Sentinel = 0 chắc chắn nhỏ hơn mọi heights[i] hợp lệ → khi gặp nó, vòng while sẽ pop hết stack. Không có sentinel sẽ cần xử lý phần dư stack sau vòng for, code dài hơn.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Bài "circular array" giải bằng kỹ thuật nào trong Monotonic Stack?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Duyệt mảng 2 lần với <code>i % n</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Tăng kích thước stack</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Dùng deque thay stack</button>
+    <div class="quiz-explanation">Duyệt 2n bước với i % n đảm bảo phần tử cuối "thấy" được phần tử đầu. Chỉ push index trong vòng đầu (i &lt; n) để tránh push trùng. Mẹo này gặp lại ở Binary Search trên rotated array (Tuần 7).</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Monotonic Deque</h1>
+  <div class="subtitle">Khi cần monotonic structure trên cửa sổ trượt — bài "boss" của tuần</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Vì sao cần Deque, không phải Stack?</h2>
+  <p>Monotonic Stack chỉ thao tác một đầu (top). Nhưng có bài cần thao tác <em>cả hai đầu</em>:</p>
+  <ul>
+    <li>Đầu trái: bỏ phần tử khi cửa sổ trượt qua.</li>
+    <li>Đầu phải: thêm phần tử mới + duy trì monotonic.</li>
+  </ul>
+  <p>Đây là khi <code>collections.deque</code> phát huy: O(1) cả hai đầu.</p>
+  <h3>Kết hợp Sliding Window (Tuần 4) + Monotonic — bài Sliding Window Maximum</h3>
+  <p>Bài này là "boss" của tuần — kết hợp 2 tuần kỹ thuật:</p>
+  <ul>
+    <li>Sliding Window: cửa sổ size k.</li>
+    <li>Monotonic Deque: lưu các "ứng viên" có thể là max hiện tại.</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Worked Example 8 — Sliding Window Maximum</h2>
+  <p><strong>Đề (LeetCode #239, Hard):</strong> Mảng <code>nums</code>, số <code>k</code>. Trả mảng max của mọi cửa sổ size k.</p>
+  <p><strong>Constraints:</strong> 1 ≤ n ≤ 10⁵ → cần O(n).</p>
+  <h3>Brute force</h3>
+  <p>Với mỗi cửa sổ, tìm max → O(n × k). Với n,k = 10⁵ → TLE.</p>
+  <h3>Monotonic Decreasing Deque</h3>
+  <pre><code>from collections import deque
+def maxSlidingWindow(nums, k):
+    dq = deque()                       # lưu index, decreasing theo nums[index]
+    res = []
+    for i, x in enumerate(nums):
+        # 1. Bỏ index ngoài cửa sổ ở đầu trái
+        while dq and dq[0] &lt; i - k + 1:
+            dq.popleft()
+        # 2. Duy trì monotonic decreasing — pop các phần tử nhỏ hơn x ở phải
+        while dq and nums[dq[-1]] &lt; x:
+            dq.pop()
+        # 3. Thêm i ở phải
+        dq.append(i)
+        # 4. Đầu trái = max của cửa sổ hiện tại
+        if i &gt;= k - 1:
+            res.append(nums[dq[0]])
+    return res</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(k)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 Sliding Window Maximum — Trace tay</h2>
+  <p><code>nums = [1,3,-1,-3,5,3,6,7]</code>, <code>k = 3</code>. Kỳ vọng: <code>[3,3,5,5,6,7]</code>.</p>
+  <table class="trace-table">
+    <tr><th>i</th><th>x</th><th>Bỏ ngoài cửa sổ?</th><th>Pop phải</th><th>dq sau</th><th>res</th></tr>
+    <tr><td>0</td><td>1</td><td>—</td><td>—</td><td>[0]</td><td>—</td></tr>
+    <tr><td>1</td><td>3</td><td>—</td><td>pop 0 (1&lt;3)</td><td>[1]</td><td>—</td></tr>
+    <tr><td>2</td><td>-1</td><td>—</td><td>—</td><td>[1,2]</td><td>3</td></tr>
+    <tr><td>3</td><td>-3</td><td>—</td><td>—</td><td>[1,2,3]</td><td>3</td></tr>
+    <tr><td>4</td><td>5</td><td>popleft 1 (1&lt;2)</td><td>pop 3 (-3&lt;5), pop 2 (-1&lt;5)</td><td>[4]</td><td>5</td></tr>
+    <tr><td>5</td><td>3</td><td>—</td><td>—</td><td>[4,5]</td><td>5</td></tr>
+    <tr><td>6</td><td>6</td><td>—</td><td>pop 5 (3&lt;6), pop 4 (5&lt;6)</td><td>[6]</td><td>6</td></tr>
+    <tr><td>7</td><td>7</td><td>—</td><td>pop 6 (6&lt;7)</td><td>[7]</td><td>7</td></tr>
+  </table>
+  <p>Kết quả: <code>[3,3,5,5,6,7]</code>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Triết lý "mạnh hơn và mới hơn":</div>
+    Khi push x mới, mọi phần tử nhỏ hơn x ở đuôi đều bị loại — vì với x mới hơn và lớn hơn,
+    chúng không bao giờ là max nữa. Đây là tinh thần "loại đối thủ yếu hơn" giống greedy của Container With Most Water.
+  </div>
+</div>
+
+<!-- ===== SECTION 5 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 5. Queue Patterns &amp; BFS Preparation</h1>
+  <div class="subtitle">Cầu nối sang Tuần 10 — BFS sẽ dùng queue rất nhiều</div>
+</div>
+
+<!-- ===== SLIDE 5.1 ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 Pattern Queue + BFS (Preview)</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình BFS dùng Queue:</div>
+    <pre><code>from collections import deque
+q = deque([start])
+visited = {start}
+while q:
+    node = q.popleft()
+    for neighbor in neighbors(node):
+        if neighbor not in visited:
+            visited.add(neighbor)
+            q.append(neighbor)</code></pre>
+  </div>
+  <p>FIFO của queue đảm bảo BFS thăm nodes theo thứ tự khoảng cách từ start tăng dần. Đây là nền tảng của:</p>
+  <ul>
+    <li>Tìm shortest path trong unweighted graph.</li>
+    <li>Level-order traversal trên cây (Tuần 8).</li>
+    <li>Multi-source BFS (Rotting Oranges, Walls and Gates).</li>
+    <li>Topological Sort (Kahn's algorithm — Tuần 10).</li>
+  </ul>
+  <p>Tuần 10 sẽ đào sâu — tuần này chỉ giới thiệu để sinh viên không bỡ ngỡ với <code>deque</code>.</p>
+</div>
+
+<!-- ===== SLIDE 5.2 ===== -->
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>5.2 Worked Example 9 — Implement Queue using Stacks</h2>
+  <p><strong>Đề (LeetCode #232):</strong> Cài queue chỉ dùng 2 stack. push, pop, peek, empty. <code>pop</code> và <code>peek</code> cần O(1) amortised.</p>
+  <pre><code>class MyQueue:
+    def __init__(self):
+        self.in_stack = []
+        self.out_stack = []
+
+    def push(self, x):
+        self.in_stack.append(x)
+
+    def pop(self):
+        self._move()
+        return self.out_stack.pop()
+
+    def peek(self):
+        self._move()
+        return self.out_stack[-1]
+
+    def empty(self):
+        return not self.in_stack and not self.out_stack
+
+    def _move(self):
+        if not self.out_stack:
+            while self.in_stack:
+                self.out_stack.append(self.in_stack.pop())</code></pre>
+  <h3>Phân tích amortised</h3>
+  <p>Mỗi phần tử được "di chuyển" giữa hai stack tối đa 1 lần (in → out). Push O(1) thường;
+  pop/peek O(1) amortised vì khi <code>_move</code> tốn O(n), nó chỉ xảy ra khi out_stack rỗng.</p>
+  <div class="example">
+    <div class="example-label">Bài học design:</div>
+    Cùng tinh thần Min Stack — dùng cấu trúc phụ thay đổi cách dữ liệu được lưu để chuyển từ FIFO sang LIFO.
+    Đây là pattern xuất hiện trong system design (event sourcing, lazy evaluation).
+  </div>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">6.0</div>
+  <h2>Tổng kết Tuần 6</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>Stack basics</strong>: matching pairs (Valid Parentheses), design (Min Stack), evaluate (RPN).</li>
+    <li><strong>Monotonic Stack</strong>: pattern then chốt cho next greater/smaller; phân tích amortised O(n);
+    sentinel trick; mẹo "duyệt 2 lần" cho circular array.</li>
+    <li><strong>Boss-level</strong>: Largest Rectangle in Histogram (Hard) — quan sát "cột thấp hơn gần nhất bên trái/phải".</li>
+    <li><strong>Trapping Rain Water — 3 cách</strong>: Prefix Max (Tuần 2), Monotonic Stack, Two Pointer O(1).</li>
+    <li><strong>Monotonic Deque</strong>: Sliding Window Maximum — kết hợp Tuần 4 và tuần này.</li>
+    <li><strong>Queue Design</strong>: Implement Queue using Stacks — tinh thần amortised + cấu trúc phụ.</li>
+    <li><strong>BFS preview</strong>: chuẩn bị cho Tuần 10.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #20 — Valid Parentheses</li>
+    <li>LeetCode #155 — Min Stack</li>
+    <li>LeetCode #150 — Evaluate Reverse Polish Notation</li>
+    <li>LeetCode #739 — Daily Temperatures</li>
+    <li>LeetCode #496 — Next Greater Element I</li>
+    <li>LeetCode #503 — Next Greater Element II (circular)</li>
+    <li>LeetCode #84 — Largest Rectangle in Histogram (Hard)</li>
+    <li>LeetCode #42 — Trapping Rain Water (cả 3 approach)</li>
+    <li>LeetCode #239 — Sliding Window Maximum (Hard, boss)</li>
+    <li>LeetCode #232 — Implement Queue using Stacks</li>
+    <li>LeetCode #225 — Implement Stack using Queues (chiều ngược)</li>
+    <li>LeetCode #901 — Online Stock Span (monotonic stack streaming)</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 7 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>Binary Search — Trên Array và Trên Answer Space</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Pattern cổ điển nhưng cực mạnh — biến O(n) thành O(log n). Học template chuẩn để tránh off-by-one,
+    Binary Search trên rotated array (mẹo duyệt 2 lần áp dụng tiếp), và đặc biệt là kỹ thuật
+    <em>Binary Search trên answer space</em> để giải Capacity to Ship Packages, Koko Eating Bananas, Median
+    of Two Sorted Arrays. Đây là kỹ thuật nâng cao nhất của tuần và xuất hiện thường xuyên trong phỏng vấn senior.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 6 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 3 — Aggregation, GROUP BY, HAVING</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.15rem; color: #666; margin-bottom: 20px; font-style: italic; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8810a; margin-bottom: 6px; }
+    .warning {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-label { font-weight: bold; color: #c0392b; margin-bottom: 6px; }
+    pre {
+      background: #f5f5f5; padding: 14px 18px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.95rem; margin: 10px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 6px 12px; text-align: left;
+    }
+    th { background: #f0f0f0; font-weight: 600; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; margin-bottom: 12px; }
+    .illustration {
+      display: flex; justify-content: center; margin: 14px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.92rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .schema-block {
+      background: #fafafa; border: 1px solid #e0e0e0;
+      padding: 12px 16px; border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 0.92rem; margin: 8px 0;
+    }
+    .dialect-table th { background: #e8f0fe; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ TITLE ============ -->
+  <div class="slide title-slide active" id="slide-0">
+    <h1>Tuần 3</h1>
+    <h1 style="font-size: 1.8rem; color: #555;">Aggregation, GROUP BY, HAVING</h1>
+    <p class="subtitle" style="margin-top: 24px;">SQL cho Interview — Lộ trình 10 tuần</p>
+    <p style="margin-top: 40px; color: #999; font-size: 0.9rem;">Nhấn phím → để bắt đầu &middot; T để xem mục lục</p>
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>1. Tổng quan tuần 3</h1>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Mục tiêu tuần 3</h2>
+    <p>Hai tuần trước bạn đã làm chủ cấp độ "một dòng vào, một dòng ra" — lọc và biến đổi. Tuần này nâng cấp lên cấp độ <strong>"nhiều dòng vào, một dòng ra"</strong> — gốc rễ của phân tích dữ liệu trong SQL.</p>
+    <h3>Sau tuần 3 bạn cần làm được</h3>
+    <ul>
+      <li>Hiểu chính xác vì sao <span class="inline-code">COUNT(*)</span>, <span class="inline-code">COUNT(col)</span>, <span class="inline-code">COUNT(DISTINCT col)</span> cho 3 kết quả khác nhau.</li>
+      <li>Phân biệt <span class="inline-code">WHERE</span> vs <span class="inline-code">HAVING</span> trong 5 giây — đây là câu hỏi screening kinh điển.</li>
+      <li>Viết được conditional aggregation dạng <span class="inline-code">SUM(CASE WHEN ...)</span> không cần suy nghĩ.</li>
+      <li>Giải được khoảng 30% bài LeetCode SQL Easy/Medium chỉ với GROUP BY + HAVING + conditional aggregation.</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Insight quan trọng</div>
+      Một thống kê không chính thức: ~40% bài LeetCode SQL Medium chỉ cần kỹ thuật ở tuần 3 này. Làm chủ aggregation là thắng nửa cuộc đua.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 Mental model: Phân hoạch và Reduce</h2>
+    <p>GROUP BY là <strong>phân hoạch</strong> tập dữ liệu thành các nhóm theo khóa, sau đó <strong>reduce</strong> mỗi nhóm thành một dòng bằng aggregator.</p>
+    <div class="illustration">
+      <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Original table -->
+        <text x="100" y="20" text-anchor="middle" font-size="13" font-weight="bold">orders (đầu vào)</text>
+        <rect x="20" y="30" width="180" height="200" fill="#fff" stroke="#1a1a1a"/>
+        <line x1="20" y1="55" x2="200" y2="55" stroke="#1a1a1a"/>
+        <text x="40" y="48" font-size="11" font-weight="bold">customer</text>
+        <text x="130" y="48" font-size="11" font-weight="bold">total</text>
+        <text x="40" y="75" font-size="11" fill="#3b5998">A</text><text x="130" y="75" font-size="11">100</text>
+        <text x="40" y="95" font-size="11" fill="#4a7c59">B</text><text x="130" y="95" font-size="11">50</text>
+        <text x="40" y="115" font-size="11" fill="#3b5998">A</text><text x="130" y="115" font-size="11">200</text>
+        <text x="40" y="135" font-size="11" fill="#c0392b">C</text><text x="130" y="135" font-size="11">300</text>
+        <text x="40" y="155" font-size="11" fill="#4a7c59">B</text><text x="130" y="155" font-size="11">150</text>
+        <text x="40" y="175" font-size="11" fill="#3b5998">A</text><text x="130" y="175" font-size="11">400</text>
+        <text x="40" y="195" font-size="11" fill="#c0392b">C</text><text x="130" y="195" font-size="11">100</text>
+
+        <!-- arrow 1 -->
+        <text x="270" y="100" text-anchor="middle" font-size="11" fill="#3b5998">phân hoạch</text>
+        <text x="270" y="115" text-anchor="middle" font-size="11" fill="#3b5998">theo customer</text>
+        <line x1="220" y1="135" x2="320" y2="135" stroke="#3b5998" stroke-width="2" marker-end="url(#a3)"/>
+
+        <!-- Groups -->
+        <text x="430" y="20" text-anchor="middle" font-size="13" font-weight="bold">3 nhóm trung gian</text>
+        <rect x="340" y="30" width="180" height="60" fill="#fff" stroke="#3b5998"/>
+        <text x="350" y="50" font-size="11" fill="#3b5998" font-weight="bold">A:</text>
+        <text x="375" y="50" font-size="11">100, 200, 400</text>
+
+        <rect x="340" y="100" width="180" height="60" fill="#fff" stroke="#4a7c59"/>
+        <text x="350" y="120" font-size="11" fill="#4a7c59" font-weight="bold">B:</text>
+        <text x="375" y="120" font-size="11">50, 150</text>
+
+        <rect x="340" y="170" width="180" height="60" fill="#fff" stroke="#c0392b"/>
+        <text x="350" y="190" font-size="11" fill="#c0392b" font-weight="bold">C:</text>
+        <text x="375" y="190" font-size="11">300, 100</text>
+
+        <!-- arrow 2 -->
+        <line x1="540" y1="135" x2="600" y2="135" stroke="#3b5998" stroke-width="2" marker-end="url(#a3)"/>
+        <text x="570" y="125" text-anchor="middle" font-size="11" fill="#3b5998">SUM</text>
+
+        <!-- Final result -->
+        <rect x="600" y="50" width="80" height="180" fill="#fff" stroke="#1a1a1a"/>
+        <line x1="600" y1="75" x2="680" y2="75" stroke="#1a1a1a"/>
+        <text x="610" y="68" font-size="11" font-weight="bold">cust</text>
+        <text x="650" y="68" font-size="11" font-weight="bold">sum</text>
+        <text x="610" y="95" font-size="11">A</text><text x="650" y="95" font-size="11">700</text>
+        <text x="610" y="135" font-size="11">B</text><text x="650" y="135" font-size="11">200</text>
+        <text x="610" y="175" font-size="11">C</text><text x="650" y="175" font-size="11">400</text>
+
+        <defs>
+          <marker id="a3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 Z" fill="#3b5998"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <p>SQL: <span class="inline-code">SELECT customer, SUM(total) FROM orders GROUP BY customer;</span></p>
+  </div>
+
+  <!-- ============ SECTION 2 ============ -->
+  <div class="slide section-divider" id="slide-4">
+    <h1>2. Aggregator cơ bản</h1>
+  </div>
+
+  <div class="slide" id="slide-5">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 COUNT — ba phiên bản, ba semantics khác nhau</h2>
+    <p>Đây là chủ đề bị nhầm nhiều nhất. Cho bảng <span class="inline-code">customers(id, country)</span> với 5 dòng:</p>
+    <table>
+      <tr><th>id</th><th>country</th></tr>
+      <tr><td>1</td><td>Vietnam</td></tr>
+      <tr><td>2</td><td>Vietnam</td></tr>
+      <tr><td>3</td><td>NULL</td></tr>
+      <tr><td>4</td><td>Australia</td></tr>
+      <tr><td>5</td><td>NULL</td></tr>
+    </table>
+    <table>
+      <tr><th>Biểu thức</th><th>Kết quả</th><th>Ý nghĩa</th></tr>
+      <tr><td><span class="inline-code">COUNT(*)</span></td><td><strong>5</strong></td><td>Đếm số dòng (kể cả dòng toàn NULL)</td></tr>
+      <tr><td><span class="inline-code">COUNT(country)</span></td><td><strong>3</strong></td><td>Đếm dòng có country không NULL</td></tr>
+      <tr><td><span class="inline-code">COUNT(DISTINCT country)</span></td><td><strong>2</strong></td><td>Đếm số quốc gia khác nhau (bỏ NULL)</td></tr>
+      <tr><td><span class="inline-code">COUNT(1)</span></td><td><strong>5</strong></td><td>Tương đương COUNT(*) — không phụ thuộc cột</td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Bẫy interview kinh điển</div>
+      "Đếm số khách hàng có country" và "đếm số khách hàng" là hai câu hỏi khác nhau. Đọc đề kỹ — yêu cầu thường là một trong ba phiên bản trên, không phải <span class="inline-code">COUNT(*)</span> mặc định.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-6">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 SUM, AVG, MIN, MAX — và NULL</h2>
+    <p>Tất cả aggregator (trừ <span class="inline-code">COUNT(*)</span>) <strong>bỏ qua NULL</strong> trước khi tính:</p>
+    <table>
+      <tr><th>Cột salary</th><th>Aggregator</th><th>Kết quả</th></tr>
+      <tr><td>{100, 200, NULL, 300}</td><td><span class="inline-code">SUM(salary)</span></td><td>600</td></tr>
+      <tr><td>{100, 200, NULL, 300}</td><td><span class="inline-code">AVG(salary)</span></td><td><strong>200</strong> (= 600/3, không phải 600/4)</td></tr>
+      <tr><td>{100, 200, NULL, 300}</td><td><span class="inline-code">MIN(salary)</span></td><td>100</td></tr>
+      <tr><td>{100, 200, NULL, 300}</td><td><span class="inline-code">MAX(salary)</span></td><td>300</td></tr>
+      <tr><td>{NULL, NULL}</td><td><span class="inline-code">SUM(salary)</span></td><td><strong>NULL</strong> (không phải 0)</td></tr>
+      <tr><td>{} (rỗng)</td><td><span class="inline-code">SUM(salary)</span></td><td><strong>NULL</strong> (không phải 0)</td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Bẫy AVG</div>
+      <p>"Trung bình lương" với NULL: AVG bỏ NULL ⇒ chia cho số dòng <em>không-NULL</em>. Nếu bạn muốn coi NULL là 0:</p>
+<pre><code>AVG(COALESCE(salary, 0))   -- coi NULL như 0
+SUM(salary) / COUNT(*)     -- chia cho tổng số dòng</code></pre>
+      Hai biểu thức trên cho kết quả khác AVG mặc định. Trong interview, <em>luôn xác nhận</em> với người ra đề: "NULL có tham gia trung bình không?"
+    </div>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 Numeric edge cases — integer division</h2>
+    <p>SQL kế thừa quy tắc số học từ kiểu dữ liệu — và kiểu INT chia INT có thể không như bạn mong đợi.</p>
+    <div class="warning">
+      <div class="warning-label">Bẫy ratio / percentage</div>
+<pre><code>-- 3 đơn paid trên 7 đơn tổng
+SELECT
+    SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) / COUNT(*) AS rate
+FROM orders;
+-- MySQL/PostgreSQL: 0.4286 (decimal — OK)
+-- SQL Server: 0 (integer division!)</code></pre>
+      <p>SQL Server (và một số phương ngữ khác) thực hiện <em>integer division</em> khi cả hai vế đều INT. <span class="inline-code">3 / 7 = 0</span>.</p>
+    </div>
+    <h3>Cách an toàn</h3>
+<pre><code>-- Cast một vế sang DECIMAL/FLOAT
+SUM(CASE WHEN status = 'paid' THEN 1.0 ELSE 0 END) / COUNT(*)
+
+-- Hoặc nhân với 1.0
+1.0 * paid_count / total_count
+
+-- AVG bỏ trắng việc đếm — tự nó đã là float trong nhiều dialect
+AVG(CASE WHEN status = 'paid' THEN 1.0 ELSE 0 END)</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Khuyên</div>
+      Trong mọi ratio query, viết <span class="inline-code">1.0</span> trong CASE thay vì <span class="inline-code">1</span>. Phòng integer division — chi phí 0, lợi ích bug-free.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3 ============ -->
+  <div class="slide section-divider" id="slide-8">
+    <h1>3. GROUP BY</h1>
+  </div>
+
+  <div class="slide" id="slide-9">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 Cú pháp cơ bản và ràng buộc cột</h2>
+<pre><code>SELECT customer_id, COUNT(*) AS n_orders, SUM(total) AS revenue
+FROM orders
+GROUP BY customer_id;</code></pre>
+    <div class="definition">
+      <div class="definition-label">Quy tắc cốt lõi</div>
+      Mọi cột trong SELECT phải <strong>hoặc</strong> nằm trong GROUP BY, <strong>hoặc</strong> được bọc trong aggregator. Không có lựa chọn thứ ba.
+    </div>
+    <div class="warning">
+      <div class="warning-label">Lý do</div>
+      <p>Sau khi GROUP BY, mỗi dòng kết quả đại diện cho một <em>nhóm</em> — không phải một dòng gốc. Nếu bạn yêu cầu cột không thuộc khóa nhóm và không aggregate, SQL không biết chọn dòng nào trong nhóm.</p>
+<pre><code>-- SAI (chuẩn ANSI và PostgreSQL/SQL Server reject)
+SELECT customer_id, name, COUNT(*)
+FROM orders GROUP BY customer_id;
+-- name không trong GROUP BY và không aggregate → ambiguous</code></pre>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Phương ngữ — bẫy MySQL</div>
+      MySQL trước version 5.7 mặc định <em>cho phép</em> query trên (silent bug — chọn dòng tùy ý). Từ 5.7+ có chế độ <span class="inline-code">ONLY_FULL_GROUP_BY</span> bật mặc định, reject. Trong interview, code phải pass cả ANSI mode.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 GROUP BY nhiều cột</h2>
+    <p>Khi GROUP BY nhiều cột, nhóm được định nghĩa bởi <strong>tổ hợp</strong> các giá trị.</p>
+<pre><code>-- Đếm số đơn theo cặp (customer, status)
+SELECT customer_id, status, COUNT(*) AS n
+FROM orders
+GROUP BY customer_id, status;</code></pre>
+    <p>Một customer có thể xuất hiện nhiều dòng nếu có đơn ở nhiều status khác nhau. Ví dụ:</p>
+    <table>
+      <tr><th>customer_id</th><th>status</th><th>n</th></tr>
+      <tr><td>1</td><td>paid</td><td>3</td></tr>
+      <tr><td>1</td><td>cancelled</td><td>1</td></tr>
+      <tr><td>2</td><td>paid</td><td>5</td></tr>
+    </table>
+    <div class="example">
+      <div class="example-label">Pattern interview — daily metrics</div>
+<pre><code>-- Số đơn và doanh thu theo ngày + theo status
+SELECT order_date, status, COUNT(*) AS n_orders, SUM(total) AS revenue
+FROM orders
+GROUP BY order_date, status
+ORDER BY order_date, status;</code></pre>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-11">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 GROUP BY và NULL</h2>
+    <p>Khác với hầu hết hành vi của NULL trong SQL, GROUP BY <strong>coi tất cả NULL là cùng một nhóm</strong>.</p>
+    <div class="example">
+      <div class="example-label">Ví dụ</div>
+      Bảng <span class="inline-code">customers</span> có 4 khách: 2 ở Vietnam, 1 ở Australia, 1 NULL country.
+<pre><code>SELECT country, COUNT(*) FROM customers GROUP BY country;</code></pre>
+      Trả về 3 dòng:
+      <table>
+        <tr><th>country</th><th>count</th></tr>
+        <tr><td>Vietnam</td><td>2</td></tr>
+        <tr><td>Australia</td><td>1</td></tr>
+        <tr><td>NULL</td><td>1</td></tr>
+      </table>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Quan trọng</div>
+      Trong GROUP BY, NULL hoạt động "giống một giá trị bình thường" — đây là <em>ngoại lệ</em> so với quy tắc 3VL chung. Lý do: nếu không nhóm NULL lại, mỗi NULL sẽ là một nhóm riêng (vì NULL ≠ NULL) → bùng nổ kết quả.
+    </div>
+    <div class="example">
+      <div class="example-label">Bài toán thực</div>
+      Câu hỏi: "đếm số đơn theo từng quốc gia, kể cả khách chưa khai báo quốc gia" — query trên đã làm đúng. Câu hỏi: "đếm số đơn theo từng quốc gia ĐÃ XÁC ĐỊNH" — phải thêm <span class="inline-code">WHERE country IS NOT NULL</span>.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.4</div>
+    <h2>3.4 Quy tắc sạch khi viết GROUP BY</h2>
+    <ol>
+      <li><strong>Nhất quán column list.</strong> Cột không-aggregate trong SELECT phải xuất hiện <em>đầy đủ</em> trong GROUP BY. Đừng dùng MySQL old-mode để "ăn gian".</li>
+      <li><strong>Đặt tên alias rõ.</strong> <span class="inline-code">COUNT(*)</span> nên là <span class="inline-code">n_orders</span>, không phải <span class="inline-code">cnt</span>.</li>
+      <li><strong>Group theo cột định danh, không theo expression nếu có thể.</strong> <span class="inline-code">GROUP BY customer_id</span> tốt hơn <span class="inline-code">GROUP BY UPPER(customer_email)</span> nếu hai cột tương đương về semantic.</li>
+      <li><strong>Chỉ aggregate cột cần thiết.</strong> Đừng <span class="inline-code">SELECT customer_id, SUM(total), MAX(total), MIN(total), AVG(total) ...</span> nếu chỉ cần SUM. Performance.</li>
+    </ol>
+    <h3>Có thể GROUP BY theo alias không?</h3>
+<pre><code>-- PostgreSQL/MySQL cho phép
+SELECT YEAR(order_date) AS y, COUNT(*) FROM orders GROUP BY y;
+
+-- Standard ANSI yêu cầu lặp lại expression — chạy mọi nơi
+SELECT YEAR(order_date) AS y, COUNT(*) FROM orders GROUP BY YEAR(order_date);</code></pre>
+    <p>Trong portable code, lặp expression. Trong code dialect-specific, dùng alias cho ngắn.</p>
+  </div>
+
+  <!-- ============ SECTION 4 ============ -->
+  <div class="slide section-divider" id="slide-13">
+    <h1>4. WHERE vs HAVING</h1>
+  </div>
+
+  <div class="slide" id="slide-14">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 Thứ tự thực thi logic — neo cho cả tuần</h2>
+    <p>Đây là sơ đồ <em>phải thuộc</em>. Cú pháp viết theo thứ tự nào không quan trọng — engine luôn thực thi theo logic này:</p>
+    <div class="illustration">
+      <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="40" width="90" height="40" fill="#fff" stroke="#1a1a1a"/>
+        <text x="65" y="65" text-anchor="middle" font-size="13" font-weight="bold">FROM</text>
+        <text x="65" y="100" text-anchor="middle" font-size="10" fill="#666">lấy bảng</text>
+
+        <line x1="110" y1="60" x2="135" y2="60" stroke="#1a1a1a" marker-end="url(#a4)"/>
+
+        <rect x="135" y="40" width="90" height="40" fill="#fff" stroke="#1a1a1a"/>
+        <text x="180" y="65" text-anchor="middle" font-size="13" font-weight="bold">WHERE</text>
+        <text x="180" y="100" text-anchor="middle" font-size="10" fill="#666">lọc dòng</text>
+
+        <line x1="225" y1="60" x2="250" y2="60" stroke="#1a1a1a" marker-end="url(#a4)"/>
+
+        <rect x="250" y="40" width="100" height="40" fill="#fff8e1" stroke="#f9a825" stroke-width="2"/>
+        <text x="300" y="65" text-anchor="middle" font-size="13" font-weight="bold">GROUP BY</text>
+        <text x="300" y="100" text-anchor="middle" font-size="10" fill="#666">phân hoạch</text>
+
+        <line x1="350" y1="60" x2="375" y2="60" stroke="#1a1a1a" marker-end="url(#a4)"/>
+
+        <rect x="375" y="40" width="90" height="40" fill="#fff8e1" stroke="#f9a825" stroke-width="2"/>
+        <text x="420" y="65" text-anchor="middle" font-size="13" font-weight="bold">HAVING</text>
+        <text x="420" y="100" text-anchor="middle" font-size="10" fill="#666">lọc nhóm</text>
+
+        <line x1="465" y1="60" x2="490" y2="60" stroke="#1a1a1a" marker-end="url(#a4)"/>
+
+        <rect x="490" y="40" width="90" height="40" fill="#fff" stroke="#1a1a1a"/>
+        <text x="535" y="65" text-anchor="middle" font-size="13" font-weight="bold">SELECT</text>
+        <text x="535" y="100" text-anchor="middle" font-size="10" fill="#666">chiếu cột</text>
+
+        <line x1="580" y1="60" x2="605" y2="60" stroke="#1a1a1a" marker-end="url(#a4)"/>
+
+        <rect x="605" y="40" width="80" height="40" fill="#fff" stroke="#1a1a1a"/>
+        <text x="645" y="60" text-anchor="middle" font-size="11" font-weight="bold">ORDER</text>
+        <text x="645" y="74" text-anchor="middle" font-size="11" font-weight="bold">+ LIMIT</text>
+
+        <text x="350" y="160" text-anchor="middle" font-size="13" font-style="italic" fill="#666">WHERE chạy TRƯỚC GROUP BY · HAVING chạy SAU GROUP BY</text>
+
+        <defs>
+          <marker id="a4" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 Z" fill="#1a1a1a"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Hệ quả</div>
+      <ul>
+        <li>WHERE <strong>không thấy</strong> aggregator (chưa tính). HAVING <strong>thấy</strong> aggregator.</li>
+        <li>SELECT alias chưa được tạo khi WHERE/GROUP BY/HAVING chạy ⇒ không dùng alias trong WHERE/GROUP BY/HAVING (trừ một số dialect cho phép trong GROUP BY).</li>
+        <li>ORDER BY chạy cuối ⇒ <em>được dùng</em> alias của SELECT.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 WHERE vs HAVING — luật phân chia</h2>
+    <table>
+      <tr><th>Tiêu chí</th><th>WHERE</th><th>HAVING</th></tr>
+      <tr><td>Lọc cái gì</td><td>Dòng <em>gốc</em></td><td>Nhóm <em>sau khi GROUP BY</em></td></tr>
+      <tr><td>Khi nào chạy</td><td>Trước GROUP BY</td><td>Sau GROUP BY</td></tr>
+      <tr><td>Dùng được aggregator?</td><td><strong>Không</strong> (<span class="inline-code">WHERE COUNT(*) &gt; 5</span> sai)</td><td><strong>Có</strong> (<span class="inline-code">HAVING COUNT(*) &gt; 5</span> đúng)</td></tr>
+      <tr><td>Dùng được cột bất kỳ?</td><td>Có (mọi cột bảng)</td><td>Chỉ cột trong GROUP BY hoặc aggregator</td></tr>
+    </table>
+    <div class="example">
+      <div class="example-label">So sánh trực tiếp</div>
+<pre><code>-- 1. "Khách hàng có hơn 5 đơn paid" — KHÔNG phải hơn 5 đơn tổng
+SELECT customer_id, COUNT(*) AS n_paid
+FROM orders
+WHERE  status = 'paid'      -- lọc dòng trước khi đếm
+GROUP BY customer_id
+HAVING COUNT(*) &gt; 5;        -- lọc nhóm theo số đếm</code></pre>
+      <p>Hai bộ lọc làm hai việc khác nhau và không thay thế cho nhau được.</p>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-16">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 Pattern: chọn WHERE hay HAVING?</h2>
+    <p>Quy tắc đơn giản: <strong>nếu predicate dùng aggregator, đặt vào HAVING. Ngược lại, đặt vào WHERE.</strong></p>
+    <div class="example">
+      <div class="example-label">Tình huống "có thể đặt cả hai"</div>
+      Yêu cầu: "khách Vietnam có hơn 3 đơn".
+<pre><code>-- Cách 1: filter dòng trước
+SELECT customer_id FROM orders o
+JOIN customers c ON c.customer_id = o.customer_id
+WHERE c.country = 'Vietnam'
+GROUP BY o.customer_id
+HAVING COUNT(*) &gt; 3;
+
+-- Cách 2: HAVING làm tất (không khuyên — chậm hơn)
+SELECT o.customer_id FROM orders o
+JOIN customers c ON c.customer_id = o.customer_id
+GROUP BY o.customer_id, c.country
+HAVING c.country = 'Vietnam' AND COUNT(*) &gt; 3;</code></pre>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Khuyên</div>
+      Đẩy filter <em>xuống WHERE bất cứ khi nào có thể</em>. WHERE chạy trước GROUP BY → ít dòng hơn vào aggregation → nhanh hơn. Đây là tối ưu cơ bản optimizer thường tự làm, nhưng viết rõ vẫn tốt cho người đọc.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <div class="slide section-divider" id="slide-17">
+    <h1>5. Conditional Aggregation</h1>
+  </div>
+
+  <div class="slide" id="slide-18">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 SUM(CASE WHEN ...) — vũ khí mạnh nhất ở level này</h2>
+    <p>Đây là pattern giải được khoảng 30% bài LeetCode SQL Medium. Ý tưởng: <strong>aggregate có điều kiện</strong> bằng cách bọc CASE WHEN bên trong aggregator.</p>
+    <div class="example">
+      <div class="example-label">Ví dụ — đếm theo nhiều điều kiện trong một query</div>
+<pre><code>SELECT
+    COUNT(*)                                              AS total_orders,
+    SUM(CASE WHEN status = 'paid'      THEN 1 ELSE 0 END) AS n_paid,
+    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS n_cancelled,
+    SUM(CASE WHEN total &gt; 1000         THEN 1 ELSE 0 END) AS n_big
+FROM orders;</code></pre>
+      <p>Kết quả: một dòng, 4 cột — tất cả tính từ <em>một lần quét bảng duy nhất</em>. Hiệu quả gấp nhiều lần chạy 4 query riêng.</p>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Tư duy</div>
+      Coi mỗi <span class="inline-code">CASE WHEN ... THEN 1 ELSE 0 END</span> như một <em>indicator function</em> \(\mathbf{1}[\text{condition}]\). Tổng các indicator = số dòng thỏa điều kiện.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-19">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 COUNT(CASE WHEN) — viết ngắn hơn</h2>
+    <p>Trick: <span class="inline-code">COUNT</span> bỏ NULL. Nếu CASE không có ELSE thì giá trị mặc định là NULL — ta tận dụng để viết ngắn:</p>
+<pre><code>-- Hai biểu thức tương đương:
+SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END)
+COUNT(CASE WHEN status = 'paid' THEN 1 END)
+-- (Không có ELSE → giá trị NULL → COUNT bỏ qua)</code></pre>
+    <div class="example">
+      <div class="example-label">Pattern cleanup</div>
+<pre><code>-- Trước
+SELECT
+    SUM(CASE WHEN status='paid'      THEN 1 ELSE 0 END) AS n_paid,
+    SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) AS n_cancelled
+FROM orders;
+
+-- Sau (gọn hơn)
+SELECT
+    COUNT(CASE WHEN status='paid'      THEN 1 END) AS n_paid,
+    COUNT(CASE WHEN status='cancelled' THEN 1 END) AS n_cancelled
+FROM orders;</code></pre>
+    </div>
+    <p>Cả hai đều đúng, độ rõ ràng tương đương — chọn pattern bạn dùng nhất quán. Trong code review, tránh trộn cả hai trong cùng một query.</p>
+  </div>
+
+  <div class="slide" id="slide-20">
+    <div class="slide-number">5.3</div>
+    <h2>5.3 Pivot pattern — biến dòng thành cột</h2>
+    <p>Đây là một trong những use case đẹp nhất của conditional aggregation: chuyển dữ liệu "long format" thành "wide format".</p>
+    <div class="example">
+      <div class="example-label">Bài toán</div>
+      <p>Bảng <span class="inline-code">sales(customer_id, status, amount)</span> ở dạng long. Yêu cầu: với mỗi khách, hiển thị <em>cùng dòng</em> các cột <span class="inline-code">paid</span>, <span class="inline-code">pending</span>, <span class="inline-code">cancelled</span>.</p>
+    </div>
+<pre><code>SELECT
+    customer_id,
+    SUM(CASE WHEN status = 'paid'      THEN amount ELSE 0 END) AS paid,
+    SUM(CASE WHEN status = 'pending'   THEN amount ELSE 0 END) AS pending,
+    SUM(CASE WHEN status = 'cancelled' THEN amount ELSE 0 END) AS cancelled
+FROM sales
+GROUP BY customer_id;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Khi nào dùng</div>
+      Khi cần báo cáo dạng matrix (ví dụ doanh thu theo tháng × theo region). Trong các phương ngữ có <span class="inline-code">PIVOT</span> (SQL Server, Oracle), có cú pháp riêng — nhưng <em>conditional aggregation chạy ở mọi nơi</em>. Trong interview, đây là approach an toàn.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-21">
+    <div class="slide-number">5.4</div>
+    <h2>5.4 Ratio và percentage queries</h2>
+    <p>Pattern phổ biến: tính tỷ lệ dòng thỏa điều kiện X trên tổng số dòng (hoặc tổng có điều kiện Y).</p>
+    <div class="example">
+      <div class="example-label">Ví dụ — tỷ lệ confirmation theo customer</div>
+<pre><code>SELECT
+    customer_id,
+    COUNT(*)                                              AS n_total,
+    SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END)      AS n_paid,
+    -- 1.0 phòng integer division
+    SUM(CASE WHEN status = 'paid' THEN 1.0 ELSE 0 END) / COUNT(*) AS paid_rate
+FROM orders
+GROUP BY customer_id;</code></pre>
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ — chia trên một subset</div>
+      "Trong các đơn paid, bao nhiêu phần trăm là big (>1000)?" — mẫu số là số đơn paid, không phải tổng.
+<pre><code>SELECT
+    SUM(CASE WHEN status='paid' AND total &gt; 1000 THEN 1.0 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN status='paid' THEN 1 ELSE 0 END), 0) AS big_paid_rate
+FROM orders;</code></pre>
+      <p>Chú ý <span class="inline-code">NULLIF(..., 0)</span> phòng chia cho 0 khi không có đơn paid nào.</p>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-22">
+    <div class="slide-number">5.5</div>
+    <h2>5.5 FILTER clause — chuẩn ANSI gọn hơn</h2>
+    <p>Một số phương ngữ hỗ trợ <span class="inline-code">FILTER (WHERE ...)</span> — cú pháp ANSI cho conditional aggregation, đọc tự nhiên hơn CASE WHEN.</p>
+<pre><code>-- PostgreSQL, SQLite 3.30+
+SELECT
+    customer_id,
+    COUNT(*)                              AS n_total,
+    COUNT(*) FILTER (WHERE status='paid') AS n_paid,
+    SUM(total) FILTER (WHERE status='paid') AS revenue_paid
+FROM orders
+GROUP BY customer_id;</code></pre>
+    <table class="dialect-table">
+      <tr><th>Phương ngữ</th><th>Hỗ trợ FILTER?</th></tr>
+      <tr><td>PostgreSQL</td><td>Có (từ 9.4)</td></tr>
+      <tr><td>SQLite</td><td>Có (từ 3.30)</td></tr>
+      <tr><td>MySQL</td><td><strong>Không</strong> — phải CASE WHEN</td></tr>
+      <tr><td>SQL Server</td><td><strong>Không</strong> — phải CASE WHEN</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Khuyên cho interview</div>
+      LeetCode mặc định MySQL ⇒ dùng CASE WHEN. StrataScratch / DataLemur có PostgreSQL mode ⇒ FILTER cho code đẹp. Biết cả hai để dùng đúng platform.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 6 ============ -->
+  <div class="slide section-divider" id="slide-23">
+    <h1>6. Worked Examples</h1>
+  </div>
+
+  <div class="slide" id="slide-24">
+    <div class="slide-number">6.1</div>
+    <h2>6.1 LeetCode 596 — Classes With at Least 5 Students</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Courses(student VARCHAR, class VARCHAR)
+-- (student, class) là composite key — không có dòng trùng
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về tên các lớp có ít nhất 5 học sinh.</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>Phân hoạch theo lớp → GROUP BY class</li>
+      <li>Đếm học sinh mỗi lớp → COUNT(*) hoặc COUNT(DISTINCT student)</li>
+      <li>Lọc nhóm có count ≥ 5 → HAVING</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT class
+FROM Courses
+GROUP BY class
+HAVING COUNT(DISTINCT student) &gt;= 5;</code></pre>
+    <div class="warning">
+      <div class="warning-label">Vì sao DISTINCT?</div>
+      <p>Đề bài <em>nói</em> (student, class) là composite key — không có trùng. Nhưng các bài tương tự trong production thường KHÔNG có ràng buộc này. <span class="inline-code">COUNT(DISTINCT student)</span> an toàn hơn <span class="inline-code">COUNT(*)</span> trong general case.</p>
+      <p>Trong interview, nói rõ: "Tôi dùng DISTINCT để phòng dữ liệu có dòng trùng. Nếu được đảm bảo bảng không có duplicate, COUNT(*) đủ."
+    </div>
+  </div>
+
+  <div class="slide" id="slide-25">
+    <div class="slide-number">6.2</div>
+    <h2>6.2 LeetCode 1741 — Find Total Time Spent</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Employees(emp_id INT, event_day DATE, in_time INT, out_time INT)
+-- (emp_id, event_day, in_time) là composite key
+-- in_time, out_time là phút trong ngày (0-1439)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Với mỗi (emp_id, event_day), tính tổng số phút làm việc. Một nhân viên có thể vào/ra nhiều lần trong ngày.</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>Mỗi dòng = một session, thời gian = (out_time − in_time)</li>
+      <li>Phân hoạch theo (emp_id, event_day) → GROUP BY 2 cột</li>
+      <li>Tổng thời gian mỗi nhóm → SUM</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT
+    event_day AS day,
+    emp_id,
+    SUM(out_time - in_time) AS total_time
+FROM Employees
+GROUP BY event_day, emp_id;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Nguyên tắc</div>
+      Nhận ra "tổng tích lũy theo nhóm 2 chiều" là instinct cần xây. Đề bài có thể được phrase rất khác ("tổng doanh thu theo ngày × theo region", "tổng giờ học theo môn × theo học sinh") — pattern là một.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-26">
+    <div class="slide-number">6.3</div>
+    <h2>6.3 LeetCode 1393 — Capital Gain/Loss (Medium)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Stocks(stock_name VARCHAR, operation VARCHAR, operation_day INT, price INT)
+-- operation: 'Buy' hoặc 'Sell'
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Với mỗi stock, tính tổng lãi/lỗ = (tổng tiền Sell) − (tổng tiền Buy).</p>
+    <h3>Phân rã</h3>
+    <p>Với mỗi stock: cần một số dương từ Sell và một số âm từ Buy, sau đó tổng. Dùng <strong>conditional aggregation</strong>:</p>
+    <h3>Lời giải</h3>
+<pre><code>-- Cách 1: SUM(CASE WHEN)
+SELECT
+    stock_name,
+    SUM(CASE WHEN operation = 'Sell' THEN  price
+             WHEN operation = 'Buy'  THEN -price
+        END) AS capital_gain_loss
+FROM Stocks
+GROUP BY stock_name;
+
+-- Cách 2: tách hai SUM rồi trừ
+SELECT
+    stock_name,
+    SUM(CASE WHEN operation = 'Sell' THEN price ELSE 0 END)
+  - SUM(CASE WHEN operation = 'Buy'  THEN price ELSE 0 END) AS capital_gain_loss
+FROM Stocks
+GROUP BY stock_name;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Take-away</div>
+      Khi yêu cầu là "A trừ B" và A, B đến từ cùng bảng phân biệt bởi một cột status: dùng conditional aggregation. <em>Đừng</em> nghĩ đến JOIN — overkill.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 7 ============ -->
+  <div class="slide section-divider" id="slide-27">
+    <h1>7. Knowledge Check</h1>
+  </div>
+
+  <div class="slide" id="slide-28">
+    <div class="slide-number">7.Q</div>
+    <h2>Knowledge Check — Tuần 3</h2>
+
+    <div class="quiz" id="q1">
+      <div class="quiz-question">Q1: Bảng <span class="inline-code">payments(amount)</span> có 4 dòng: 100, 200, NULL, 300. <span class="inline-code">AVG(amount)</span> trả gì?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) 150 (= 600/4)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 200 (= 600/3)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) NULL</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Lỗi</button>
+      <div class="quiz-explanation">AVG bỏ NULL trước khi tính. Tổng 600 chia cho số dòng không-NULL = 3 → 200. Nếu muốn coi NULL là 0, dùng <span class="inline-code">AVG(COALESCE(amount, 0))</span> = 150.</div>
+    </div>
+
+    <div class="quiz" id="q2">
+      <div class="quiz-question">Q2: Yêu cầu "khách hàng paid hơn 5 đơn". Query nào ĐÚNG?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">SELECT customer_id FROM orders WHERE status='paid' AND COUNT(*)&gt;5 GROUP BY customer_id</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <span class="inline-code">SELECT customer_id FROM orders WHERE status='paid' GROUP BY customer_id HAVING COUNT(*)&gt;5</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) <span class="inline-code">SELECT customer_id FROM orders GROUP BY customer_id HAVING status='paid' AND COUNT(*)&gt;5</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) <span class="inline-code">SELECT customer_id FROM orders GROUP BY customer_id WHERE status='paid' HAVING COUNT(*)&gt;5</span></button>
+      <div class="quiz-explanation">A sai vì WHERE không dùng được aggregator. C sai vì status không trong GROUP BY (dù MySQL old-mode chấp nhận). D sai vì WHERE phải đứng trước GROUP BY. B đúng: WHERE lọc dòng trước, HAVING lọc nhóm sau.</div>
+    </div>
+
+    <div class="quiz" id="q3">
+      <div class="quiz-question">Q3: Bảng <span class="inline-code">orders(status)</span> có 7 dòng: 3 'paid', 2 'pending', 2 NULL. Query <span class="inline-code">SELECT status, COUNT(*) FROM orders GROUP BY status</span> trả bao nhiêu dòng?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) 2 (chỉ paid và pending)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 3 (paid, pending, NULL group)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) 4 (paid, pending, và 2 NULL riêng)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) 7 (mỗi dòng một nhóm)</button>
+      <div class="quiz-explanation">GROUP BY là ngoại lệ: tất cả NULL được nhóm vào một group duy nhất. Kết quả 3 dòng: paid (3), pending (2), NULL (2). Đây là khác biệt quan trọng so với so sánh = NULL trong WHERE (luôn UNKNOWN).</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 8 ============ -->
+  <div class="slide section-divider" id="slide-29">
+    <h1>8. Bài tập về nhà</h1>
+  </div>
+
+  <div class="slide" id="slide-30">
+    <div class="slide-number">8.1</div>
+    <h2>8.1 Bài tập LeetCode (5 problem)</h2>
+    <ol>
+      <li><strong>596. Classes With at Least 5 Students</strong> (Easy) — đã giải tại lớp.</li>
+      <li><strong>1741. Find Total Time Spent by Each Employee</strong> (Easy) — đã giải tại lớp.</li>
+      <li><strong>1393. Capital Gain/Loss</strong> (Medium) — conditional aggregation, đã giải tại lớp.</li>
+      <li><strong>1729. Find Followers Count</strong> (Easy) — GROUP BY + COUNT, sắp xếp theo user_id.</li>
+      <li><strong>1907. Count Salary Categories</strong> (Medium) — bài này có một bẫy: <em>category không có nhân viên nào vẫn phải xuất hiện trong kết quả với count = 0</em>. Gợi ý: GROUP BY không giúp được; nghĩ đến UNION 3 query, mỗi query một category.</li>
+    </ol>
+    <h3>Bonus — phân tích bug</h3>
+    <p>Cho query sau, dự đoán kết quả trên dữ liệu có NULL và giải thích:</p>
+<pre><code>SELECT customer_id,
+       COUNT(*)        AS a,
+       COUNT(country)  AS b,
+       COUNT(DISTINCT country) AS c,
+       SUM(CASE WHEN country IS NULL THEN 1 ELSE 0 END) AS d
+FROM customers
+GROUP BY customer_id;</code></pre>
+    <p><em>Quan hệ giữa a, b, c, d? Cái nào có thể bằng 0? Cái nào có thể NULL?</em></p>
+  </div>
+
+  <div class="slide" id="slide-31">
+    <div class="slide-number">8.2</div>
+    <h2>8.2 Đọc thêm và tự kiểm tra</h2>
+    <h3>Đọc</h3>
+    <ul>
+      <li><em>SQL Cookbook</em> (Anthony Molinaro) — Chương 5 (Metadata Queries) và Chương 7 (Working with Numbers).</li>
+      <li><em>SQL Performance Explained</em> (Markus Winand) — section "Indexing for GROUP BY".</li>
+      <li>PostgreSQL docs: <em>9.20 Aggregate Functions</em> và <em>9.21 Window Functions</em> (preview tuần 6).</li>
+    </ul>
+    <h3>Tự kiểm tra (không nhìn slide)</h3>
+    <ul>
+      <li>Bạn nói được khác biệt 4 phiên bản của COUNT trong 30 giây?</li>
+      <li>Bạn vẽ được sơ đồ thứ tự thực thi FROM → WHERE → GROUP → HAVING → SELECT → ORDER → LIMIT từ trí nhớ?</li>
+      <li>Bạn viết được conditional aggregation tính ratio (paid/total) phòng integer division và phòng chia 0?</li>
+      <li>Bạn liệt kê được 3 tình huống dùng pivot pattern (SUM(CASE WHEN ...))?</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Tuần sau — JOIN sâu</div>
+      Tuần 4: INNER, LEFT/RIGHT/FULL OUTER, CROSS, self-join, anti-join. Đây là nửa thứ hai của bộ kỹ năng nền tảng. Sau đó (tuần 5) là subquery — và bạn sẽ giải được hầu hết bài Easy LeetCode trong dưới 5 phút.
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 4 — Sliding Window</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 4</div>
+  <h1>Sliding Window</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Pattern chuyên dụng cho mọi bài có chữ "subarray liên tiếp" hoặc "substring" với điều kiện.
+    Biến O(n²) thành O(n) bằng cách <em>không bao giờ quay lại</em> phần đã xét.
+  </p>
+  <div class="meta">10 worked examples · 2 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng Sliding Window</h1>
+  <div class="subtitle">Hai biến thể, tín hiệu nhận biết, và vì sao luôn O(n)</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Sliding Window là gì?</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa:</div>
+    <strong>Sliding Window</strong> duy trì một <em>cửa sổ</em> liên tục <code>[left, right]</code> trên
+    mảng/string, di chuyển hai biên theo điều kiện bài toán. Mỗi biên di chuyển <em>một chiều</em>
+    (chỉ tiến, không lùi) → tổng số lần di chuyển ≤ 2n → <strong>O(n)</strong>.
+  </div>
+  <h3>Quan hệ với Two Pointers (Tuần 2)</h3>
+  <p>Sliding Window là <em>biến thể chuyên biệt</em> của Two Pointers Same Direction. Khác biệt:</p>
+  <ul>
+    <li><strong>Two Pointers Same Direction</strong>: hai pointer độc lập về logic, một đọc, một ghi
+    (như Move Zeroes).</li>
+    <li><strong>Sliding Window</strong>: hai pointer cùng định nghĩa <em>một cửa sổ liên tục</em>;
+    bài toán xét tính chất của cửa sổ đó.</li>
+  </ul>
+  <h3>Tinh thần</h3>
+  <p>Brute force: thử mọi cặp (i, j) với i ≤ j → O(n²) cửa sổ. Sliding window: chỉ duyệt qua các
+  cửa sổ "có ý nghĩa" theo đường monoton → O(n).</p>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Hai biến thể — Trực quan</h2>
+  <div class="illustration">
+    <svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg">
+      <!-- Fixed Window -->
+      <text x="20" y="30" font-size="14" font-weight="bold" fill="#1a1a1a">Fixed Window (k = 3) — kích thước cố định</text>
+      <g>
+        <rect x="20" y="50" width="50" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+        <rect x="70" y="50" width="50" height="40" fill="#eaf5ea" stroke="#4a7c59" stroke-width="2"/>
+        <rect x="120" y="50" width="50" height="40" fill="#eaf5ea" stroke="#4a7c59" stroke-width="2"/>
+        <rect x="170" y="50" width="50" height="40" fill="#eaf5ea" stroke="#4a7c59" stroke-width="2"/>
+        <rect x="220" y="50" width="50" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+        <rect x="270" y="50" width="50" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+        <rect x="320" y="50" width="50" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+        <text x="45" y="75" font-size="14" text-anchor="middle">3</text>
+        <text x="95" y="75" font-size="14" text-anchor="middle">1</text>
+        <text x="145" y="75" font-size="14" text-anchor="middle">4</text>
+        <text x="195" y="75" font-size="14" text-anchor="middle">1</text>
+        <text x="245" y="75" font-size="14" text-anchor="middle">5</text>
+        <text x="295" y="75" font-size="14" text-anchor="middle">9</text>
+        <text x="345" y="75" font-size="14" text-anchor="middle">2</text>
+        <text x="145" y="115" font-size="11" fill="#4a7c59" text-anchor="middle">Cửa sổ size 3 trượt từng bước</text>
+      </g>
+      <!-- Variable Window -->
+      <text x="20" y="180" font-size="14" font-weight="bold" fill="#1a1a1a">Variable Window — kích thước co/dãn theo điều kiện</text>
+      <g>
+        <rect x="20" y="200" width="50" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+        <rect x="70" y="200" width="50" height="40" fill="#fff8e1" stroke="#f9a825" stroke-width="2"/>
+        <rect x="120" y="200" width="50" height="40" fill="#fff8e1" stroke="#f9a825" stroke-width="2"/>
+        <rect x="170" y="200" width="50" height="40" fill="#fff8e1" stroke="#f9a825" stroke-width="2"/>
+        <rect x="220" y="200" width="50" height="40" fill="#fff8e1" stroke="#f9a825" stroke-width="2"/>
+        <rect x="270" y="200" width="50" height="40" fill="#f8f9fa" stroke="#1a1a1a"/>
+        <text x="45" y="225" font-size="14" text-anchor="middle">a</text>
+        <text x="95" y="225" font-size="14" text-anchor="middle">b</text>
+        <text x="145" y="225" font-size="14" text-anchor="middle">c</text>
+        <text x="195" y="225" font-size="14" text-anchor="middle">d</text>
+        <text x="245" y="225" font-size="14" text-anchor="middle">e</text>
+        <text x="295" y="225" font-size="14" text-anchor="middle">f</text>
+        <text x="95" y="265" font-size="14" fill="#3b5998" text-anchor="middle">↑ left</text>
+        <text x="245" y="265" font-size="14" fill="#c0392b" text-anchor="middle">↑ right</text>
+      </g>
+    </svg>
+  </div>
+  <p style="font-size: 0.95rem;">Cả hai biến thể đều có <strong>right</strong> tăng đơn điệu. Khác biệt: Fixed có
+  <strong>left = right − k + 1</strong>; Variable có <strong>left tăng theo điều kiện</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Tín hiệu nhận biết Sliding Window</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Biến thể</th></tr>
+    <tr><td>"subarray/substring kích thước k"</td><td>Fixed Window</td></tr>
+    <tr><td>"subarray có k phần tử liên tiếp..."</td><td>Fixed Window</td></tr>
+    <tr><td>"tất cả anagram độ dài p trong s"</td><td>Fixed Window (size = len(p))</td></tr>
+    <tr><td>"subarray <em>nhỏ nhất</em> có tổng ≥ s"</td><td>Variable Window</td></tr>
+    <tr><td>"subarray <em>dài nhất</em> thoả điều kiện X"</td><td>Variable Window</td></tr>
+    <tr><td>"substring không lặp ký tự"</td><td>Variable Window</td></tr>
+    <tr><td>"≤ k loại ký tự khác nhau"</td><td>Variable Window</td></tr>
+    <tr><td>"đếm số subarray thoả điều kiện"</td><td>Variable Window (kỹ thuật ≤K − ≤K-1)</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Ghi nhớ chốt:</div>
+    "Subarray/substring liên tiếp" + "kích thước k" → Fixed.
+    <br>"Subarray/substring liên tiếp" + "max/min/đếm" + điều kiện → Variable.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Vì sao Sliding Window luôn O(n)? Phân tích Amortised</h2>
+  <p>Một lo lắng tự nhiên: trong Variable Window, vòng <code>while</code> shrink có thể chạy nhiều lần
+  trong một bước — sao tổng time là O(n)?</p>
+  <h3>Phân tích amortised</h3>
+  <p>Quan sát: cả <code>left</code> và <code>right</code> đều di chuyển <em>chỉ tiến</em>.</p>
+  <ul>
+    <li><code>right</code> đi từ 0 đến n−1 → tổng nhiều nhất n bước.</li>
+    <li><code>left</code> đi từ 0 đến n−1 → tổng nhiều nhất n bước.</li>
+    <li>Mỗi bước có thể có nhiều shrink, nhưng tổng số shrink qua cả thuật toán ≤ n.</li>
+  </ul>
+  $$ T(n) = O(\text{right moves}) + O(\text{left moves}) + O(\text{const work per step}) = O(n) $$
+  <div class="example">
+    <div class="example-label">Tinh thần chung:</div>
+    Đây cùng tinh thần với phân tích Longest Consecutive Sequence (Tuần 3). Nguyên tắc:
+    <em>nếu mỗi đơn vị công việc chỉ "trả tiền" một lần qua toàn thuật toán</em>, tổng vẫn O(n)
+    dù trong một bước có thể tốn nhiều.
+  </div>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Fixed Window</h1>
+  <div class="subtitle">Cửa sổ kích thước cố định k — đơn giản, là điểm khởi đầu lý tưởng</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Template chuẩn — Fixed Window</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình tổng quát:</div>
+    <pre><code>def fixed_window(arr, k):
+    # Pha 1: build cửa sổ đầu tiên
+    window_state = init(arr[:k])
+    best = evaluate(window_state)
+
+    # Pha 2: trượt cửa sổ
+    for i in range(k, len(arr)):
+        window_state = add(window_state, arr[i])         # thêm bên phải
+        window_state = remove(window_state, arr[i - k])  # bỏ bên trái
+        best = update_best(best, evaluate(window_state))
+    return best</code></pre>
+  </div>
+  <h3>Ba chỗ tuỳ biến</h3>
+  <ol>
+    <li><code>window_state</code>: tổng / max / Counter / set / bitmask...</li>
+    <li><code>add</code>, <code>remove</code>: cập nhật O(1) nếu state là tổng / Counter.</li>
+    <li><code>evaluate</code>: tính giá trị muốn theo dõi từ state.</li>
+  </ol>
+  <p>Time chuẩn: <strong>O(n)</strong> nếu add/remove/evaluate đều O(1) hoặc O(k) phân bổ.</p>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 1 — Maximum Average Subarray I</h2>
+  <p><strong>Đề (LeetCode #643):</strong> Mảng <code>nums</code>, số <code>k</code>. Tìm trung bình lớn nhất
+  của subarray liên tiếp size k.</p>
+  <p><strong>Constraints:</strong> 1 ≤ k ≤ n ≤ 10⁵ → cần O(n).</p>
+  <h3>Brute force</h3>
+  <p>Duyệt mọi cửa sổ, tính tổng → O(n × k). Với n,k = 10⁵ → 10¹⁰ → TLE.</p>
+  <h3>Sliding Window</h3>
+  <pre><code>def findMaxAverage(nums, k):
+    window_sum = sum(nums[:k])           # cửa sổ đầu tiên
+    best = window_sum
+    for i in range(k, len(nums)):
+        window_sum += nums[i] - nums[i - k]   # add right, remove left — O(1)
+        best = max(best, window_sum)
+    return best / k</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(1)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Maximum Average — Trace tay</h2>
+  <p><code>nums = [1, 12, -5, -6, 50, 3]</code>, <code>k = 4</code>.</p>
+  <h3>Cửa sổ ban đầu</h3>
+  <p><code>nums[0..3] = [1,12,-5,-6]</code>, sum = 2, best = 2.</p>
+  <table class="trace-table">
+    <tr><th>i</th><th>nums[i]</th><th>nums[i−k]</th><th>thay đổi</th><th>window_sum</th><th>best</th></tr>
+    <tr><td>4</td><td>50</td><td>1 (idx 0)</td><td>+50 −1</td><td>2 + 49 = 51</td><td>51</td></tr>
+    <tr><td>5</td><td>3</td><td>12 (idx 1)</td><td>+3 −12</td><td>51 − 9 = 42</td><td>51</td></tr>
+  </table>
+  <p>Trả về <code>51 / 4 = 12.75</code>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Bí quyết O(1) update:</div>
+    <code>nums[i] − nums[i − k]</code> — chỉ cộng phần tử mới và trừ phần tử bị đẩy ra. Đây là tinh thần
+    "<em>incremental update</em>" — không tính lại tổng từ đầu.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Worked Example 2 — Find All Anagrams in a String</h2>
+  <p><strong>Đề (LeetCode #438):</strong> String <code>s</code>, pattern <code>p</code>. Tìm mọi index
+  bắt đầu của substring trong s là anagram của p.</p>
+  <p><strong>Ví dụ:</strong> s = "cbaebabacd", p = "abc" → [0, 6] (substring "cba" và "bac").</p>
+  <h3>Ý tưởng</h3>
+  <p>Cửa sổ size <code>len(p)</code>. So sánh Counter của cửa sổ với Counter của p.</p>
+  <pre><code>from collections import Counter
+def findAnagrams(s, p):
+    if len(s) &lt; len(p): return []
+    k = len(p)
+    p_cnt = Counter(p)
+    w_cnt = Counter(s[:k])
+    res = []
+    if w_cnt == p_cnt: res.append(0)
+    for i in range(k, len(s)):
+        w_cnt[s[i]] += 1                        # add
+        w_cnt[s[i - k]] -= 1                    # remove
+        if w_cnt[s[i - k]] == 0:
+            del w_cnt[s[i - k]]
+        if w_cnt == p_cnt: res.append(i - k + 1)
+    return res</code></pre>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 Find Anagrams — Tối ưu so sánh O(1)</h2>
+  <p>Code 2.4 vẫn đúng nhưng <code>w_cnt == p_cnt</code> tốn O(k) mỗi bước → O(n × k). Có thể tối ưu O(n).</p>
+  <h3>Đếm số "match"</h3>
+  <p>Duy trì biến <code>matches</code> = số ký tự có <code>w_cnt[ch] == p_cnt[ch]</code>. Anagram tương đương
+  <code>matches == số ký tự khác nhau trong p_cnt</code>.</p>
+  <pre><code>def findAnagrams(s, p):
+    if len(s) &lt; len(p): return []
+    p_cnt = Counter(p)
+    w_cnt = Counter()
+    matches = 0
+    needed = len(p_cnt)
+    res = []
+    for i, ch in enumerate(s):
+        # add
+        w_cnt[ch] += 1
+        if w_cnt[ch] == p_cnt[ch]: matches += 1
+        elif w_cnt[ch] == p_cnt[ch] + 1: matches -= 1
+        # remove (khi cửa sổ vượt size)
+        if i &gt;= len(p):
+            left_ch = s[i - len(p)]
+            if w_cnt[left_ch] == p_cnt[left_ch]: matches -= 1
+            elif w_cnt[left_ch] == p_cnt[left_ch] + 1: matches += 1
+            w_cnt[left_ch] -= 1
+        if matches == needed:
+            res.append(i - len(p) + 1)
+    return res</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(k)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.6 ===== -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 Worked Example 3 — Permutation in String</h2>
+  <p><strong>Đề (LeetCode #567):</strong> Cho <code>s1</code>, <code>s2</code>. Trả True nếu s2 chứa
+  một permutation của s1 dưới dạng substring.</p>
+  <p>Đây <em>chính là</em> Find Anagrams nhưng chỉ cần biết "có hay không" thay vì liệt kê.</p>
+  <pre><code>def checkInclusion(s1, s2):
+    if len(s1) &gt; len(s2): return False
+    p_cnt = Counter(s1)
+    w_cnt = Counter(s2[:len(s1)])
+    if w_cnt == p_cnt: return True
+    for i in range(len(s1), len(s2)):
+        w_cnt[s2[i]] += 1
+        w_cnt[s2[i - len(s1)]] -= 1
+        if w_cnt[s2[i - len(s1)]] == 0:
+            del w_cnt[s2[i - len(s1)]]
+        if w_cnt == p_cnt: return True
+    return False</code></pre>
+  <div class="example">
+    <div class="example-label">Bài học pattern reuse:</div>
+    Cùng pattern, đổi điều kiện return → bài mới. Find Anagrams thu thập mọi match;
+    Permutation in String dừng ở match đầu tiên. Đây là minh chứng giá trị của thinking-by-pattern.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.7 ===== -->
+<div class="slide">
+  <div class="slide-number">2.7</div>
+  <h2>2.7 Worked Example 4 — Maximum Number of Vowels in a Substring</h2>
+  <p><strong>Đề (LeetCode #1456):</strong> String <code>s</code>, số <code>k</code>. Tìm số nguyên âm
+  nhiều nhất trong substring size k.</p>
+  <pre><code>def maxVowels(s, k):
+    vowels = set('aeiou')
+    count = sum(1 for ch in s[:k] if ch in vowels)
+    best = count
+    for i in range(k, len(s)):
+        if s[i] in vowels: count += 1
+        if s[i - k] in vowels: count -= 1
+        best = max(best, count)
+    return best</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(1)</strong>.</p>
+  <h3>Mẫu chung của Fixed Window đếm</h3>
+  <p>Nhìn lại WE1, WE4: cùng cấu trúc — <code>state = count/sum</code>, update bằng <code>+/−</code>.
+  Đây là cấu trúc đơn giản nhất của Fixed Window và xuất hiện ở rất nhiều bài.</p>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc:</div>
+    Khi window state là một số (sum/count), Fixed Window là <em>O(1) update</em>.
+    Khi state là Counter/set, có thể vẫn O(1) amortised với mẹo "matches" như WE2.5.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Fixed Window</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Fixed Window, vì sao mỗi bước update tốn O(1) thay vì O(k)?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì Python tối ưu vòng lặp</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Vì chỉ cần thêm phần tử mới và bỏ phần tử bị đẩy ra — không tính lại từ đầu</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì cửa sổ size cố định</button>
+    <div class="quiz-explanation">Tinh thần "incremental update": <code>new_sum = old_sum + nums[i] − nums[i−k]</code>. Hai phép cộng/trừ thay vì k phép cộng. Đây là chìa khoá O(n) thay vì O(nk).</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Find All Anagrams (#438), so sánh hai Counter <code>w_cnt == p_cnt</code> mỗi bước có complexity gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) O(1)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) O(k) với k = số ký tự khác nhau</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) O(n)</button>
+    <div class="quiz-explanation">So sánh dict yêu cầu duyệt mọi key. Khi bảng chữ cái nhỏ (26), O(k) thực tế là hằng số — vẫn ổn. Nhưng có thể tối ưu hoàn toàn O(1) bằng biến đếm <code>matches</code>.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Tín hiệu mạnh nhất gợi ý dùng Fixed Window là gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Đề có chữ "sort"</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Đề nhắc tới "kích thước k cố định" hoặc "anagram độ dài cụ thể"</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Mảng đã sort</button>
+    <div class="quiz-explanation">Cụm "size k", "subarray of length k", "substring of size len(p)" là dấu hiệu thẳng thừng nhất. Khi không có size cố định mà có max/min độ dài thoả điều kiện → Variable Window.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. Variable Window</h1>
+  <div class="subtitle">Cửa sổ co/dãn theo điều kiện — pattern then chốt cho substring/subarray bài khó</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Template chuẩn — Variable Window</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình tổng quát:</div>
+    <pre><code>def variable_window(arr):
+    state = init()
+    left = 0
+    best = init_best()
+    for right in range(len(arr)):
+        state = add(state, arr[right])
+        # Shrink: di chuyển left cho đến khi cửa sổ "hợp lệ"
+        while not is_valid(state):
+            state = remove(state, arr[left])
+            left += 1
+        best = update_best(best, right - left + 1)
+    return best</code></pre>
+  </div>
+  <h3>Ba điểm tuỳ biến</h3>
+  <ol>
+    <li><code>state</code>: cấu trúc theo dõi cửa sổ (Counter, sum, max...).</li>
+    <li><code>is_valid</code>: điều kiện bài toán — quyết định khi nào shrink.</li>
+    <li><code>best</code>: max length / min length / count.</li>
+  </ol>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Shrink Condition — Trái tim của Variable Window</h2>
+  <p>Câu hỏi quan trọng nhất khi thiết kế Variable Window: <strong>khi nào shrink?</strong></p>
+  <table>
+    <tr><th>Bài toán</th><th>Shrink khi</th><th>Mục tiêu</th></tr>
+    <tr><td>Substring không lặp ký tự</td><td>Có ký tự lặp trong window</td><td>Max length</td></tr>
+    <tr><td>Subarray có tổng ≥ s</td><td>Tổng ≥ s (tìm cái ngắn nhất)</td><td>Min length</td></tr>
+    <tr><td>≤ k loại ký tự khác nhau</td><td>&gt; k loại</td><td>Max length</td></tr>
+    <tr><td>Min Window Substring</td><td>Đã chứa đủ pattern</td><td>Min length</td></tr>
+  </table>
+  <h3>Hai mẫu shrink phổ biến</h3>
+  <ol>
+    <li><strong>"While vi phạm, shrink để khôi phục hợp lệ"</strong> — bài tìm max length thoả điều kiện.</li>
+    <li><strong>"While đã thoả, shrink để tìm min"</strong> — bài tìm min length thoả điều kiện.</li>
+  </ol>
+  <div class="key-point">
+    <div class="key-point-label">Bí quyết phỏng vấn:</div>
+    Phát biểu rõ shrink condition trước khi code. "Em sẽ shrink window khi [X], cho đến khi [Y]" —
+    đây là cách diễn đạt cho thấy người học hiểu pattern, không chỉ chạy theo template.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Worked Example 5 — Minimum Size Subarray Sum</h2>
+  <p><strong>Đề (LeetCode #209):</strong> Mảng <code>nums</code> dương, số <code>target</code>. Tìm độ dài
+  subarray ngắn nhất có tổng ≥ target. Trả 0 nếu không có.</p>
+  <h3>Pattern: "Shrink khi đã thoả"</h3>
+  <pre><code>def minSubArrayLen(target, nums):
+    left = 0
+    cur_sum = 0
+    best = float('inf')
+    for right in range(len(nums)):
+        cur_sum += nums[right]
+        while cur_sum &gt;= target:                # đã thoả → cố thu nhỏ
+            best = min(best, right - left + 1)
+            cur_sum -= nums[left]
+            left += 1
+    return best if best != float('inf') else 0</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(1)</strong>.</p>
+  <h3>Vì sao bài này yêu cầu nums dương?</h3>
+  <p>Nếu có số âm, mở rộng <code>right</code> không nhất thiết tăng tổng → không monoton → sliding window
+  không áp dụng được. Bài có số âm cần Prefix Sum + Deque (Tuần 6).</p>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Min Size Subarray — Trace tay</h2>
+  <p><code>target = 7</code>, <code>nums = [2, 3, 1, 2, 4, 3]</code>. Kỳ vọng: 2 (subarray [4,3]).</p>
+  <table class="trace-table">
+    <tr><th>right</th><th>nums[right]</th><th>cur_sum</th><th>shrink?</th><th>left sau</th><th>best</th></tr>
+    <tr><td>0</td><td>2</td><td>2</td><td>không</td><td>0</td><td>∞</td></tr>
+    <tr><td>1</td><td>3</td><td>5</td><td>không</td><td>0</td><td>∞</td></tr>
+    <tr><td>2</td><td>1</td><td>6</td><td>không</td><td>0</td><td>∞</td></tr>
+    <tr><td>3</td><td>2</td><td>8</td><td>có (8≥7) → trừ 2 → 6</td><td>1</td><td>4</td></tr>
+    <tr><td>4</td><td>4</td><td>10</td><td>trừ 3 → 7, trừ 1 → 6</td><td>3</td><td>3</td></tr>
+    <tr><td>5</td><td>3</td><td>9</td><td>trừ 2 → 7, trừ 4 → 3</td><td>5</td><td>2</td></tr>
+  </table>
+  <p>Kết quả: 2.</p>
+  <div class="example">
+    <div class="example-label">Quan sát:</div>
+    Vòng <code>while</code> ở bước right=4 và right=5 chạy nhiều lần — nhưng <code>left</code> chỉ tiến tổng cộng
+    5 lần qua cả thuật toán. Đây là phân tích amortised: tổng số lần shrink ≤ n.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.5 ===== -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 Worked Example 6 — Longest Substring Without Repeating (Set version)</h2>
+  <p><strong>Đề (LeetCode #3):</strong> String <code>s</code>. Độ dài substring dài nhất không có ký tự lặp.</p>
+  <h3>Variant 1 — Set + while shrink</h3>
+  <pre><code>def lengthOfLongestSubstring(s):
+    seen = set()
+    left = 0
+    best = 0
+    for right, ch in enumerate(s):
+        while ch in seen:                  # shrink cho đến khi hợp lệ
+            seen.remove(s[left])
+            left += 1
+        seen.add(ch)
+        best = max(best, right - left + 1)
+    return best</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(k)</strong> với k = số ký tự khác nhau.</p>
+  <h3>Đây là pattern "Shrink khi vi phạm"</h3>
+  <p>Cửa sổ phải <em>không có ký tự lặp</em>. Khi <code>ch</code> đã có trong set, vi phạm — shrink left
+  cho đến khi <code>ch</code> không còn trong set.</p>
+</div>
+
+<!-- ===== SLIDE 3.6 ===== -->
+<div class="slide">
+  <div class="slide-number">3.6</div>
+  <h2>3.6 Longest Substring No Repeat — Variant 2 (Last-seen index)</h2>
+  <p>Variant 1 chạy đúng O(n) amortised nhưng có thể tối ưu hằng số bằng "nhảy left" thay vì shrink từng bước:</p>
+  <pre><code>def lengthOfLongestSubstring(s):
+    last_seen = {}
+    left = 0
+    best = 0
+    for right, ch in enumerate(s):
+        if ch in last_seen and last_seen[ch] &gt;= left:
+            left = last_seen[ch] + 1       # nhảy left thẳng tới sau vị trí cũ
+        last_seen[ch] = right
+        best = max(best, right - left + 1)
+    return best</code></pre>
+  <h3>So sánh</h3>
+  <table>
+    <tr><th>Variant</th><th>Shrink</th><th>Time</th><th>Đọc dễ?</th></tr>
+    <tr><td>1 — Set + while</td><td>Tăng left từng bước</td><td>O(n) amortised</td><td>Dễ hiểu</td></tr>
+    <tr><td>2 — Last-seen jump</td><td>Nhảy left một lần</td><td>O(n) đảm bảo</td><td>Khó hiểu hơn</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Khi nào dùng Variant 2?</div>
+    Khi cần đảm bảo time không amortised (ví dụ trong môi trường thời gian thực hoặc có ràng buộc hằng số).
+    Trong phỏng vấn, Variant 1 là an toàn hơn vì code rõ và tổng quát.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.7 ===== -->
+<div class="slide">
+  <div class="slide-number">3.7</div>
+  <h2>3.7 Worked Example 7 — Longest Substring with At Most K Distinct Characters</h2>
+  <p><strong>Đề (LeetCode #340):</strong> String <code>s</code>, số <code>k</code>. Độ dài substring dài nhất
+  có tối đa k loại ký tự khác nhau.</p>
+  <h3>Pattern: "Shrink khi vi phạm" với Counter</h3>
+  <pre><code>from collections import defaultdict
+def lengthOfLongestSubstringKDistinct(s, k):
+    cnt = defaultdict(int)
+    left = 0
+    best = 0
+    for right, ch in enumerate(s):
+        cnt[ch] += 1
+        while len(cnt) &gt; k:                # vi phạm
+            cnt[s[left]] -= 1
+            if cnt[s[left]] == 0:
+                del cnt[s[left]]
+            left += 1
+        best = max(best, right - left + 1)
+    return best</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(k)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.8 ===== -->
+<div class="slide">
+  <div class="slide-number">3.8</div>
+  <h2>3.8 Longest Substring K Distinct — Trace</h2>
+  <p><code>s = "eceba"</code>, <code>k = 2</code>. Kỳ vọng: 3 (substring "ece").</p>
+  <table class="trace-table">
+    <tr><th>right</th><th>ch</th><th>cnt sau add</th><th>shrink?</th><th>left sau</th><th>cnt sau shrink</th><th>best</th></tr>
+    <tr><td>0</td><td>e</td><td>{e:1}</td><td>không</td><td>0</td><td>{e:1}</td><td>1</td></tr>
+    <tr><td>1</td><td>c</td><td>{e:1,c:1}</td><td>không</td><td>0</td><td>{e:1,c:1}</td><td>2</td></tr>
+    <tr><td>2</td><td>e</td><td>{e:2,c:1}</td><td>không</td><td>0</td><td>{e:2,c:1}</td><td>3</td></tr>
+    <tr><td>3</td><td>b</td><td>{e:2,c:1,b:1}</td><td>có (3&gt;2)</td><td>2</td><td>{e:1,b:1}</td><td>3</td></tr>
+    <tr><td>4</td><td>a</td><td>{e:1,b:1,a:1}</td><td>có</td><td>4</td><td>{a:1}</td><td>3</td></tr>
+  </table>
+  <p>Kết quả: 3.</p>
+  <div class="example">
+    <div class="example-label">Quan sát kỹ thuật:</div>
+    <code>del cnt[s[left]]</code> khi count về 0 là quan trọng — nếu không xoá, <code>len(cnt)</code> sẽ
+    sai (vẫn đếm key có count = 0). Đây là bẫy phổ biến.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.9 ===== -->
+<div class="slide">
+  <div class="slide-number">3.9</div>
+  <h2>3.9 Worked Example 8 — Fruit Into Baskets</h2>
+  <p><strong>Đề (LeetCode #904):</strong> Mảng <code>fruits</code>. Hai giỏ, mỗi giỏ một loại.
+  Bắt đầu từ một vị trí bất kỳ, hái <em>liên tiếp</em>. Tối đa hái được bao nhiêu trái?</p>
+  <p>Đây <em>chính là</em> Longest Substring with At Most K Distinct với <code>k = 2</code>.</p>
+  <pre><code>def totalFruit(fruits):
+    cnt = defaultdict(int)
+    left = 0
+    best = 0
+    for right, f in enumerate(fruits):
+        cnt[f] += 1
+        while len(cnt) &gt; 2:
+            cnt[fruits[left]] -= 1
+            if cnt[fruits[left]] == 0:
+                del cnt[fruits[left]]
+            left += 1
+        best = max(best, right - left + 1)
+    return best</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Lessons learned:</div>
+    Bài đề nhìn rất khác (giỏ trái cây) nhưng cấu trúc <em>hoàn toàn giống</em> #340.
+    Đây là lý do tại sao học pattern thay vì học bài. Một sinh viên giỏi sẽ đọc đề Fruit và lập tức nói:
+    "Đây là K Distinct với k=2."
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.10 ===== -->
+<div class="slide">
+  <div class="slide-number">3.10</div>
+  <h2>3.10 Worked Example 9 — Longest Repeating Character Replacement</h2>
+  <p><strong>Đề (LeetCode #424):</strong> String <code>s</code> chữ hoa, số <code>k</code>. Có thể đổi tối đa
+  k ký tự để được substring toàn cùng một ký tự. Độ dài lớn nhất là bao nhiêu?</p>
+  <h3>Quan sát then chốt</h3>
+  <p>Window hợp lệ ⟺ <code>(window_length − max_freq_in_window) ≤ k</code>. Tức số ký tự "khác đa số"
+  trong window không vượt k.</p>
+  <pre><code>from collections import defaultdict
+def characterReplacement(s, k):
+    cnt = defaultdict(int)
+    left = 0
+    max_freq = 0
+    best = 0
+    for right, ch in enumerate(s):
+        cnt[ch] += 1
+        max_freq = max(max_freq, cnt[ch])
+        # vi phạm: cần đổi nhiều hơn k ký tự
+        if (right - left + 1) - max_freq &gt; k:
+            cnt[s[left]] -= 1
+            left += 1
+        best = max(best, right - left + 1)
+    return best</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(26)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.11 ===== -->
+<div class="slide">
+  <div class="slide-number">3.11</div>
+  <h2>3.11 Worked Example 10 — Minimum Window Substring (Hard)</h2>
+  <p><strong>Đề (LeetCode #76):</strong> String <code>s</code>, <code>t</code>. Tìm substring ngắn nhất
+  của <code>s</code> chứa mọi ký tự của <code>t</code> (kể cả tần suất).</p>
+  <p><strong>Ví dụ:</strong> s = "ADOBECODEBANC", t = "ABC" → "BANC".</p>
+  <h3>Pattern: "Shrink khi đã thoả" + Counter + matches</h3>
+  <pre><code>from collections import Counter
+def minWindow(s, t):
+    if not t or len(s) &lt; len(t): return ""
+    need = Counter(t)
+    have = defaultdict(int)
+    needed = len(need)
+    formed = 0
+    left = 0
+    best_len = float('inf')
+    best_l, best_r = 0, 0
+    for right, ch in enumerate(s):
+        have[ch] += 1
+        if ch in need and have[ch] == need[ch]:
+            formed += 1
+        while formed == needed:           # đã thoả → shrink để tìm min
+            if right - left + 1 &lt; best_len:
+                best_len = right - left + 1
+                best_l, best_r = left, right
+            have[s[left]] -= 1
+            if s[left] in need and have[s[left]] &lt; need[s[left]]:
+                formed -= 1
+            left += 1
+    return s[best_l:best_r+1] if best_len != float('inf') else ""</code></pre>
+</div>
+
+<!-- ===== SLIDE 3.12 ===== -->
+<div class="slide">
+  <div class="slide-number">3.12</div>
+  <h2>3.12 Min Window — Phân tích chi tiết</h2>
+  <h3>Vai trò các biến</h3>
+  <ul>
+    <li><code>need</code> = Counter của t (yêu cầu).</li>
+    <li><code>have</code> = Counter của window hiện tại.</li>
+    <li><code>needed</code> = số ký tự khác nhau trong t.</li>
+    <li><code>formed</code> = số ký tự khác nhau đã <em>đủ</em> tần suất trong window.</li>
+  </ul>
+  <h3>Logic cập nhật <code>formed</code></h3>
+  <p>Tăng khi <code>have[ch] == need[ch]</code> (vừa đủ — không tăng nếu vượt). Giảm khi shrink làm
+  <code>have[s[left]] &lt; need[s[left]]</code> (vừa thiếu).</p>
+  <h3>Vì sao cần biến <code>formed</code> mà không so sánh trực tiếp <code>have == need</code>?</h3>
+  <p>So sánh hai dict tốn O(số ký tự khác nhau) mỗi bước → tổng O(nk). Biến <code>formed</code> cập nhật
+  O(1) → tổng O(n). Giống tinh thần <code>matches</code> ở Find All Anagrams (2.5).</p>
+  <div class="key-point">
+    <div class="key-point-label">Đây là bài "boss" của tuần:</div>
+    Min Window Substring được hỏi ở Google, Facebook, Amazon. Sinh viên code được bài này = đã làm chủ Variable Window.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.13 ===== -->
+<div class="slide">
+  <div class="slide-number">3.13</div>
+  <h2>3.13 Min Window — Trace tay</h2>
+  <p><code>s = "ADOBECODEBANC"</code>, <code>t = "ABC"</code>. need={A:1,B:1,C:1}, needed=3.</p>
+  <table class="trace-table">
+    <tr><th>right</th><th>ch</th><th>have</th><th>formed</th><th>shrink?</th><th>best</th></tr>
+    <tr><td>0</td><td>A</td><td>{A:1}</td><td>1</td><td>—</td><td>∞</td></tr>
+    <tr><td>1</td><td>D</td><td>{A:1,D:1}</td><td>1</td><td>—</td><td>∞</td></tr>
+    <tr><td>2</td><td>O</td><td>{A:1,D:1,O:1}</td><td>1</td><td>—</td><td>∞</td></tr>
+    <tr><td>3</td><td>B</td><td>{A:1,D:1,O:1,B:1}</td><td>2</td><td>—</td><td>∞</td></tr>
+    <tr><td>4</td><td>E</td><td>...,E:1</td><td>2</td><td>—</td><td>∞</td></tr>
+    <tr><td>5</td><td>C</td><td>...,C:1</td><td>3</td><td>shrink → "ADOBEC" (6)</td><td>6</td></tr>
+    <tr><td>...</td><td>...</td><td>...</td><td>...</td><td>shrink dần, formed giảm về 2</td><td>...</td></tr>
+    <tr><td>10</td><td>A</td><td>...</td><td>3</td><td>shrink → "BANC" (4)</td><td>4</td></tr>
+    <tr><td>11</td><td>N</td><td>...</td><td>3</td><td>shrink tiếp</td><td>4</td></tr>
+    <tr><td>12</td><td>C</td><td>...</td><td>3</td><td>shrink hết</td><td>4</td></tr>
+  </table>
+  <p>Kết quả: "BANC". Đầy đủ 13 bước có trong code repository — đây chỉ là tóm tắt.</p>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Variable Window</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Min Size Subarray Sum (#209), vì sao bài yêu cầu mảng các số dương?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì code đơn giản hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Vì nếu có số âm, mở rộng cửa sổ không đảm bảo tổng tăng → mất tính monoton</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì số âm gây overflow</button>
+    <div class="quiz-explanation">Sliding Window dựa trên tính monoton: thêm phần tử → tổng tăng (hoặc giảm) đều một chiều. Có số âm phá vỡ điều này. Bài có số âm phải dùng Prefix Sum + Deque (Monotonic Deque ở Tuần 6).</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Bài Longest Repeating Character Replacement có công thức window hợp lệ là gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) <code>window_length ≤ k</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <code>window_length − max_freq ≤ k</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) <code>distinct_chars ≤ k</code></button>
+    <div class="quiz-explanation">Số ký tự cần đổi = tổng độ dài − số ký tự đa số. Nếu ≤ k thì đổi được. Đây là quan sát then chốt — không có nó thì bài không giải được bằng sliding window.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Trong Min Window Substring (#76), vì sao biến <code>formed</code> tăng <em>chỉ khi</em> <code>have[ch] == need[ch]</code> (không tăng nếu vượt)?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì Counter không cho phép vượt</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để <code>formed</code> đếm chính xác số ký tự "vừa đủ" — vượt thừa không thay đổi tính hợp lệ</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để tiết kiệm bộ nhớ</button>
+    <div class="quiz-explanation">Khi have[ch] đã = need[ch], thêm 1 nữa không làm window "thoả thêm" — vẫn cùng trạng thái thoả. Tăng formed sẽ làm sai số ký tự đã đủ. Cùng logic cho khi giảm: chỉ giảm formed khi cắt qua ngưỡng "vừa thiếu".</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Tổng hợp và Bẫy thường gặp</h1>
+  <div class="subtitle">Decision tree, common pitfalls, và bài về nhà</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Decision Tree — Fixed vs Variable</h2>
+  <table>
+    <tr><th>Đặc điểm</th><th>Fixed Window</th><th>Variable Window</th></tr>
+    <tr><td>Kích thước window</td><td>Cố định k (cho trước)</td><td>Co/dãn theo điều kiện</td></tr>
+    <tr><td>Logic shrink</td><td>Tự động <code>left = right − k + 1</code></td><td>Cần shrink condition</td></tr>
+    <tr><td>Mục tiêu điển hình</td><td>Max/min/count <em>của window</em></td><td>Max/min/count <em>độ dài window</em></td></tr>
+    <tr><td>Ví dụ</td><td>Max Average #643, Find Anagrams #438</td><td>Min Subarray #209, Min Window #76</td></tr>
+  </table>
+  <h3>Mẫu nhận diện trong đề</h3>
+  <ul>
+    <li>"size k", "length k" → Fixed.</li>
+    <li>"longest", "shortest" + điều kiện → Variable.</li>
+    <li>"đếm subarray thoả X" → Variable + kỹ thuật <code>countAtMost(K) − countAtMost(K−1)</code>.</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Common Pitfalls</h2>
+  <ol>
+    <li><strong>Quên xoá key khỏi Counter khi count về 0.</strong>
+    <pre><code>cnt[s[left]] -= 1
+if cnt[s[left]] == 0: del cnt[s[left]]      # ĐỪNG QUÊN</code></pre>
+    Nếu không xoá, <code>len(cnt)</code> sai → bài K Distinct sẽ TLE hoặc kết quả sai.</li>
+
+    <li><strong>Sai vị trí cập nhật <code>best</code> trong Variable Window.</strong>
+    Cập nhật trong/sau vòng <code>while</code> tuỳ bài: max length thì sau (để window đã hợp lệ);
+    min length thì trong while (để bắt được window vừa thoả).</li>
+
+    <li><strong>Hiểu sai amortised vs worst-case.</strong>
+    Một số sinh viên thấy <code>while</code> trong <code>for</code> nghĩ là O(n²). Phải lập luận:
+    "left chỉ tăng — tổng số bước while ≤ n".</li>
+
+    <li><strong>Áp dụng Sliding Window cho mảng có số âm.</strong>
+    Sliding Window cần monoton. Số âm phá monoton trong nhiều bài — phải kiểm tra trước khi áp dụng.</li>
+
+    <li><strong>Quên trường hợp window rỗng / cửa sổ ban đầu.</strong>
+    Min Subarray Sum: nếu không tồn tại → trả 0 chứ không phải <code>float('inf')</code>.
+    Min Window Substring: trả "" nếu không tìm thấy.</li>
+  </ol>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">5.0</div>
+  <h2>Tổng kết Tuần 4</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>Sliding Window</strong>: biến thể chuyên biệt của Two Pointers Same Direction.</li>
+    <li><strong>Fixed Window</strong>: incremental update O(1) — sum, count, Counter với mẹo "matches".</li>
+    <li><strong>Variable Window</strong>: shrink condition là trái tim — "vi phạm" cho max length, "đã thoả" cho min length.</li>
+    <li><strong>Phân tích amortised</strong>: tổng số lần left/right di chuyển ≤ 2n → O(n).</li>
+    <li><strong>Kết hợp với Hash</strong>: Counter làm window state cho hầu hết bài substring.</li>
+    <li><strong>Bẫy</strong>: xoá key khi count=0, monoton vs số âm, vị trí update best.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #643 — Maximum Average Subarray I</li>
+    <li>LeetCode #1456 — Maximum Number of Vowels in a Substring of Given Length</li>
+    <li>LeetCode #438 — Find All Anagrams in a String</li>
+    <li>LeetCode #567 — Permutation in String</li>
+    <li>LeetCode #209 — Minimum Size Subarray Sum</li>
+    <li>LeetCode #3 — Longest Substring Without Repeating Characters (cả 2 variant)</li>
+    <li>LeetCode #340 — Longest Substring with At Most K Distinct Characters</li>
+    <li>LeetCode #904 — Fruit Into Baskets</li>
+    <li>LeetCode #424 — Longest Repeating Character Replacement</li>
+    <li>LeetCode #76 — Minimum Window Substring (Hard — bài boss của tuần)</li>
+    <li>LeetCode #1004 — Max Consecutive Ones III</li>
+    <li>LeetCode #2962 — Count Subarrays Where Max Element Appears at Least K Times</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 5 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>Linked List — Fast &amp; Slow Pointer, Reverse, Merge</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Pattern Two Pointers tiếp tục được dùng — nhưng trên cấu trúc tuần tự không có index ngẫu nhiên.
+    Học cách: phát hiện chu kỳ (Floyd's Tortoise and Hare), tìm midpoint, đảo linked list,
+    merge sorted lists. Đây là chuẩn bị cho merge sort và k-way merge ở Tuần 9.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 4 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>

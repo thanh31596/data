@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 5 — Subquery và Set Operations</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.15rem; color: #666; margin-bottom: 20px; font-style: italic; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8810a; margin-bottom: 6px; }
+    .warning {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-label { font-weight: bold; color: #c0392b; margin-bottom: 6px; }
+    pre {
+      background: #f5f5f5; padding: 14px 18px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.95rem; margin: 10px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 6px 12px; text-align: left;
+    }
+    th { background: #f0f0f0; font-weight: 600; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; margin-bottom: 12px; }
+    .illustration {
+      display: flex; justify-content: center; margin: 14px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.92rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .schema-block {
+      background: #fafafa; border: 1px solid #e0e0e0;
+      padding: 12px 16px; border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 0.92rem; margin: 8px 0;
+    }
+    .dialect-table th { background: #e8f0fe; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ TITLE ============ -->
+  <div class="slide title-slide active" id="slide-0">
+    <h1>Tuần 5</h1>
+    <h1 style="font-size: 1.8rem; color: #555;">Subquery và Set Operations</h1>
+    <p class="subtitle" style="margin-top: 24px;">SQL cho Interview — Lộ trình 10 tuần</p>
+    <p style="margin-top: 40px; color: #999; font-size: 0.9rem;">Nhấn phím → để bắt đầu &middot; T để xem mục lục</p>
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>1. Tổng quan tuần 5</h1>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Mục tiêu — vũ khí giải Medium</h2>
+    <p>Hết tuần 4, bạn đã thoải mái với Easy LeetCode. Subquery là chìa khóa unlock đa số Medium — đặc biệt các bài "tìm cái lớn/nhỏ nhất theo nhóm", "tìm dòng có liên hệ với dòng khác", "lọc theo aggregate".</p>
+    <h3>Sau tuần 5 bạn cần làm được</h3>
+    <ul>
+      <li>Đặt subquery đúng vị trí (SELECT / FROM / WHERE / HAVING) tùy yêu cầu.</li>
+      <li>Phân biệt correlated vs non-correlated subquery, và chọn đúng theo bài.</li>
+      <li>Dùng <span class="inline-code">EXISTS</span>/<span class="inline-code">NOT EXISTS</span> như reflex thay cho IN/NOT IN.</li>
+      <li>Áp dụng <span class="inline-code">UNION</span>, <span class="inline-code">INTERSECT</span>, <span class="inline-code">EXCEPT</span> và biết khi nào cần <span class="inline-code">UNION ALL</span>.</li>
+      <li>Refactor một bài giữa ba paradigm: subquery → self-join → (sẽ có) window function.</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Insight</div>
+      Sau tuần 5, bạn giải được khoảng 50% Medium LeetCode SQL. Tuần 6 (window functions) sẽ unlock nửa còn lại — và làm gọn nhiều bài Medium tuần này từ 15 dòng xuống 5 dòng.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 Mental model — query lồng query</h2>
+    <p>Subquery là một <strong>SELECT đặt bên trong một SELECT khác</strong>. Engine xử lý theo nguyên tắc: chạy subquery trước (nếu độc lập), kết quả trở thành đầu vào cho query ngoài.</p>
+    <div class="illustration">
+      <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="40" y="30" width="520" height="150" fill="#fff" stroke="#1a1a1a" stroke-width="1.5" rx="6"/>
+        <text x="50" y="55" font-size="13" font-weight="bold" fill="#1a1a1a">Outer query</text>
+        <text x="60" y="80" font-size="12" font-family="Courier New">SELECT name FROM customers</text>
+        <text x="60" y="105" font-size="12" font-family="Courier New">WHERE customer_id IN (</text>
+
+        <rect x="80" y="115" width="380" height="40" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.5" rx="4"/>
+        <text x="90" y="130" font-size="11" font-weight="bold" fill="#3b5998">Subquery</text>
+        <text x="90" y="148" font-size="12" font-family="Courier New">SELECT customer_id FROM orders WHERE total &gt; 1000</text>
+
+        <text x="60" y="172" font-size="12" font-family="Courier New">);</text>
+      </svg>
+    </div>
+    <h3>Ba câu hỏi để phân loại một subquery</h3>
+    <ol>
+      <li><strong>Trả về cái gì?</strong> Một giá trị (scalar), một dòng (row), hay một bảng (table)?</li>
+      <li><strong>Đặt ở đâu?</strong> SELECT, FROM, WHERE, HAVING?</li>
+      <li><strong>Có tham chiếu cột của outer không?</strong> Nếu có ⇒ <em>correlated</em>, nếu không ⇒ <em>non-correlated</em>.</li>
+    </ol>
+  </div>
+
+  <!-- ============ SECTION 2 ============ -->
+  <div class="slide section-divider" id="slide-4">
+    <h1>2. Vị trí của Subquery</h1>
+  </div>
+
+  <div class="slide" id="slide-5">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 Scalar subquery — trả 1 giá trị</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      Scalar subquery trả về <strong>chính xác 1 dòng × 1 cột</strong>. Có thể đặt ở bất cứ nơi nào một biểu thức được phép.
+    </div>
+    <div class="example">
+      <div class="example-label">Trong SELECT</div>
+<pre><code>-- So tổng đơn của khách với tổng toàn hệ thống
+SELECT
+    customer_id,
+    SUM(total)                          AS my_total,
+    (SELECT SUM(total) FROM orders)     AS grand_total
+FROM orders
+GROUP BY customer_id;</code></pre>
+    </div>
+    <div class="example">
+      <div class="example-label">Trong WHERE — so sánh với scalar</div>
+<pre><code>-- Đơn lớn hơn trung bình toàn hệ thống
+SELECT * FROM orders
+WHERE total &gt; (SELECT AVG(total) FROM orders);</code></pre>
+    </div>
+    <div class="warning">
+      <div class="warning-label">Bẫy: subquery trả nhiều dòng</div>
+      Nếu subquery vô tình trả &gt;1 dòng, query <strong>lỗi runtime</strong>: <span class="inline-code">"Subquery returned more than 1 value"</span>. Khi cần "1 giá trị duy nhất", luôn dùng aggregator (MAX, MIN, AVG) hoặc <span class="inline-code">LIMIT 1</span> để bảo đảm.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-6">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 Subquery trong WHERE — IN, comparison, ANY/ALL</h2>
+    <h3>IN — kiểm tra thuộc tập</h3>
+<pre><code>-- Khách đã có ít nhất 1 đơn paid
+SELECT name FROM customers
+WHERE customer_id IN (
+    SELECT customer_id FROM orders WHERE status = 'paid'
+);</code></pre>
+    <h3>ANY và ALL — so sánh với mọi/một dòng</h3>
+<pre><code>-- Đơn lớn hơn ÍT NHẤT MỘT đơn của khách VIP
+SELECT * FROM orders
+WHERE total &gt; ANY (
+    SELECT total FROM orders WHERE customer_id = 1
+);
+-- Tương đương: total &gt; MIN của tập đó
+
+-- Đơn lớn hơn TẤT CẢ đơn của khách VIP
+SELECT * FROM orders
+WHERE total &gt; ALL (
+    SELECT total FROM orders WHERE customer_id = 1
+);
+-- Tương đương: total &gt; MAX của tập đó</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Khuyên</div>
+      ANY/ALL hiếm khi xuất hiện trong code production. Phần lớn người đọc thấy lạ. Viết lại bằng MIN/MAX dễ đọc và nhanh hơn:
+<pre><code>WHERE total &gt; (SELECT MAX(total) FROM orders WHERE customer_id = 1)</code></pre>
+      Trong interview, có thể đề cập ANY/ALL khi cần "show off" — nhưng default vẫn dùng MIN/MAX.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 Derived table — subquery trong FROM</h2>
+    <p>Subquery đặt trong FROM được coi như một <em>bảng tạm</em> (derived table / inline view). Phải có alias bắt buộc.</p>
+<pre><code>-- Top 5 khách theo doanh thu (yêu cầu 2 bước: aggregate rồi sort/limit)
+SELECT s.customer_id, s.revenue, c.name
+FROM (
+    SELECT customer_id, SUM(total) AS revenue
+    FROM orders
+    GROUP BY customer_id
+) s                                    -- alias bắt buộc
+JOIN customers c ON c.customer_id = s.customer_id
+ORDER BY s.revenue DESC
+LIMIT 5;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Khi nào dùng derived table</div>
+      <ul>
+        <li>Cần aggregate trước rồi join hoặc filter sau.</li>
+        <li>Cần áp window function rồi filter (window không dùng được trong WHERE).</li>
+        <li>Cần break query phức tạp thành các bước.</li>
+      </ul>
+      <strong>Tuần 7 sẽ học CTE (<span class="inline-code">WITH</span>)</strong> — cú pháp đẹp hơn cho cùng mục đích. Tạm dùng derived table cho đến khi học CTE.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-8">
+    <div class="slide-number">2.4</div>
+    <h2>2.4 Tổng kết — vị trí và yêu cầu</h2>
+    <table>
+      <tr><th>Vị trí</th><th>Yêu cầu</th><th>Use case điển hình</th></tr>
+      <tr><td>SELECT</td><td>Scalar (1×1)</td><td>Tính chỉ số "phụ" cùng kết quả chính</td></tr>
+      <tr><td>FROM</td><td>Bảng (n×m), phải có alias</td><td>Aggregate-then-join, multi-step query</td></tr>
+      <tr><td>WHERE — comparison</td><td>Scalar (1×1)</td><td>So với trung bình, max, min toàn hệ thống</td></tr>
+      <tr><td>WHERE — IN / NOT IN</td><td>1 cột, n dòng</td><td>Kiểm tra thuộc/không thuộc tập</td></tr>
+      <tr><td>WHERE — EXISTS / NOT EXISTS</td><td>Kết quả có hay không (n×m bất kỳ)</td><td>Tồn tại / không tồn tại — Section 4</td></tr>
+      <tr><td>HAVING</td><td>Scalar</td><td>Lọc nhóm theo so sánh với aggregate khác</td></tr>
+    </table>
+    <div class="example">
+      <div class="example-label">HAVING với subquery</div>
+<pre><code>-- Phòng ban có lương trung bình &gt; trung bình toàn công ty
+SELECT department, AVG(salary)
+FROM employees
+GROUP BY department
+HAVING AVG(salary) &gt; (SELECT AVG(salary) FROM employees);</code></pre>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3 ============ -->
+  <div class="slide section-divider" id="slide-9">
+    <h1>3. Correlated vs Non-correlated</h1>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 Non-correlated — subquery độc lập</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      Non-correlated subquery <strong>không tham chiếu</strong> bất kỳ cột nào của outer query. Có thể chạy độc lập như một query bình thường.
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ</div>
+<pre><code>SELECT name FROM customers
+WHERE customer_id IN (
+    SELECT customer_id FROM orders WHERE total &gt; 1000
+    -- Không nhắc đến customers ở trong → non-correlated
+);</code></pre>
+    </div>
+    <h3>Engine xử lý</h3>
+    <ol>
+      <li>Chạy subquery <strong>một lần</strong>, lưu kết quả tạm.</li>
+      <li>Mỗi dòng outer kiểm tra xem có thuộc kết quả tạm không.</li>
+    </ol>
+    <div class="key-point">
+      <div class="key-point-label">Hệ quả performance</div>
+      Non-correlated thường nhanh — engine có thể hash hoặc sort kết quả tạm để lookup O(1) hoặc O(log n) cho mỗi dòng outer. Optimizer thậm chí có thể chuyển thành JOIN tự động.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-11">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 Correlated — subquery phụ thuộc outer</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      Correlated subquery <strong>tham chiếu cột của outer query</strong>. Không thể chạy độc lập.
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ — đơn lớn nhất của mỗi khách</div>
+<pre><code>SELECT *
+FROM orders o
+WHERE total = (
+    SELECT MAX(total)
+    FROM orders o2
+    WHERE o2.customer_id = o.customer_id   -- tham chiếu o (outer) → correlated
+);</code></pre>
+    </div>
+    <h3>Engine xử lý</h3>
+    <ol>
+      <li>Với <strong>mỗi</strong> dòng outer, chạy subquery <em>lại</em> với giá trị cột tham chiếu thay thế.</li>
+      <li>Nếu outer có 1M dòng, subquery chạy 1M lần (về mặt logic — optimizer có thể tối ưu).</li>
+    </ol>
+    <div class="warning">
+      <div class="warning-label">Cảnh báo performance</div>
+      Correlated subquery <strong>tự nhiên là O(n²)</strong> nếu engine không tối ưu. Trong dữ liệu lớn, có thể chậm. Phương án thay thế: JOIN với derived table aggregate, hoặc window function (tuần 6).
+    </div>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 Khi nào dùng cái nào</h2>
+    <div class="two-col">
+      <div>
+        <h3>Dùng non-correlated khi</h3>
+        <ul>
+          <li>Filter điều kiện <em>cùng cho mọi dòng outer</em>.</li>
+          <li>So với một giá trị toàn cục (AVG, MAX, MIN của cả bảng).</li>
+          <li>Tập "thành viên" ổn định, không phụ thuộc dòng.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Dùng correlated khi</h3>
+        <ul>
+          <li>Cần điều kiện <em>thay đổi theo dòng outer</em>.</li>
+          <li>"Lớn nhất theo nhóm" trước khi học window function.</li>
+          <li>Existence check (EXISTS/NOT EXISTS — Section 4).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="example">
+      <div class="example-label">Cùng một bài, cả hai cách</div>
+      Yêu cầu: tìm employee có salary cao nhất phòng họ.
+<pre><code>-- Cách 1: correlated subquery (chạy mỗi dòng outer)
+SELECT * FROM employees e
+WHERE salary = (
+    SELECT MAX(salary) FROM employees e2 WHERE e2.dept = e.dept
+);
+
+-- Cách 2: derived table non-correlated (chạy 1 lần, JOIN)
+SELECT e.* FROM employees e
+JOIN (
+    SELECT dept, MAX(salary) AS max_sal FROM employees GROUP BY dept
+) m ON m.dept = e.dept AND m.max_sal = e.salary;</code></pre>
+    </div>
+    <p>Cách 2 thường nhanh hơn trên dữ liệu lớn — chỉ một lần aggregate. Cách 1 đọc tự nhiên hơn cho người mới.</p>
+  </div>
+
+  <!-- ============ SECTION 4 ============ -->
+  <div class="slide section-divider" id="slide-13">
+    <h1>4. EXISTS sâu</h1>
+  </div>
+
+  <div class="slide" id="slide-14">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 EXISTS — chỉ kiểm tra "có hay không"</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">EXISTS (subquery)</span> trả TRUE nếu subquery có <strong>ít nhất 1 dòng</strong>, FALSE nếu rỗng. <em>Nội dung dòng không quan trọng</em> — vì vậy có thể dùng <span class="inline-code">SELECT 1</span> hoặc <span class="inline-code">SELECT *</span>, kết quả như nhau.
+    </div>
+<pre><code>-- Khách CÓ ít nhất 1 đơn
+SELECT name FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id
+);</code></pre>
+    <p>Hầu hết EXISTS là <strong>correlated</strong> — phải có liên kết với outer (qua predicate trong WHERE) thì mới có nghĩa. EXISTS với non-correlated subquery thường vô nghĩa (luôn TRUE hoặc luôn FALSE).</p>
+    <div class="key-point">
+      <div class="key-point-label">Tại sao EXISTS nhanh</div>
+      Engine có thể dừng ngay khi tìm được 1 dòng match — không cần scan hết. Trong khi đó <span class="inline-code">COUNT(*) &gt; 0</span> sẽ scan toàn bộ. Trong production code "có hay không":
+<pre><code>-- KHÔNG hiệu quả
+WHERE (SELECT COUNT(*) FROM orders WHERE customer_id = c.id) &gt; 0
+-- HIỆU QUẢ
+WHERE EXISTS (SELECT 1 FROM orders WHERE customer_id = c.id)</code></pre>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 EXISTS vs IN — khi NULL xuất hiện</h2>
+    <p>Hai cách viết "thành viên" khác nhau ở semantic NULL:</p>
+    <table>
+      <tr><th>Aspect</th><th>IN</th><th>EXISTS</th></tr>
+      <tr><td>Semantic NULL</td><td>3VL — UNKNOWN có thể lan</td><td>Boolean thuần — TRUE/FALSE</td></tr>
+      <tr><td>Subquery có NULL ⇒</td><td>Có thể trả unexpected (NOT IN bug!)</td><td>Không bị ảnh hưởng</td></tr>
+      <tr><td>Performance trên large data</td><td>Engine có thể materialize trước</td><td>Engine có thể dừng sớm khi tìm thấy</td></tr>
+      <tr><td>Cú pháp đọc</td><td>Ngắn, "natural"</td><td>Dài hơn, cần predicate liên kết</td></tr>
+    </table>
+    <div class="example">
+      <div class="example-label">Cùng kết quả nếu data sạch</div>
+<pre><code>-- IN
+SELECT name FROM customers
+WHERE customer_id IN (SELECT customer_id FROM orders);
+
+-- EXISTS
+SELECT name FROM customers c
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id);</code></pre>
+      Hai query trên cho kết quả giống nhau khi <span class="inline-code">orders.customer_id</span> không có NULL.
+    </div>
+    <div class="warning">
+      <div class="warning-label">NOT IN vs NOT EXISTS — recap</div>
+      <p>Đã học tuần 2 và tuần 4. Nhắc lại lần nữa vì đây là bug đặc thù xuất hiện thường xuyên: <span class="inline-code">NOT IN</span> với subquery có NULL ⇒ tập rỗng. <span class="inline-code">NOT EXISTS</span> không bao giờ có bug này.</p>
+      <p><strong>Reflex</strong>: thấy "không thuộc" trong yêu cầu ⇒ <span class="inline-code">NOT EXISTS</span>, không phải <span class="inline-code">NOT IN</span>.</p>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-16">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 Pattern interview — "có ít nhất một X thỏa Y"</h2>
+    <p>Pattern này xuất hiện rất thường xuyên trong các bài Medium. Một vài dạng phrase:</p>
+    <ul>
+      <li>"Khách hàng đã mua ít nhất một sản phẩm thuộc category X."</li>
+      <li>"Bài viết có ít nhất một comment trong tháng vừa qua."</li>
+      <li>"Học sinh đã hoàn thành ít nhất một bài kiểm tra với điểm &gt; 8."</li>
+    </ul>
+    <div class="example">
+      <div class="example-label">Ví dụ</div>
+      Yêu cầu: customer đã mua ít nhất một sản phẩm thuộc category 'Electronics'.
+<pre><code>SELECT DISTINCT c.name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1
+    FROM orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN products p ON p.product_id = oi.product_id
+    WHERE o.customer_id = c.customer_id
+      AND p.category = 'Electronics'
+);</code></pre>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Anti-pattern: dùng JOIN + DISTINCT</div>
+<pre><code>-- Cũng đúng nhưng có thể chậm và cần DISTINCT
+SELECT DISTINCT c.name
+FROM customers c
+JOIN orders o      ON o.customer_id = c.customer_id
+JOIN order_items oi ON oi.order_id = o.order_id
+JOIN products p    ON p.product_id = oi.product_id
+WHERE p.category = 'Electronics';</code></pre>
+      JOIN nhân lên dòng (1 khách × 5 đơn × 10 items = 50 dòng) rồi DISTINCT để gom lại. EXISTS chỉ kiểm tra "có hay không" → ngắn ngủi và sạch hơn về tư duy.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <div class="slide section-divider" id="slide-17">
+    <h1>5. Set Operations</h1>
+  </div>
+
+  <div class="slide" id="slide-18">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 UNION vs UNION ALL</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <ul>
+        <li><span class="inline-code">UNION</span>: ghép kết quả hai query, <strong>loại trùng</strong>.</li>
+        <li><span class="inline-code">UNION ALL</span>: ghép kết quả hai query, <strong>giữ trùng</strong>.</li>
+      </ul>
+    </div>
+<pre><code>-- Khách VN hoặc khách AU (không có trùng vì 1 khách chỉ ở 1 nước)
+SELECT name FROM customers WHERE country = 'Vietnam'
+UNION ALL
+SELECT name FROM customers WHERE country = 'Australia';
+
+-- Khách có đơn paid HOẶC đơn pending — dùng UNION nếu sợ trùng
+SELECT customer_id FROM orders WHERE status = 'paid'
+UNION
+SELECT customer_id FROM orders WHERE status = 'pending';</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Khuyên — UNION ALL khi có thể</div>
+      <ul>
+        <li><span class="inline-code">UNION</span> phải sort/hash để loại trùng → tốn CPU và memory.</li>
+        <li><span class="inline-code">UNION ALL</span> chỉ ghép — nhanh hơn nhiều.</li>
+        <li>Khi bạn biết hai tập rời nhau (như VN vs AU), dùng <span class="inline-code">UNION ALL</span>.</li>
+      </ul>
+      <strong>Nguyên tắc</strong>: default <span class="inline-code">UNION ALL</span>, chỉ <span class="inline-code">UNION</span> khi thực sự cần loại trùng.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-19">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 INTERSECT và EXCEPT</h2>
+    <h3>INTERSECT — phần giao</h3>
+<pre><code>-- Khách CẢ paid VÀ pending
+SELECT customer_id FROM orders WHERE status = 'paid'
+INTERSECT
+SELECT customer_id FROM orders WHERE status = 'pending';</code></pre>
+    <h3>EXCEPT (PostgreSQL/SQL Server) hoặc MINUS (Oracle) — phần hiệu</h3>
+<pre><code>-- Khách paid NHƯNG chưa có đơn pending
+SELECT customer_id FROM orders WHERE status = 'paid'
+EXCEPT
+SELECT customer_id FROM orders WHERE status = 'pending';</code></pre>
+    <div class="warning">
+      <div class="warning-label">Phương ngữ — MySQL không có INTERSECT, EXCEPT</div>
+      MySQL chỉ có UNION/UNION ALL. Mô phỏng:
+<pre><code>-- INTERSECT mô phỏng
+SELECT customer_id FROM orders WHERE status = 'paid'
+  AND customer_id IN (SELECT customer_id FROM orders WHERE status = 'pending');
+
+-- EXCEPT mô phỏng (dùng NOT EXISTS để an toàn)
+SELECT DISTINCT customer_id FROM orders o WHERE status = 'paid'
+  AND NOT EXISTS (SELECT 1 FROM orders o2
+                  WHERE o2.customer_id = o.customer_id
+                    AND o2.status = 'pending');</code></pre>
+      LeetCode mặc định MySQL ⇒ luyện kỹ hai pattern này.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-20">
+    <div class="slide-number">5.3</div>
+    <h2>5.3 Quy tắc tương thích schema</h2>
+    <p>Để dùng UNION/INTERSECT/EXCEPT, hai query phải:</p>
+    <ol>
+      <li><strong>Cùng số cột.</strong></li>
+      <li><strong>Cột tương ứng cùng kiểu</strong> (hoặc convertible — engine sẽ implicit cast).</li>
+      <li><strong>Tên cột lấy từ query đầu tiên</strong> — query sau bỏ qua tên.</li>
+    </ol>
+    <div class="example">
+      <div class="example-label">Ví dụ — tổng hợp dữ liệu từ hai bảng cấu trúc tương tự</div>
+<pre><code>-- Bảng customers và bảng leads cùng có (id, name, email)
+SELECT id, name, email, 'customer' AS source FROM customers
+UNION ALL
+SELECT id, name, email, 'lead'     AS source FROM leads
+ORDER BY name;</code></pre>
+      Trick "tag source" bằng literal column rất hữu ích cho báo cáo.
+    </div>
+    <div class="warning">
+      <div class="warning-label">Bẫy ORDER BY</div>
+      ORDER BY chỉ đặt ở <em>cuối toàn bộ</em>, không trong từng SELECT (trừ khi có LIMIT). Tên cột reference phải tồn tại ở query đầu tiên.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 6 ============ -->
+  <div class="slide section-divider" id="slide-21">
+    <h1>6. Bridge — Refactor patterns</h1>
+  </div>
+
+  <div class="slide" id="slide-22">
+    <div class="slide-number">6.1</div>
+    <h2>6.1 Cùng một bài, ba paradigm</h2>
+    <p>Yêu cầu: tìm employee có salary cao nhất phòng họ. Schema: <span class="inline-code">employees(id, name, dept, salary)</span>.</p>
+    <h3>Cách A — Correlated subquery (intuitive)</h3>
+<pre><code>SELECT name, dept, salary
+FROM employees e
+WHERE salary = (
+    SELECT MAX(salary) FROM employees e2 WHERE e2.dept = e.dept
+);</code></pre>
+    <h3>Cách B — Self-join với derived table aggregate (faster on large data)</h3>
+<pre><code>SELECT e.name, e.dept, e.salary
+FROM employees e
+JOIN (
+    SELECT dept, MAX(salary) AS max_sal
+    FROM employees GROUP BY dept
+) m ON m.dept = e.dept AND m.max_sal = e.salary;</code></pre>
+    <h3>Cách C — Window function (tuần 6 preview)</h3>
+<pre><code>SELECT name, dept, salary FROM (
+    SELECT name, dept, salary,
+           RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS rk
+    FROM employees
+) t WHERE rk = 1;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Cảm nhận</div>
+      Cả ba đều đúng. Cách A đọc dễ nhất; Cách B nhanh trên dữ liệu lớn; Cách C ngắn nhất và xử lý ties tốt nhất. Sau khi học window function, bạn sẽ thấy Cách A và B trở thành "code di sản".
+    </div>
+  </div>
+
+  <div class="slide" id="slide-23">
+    <div class="slide-number">6.2</div>
+    <h2>6.2 Khi nào chọn paradigm nào</h2>
+    <table>
+      <tr><th>Paradigm</th><th>Mạnh khi</th><th>Yếu khi</th></tr>
+      <tr><td><strong>Correlated subquery</strong></td><td>Bài đơn giản, trực giác cao, không cần tối ưu</td><td>Dữ liệu lớn (O(n²) tự nhiên), nhiều bước, ties phức tạp</td></tr>
+      <tr><td><strong>Self-join + derived table</strong></td><td>Dữ liệu lớn, aggregate-then-filter, tương thích mọi dialect cũ</td><td>Code dài, phức tạp khi cần ranking/percentile</td></tr>
+      <tr><td><strong>Window function</strong></td><td>Ranking, running totals, top-N per group, percentile</td><td>Cần dialect mới (PostgreSQL/MySQL 8+/SQL Server 2012+); chưa học</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Điều quan trọng cho mock interview</div>
+      Bạn không phải chọn đúng paradigm ngay lần đầu. Nhưng sau khi viết, đề xuất một paradigm thay thế và giải thích trade-off:<br>
+      <em>"Tôi viết bằng correlated subquery. Trên dữ liệu lớn, có thể refactor thành self-join với derived table aggregate để chạy nhanh hơn. Hoặc với window function trong dialect mới, query gọn hơn nhiều — sẽ trông như thế này..."</em><br>
+      Đây là tín hiệu của senior candidate.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 7 ============ -->
+  <div class="slide section-divider" id="slide-24">
+    <h1>7. Worked Examples</h1>
+  </div>
+
+  <div class="slide" id="slide-25">
+    <div class="slide-number">7.1</div>
+    <h2>7.1 LeetCode 1581 — Customers Without Transactions</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Visits(visit_id INT PK, customer_id INT)
+Transactions(transaction_id INT PK, visit_id INT, amount INT)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Với mỗi customer, đếm số lượt visit <em>không tạo bất kỳ transaction nào</em>. Trả về (customer_id, count_no_trans).</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>"Visit không có transaction nào" ⇒ anti-join giữa Visits và Transactions.</li>
+      <li>Đếm theo customer ⇒ GROUP BY.</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT customer_id, COUNT(*) AS count_no_trans
+FROM Visits v
+WHERE NOT EXISTS (
+    SELECT 1 FROM Transactions t WHERE t.visit_id = v.visit_id
+)
+GROUP BY customer_id;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Tín hiệu trong đề</div>
+      "<em>không có / chưa từng / chưa được</em>" ⇒ phản xạ là <span class="inline-code">NOT EXISTS</span>. Đừng nhảy ngay sang LEFT JOIN — đôi khi đúng nhưng cần thêm WHERE NULL và dễ nhầm. NOT EXISTS thẳng tắp nhất.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-26">
+    <div class="slide-number">7.2</div>
+    <h2>7.2 LeetCode 176 — Second Highest Salary (Medium)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Employee(id INT PK, salary INT)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về salary cao thứ hai. Nếu không có (chỉ có 1 mức salary), trả NULL.</p>
+    <h3>Bẫy</h3>
+    <ul>
+      <li>Phải xử lý ties — nếu 3 người cùng salary cao nhất, "thứ hai" là gì?</li>
+      <li>Phải trả NULL khi không có second.</li>
+    </ul>
+    <h3>Lời giải</h3>
+<pre><code>-- Cách 1: subquery bao ngoài để bắt NULL
+SELECT (
+    SELECT DISTINCT salary
+    FROM Employee
+    ORDER BY salary DESC
+    LIMIT 1 OFFSET 1
+) AS SecondHighestSalary;
+
+-- Cách 2: dùng MAX với điều kiện loại đỉnh
+SELECT MAX(salary) AS SecondHighestSalary
+FROM Employee
+WHERE salary &lt; (SELECT MAX(salary) FROM Employee);</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Vì sao bao ngoài bằng SELECT?</div>
+      Subquery <span class="inline-code">LIMIT 1 OFFSET 1</span> không trả dòng nào nếu chỉ có 1 mức salary. Bao bằng <span class="inline-code">SELECT (...)</span> tận dụng đặc tính scalar subquery — không có dòng ⇒ trả NULL. Trick rất gọn cho yêu cầu "trả NULL nếu không có".
+    </div>
+    <p style="font-size:0.9rem;color:#666;">Tuần 6 sẽ có cách viết với <span class="inline-code">DENSE_RANK</span> đẹp hơn cho bài tổng quát N-th highest.</p>
+  </div>
+
+  <div class="slide" id="slide-27">
+    <div class="slide-number">7.3</div>
+    <h2>7.3 LeetCode 184 — Department Highest Salary (Medium)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Employee(id INT PK, name, salary INT, departmentId INT)
+Department(id INT PK, name)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Với mỗi phòng, trả về tên phòng + tên employee có salary cao nhất phòng (có thể nhiều người nếu ties).</p>
+    <h3>Lời giải — dùng tuple subquery (rất sạch)</h3>
+<pre><code>SELECT
+    d.name AS Department,
+    e.name AS Employee,
+    e.salary AS Salary
+FROM Employee e
+JOIN Department d ON d.id = e.departmentId
+WHERE (e.departmentId, e.salary) IN (
+    SELECT departmentId, MAX(salary)
+    FROM Employee
+    GROUP BY departmentId
+);</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Pattern: tuple subquery</div>
+      Subquery trả về <em>nhiều cột</em>, outer compare bằng tuple <span class="inline-code">(col1, col2) IN (...)</span>. Pattern cực gọn cho "tìm dòng có giá trị max/min theo nhóm". Hoạt động trên MySQL, PostgreSQL.<br>
+      <em>SQL Server không hỗ trợ trực tiếp</em> — phải <span class="inline-code">EXISTS</span> hoặc JOIN với derived table.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 8 ============ -->
+  <div class="slide section-divider" id="slide-28">
+    <h1>8. Knowledge Check</h1>
+  </div>
+
+  <div class="slide" id="slide-29">
+    <div class="slide-number">8.Q</div>
+    <h2>Knowledge Check — Tuần 5</h2>
+
+    <div class="quiz" id="q1">
+      <div class="quiz-question">Q1: Subquery nào là CORRELATED?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">SELECT * FROM orders WHERE total &gt; (SELECT AVG(total) FROM orders)</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <span class="inline-code">SELECT * FROM orders o WHERE total &gt; (SELECT AVG(total) FROM orders WHERE customer_id = o.customer_id)</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) <span class="inline-code">SELECT * FROM (SELECT customer_id, SUM(total) FROM orders GROUP BY customer_id) t</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) <span class="inline-code">SELECT * FROM orders WHERE customer_id IN (SELECT id FROM customers)</span></button>
+      <div class="quiz-explanation">B là correlated — subquery tham chiếu <span class="inline-code">o.customer_id</span> của outer. A và D là non-correlated; C là derived table (cũng non-correlated). Correlated chạy lại với mỗi dòng outer; non-correlated chạy 1 lần.</div>
+    </div>
+
+    <div class="quiz" id="q2">
+      <div class="quiz-question">Q2: Bảng <span class="inline-code">A(x)</span> chứa {1, 2, 3, 4}, <span class="inline-code">B(y)</span> chứa {2, 3, 5}. Query <span class="inline-code">SELECT x FROM A UNION SELECT y FROM B</span> trả gì?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) {1, 2, 3, 4, 2, 3, 5} (7 dòng)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) {1, 2, 3, 4, 5} (5 dòng)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) {2, 3} (2 dòng)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) {1, 4, 5} (3 dòng)</button>
+      <div class="quiz-explanation">UNION loại trùng, ghép thành tập. UNION ALL mới giữ trùng (cho A). C là kết quả của INTERSECT. D là kết quả của EXCEPT theo chiều cụ thể. Trong production, default UNION ALL nếu biết hai tập rời nhau — UNION đắt hơn vì phải sort/hash.</div>
+    </div>
+
+    <div class="quiz" id="q3">
+      <div class="quiz-question">Q3: Yêu cầu "khách CÓ ít nhất 1 đơn paid và CÓ ít nhất 1 đơn cancelled". Query nào sạch nhất?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">SELECT DISTINCT c.id FROM customers c JOIN orders o ON ... WHERE o.status IN ('paid','cancelled')</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) <span class="inline-code">SELECT id FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE status='paid' AND status='cancelled')</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) <span class="inline-code">SELECT id FROM customers c WHERE EXISTS (SELECT 1 FROM orders WHERE customer_id=c.id AND status='paid') AND EXISTS (SELECT 1 FROM orders WHERE customer_id=c.id AND status='cancelled')</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) <span class="inline-code">SELECT customer_id FROM orders WHERE status='paid' INTERSECT SELECT customer_id FROM orders WHERE status='cancelled'</span></button>
+      <div class="quiz-explanation">A sai logic — lấy cả khách CHỈ có paid hoặc CHỈ có cancelled. B sai logic — không có dòng nào status='paid' AND status='cancelled' đồng thời (status là 1 giá trị/dòng). D đúng nhưng MySQL không có INTERSECT. C đúng — hai EXISTS độc lập, semantic rõ ràng, chạy mọi dialect.</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 9 ============ -->
+  <div class="slide section-divider" id="slide-30">
+    <h1>9. Bài tập về nhà</h1>
+  </div>
+
+  <div class="slide" id="slide-31">
+    <div class="slide-number">9.1</div>
+    <h2>9.1 Bài tập LeetCode (5 problem, mix)</h2>
+    <ol>
+      <li><strong>1581. Customer Who Visited but Did Not Make Any Transactions</strong> (Easy) — đã giải tại lớp.</li>
+      <li><strong>176. Second Highest Salary</strong> (Medium) — đã giải tại lớp; viết lại không nhìn.</li>
+      <li><strong>184. Department Highest Salary</strong> (Medium) — đã giải tại lớp; thêm: viết lại bằng correlated subquery (Cách A của Section 6).</li>
+      <li><strong>1731. The Number of Employees Which Report to Each Employee</strong> (Easy) — bonus tuần 4; giải lại bằng EXISTS thay vì JOIN.</li>
+      <li><strong>1112. Highest Grade For Each Student</strong> (Medium) — pattern tuple subquery như LC 184. <em>Bẫy</em>: ties phải lấy course có mã nhỏ nhất.</li>
+    </ol>
+    <h3>Bonus — refactor exercise</h3>
+    <p>Lấy <strong>LC 184 Department Highest Salary</strong> bạn vừa giải, viết bằng <em>cả ba paradigm</em> (correlated, derived table, và preview window function nếu bạn đã đọc <span class="inline-code">RANK()</span>). So sánh:</p>
+    <ul>
+      <li>Số dòng code mỗi cách.</li>
+      <li>EXPLAIN plan trên local DB.</li>
+      <li>Cách nào dễ thêm điều kiện "top 3 thay vì top 1" nhất?</li>
+    </ul>
+  </div>
+
+  <div class="slide" id="slide-32">
+    <div class="slide-number">9.2</div>
+    <h2>9.2 Đọc thêm và tự kiểm tra</h2>
+    <h3>Đọc</h3>
+    <ul>
+      <li><em>SQL Cookbook</em> (Anthony Molinaro) — Chương 14 (Subqueries) toàn bộ.</li>
+      <li><em>SQL Antipatterns</em> (Bill Karwin) — Chương "Naive Trees" về self-correlated query trong hierarchies.</li>
+      <li>PostgreSQL docs — <em>4.2.11 Subquery Expressions</em> để hiểu sâu ANY, ALL, EXISTS.</li>
+    </ul>
+    <h3>Tự kiểm tra (không nhìn slide)</h3>
+    <ul>
+      <li>Bạn liệt kê được 4 vị trí subquery có thể đặt và yêu cầu của mỗi vị trí?</li>
+      <li>Bạn giải thích được vì sao correlated subquery tự nhiên O(n²)?</li>
+      <li>Bạn viết được tuple subquery cho "max theo nhóm" trong dưới 2 phút?</li>
+      <li>Bạn nói được khi nào dùng UNION vs UNION ALL?</li>
+      <li>Bạn refactor được correlated subquery thành derived table aggregate cho bài "top 1 per group"?</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Tuần sau — Window Functions (vũ khí giải Hard)</div>
+      Tuần 6: <span class="inline-code">OVER</span>, <span class="inline-code">PARTITION BY</span>, <span class="inline-code">ROW_NUMBER</span>, <span class="inline-code">RANK</span>, <span class="inline-code">DENSE_RANK</span>, <span class="inline-code">LAG/LEAD</span>, running totals, frame clauses. Đây là tuần "click moment" — bạn sẽ thấy nhiều bài Medium tuần này thu nhỏ thành 5 dòng code, và Hard LeetCode bắt đầu giải được.
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

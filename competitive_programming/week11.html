@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 11 — Backtracking</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 11</div>
+  <h1>Backtracking</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Pattern then chốt cho bài "liệt kê mọi khả năng". Một template duy nhất —
+    <em>"chọn — đệ quy — bỏ chọn"</em> — giải được Permutations, Combinations, Subsets, N-Queens, Sudoku.
+  </p>
+  <div class="meta">10 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng Backtracking</h1>
+  <div class="subtitle">Decision tree, template chuẩn, và quy tắc pruning</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Backtracking là gì?</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa:</div>
+    Backtracking = DFS trên <strong>cây quyết định</strong>. Tại mỗi bước, thử một lựa chọn,
+    đệ quy giải bài toán nhỏ hơn, sau đó <em>"undo"</em> lựa chọn để thử lựa chọn khác.
+  </div>
+  <div class="illustration">
+    <svg viewBox="0 0 540 200" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#1a1a1a" fill="#f8f9fa">
+        <circle cx="270" cy="30" r="20"/>
+        <circle cx="120" cy="100" r="20"/>
+        <circle cx="270" cy="100" r="20"/>
+        <circle cx="420" cy="100" r="20"/>
+        <circle cx="60" cy="170" r="18"/>
+        <circle cx="180" cy="170" r="18"/>
+        <circle cx="240" cy="170" r="18"/>
+        <circle cx="300" cy="170" r="18"/>
+        <circle cx="360" cy="170" r="18"/>
+        <circle cx="480" cy="170" r="18"/>
+      </g>
+      <text x="270" y="35" font-size="14" text-anchor="middle">[]</text>
+      <text x="120" y="105" font-size="13" text-anchor="middle">[1]</text>
+      <text x="270" y="105" font-size="13" text-anchor="middle">[2]</text>
+      <text x="420" y="105" font-size="13" text-anchor="middle">[3]</text>
+      <text x="60" y="174" font-size="11" text-anchor="middle">[1,2]</text>
+      <text x="180" y="174" font-size="11" text-anchor="middle">[1,3]</text>
+      <text x="240" y="174" font-size="11" text-anchor="middle">[2,1]</text>
+      <text x="300" y="174" font-size="11" text-anchor="middle">[2,3]</text>
+      <text x="360" y="174" font-size="11" text-anchor="middle">[3,1]</text>
+      <text x="480" y="174" font-size="11" text-anchor="middle">[3,2]</text>
+      <line x1="255" y1="45" x2="135" y2="85" stroke="#1a1a1a"/>
+      <line x1="270" y1="50" x2="270" y2="80" stroke="#1a1a1a"/>
+      <line x1="285" y1="45" x2="405" y2="85" stroke="#1a1a1a"/>
+      <line x1="110" y1="118" x2="70" y2="155" stroke="#1a1a1a"/>
+      <line x1="130" y1="118" x2="170" y2="155" stroke="#1a1a1a"/>
+      <line x1="260" y1="118" x2="245" y2="155" stroke="#1a1a1a"/>
+      <line x1="280" y1="118" x2="295" y2="155" stroke="#1a1a1a"/>
+      <line x1="410" y1="118" x2="365" y2="155" stroke="#1a1a1a"/>
+      <line x1="430" y1="118" x2="475" y2="155" stroke="#1a1a1a"/>
+    </svg>
+  </div>
+  <p style="font-size: 0.9rem; color: #666; text-align: center;">Cây quyết định cho Permutations của [1,2,3] — mỗi nhánh là một lựa chọn, đệ quy đến lá</p>
+  <p>Backtracking khác DFS thường ở chỗ <strong>"undo"</strong> — sau khi thử nhánh trái, khôi phục trạng thái rồi thử nhánh phải.</p>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Template chuẩn — Choose / Recurse / Unchoose</h2>
+  <pre><code>def backtrack(state, path):
+    if is_solution(state):
+        result.append(path[:])           # COPY path
+        return
+    for choice in get_choices(state):
+        if not is_valid(choice, state):
+            continue                     # PRUNING
+        # CHOOSE
+        path.append(choice)
+        update_state(state, choice)
+        # RECURSE
+        backtrack(state, path)
+        # UNCHOOSE — KHÔI PHỤC
+        path.pop()
+        revert_state(state, choice)</code></pre>
+  <h3>Bốn yếu tố then chốt</h3>
+  <ol>
+    <li><strong>State</strong> — biểu diễn "trạng thái hiện tại" (path đã chọn, used set, board state).</li>
+    <li><strong>Solution check</strong> — khi nào dừng và lưu kết quả.</li>
+    <li><strong>Choices</strong> — các lựa chọn khả dĩ tại bước hiện tại.</li>
+    <li><strong>Undo</strong> — phải khôi phục đầy đủ sau đệ quy.</li>
+  </ol>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc vàng:</div>
+    Mỗi <code>append</code>/<code>add</code> phải có <code>pop</code>/<code>remove</code> tương ứng <em>sau khi đệ quy</em>.
+    Quên = bug khó tìm nhất trong backtracking.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Tín hiệu nhận biết Backtracking</h2>
+  <table>
+    <tr><th>Cụm từ trong đề</th><th>Pattern</th></tr>
+    <tr><td>"liệt kê tất cả", "all permutations"</td><td>Backtracking permutations</td></tr>
+    <tr><td>"all combinations", "combination sum"</td><td>Backtracking combinations</td></tr>
+    <tr><td>"all subsets", "power set"</td><td>Backtracking subsets</td></tr>
+    <tr><td>"có thể đặt được không", "valid arrangement"</td><td>Constraint satisfaction (N-Queens, Sudoku)</td></tr>
+    <tr><td>"tìm đường thoả điều kiện trên grid"</td><td>Grid backtracking (Word Search)</td></tr>
+    <tr><td>"phân chia chuỗi", "partition"</td><td>Partition backtracking (Palindrome Partitioning)</td></tr>
+    <tr><td>"constraint n ≤ 20"</td><td>Khả năng cao là backtracking O(2ⁿ) hoặc O(n!)</td></tr>
+  </table>
+  <h3>Quy tắc constraint → algorithm</h3>
+  <ul>
+    <li>n ≤ 10 → có thể O(n!) — permutations.</li>
+    <li>n ≤ 20 → O(2ⁿ) — subsets.</li>
+    <li>n ≤ 100 → cần O(n²) hoặc tốt hơn (DP).</li>
+  </ul>
+  <p>Khi đề có constraint nhỏ bất thường → đó là dấu hiệu cho phép thuật toán chậm.</p>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Time complexity của Backtracking</h2>
+  <p>Backtracking là DFS trên cây quyết định. Time complexity = (số node) × (chi phí mỗi node).</p>
+  <table>
+    <tr><th>Bài toán</th><th>Số nghiệm (lá cây)</th><th>Time</th></tr>
+    <tr><td>Subsets của n phần tử</td><td>2ⁿ</td><td>O(n × 2ⁿ)</td></tr>
+    <tr><td>Permutations của n phần tử</td><td>n!</td><td>O(n × n!)</td></tr>
+    <tr><td>Combinations C(n, k)</td><td>C(n, k)</td><td>O(k × C(n, k))</td></tr>
+    <tr><td>N-Queens với n × n board</td><td>≤ n!</td><td>O(n!) với pruning mạnh</td></tr>
+    <tr><td>Sudoku 9 × 9</td><td>1</td><td>Worst case mũ; thực tế &lt; 1s nhờ pruning</td></tr>
+  </table>
+  <p>Yếu tố "n × ..." trong time là chi phí copy path khi tìm thấy solution. Nếu chỉ đếm (không liệt kê), có thể giảm xuống.</p>
+  <div class="key-point">
+    <div class="key-point-label">Pruning là tất cả:</div>
+    Time worst case là exponential, nhưng <em>pruning</em> (cắt nhánh sớm khi biết không thể thoả) là yếu tố quyết định bài chạy được hay TLE. Càng prune sớm và mạnh, càng tốt.
+  </div>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Subsets, Permutations, Combinations</h1>
+  <div class="subtitle">Ba bài kinh điển — phải code thuộc lòng</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Subsets — Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Bài toán:</div>
+    Cho mảng <code>nums</code>. Liệt kê tất cả 2ⁿ subsets.
+  </div>
+  <h3>Hai cách tiếp cận chính</h3>
+  <ol>
+    <li><strong>"Include or Exclude"</strong>: tại mỗi vị trí, chọn lấy hoặc không lấy.</li>
+    <li><strong>"Pick at index i"</strong>: từ vị trí start, chọn 1 phần tử rồi đệ quy với start mới.</li>
+  </ol>
+  <p>Khoá học khuyến nghị approach 2 — tổng quát hơn (dùng cho Combinations, Combination Sum).</p>
+  <pre><code>def subsets(nums):
+    res = []
+    def backtrack(start, path):
+        res.append(path[:])              # subset hiện tại là 1 nghiệm
+        for i in range(start, len(nums)):
+            path.append(nums[i])
+            backtrack(i + 1, path)        # i+1 để không lấy lại
+            path.pop()
+    backtrack(0, [])
+    return res</code></pre>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 1 — Subsets (#78) — Trace</h2>
+  <p><code>nums = [1, 2, 3]</code>. Kỳ vọng 8 subsets.</p>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>start</th><th>path khi enter</th><th>Hành động</th></tr>
+    <tr><td>1</td><td>0</td><td>[]</td><td>Add []</td></tr>
+    <tr><td>2</td><td>1</td><td>[1]</td><td>Add [1]</td></tr>
+    <tr><td>3</td><td>2</td><td>[1,2]</td><td>Add [1,2]</td></tr>
+    <tr><td>4</td><td>3</td><td>[1,2,3]</td><td>Add [1,2,3]; loop kết thúc; pop 3</td></tr>
+    <tr><td>5</td><td>3</td><td>[1,2]</td><td>Loop kết thúc; pop 2</td></tr>
+    <tr><td>6</td><td>2</td><td>[1,3]</td><td>Add [1,3]; pop 3 → [1]; pop 1 → []</td></tr>
+    <tr><td>7</td><td>1</td><td>[2]</td><td>Add [2]</td></tr>
+    <tr><td>8</td><td>2</td><td>[2,3]</td><td>Add [2,3]; pop 3, pop 2</td></tr>
+    <tr><td>9</td><td>1</td><td>[3]</td><td>Add [3]; pop 3</td></tr>
+  </table>
+  <p>Kết quả: [[], [1], [1,2], [1,2,3], [1,3], [2], [2,3], [3]]. Time <strong>O(n × 2ⁿ)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Worked Example 2 — Subsets II (with duplicates)</h2>
+  <p><strong>Đề (LeetCode #90):</strong> Như #78 nhưng <code>nums</code> có thể trùng. Không cho phép subset trùng.</p>
+  <p><strong>Ví dụ:</strong> <code>[1, 2, 2]</code> → [[], [1], [1,2], [1,2,2], [2], [2,2]].</p>
+  <h3>Mẹo: Sort + skip duplicate ở cùng level</h3>
+  <pre><code>def subsetsWithDup(nums):
+    nums.sort()                         # quan trọng — đẩy duplicate cạnh nhau
+    res = []
+    def backtrack(start, path):
+        res.append(path[:])
+        for i in range(start, len(nums)):
+            if i &gt; start and nums[i] == nums[i-1]:
+                continue                # skip duplicate Ở CÙNG level
+            path.append(nums[i])
+            backtrack(i + 1, path)
+            path.pop()
+    backtrack(0, [])
+    return res</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Quan trọng — <code>i &gt; start</code> chứ không phải <code>i &gt; 0</code>:</div>
+    Skip duplicate <em>cùng level</em> (cùng vòng for), không phải skip duplicate trong cùng path.
+    Ở vị trí khác trong path, duplicate có thể là lựa chọn hợp lệ. Đây là pattern xuất hiện ở Combination Sum II, Permutations II.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Permutations — Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Bài toán:</div>
+    Cho mảng. Liệt kê tất cả n! permutations.
+  </div>
+  <h3>Khác Subsets ở chỗ nào?</h3>
+  <p>Permutations <em>quan tâm thứ tự</em>: [1,2] và [2,1] là 2 nghiệm khác nhau. Subsets thì không.</p>
+  <p>Hệ quả: tại mỗi bước, được chọn từ <em>mọi phần tử chưa dùng</em>, không chỉ phần tử sau index hiện tại.</p>
+  <pre><code>def permute(nums):
+    res = []
+    def backtrack(path, used):
+        if len(path) == len(nums):
+            res.append(path[:])
+            return
+        for i in range(len(nums)):
+            if used[i]: continue
+            used[i] = True
+            path.append(nums[i])
+            backtrack(path, used)
+            path.pop()
+            used[i] = False             # UNCHOOSE
+    backtrack([], [False] * len(nums))
+    return res</code></pre>
+  <p>Time <strong>O(n × n!)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 Worked Example 3 — Permutations (#46)</h2>
+  <p>Đã có code ở 2.4. Dưới đây là biến thể không cần <code>used</code> array, dùng swap in-place:</p>
+  <pre><code>def permute(nums):
+    res = []
+    def backtrack(start):
+        if start == len(nums):
+            res.append(nums[:])
+            return
+        for i in range(start, len(nums)):
+            nums[start], nums[i] = nums[i], nums[start]
+            backtrack(start + 1)
+            nums[start], nums[i] = nums[i], nums[start]    # undo swap
+    backtrack(0)
+    return res</code></pre>
+  <p>Tiết kiệm space O(n) cho <code>used</code> array. Idiom kinh điển khi viết permutations.</p>
+  <h3>So sánh hai approach</h3>
+  <table>
+    <tr><th>Approach</th><th>Space phụ</th><th>Đọc dễ?</th></tr>
+    <tr><td>Used array</td><td>O(n)</td><td>Dễ hơn</td></tr>
+    <tr><td>Swap in-place</td><td>O(1)</td><td>Khó hơn (phải hiểu swap-undo)</td></tr>
+  </table>
+  <p>Trong phỏng vấn, dùng "used array" — rõ ràng hơn. Swap là tối ưu khi cần.</p>
+</div>
+
+<!-- ===== SLIDE 2.6 ===== -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 Worked Example 4 — Permutations II (with duplicates)</h2>
+  <p><strong>Đề (LeetCode #47):</strong> Như #46 nhưng nums có duplicate. Không cho phép permutation trùng.</p>
+  <p><strong>Ví dụ:</strong> <code>[1, 1, 2]</code> → [[1,1,2], [1,2,1], [2,1,1]] (3 thay vì 6).</p>
+  <pre><code>def permuteUnique(nums):
+    nums.sort()
+    res = []
+    used = [False] * len(nums)
+    def backtrack(path):
+        if len(path) == len(nums):
+            res.append(path[:])
+            return
+        for i in range(len(nums)):
+            if used[i]: continue
+            # Skip duplicate ở cùng level KHI phần tử trước cùng giá trị CHƯA dùng
+            if i &gt; 0 and nums[i] == nums[i-1] and not used[i-1]:
+                continue
+            used[i] = True
+            path.append(nums[i])
+            backtrack(path)
+            path.pop()
+            used[i] = False
+    backtrack([])
+    return res</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Điều kiện <code>not used[i-1]</code> tinh tế:</div>
+    Đảm bảo các phần tử bằng nhau được dùng theo thứ tự index. Khi <code>used[i-1] = False</code>, nghĩa là phần tử trước (cùng giá trị) chưa được dùng → ta đang ở "level" khác → skip để tránh trùng.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.7 ===== -->
+<div class="slide">
+  <div class="slide-number">2.7</div>
+  <h2>2.7 Combinations — Pattern</h2>
+  <div class="definition">
+    <div class="definition-label">Bài toán:</div>
+    Combinations C(n, k) — chọn k phần tử từ n, không quan tâm thứ tự.
+  </div>
+  <h3>Code (cùng pattern Subsets nhưng dừng khi đủ k)</h3>
+  <pre><code>def combine(n, k):
+    res = []
+    def backtrack(start, path):
+        if len(path) == k:
+            res.append(path[:])
+            return
+        for i in range(start, n + 1):
+            path.append(i)
+            backtrack(i + 1, path)
+            path.pop()
+    backtrack(1, [])
+    return res</code></pre>
+  <h3>Pruning quan trọng</h3>
+  <p>Có thể prune khi "không còn đủ phần tử để hoàn thành":</p>
+  <pre><code># Số phần tử còn lại = (n - i + 1); cần thêm = (k - len(path))
+# Nếu n - i + 1 &lt; k - len(path) → impossible → break
+for i in range(start, n - (k - len(path)) + 2):</code></pre>
+  <p>Pruning này có thể giảm time đáng kể với k nhỏ và n lớn.</p>
+</div>
+
+<!-- ===== SLIDE 2.8 ===== -->
+<div class="slide">
+  <div class="slide-number">2.8</div>
+  <h2>2.8 Worked Example 5 — Combinations (#77)</h2>
+  <p><strong>Đề:</strong> Trả mọi tổ hợp C(n, k) từ [1..n].</p>
+  <p>Đã có code ở 2.7. Trace với n=4, k=2:</p>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>start</th><th>path</th><th>Add?</th></tr>
+    <tr><td>1</td><td>1</td><td>[1]</td><td>—</td></tr>
+    <tr><td>2</td><td>2</td><td>[1,2]</td><td>Add</td></tr>
+    <tr><td>3</td><td>2</td><td>[1,3]</td><td>Add</td></tr>
+    <tr><td>4</td><td>2</td><td>[1,4]</td><td>Add</td></tr>
+    <tr><td>5</td><td>1</td><td>[2]</td><td>—</td></tr>
+    <tr><td>6</td><td>3</td><td>[2,3]</td><td>Add</td></tr>
+    <tr><td>7</td><td>3</td><td>[2,4]</td><td>Add</td></tr>
+    <tr><td>8</td><td>1</td><td>[3]</td><td>—</td></tr>
+    <tr><td>9</td><td>4</td><td>[3,4]</td><td>Add</td></tr>
+  </table>
+  <p>Kết quả: 6 combinations. <code>C(4,2) = 6</code> ✓.</p>
+</div>
+
+<!-- ===== SLIDE 2.9 ===== -->
+<div class="slide">
+  <div class="slide-number">2.9</div>
+  <h2>2.9 Worked Example 6 — Combination Sum (#39)</h2>
+  <p><strong>Đề:</strong> Mảng <code>candidates</code> phân biệt, mỗi phần tử có thể dùng <em>nhiều lần</em>. Tìm mọi tổ hợp có tổng = <code>target</code>.</p>
+  <pre><code>def combinationSum(candidates, target):
+    res = []
+    candidates.sort()                         # cho phép early break
+    def backtrack(start, path, remain):
+        if remain == 0:
+            res.append(path[:])
+            return
+        for i in range(start, len(candidates)):
+            if candidates[i] &gt; remain:
+                break                          # PRUNING: sort + break
+            path.append(candidates[i])
+            backtrack(i, path, remain - candidates[i])    # i (không phải i+1) — cho phép dùng lại
+            path.pop()
+    backtrack(0, [], target)
+    return res</code></pre>
+  <h3>Hai chi tiết then chốt</h3>
+  <ul>
+    <li><code>backtrack(i, ...)</code> chứ không phải <code>i + 1</code>: phần tử dùng được nhiều lần.</li>
+    <li><code>break</code> khi <code>candidates[i] &gt; remain</code>: vì sort tăng dần, các phần tử sau cũng lớn hơn → vô ích tiếp tục.</li>
+  </ul>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Subsets / Permutations / Combinations</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Khác biệt cốt lõi giữa Subsets và Permutations?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Subsets có nhiều nghiệm hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Subsets không quan tâm thứ tự (start = i+1); Permutations quan tâm thứ tự (chọn từ tất cả phần tử chưa dùng)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Permutations chỉ có với mảng phân biệt</button>
+    <div class="quiz-explanation">Subsets: 2ⁿ kết quả; Permutations: n! kết quả. Sự khác biệt logic: Subsets dùng <code>backtrack(i+1)</code>; Permutations dùng <code>backtrack</code> với loop từ 0 + check <code>used</code>.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Subsets II skip duplicate, vì sao điều kiện là <code>i &gt; start</code>, không phải <code>i &gt; 0</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để xử lý mảng rỗng</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Skip duplicate Ở CÙNG level (cùng vòng for) — không skip trong cùng path</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để chạy nhanh hơn</button>
+    <div class="quiz-explanation">Trong cùng path, duplicate là OK (như [1,2,2] có subset [1,2,2]). Chỉ tránh trùng KHI hai vòng for ở cùng độ sâu thử cùng giá trị. <code>i &gt; start</code> đảm bảo điều này.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Trong Combination Sum, dòng <code>backtrack(i, path, ...)</code> (không phải <code>i+1</code>) có ý nghĩa gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Cho phép dùng lại phần tử <code>candidates[i]</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Để tránh duplicate</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Không khác biệt</button>
+    <div class="quiz-explanation">Đề cho phép mỗi phần tử dùng nhiều lần. <code>i+1</code> sẽ chuyển sang phần tử kế; <code>i</code> giữ nguyên vị trí, cho phép thử <code>candidates[i]</code> tiếp lần nữa.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. Grid Backtracking</h1>
+  <div class="subtitle">Tìm đường thoả điều kiện trên ma trận — Word Search</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Pattern Grid Backtracking</h2>
+  <p>Khác Grid BFS/DFS (Tuần 10) ở chỗ: cần <em>"undo" mark visited</em> để có thể dùng lại ô ở đường đi khác.</p>
+  <pre><code>def has_path(grid, word):
+    m, n = len(grid), len(grid[0])
+    def dfs(r, c, idx):
+        if idx == len(word): return True
+        if r &lt; 0 or r &gt;= m or c &lt; 0 or c &gt;= n: return False
+        if grid[r][c] != word[idx]: return False
+        # CHOOSE
+        original = grid[r][c]
+        grid[r][c] = '#'                  # mark visited
+        # RECURSE 4 directions
+        found = (dfs(r+1, c, idx+1) or dfs(r-1, c, idx+1)
+                 or dfs(r, c+1, idx+1) or dfs(r, c-1, idx+1))
+        # UNCHOOSE
+        grid[r][c] = original
+        return found
+    for r in range(m):
+        for c in range(n):
+            if dfs(r, c, 0): return True
+    return False</code></pre>
+  <p>Đây là tinh thần Number of Islands (Tuần 10) cộng thêm <strong>undo mark</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Worked Example 7 — Word Search (#79)</h2>
+  <p><strong>Đề:</strong> Lưới ký tự + word. Trả True nếu word có thể tạo bằng đường đi liên tiếp 4 hướng (không lặp ô).</p>
+  <p>Code ở 3.1 chính là lời giải. Phân tích:</p>
+  <h3>Pruning hiệu quả</h3>
+  <ul>
+    <li><strong>Check sớm</strong>: <code>grid[r][c] != word[idx]</code> dừng nhánh ngay khi ký tự không khớp.</li>
+    <li><strong>Boundary check</strong>: dừng khi out-of-bounds.</li>
+    <li><strong>Visited mark</strong>: dùng <code>'#'</code> thay set — tiết kiệm O(L) bộ nhớ.</li>
+  </ul>
+  <h3>Time complexity</h3>
+  <p>Worst case <strong>O(m × n × 4^L)</strong> với L = len(word). Mỗi ô khởi đầu, mỗi bước có 4 hướng và đi L bước.</p>
+  <p>Thực tế nhanh hơn nhiều nhờ pruning (đa số nhánh dừng sớm khi ký tự không khớp).</p>
+  <div class="example">
+    <div class="example-label">Tối ưu nâng cao:</div>
+    Khi bài hỏi <em>nhiều</em> word (Word Search II), build Trie từ tất cả words rồi DFS một lần — giảm từ O(m × n × số_word × 4^L) xuống O(m × n × 4^L).
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Constraint Satisfaction</h1>
+  <div class="subtitle">N-Queens và Sudoku — bài "boss" của tuần</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 N-Queens — Pattern và Visualisation</h2>
+  <p><strong>Đề (LeetCode #51):</strong> Đặt n quân hậu trên bàn n×n sao cho không có 2 quân nào tấn công nhau (không cùng hàng/cột/đường chéo).</p>
+  <div class="illustration">
+    <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#1a1a1a" fill="#ffffff">
+        <rect x="20" y="20" width="50" height="50"/>
+        <rect x="70" y="20" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="120" y="20" width="50" height="50"/>
+        <rect x="170" y="20" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="20" y="70" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="70" y="70" width="50" height="50"/>
+        <rect x="120" y="70" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="170" y="70" width="50" height="50"/>
+        <rect x="20" y="120" width="50" height="50"/>
+        <rect x="70" y="120" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="120" y="120" width="50" height="50"/>
+        <rect x="170" y="120" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="20" y="170" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="70" y="170" width="50" height="50"/>
+        <rect x="120" y="170" width="50" height="50" fill="#f0f0f0"/>
+        <rect x="170" y="170" width="50" height="50"/>
+      </g>
+      <text x="95" y="55" font-size="28" text-anchor="middle">♛</text>
+      <text x="195" y="105" font-size="28" text-anchor="middle">♛</text>
+      <text x="45" y="155" font-size="28" text-anchor="middle">♛</text>
+      <text x="145" y="205" font-size="28" text-anchor="middle">♛</text>
+    </svg>
+  </div>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">Một nghiệm 4-Queens: hậu ở (0,1), (1,3), (2,0), (3,2)</p>
+  <h3>Quan sát</h3>
+  <p>Đặt từng hàng một (vì mỗi hàng chỉ có 1 hậu). Tại hàng <code>r</code>, thử mỗi cột <code>c</code>:
+  kiểm tra không xung đột với các hậu đã đặt → đệ quy hàng <code>r+1</code>.</p>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Worked Example 8 — N-Queens (3-set Technique)</h2>
+  <p>Để check xung đột O(1), dùng 3 set:</p>
+  <ul>
+    <li><code>cols</code>: cột đã chiếm.</li>
+    <li><code>diag1</code>: đường chéo "/" (giá trị <code>r + c</code> cùng).</li>
+    <li><code>diag2</code>: đường chéo "\" (giá trị <code>r - c</code> cùng).</li>
+  </ul>
+  <pre><code>def solveNQueens(n):
+    res = []
+    cols = set(); d1 = set(); d2 = set()
+    queens = [-1] * n                    # queens[r] = c
+    def backtrack(r):
+        if r == n:
+            board = ['.'*c + 'Q' + '.'*(n-c-1) for c in queens]
+            res.append(board)
+            return
+        for c in range(n):
+            if c in cols or (r+c) in d1 or (r-c) in d2:
+                continue                  # PRUNING — xung đột
+            cols.add(c); d1.add(r+c); d2.add(r-c)
+            queens[r] = c
+            backtrack(r + 1)
+            cols.discard(c); d1.discard(r+c); d2.discard(r-c)
+    backtrack(0)
+    return res</code></pre>
+  <p>Time <strong>O(n!)</strong> với pruning mạnh. n = 8 → ~92 nghiệm; chạy &lt; 100 ms.</p>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 N-Queens — Phân tích complexity</h2>
+  <p>Worst case không pruning: n^n (mỗi hàng thử n cột). Với pruning bằng 3 set:</p>
+  <ul>
+    <li>Hàng 0: thử n cột → tốt cả n nhánh.</li>
+    <li>Hàng 1: với mỗi cột của hàng 0, ~(n-3) cột hợp lệ.</li>
+    <li>Hàng 2: ít hơn nữa…</li>
+  </ul>
+  <p>Tổng số node được thăm thực tế xấp xỉ <strong>O(n!)</strong> — còn rất nhiều so với n^n.</p>
+  <h3>Vai trò của pruning</h3>
+  <p>Không pruning, n=8 sẽ là 8^8 ≈ 16 triệu nhánh. Có pruning, chỉ ~2,000 nhánh được thăm. Đây là minh chứng <em>pruning quyết định tất cả</em>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Bài học tổng quát:</div>
+    Backtracking worst case là exponential — nhưng với pruning tốt, đa số bài chạy được trong thời gian chấp nhận. Khi thiết kế, dành phần lớn thời gian thiết kế pruning, không phải tối ưu inner loop.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.4 ===== -->
+<div class="slide">
+  <div class="slide-number">4.4</div>
+  <h2>4.4 Worked Example 9 — Sudoku Solver (#37)</h2>
+  <p><strong>Đề:</strong> Hoàn thành lưới Sudoku 9×9 hợp lệ. Mỗi hàng/cột/khối 3×3 chứa các chữ số 1-9 không trùng.</p>
+  <pre><code>def solveSudoku(board):
+    rows = [set() for _ in range(9)]
+    cols = [set() for _ in range(9)]
+    boxes = [set() for _ in range(9)]
+    empties = []
+    for r in range(9):
+        for c in range(9):
+            if board[r][c] == '.':
+                empties.append((r, c))
+            else:
+                d = board[r][c]
+                rows[r].add(d); cols[c].add(d); boxes[(r//3)*3 + c//3].add(d)
+
+    def backtrack(idx):
+        if idx == len(empties): return True
+        r, c = empties[idx]
+        b = (r//3)*3 + c//3
+        for d in '123456789':
+            if d in rows[r] or d in cols[c] or d in boxes[b]:
+                continue
+            rows[r].add(d); cols[c].add(d); boxes[b].add(d)
+            board[r][c] = d
+            if backtrack(idx + 1): return True
+            rows[r].discard(d); cols[c].discard(d); boxes[b].discard(d)
+            board[r][c] = '.'
+        return False
+
+    backtrack(0)</code></pre>
+  <p>Time worst case mũ; pruning thực tế giải &lt; 1s.</p>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.Q</div>
+  <h2>Knowledge Check — Constraint Satisfaction</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong N-Queens, vì sao 3 set (cols, diag1, diag2) cho phép check xung đột O(1)?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Set có hash O(1)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Mỗi đường chéo "/" có <code>r+c</code> cùng giá trị; "\" có <code>r-c</code> cùng — biểu diễn đường chéo bằng 1 số</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì n nhỏ</button>
+    <div class="quiz-explanation">Mọi ô (r, c) trên cùng đường chéo "/" có <code>r+c</code> bằng nhau (constant). Tương tự "\". Lưu các hằng số này trong set → check trùng O(1). Đây là kỹ thuật chuyển 2D constraint thành 1D lookup.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Word Search, vì sao cần "undo mark" sau khi đệ quy?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để Python không lỗi</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để ô đó có thể được dùng ở đường đi <em>khác</em> — Number of Islands không cần vì chỉ duyệt 1 lần</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì grid là read-only</button>
+    <div class="quiz-explanation">Khác biệt cốt lõi giữa DFS (Tuần 10) và Backtracking. DFS đếm components: mỗi ô thăm 1 lần và xong. Backtracking thử nhiều "đường đi" qua cùng ô — phải khôi phục để thử lại.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Pruning trong backtracking quan trọng như thế nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Chỉ tăng tốc nhỏ</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Quyết định bài chạy được hay TLE — N-Queens không pruning sẽ thăm 8^8 nhánh thay vì ~2,000</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Không cần thiết</button>
+    <div class="quiz-explanation">Worst case backtracking là exponential. Pruning càng sớm và càng mạnh, càng ít nhánh thăm thực tế. Bài N-Queens, Sudoku, Word Search II đều dựa vào pruning để chạy trong giới hạn thời gian.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 5. Partition và Pruning Nâng cao</h1>
+  <div class="subtitle">Bài "phân chia" và các kỹ thuật pruning tổng quát</div>
+</div>
+
+<!-- ===== SLIDE 5.1 ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 Worked Example 10 — Palindrome Partitioning</h2>
+  <p><strong>Đề (LeetCode #131):</strong> Cho string s. Phân chia thành các substring sao cho mỗi substring là palindrome. Trả về mọi cách phân chia.</p>
+  <p><strong>Ví dụ:</strong> <code>"aab"</code> → <code>[["a","a","b"], ["aa","b"]]</code>.</p>
+  <pre><code>def partition(s):
+    res = []
+    def is_pal(l, r):
+        while l &lt; r:
+            if s[l] != s[r]: return False
+            l += 1; r -= 1
+        return True
+    def backtrack(start, path):
+        if start == len(s):
+            res.append(path[:])
+            return
+        for end in range(start, len(s)):
+            if is_pal(start, end):
+                path.append(s[start:end+1])
+                backtrack(end + 1, path)
+                path.pop()
+    backtrack(0, [])
+    return res</code></pre>
+  <p>Time <strong>O(n × 2ⁿ)</strong> worst case (mọi cách phân + check palindrome).</p>
+  <div class="key-point">
+    <div class="key-point-label">Tinh thần "phân chia":</div>
+    Tại mỗi vị trí <code>start</code>, thử mọi <code>end</code> sao cho substring [start..end] thoả điều kiện. Đệ quy với <code>start = end + 1</code>. Pattern xuất hiện ở Restore IP Addresses, Word Break II.
+  </div>
+</div>
+
+<!-- ===== SLIDE 5.2 ===== -->
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>5.2 Sáu kỹ thuật pruning tổng quát</h2>
+  <ol>
+    <li><strong>Sort + early break</strong>: sort input, trong vòng for break khi thấy giá trị quá lớn không còn khả thi (Combination Sum, Permutations II).</li>
+    <li><strong>Bounds check</strong>: kiểm tra số lượng còn lại đủ để hoàn thành (Combinations với pruning <code>n - i + 1 ≥ k - len(path)</code>).</li>
+    <li><strong>Constraint propagation</strong>: tính toán constraint ngay khi gán → rút bớt domain (3-set N-Queens, rows/cols/boxes Sudoku).</li>
+    <li><strong>Skip duplicate at same level</strong>: <code>if i &gt; start and nums[i] == nums[i-1]: continue</code> — tránh đếm trùng.</li>
+    <li><strong>Memoisation</strong>: nếu cùng state xuất hiện nhiều lần → cache. Đây là cầu nối sang DP (Tuần 12).</li>
+    <li><strong>Iterative deepening</strong>: bắt đầu với depth giới hạn, tăng dần. Hiệu quả khi nghiệm thường ở depth nhỏ.</li>
+  </ol>
+  <h3>Khi nào nghĩ đến memoisation?</h3>
+  <p>Khi backtracking <em>thử cùng (start, remaining)</em> qua nhiều đường khác nhau. Đó là dấu hiệu chuyển sang DP — chủ đề chính của Tuần 12.</p>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.Q</div>
+  <h2>Knowledge Check — Pattern Reuse</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Quy tắc nhanh nhận biết "skip duplicate ở cùng level"?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) <code>i &gt; 0 and nums[i] == nums[i-1]</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <code>i &gt; start and nums[i] == nums[i-1]</code> (cho subset/combo); hoặc kèm <code>not used[i-1]</code> (cho permutation)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) <code>i % 2 == 0</code></button>
+    <div class="quiz-explanation">Cùng level = cùng vòng for. <code>i &gt; start</code> đảm bảo không skip phần tử đầu vòng. Permutation phức tạp hơn vì cần check phần tử trùng đã được dùng chưa.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Khi nào pattern backtracking nên chuyển sang DP?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Khi n &gt; 100</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi cùng (state) xuất hiện qua nhiều đường khác nhau — có overlapping subproblems</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Luôn nên</button>
+    <div class="quiz-explanation">Backtracking liệt kê mọi nghiệm. DP cache kết quả cho cùng state. Nếu mỗi state chỉ tính 1 lần (Subsets, Permutations), DP không lợi. Nếu state lặp lại (Word Break, Coin Change), DP giảm exp → poly.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6 ===== -->
+<div class="slide">
+  <div class="slide-number">6.0</div>
+  <h2>6.0 Decision Tree — Backtracking</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Pattern</th></tr>
+    <tr><td>"all subsets / power set"</td><td>Subsets (start = i+1)</td></tr>
+    <tr><td>"all permutations"</td><td>Permutations (used array hoặc swap)</td></tr>
+    <tr><td>"all combinations C(n,k)"</td><td>Combinations với early stop</td></tr>
+    <tr><td>"combination sum to target"</td><td>Combination Sum (backtrack(i,...))</td></tr>
+    <tr><td>"all paths in grid"</td><td>Grid backtracking với undo mark</td></tr>
+    <tr><td>"valid arrangement không xung đột"</td><td>Constraint satisfaction (N-Queens)</td></tr>
+    <tr><td>"phân chia chuỗi thoả điều kiện"</td><td>Partition (backtrack(start, ...) với end loop)</td></tr>
+    <tr><td>Mảng có duplicate, không cho phép trùng</td><td>Sort + skip ở cùng level</td></tr>
+    <tr><td>Cùng state xuất hiện nhiều lần</td><td>Chuyển sang DP (Tuần 12)</td></tr>
+  </table>
+  <h3>Quy trình code bài backtracking</h3>
+  <ol>
+    <li>Vẽ cây quyết định trên giấy với input nhỏ.</li>
+    <li>Xác định state, choices, solution check.</li>
+    <li>Viết template choose-recurse-unchoose.</li>
+    <li>Thêm pruning từ dễ đến khó.</li>
+    <li>Test trên duplicate input nếu có.</li>
+  </ol>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">6.1</div>
+  <h2>Tổng kết Tuần 11</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>Template chuẩn</strong>: choose — recurse — unchoose; quy tắc vàng append phải có pop.</li>
+    <li><strong>Subsets / Permutations / Combinations</strong>: ba bài kinh điển; biến thể duplicates với "skip ở cùng level".</li>
+    <li><strong>Combination Sum</strong>: <code>backtrack(i, ...)</code> cho phép dùng lại; sort + early break để prune.</li>
+    <li><strong>Grid Backtracking</strong>: Word Search với undo mark — khác Number of Islands.</li>
+    <li><strong>N-Queens</strong>: 3-set technique cho check xung đột O(1).</li>
+    <li><strong>Sudoku Solver</strong>: rows/cols/boxes constraint propagation.</li>
+    <li><strong>Palindrome Partitioning</strong>: partition pattern với <code>backtrack(start, ...)</code>, end loop.</li>
+    <li><strong>Pruning</strong>: 6 kỹ thuật tổng quát; pruning quyết định bài chạy được hay TLE.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #78 — Subsets</li>
+    <li>LeetCode #90 — Subsets II (duplicates)</li>
+    <li>LeetCode #46 — Permutations</li>
+    <li>LeetCode #47 — Permutations II (duplicates)</li>
+    <li>LeetCode #77 — Combinations</li>
+    <li>LeetCode #39 — Combination Sum</li>
+    <li>LeetCode #40 — Combination Sum II (duplicates)</li>
+    <li>LeetCode #79 — Word Search</li>
+    <li>LeetCode #51 — N-Queens (Hard)</li>
+    <li>LeetCode #37 — Sudoku Solver (Hard)</li>
+    <li>LeetCode #131 — Palindrome Partitioning</li>
+    <li>LeetCode #93 — Restore IP Addresses</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 12 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>Dynamic Programming — 1D DP, Knapsack, Coin Change</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Pattern then chốt cho phỏng vấn senior. Bắt đầu từ memoisation (top-down) qua tabulation (bottom-up).
+    Học các state designs cơ bản: Fibonacci, House Robber, Coin Change, Climbing Stairs, Longest Increasing Subsequence.
+    Tuần 13 sẽ là 2D DP với Edit Distance, LCS, Knapsack.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 11 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>

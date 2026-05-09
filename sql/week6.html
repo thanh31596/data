@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 6 — Window Functions</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.15rem; color: #666; margin-bottom: 20px; font-style: italic; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8810a; margin-bottom: 6px; }
+    .warning {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-label { font-weight: bold; color: #c0392b; margin-bottom: 6px; }
+    pre {
+      background: #f5f5f5; padding: 14px 18px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.95rem; margin: 10px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 6px 12px; text-align: left;
+    }
+    th { background: #f0f0f0; font-weight: 600; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; margin-bottom: 12px; }
+    .illustration {
+      display: flex; justify-content: center; margin: 14px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.92rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .schema-block {
+      background: #fafafa; border: 1px solid #e0e0e0;
+      padding: 12px 16px; border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 0.92rem; margin: 8px 0;
+    }
+    .dialect-table th { background: #e8f0fe; }
+    .compact-table { font-size: 0.9rem; }
+    .compact-table td, .compact-table th { padding: 4px 10px; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ TITLE ============ -->
+  <div class="slide title-slide active" id="slide-0">
+    <h1>Tuần 6</h1>
+    <h1 style="font-size: 1.8rem; color: #555;">Window Functions — vũ khí giải Hard</h1>
+    <p class="subtitle" style="margin-top: 24px;">SQL cho Interview — Lộ trình 10 tuần</p>
+    <p style="margin-top: 40px; color: #999; font-size: 0.9rem;">Nhấn phím → để bắt đầu &middot; T để xem mục lục</p>
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>1. Tổng quan tuần 6</h1>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Đây là tuần "click moment"</h2>
+    <p>Window functions là kỹ năng <em>phân biệt sinh viên SQL trung bình với senior</em>. Nếu bạn nắm được tuần này, bạn sẽ:</p>
+    <ul>
+      <li>Giải đa số bài Medium LeetCode trong dưới 5 dòng code (so với 15+ dòng tuần 5).</li>
+      <li>Tiếp cận được LeetCode SQL Hard — phần lớn Hard chỉ là "1–2 window functions ghép khéo".</li>
+      <li>Xử lý các bài "running total", "ranking trong nhóm", "so sánh với dòng liền kề" như reflex.</li>
+      <li>Xuất hiện như một candidate có chiều sâu trong mock interview.</li>
+    </ul>
+    <h3>Kế hoạch tuần</h3>
+    <ol>
+      <li>Hiểu OVER clause — kiến trúc cơ bản.</li>
+      <li>Ranking: ROW_NUMBER, RANK, DENSE_RANK, NTILE.</li>
+      <li>Navigation: LAG, LEAD.</li>
+      <li>Aggregate window: SUM/AVG OVER, frame clause (đây là chỗ hay sai nhất).</li>
+      <li>Value functions: FIRST_VALUE, LAST_VALUE, NTH_VALUE.</li>
+    </ol>
+    <div class="key-point">
+      <div class="key-point-label">Cảnh báo về frame clause</div>
+      Phần frame clause (ROWS/RANGE) là phần sinh viên hay bỏ qua — và sai bài "running total có ties" hoặc "moving average" mà không hiểu vì sao. Section 5 sẽ giải quyết triệt để.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 Mental model — "view nhỏ qua mỗi dòng"</h2>
+    <p>Window function khác với aggregate ở điểm cốt lõi:</p>
+    <table>
+      <tr><th></th><th>Aggregate (GROUP BY)</th><th>Window function</th></tr>
+      <tr><td>Số dòng đầu vào</td><td>n</td><td>n</td></tr>
+      <tr><td>Số dòng đầu ra</td><td><strong>1 dòng / nhóm</strong> (collapse)</td><td><strong>n dòng</strong> (preserve)</td></tr>
+      <tr><td>Cột không-aggregate</td><td>Phải trong GROUP BY</td><td>Tùy ý — không bị ràng buộc</td></tr>
+      <tr><td>Mỗi dòng output</td><td>Đại diện một nhóm</td><td>Đại diện <em>một dòng gốc</em>, kèm "view" lên dữ liệu xung quanh</td></tr>
+    </table>
+    <p>Hình dung: với mỗi dòng, engine cho bạn nhìn qua một "cửa sổ" (window) đến tập dữ liệu — bạn có thể tính chỉ số dựa trên dữ liệu trong cửa sổ đó, mà không mất chính dòng đang xét.</p>
+    <div class="example">
+      <div class="example-label">So sánh trực tiếp</div>
+<pre><code>-- GROUP BY: 1 dòng / phòng
+SELECT dept, AVG(salary) FROM employees GROUP BY dept;
+
+-- Window: mọi dòng employee, kèm AVG phòng họ
+SELECT name, dept, salary,
+       AVG(salary) OVER (PARTITION BY dept) AS dept_avg
+FROM employees;</code></pre>
+      Window cho bạn tính chỉ số <em>tham chiếu</em> mà không mất chi tiết.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2 ============ -->
+  <div class="slide section-divider" id="slide-4">
+    <h1>2. Cấu trúc OVER clause</h1>
+  </div>
+
+  <div class="slide" id="slide-5">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 Anatomy của OVER</h2>
+<pre><code>function_name([args]) OVER (
+    [PARTITION BY col1, col2, ...]    -- (1) phân hoạch tập
+    [ORDER BY     col3 [ASC|DESC]]    -- (2) thứ tự trong mỗi partition
+    [frame_clause]                     -- (3) khung tính toán
+)</code></pre>
+    <p>Ba thành phần đều <strong>tùy chọn</strong>, nhưng kết hợp khác nhau cho semantic khác nhau:</p>
+    <table class="compact-table">
+      <tr><th>Có gì</th><th>Ý nghĩa</th></tr>
+      <tr><td>chỉ <span class="inline-code">OVER ()</span></td><td>Toàn bộ bảng là một window — tính trên cả bảng</td></tr>
+      <tr><td>chỉ <span class="inline-code">PARTITION BY</span></td><td>Chia tập thành nhóm độc lập, không thứ tự</td></tr>
+      <tr><td>chỉ <span class="inline-code">ORDER BY</span></td><td>Toàn bộ tập, có thứ tự — frame mặc định áp dụng</td></tr>
+      <tr><td>cả hai</td><td>Phổ biến nhất — chia nhóm rồi sắp xếp trong nhóm</td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Bẫy quan trọng cần thuộc</div>
+      Khi có <span class="inline-code">ORDER BY</span> mà không khai báo frame, mặc định là <span class="inline-code">RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span> — tức là "từ đầu partition đến dòng hiện tại". Đây là nguồn bug "running total có ties" sẽ giải thích ở Section 5.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-6">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 PARTITION BY — phân hoạch không reduce</h2>
+    <div class="illustration">
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <!-- Original -->
+        <text x="100" y="20" text-anchor="middle" font-size="13" font-weight="bold">employees</text>
+        <rect x="20" y="30" width="180" height="200" fill="#fff" stroke="#1a1a1a"/>
+        <line x1="20" y1="55" x2="200" y2="55" stroke="#1a1a1a"/>
+        <text x="40" y="48" font-size="11" font-weight="bold">name</text>
+        <text x="100" y="48" font-size="11" font-weight="bold">dept</text>
+        <text x="160" y="48" font-size="11" font-weight="bold">sal</text>
+        <text x="40" y="75" font-size="11">An</text><text x="100" y="75" font-size="11" fill="#3b5998">Eng</text><text x="160" y="75" font-size="11">100</text>
+        <text x="40" y="95" font-size="11">Bo</text><text x="100" y="95" font-size="11" fill="#4a7c59">Mkt</text><text x="160" y="95" font-size="11">80</text>
+        <text x="40" y="115" font-size="11">Chi</text><text x="100" y="115" font-size="11" fill="#3b5998">Eng</text><text x="160" y="115" font-size="11">120</text>
+        <text x="40" y="135" font-size="11">Du</text><text x="100" y="135" font-size="11" fill="#c0392b">Ops</text><text x="160" y="135" font-size="11">90</text>
+        <text x="40" y="155" font-size="11">En</text><text x="100" y="155" font-size="11" fill="#4a7c59">Mkt</text><text x="160" y="155" font-size="11">70</text>
+        <text x="40" y="175" font-size="11">Fa</text><text x="100" y="175" font-size="11" fill="#3b5998">Eng</text><text x="160" y="175" font-size="11">110</text>
+
+        <line x1="220" y1="120" x2="290" y2="120" stroke="#3b5998" stroke-width="2" marker-end="url(#a6)"/>
+        <text x="255" y="110" text-anchor="middle" font-size="11" fill="#3b5998">PARTITION</text>
+        <text x="255" y="124" text-anchor="middle" font-size="11" fill="#3b5998">BY dept</text>
+
+        <!-- Partitions -->
+        <text x="450" y="20" text-anchor="middle" font-size="13" font-weight="bold">3 partitions độc lập</text>
+        <rect x="310" y="30" width="280" height="50" fill="#fff" stroke="#3b5998"/>
+        <text x="320" y="48" font-size="11" fill="#3b5998" font-weight="bold">Eng:</text>
+        <text x="360" y="48" font-size="11">An 100, Chi 120, Fa 110</text>
+        <text x="320" y="68" font-size="10" fill="#666" font-style="italic">tính chỉ trong nhóm này</text>
+
+        <rect x="310" y="90" width="280" height="50" fill="#fff" stroke="#4a7c59"/>
+        <text x="320" y="108" font-size="11" fill="#4a7c59" font-weight="bold">Mkt:</text>
+        <text x="360" y="108" font-size="11">Bo 80, En 70</text>
+
+        <rect x="310" y="150" width="280" height="50" fill="#fff" stroke="#c0392b"/>
+        <text x="320" y="168" font-size="11" fill="#c0392b" font-weight="bold">Ops:</text>
+        <text x="360" y="168" font-size="11">Du 90</text>
+
+        <text x="350" y="225" text-anchor="middle" font-size="12" font-style="italic" fill="#666">Window function tính trên mỗi nhóm — KHÔNG reduce, vẫn 6 dòng output</text>
+
+        <defs>
+          <marker id="a6" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 Z" fill="#3b5998"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <p>So với GROUP BY: GROUP BY <em>collapse</em> mỗi nhóm thành 1 dòng. PARTITION BY <em>tạo phạm vi tính</em> trong khi vẫn trả 6 dòng gốc.</p>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 GROUP BY vs PARTITION BY — bảng so sánh quan trọng</h2>
+    <table>
+      <tr><th></th><th>GROUP BY</th><th>PARTITION BY (window)</th></tr>
+      <tr><td>Vị trí</td><td>Mệnh đề riêng <span class="inline-code">GROUP BY</span></td><td>Trong <span class="inline-code">OVER (...)</span></td></tr>
+      <tr><td>Dòng output</td><td>1 dòng / nhóm</td><td>n dòng (tất cả input)</td></tr>
+      <tr><td>Cột non-aggregate</td><td>Phải trong GROUP BY</td><td>Lấy thoải mái — chính cột của dòng đó</td></tr>
+      <tr><td>Filter sau</td><td><span class="inline-code">HAVING</span></td><td>Không có WHERE/HAVING — phải bao subquery/CTE</td></tr>
+      <tr><td>Use case</td><td>Tổng kết, báo cáo</td><td>Ranking, running total, so dòng-dòng, chỉ số tham chiếu</td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Quan trọng — không filter trực tiếp window</div>
+<pre><code>-- SAI — không thể WHERE trên window function trực tiếp
+SELECT name, ROW_NUMBER() OVER (...) AS rn
+FROM employees WHERE rn = 1;
+
+-- ĐÚNG — bao bằng subquery hoặc CTE
+SELECT * FROM (
+    SELECT name, ROW_NUMBER() OVER (...) AS rn FROM employees
+) t WHERE rn = 1;</code></pre>
+      Lý do: window function chạy <em>sau</em> WHERE/GROUP BY/HAVING trong thứ tự thực thi. Bạn chỉ truy cập kết quả nó qua một "tầng" subquery hoặc CTE.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3 ============ -->
+  <div class="slide section-divider" id="slide-8">
+    <h1>3. Ranking Functions</h1>
+  </div>
+
+  <div class="slide" id="slide-9">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 ROW_NUMBER — đánh số duy nhất</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">ROW_NUMBER() OVER (...)</span> gán số thứ tự <strong>1, 2, 3, ...</strong> cho mỗi dòng theo thứ tự ORDER BY trong window. <em>Luôn duy nhất, không có ties</em>.
+    </div>
+<pre><code>-- Đánh số employee theo salary giảm dần, trong từng phòng
+SELECT name, dept, salary,
+       ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn
+FROM employees;</code></pre>
+    <table class="compact-table">
+      <tr><th>name</th><th>dept</th><th>salary</th><th>rn</th></tr>
+      <tr><td>Chi</td><td>Eng</td><td>120</td><td>1</td></tr>
+      <tr><td>Fa</td><td>Eng</td><td>110</td><td>2</td></tr>
+      <tr><td>An</td><td>Eng</td><td>100</td><td>3</td></tr>
+      <tr><td>Bo</td><td>Mkt</td><td>80</td><td>1</td></tr>
+      <tr><td>En</td><td>Mkt</td><td>70</td><td>2</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Pattern — Top-N per group</div>
+<pre><code>SELECT name, dept, salary FROM (
+    SELECT name, dept, salary,
+           ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn
+    FROM employees
+) t WHERE rn &lt;= 3;</code></pre>
+      Đây là pattern <em>thay thế</em> cho cả correlated subquery và self-join + derived table tuần 5. Gọn hơn, nhanh hơn, xử lý ties tốt hơn (sẽ thấy ở slide tiếp).
+    </div>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 ROW_NUMBER vs RANK vs DENSE_RANK</h2>
+    <p>Đây là khác biệt phải <strong>thuộc</strong>. Cho dữ liệu salary {120, 100, 100, 95}:</p>
+    <table>
+      <tr><th>Salary</th><th>ROW_NUMBER</th><th>RANK</th><th>DENSE_RANK</th></tr>
+      <tr><td>120</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td>100</td><td>2</td><td>2</td><td>2</td></tr>
+      <tr><td>100</td><td>3</td><td>2 (ties)</td><td>2 (ties)</td></tr>
+      <tr><td>95</td><td>4</td><td><strong>4</strong> (skip 3)</td><td><strong>3</strong> (no skip)</td></tr>
+    </table>
+    <h3>Quy tắc thuộc</h3>
+    <ul>
+      <li><strong>ROW_NUMBER</strong>: luôn duy nhất, ties tie-broken tùy ý (không deterministic — phải thêm cột tie-breaker vào ORDER BY).</li>
+      <li><strong>RANK</strong>: ties cùng số, sau ties nhảy số (1, 2, 2, 4).</li>
+      <li><strong>DENSE_RANK</strong>: ties cùng số, không nhảy số (1, 2, 2, 3).</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Khi nào chọn cái nào</div>
+      <ul>
+        <li>"Top-3 dòng" (cố định 3 dòng) ⇒ <strong>ROW_NUMBER</strong>.</li>
+        <li>"Top-3 hạng" (có thể &gt;3 dòng do ties) — như Olympic medal ⇒ <strong>RANK</strong>.</li>
+        <li>"Top-3 mức salary phân biệt" ⇒ <strong>DENSE_RANK</strong>.</li>
+      </ul>
+      LeetCode 178 ("Rank Scores") chính là DENSE_RANK. LeetCode 185 ("Department Top Three Salaries") là DENSE_RANK kèm subquery.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-11">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 Pattern: Top-N per group (signature pattern)</h2>
+    <p>Đây là pattern interview xuất hiện <em>nhiều nhất</em> trong các bài Medium/Hard. Xương sống:</p>
+<pre><code>SELECT cols
+FROM (
+    SELECT cols,
+           ROW_NUMBER() OVER (
+               PARTITION BY group_key
+               ORDER BY rank_key [DESC]
+           ) AS rn
+    FROM table
+) t
+WHERE rn &lt;= N;</code></pre>
+    <h3>Variants</h3>
+    <table class="compact-table">
+      <tr><th>Yêu cầu</th><th>Function</th></tr>
+      <tr><td>"Top 3 nhân viên cao lương nhất mỗi phòng"</td><td>ROW_NUMBER (cố định 3 dòng)</td></tr>
+      <tr><td>"Top 3 mức lương khác nhau mỗi phòng"</td><td>DENSE_RANK</td></tr>
+      <tr><td>"Top 3 hạng (có thể &gt;3 nhân viên)"</td><td>RANK</td></tr>
+      <tr><td>"Đơn mới nhất của mỗi khách"</td><td>ROW_NUMBER với <span class="inline-code">ORDER BY date DESC</span>, lấy rn = 1</td></tr>
+      <tr><td>"Sản phẩm bán chạy thứ 2 mỗi category"</td><td>DENSE_RANK với rn = 2</td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Bẫy ROW_NUMBER với ties</div>
+      "Đơn mới nhất của mỗi khách" với <span class="inline-code">ORDER BY date</span> — nếu hai đơn cùng ngày, ROW_NUMBER chọn ngẫu nhiên một. Phải thêm tie-breaker:
+<pre><code>ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY date DESC, order_id DESC)</code></pre>
+      Trong mock interview, nói rõ tie-breaker này — interviewer thường hỏi "nếu ties thì sao?".
+    </div>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.4</div>
+    <h2>3.4 NTILE — chia thành N nhóm</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">NTILE(N)</span> chia partition (theo ORDER BY) thành <em>N nhóm gần bằng nhau</em>, gán số 1..N cho mỗi dòng.
+    </div>
+<pre><code>-- Chia khách thành 4 quartile theo doanh thu
+SELECT
+    customer_id, revenue,
+    NTILE(4) OVER (ORDER BY revenue DESC) AS quartile
+FROM customer_revenue;
+-- quartile 1 = top 25% spenders, 4 = bottom 25%</code></pre>
+    <p>Nếu số dòng không chia hết cho N, các nhóm đầu nhận thêm 1 dòng.</p>
+    <div class="example">
+      <div class="example-label">Use case interview</div>
+      <ul>
+        <li>"Phân khách thành 4 nhóm theo CLV" — quartile analysis.</li>
+        <li>"Top 10% performers" ⇒ <span class="inline-code">NTILE(10)</span> rồi WHERE = 1.</li>
+        <li>"Median" approximate — <span class="inline-code">NTILE(2)</span>.</li>
+      </ul>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Khác PERCENT_RANK</div>
+      <span class="inline-code">PERCENT_RANK()</span> trả tỷ lệ continuous (0 đến 1), <span class="inline-code">NTILE(N)</span> trả discrete bucket. Cho phân tích thống kê chuẩn, dùng PERCENT_RANK; cho phân nhóm reporting, dùng NTILE.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4 ============ -->
+  <div class="slide section-divider" id="slide-13">
+    <h1>4. LAG và LEAD</h1>
+  </div>
+
+  <div class="slide" id="slide-14">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 LAG — nhìn về dòng trước</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">LAG(col, offset, default) OVER (...)</span> trả về giá trị cột của dòng <em>trước</em> dòng hiện tại theo ORDER BY trong window. Nếu không có dòng trước, trả <span class="inline-code">default</span> (mặc định NULL).
+    </div>
+<pre><code>-- So sánh doanh thu hôm nay với hôm qua, mỗi store
+SELECT
+    store_id, sale_date, revenue,
+    LAG(revenue) OVER (PARTITION BY store_id ORDER BY sale_date) AS prev_revenue,
+    revenue - LAG(revenue) OVER (PARTITION BY store_id ORDER BY sale_date) AS delta
+FROM daily_sales;</code></pre>
+    <h3>Tham số đầy đủ</h3>
+<pre><code>LAG(col, 2, 0)        -- nhìn về dòng cách 2, default 0 nếu thiếu
+LAG(col, 1, NULL)     -- equivalent với LAG(col)</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Pattern interview</div>
+      "Tính chênh lệch dòng-liền-kề" — trước window function phải dùng self-join hoặc correlated subquery (thấy tuần 4–5). Với LAG, đây là one-liner:
+<pre><code>revenue - LAG(revenue) OVER (PARTITION BY store_id ORDER BY date) AS day_over_day</code></pre>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 LEAD — nhìn về dòng sau</h2>
+    <p><span class="inline-code">LEAD</span> đối xứng với <span class="inline-code">LAG</span> — nhìn về dòng <em>sau</em>.</p>
+<pre><code>-- Dự đoán: ngày tiếp theo có sale lớn hơn hôm nay không?
+SELECT
+    sale_date, revenue,
+    LEAD(revenue) OVER (ORDER BY sale_date) AS next_revenue,
+    CASE WHEN LEAD(revenue) OVER (ORDER BY sale_date) &gt; revenue
+         THEN 'increasing'
+         ELSE 'flat or decreasing'
+    END AS trend
+FROM daily_sales;</code></pre>
+    <div class="example">
+      <div class="example-label">Pattern: gaps and islands (preview)</div>
+      Bài "tìm chuỗi đăng nhập liên tiếp" thường dùng <span class="inline-code">LAG</span> để check "có gap với dòng trước không":
+<pre><code>SELECT user_id, login_date,
+       CASE WHEN DATEDIFF(login_date, LAG(login_date) OVER (PARTITION BY user_id ORDER BY login_date)) = 1
+            THEN 'consecutive' ELSE 'new streak'
+       END AS streak_type
+FROM logins;</code></pre>
+      Tuần 8 sẽ học pattern gaps and islands hoàn chỉnh.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-16">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 Refactor: Rising Temperature (LC 197)</h2>
+    <p>Bài này tuần 4 đã giải bằng self-join. Giờ với LAG, gọn hơn nhiều.</p>
+    <h3>Cách self-join (tuần 4)</h3>
+<pre><code>SELECT today.id
+FROM Weather today
+JOIN Weather yesterday
+  ON yesterday.recordDate = today.recordDate - INTERVAL 1 DAY
+ AND today.temperature &gt; yesterday.temperature;</code></pre>
+    <h3>Cách window function (tuần 6)</h3>
+<pre><code>SELECT id FROM (
+    SELECT id, recordDate, temperature,
+           LAG(temperature) OVER (ORDER BY recordDate) AS prev_temp,
+           LAG(recordDate)  OVER (ORDER BY recordDate) AS prev_date
+    FROM Weather
+) t
+WHERE temperature &gt; prev_temp
+  AND DATEDIFF(recordDate, prev_date) = 1;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Trade-offs</div>
+      Window function dài hơn về dòng trong bài này, nhưng:
+      <ul>
+        <li>Logic linh hoạt hơn — đổi "ngày trước" thành "tuần trước" chỉ là sửa offset.</li>
+        <li>Nếu yêu cầu thêm: "tăng so với cùng kỳ tuần trước", self-join phải thêm join thứ ba; LAG chỉ thêm <span class="inline-code">LAG(temp, 7)</span>.</li>
+        <li>Trên dữ liệu lớn, LAG thường nhanh hơn self-join.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <div class="slide section-divider" id="slide-17">
+    <h1>5. Aggregate Window Functions</h1>
+  </div>
+
+  <div class="slide" id="slide-18">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 SUM/AVG/COUNT OVER</h2>
+    <p>Mọi aggregate function (SUM, AVG, COUNT, MIN, MAX) có thể chạy như window — không collapse dòng.</p>
+<pre><code>-- Mỗi đơn, kèm tổng đơn của khách đó
+SELECT order_id, customer_id, total,
+       SUM(total) OVER (PARTITION BY customer_id) AS customer_total,
+       total / SUM(total) OVER (PARTITION BY customer_id) AS share_of_customer
+FROM orders;</code></pre>
+    <p>Đây là pattern "tỷ lệ trong nhóm" — rất phổ biến cho dashboard và phân tích.</p>
+    <div class="example">
+      <div class="example-label">Use case — % of total</div>
+<pre><code>-- Thị phần mỗi sản phẩm trong category
+SELECT
+    product_id, category, revenue,
+    100.0 * revenue / SUM(revenue) OVER (PARTITION BY category) AS pct_of_category,
+    100.0 * revenue / SUM(revenue) OVER ()                       AS pct_of_total
+FROM product_revenue;</code></pre>
+      Hai chỉ số trong một query — tuần 5 phải dùng 2 subquery hoặc 2 lần JOIN.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-19">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 Running total — thêm ORDER BY</h2>
+    <p>Khi <span class="inline-code">OVER</span> có cả PARTITION BY và ORDER BY, aggregate trở thành <strong>running</strong> — tích lũy đến dòng hiện tại.</p>
+<pre><code>-- Tổng tích lũy doanh thu theo ngày, từng store
+SELECT
+    store_id, sale_date, revenue,
+    SUM(revenue) OVER (
+        PARTITION BY store_id
+        ORDER BY sale_date
+    ) AS running_total
+FROM daily_sales;</code></pre>
+    <table class="compact-table">
+      <tr><th>store</th><th>date</th><th>rev</th><th>running_total</th></tr>
+      <tr><td>1</td><td>01-01</td><td>100</td><td>100</td></tr>
+      <tr><td>1</td><td>01-02</td><td>50</td><td>150</td></tr>
+      <tr><td>1</td><td>01-03</td><td>80</td><td>230</td></tr>
+      <tr><td>2</td><td>01-01</td><td>200</td><td>200</td></tr>
+      <tr><td>2</td><td>01-02</td><td>150</td><td>350</td></tr>
+    </table>
+    <p>Frame mặc định: <span class="inline-code">RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span> — từ đầu partition đến dòng hiện tại.</p>
+  </div>
+
+  <div class="slide" id="slide-20">
+    <div class="slide-number">5.3</div>
+    <h2>5.3 Frame clause: ROWS vs RANGE</h2>
+    <p>Frame định nghĩa <em>bao nhiêu dòng</em> trong partition tham gia tính cho mỗi dòng.</p>
+<pre><code>-- Cú pháp đầy đủ
+function() OVER (
+    PARTITION BY ...
+    ORDER BY ...
+    {ROWS | RANGE} BETWEEN start AND end
+)</code></pre>
+    <h3>start/end values</h3>
+    <ul>
+      <li><span class="inline-code">UNBOUNDED PRECEDING</span> — từ đầu partition</li>
+      <li><span class="inline-code">N PRECEDING</span> — N dòng trước</li>
+      <li><span class="inline-code">CURRENT ROW</span> — dòng hiện tại</li>
+      <li><span class="inline-code">N FOLLOWING</span> — N dòng sau</li>
+      <li><span class="inline-code">UNBOUNDED FOLLOWING</span> — đến cuối partition</li>
+    </ul>
+    <h3>ROWS vs RANGE — khác biệt CRITICAL</h3>
+    <table>
+      <tr><th>Mode</th><th>Đơn vị</th><th>Khi có ties trên ORDER BY</th></tr>
+      <tr><td><strong>ROWS</strong></td><td>Số dòng vật lý</td><td>Phân biệt rõ — mỗi dòng là 1 đơn vị</td></tr>
+      <tr><td><strong>RANGE</strong></td><td>Phạm vi giá trị logic</td><td>Tất cả dòng cùng giá trị ORDER BY <em>được gộp</em></td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Bẫy "running total có ties"</div>
+      <p>Hai đơn cùng ngày, frame mặc định là RANGE ⇒ <em>cả hai</em> được tính trong cùng "step" của running total — running_total nhảy bậc lớn. Sinh viên thường mong "tăng dần từng đơn" (ROWS).</p>
+<pre><code>-- ROWS — running total tăng từng dòng, kể cả cùng date
+SUM(amount) OVER (ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+-- RANGE — các dòng cùng date đều có cùng running_total
+SUM(amount) OVER (ORDER BY date RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)</code></pre>
+      <strong>Khuyên</strong>: khi viết running total, luôn explicit <span class="inline-code">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span> — phòng bug.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-21">
+    <div class="slide-number">5.4</div>
+    <h2>5.4 Moving average — sliding frame</h2>
+    <p>Moving average / rolling sum: frame "trượt" với dòng hiện tại.</p>
+<pre><code>-- Moving 7-day average
+SELECT
+    sale_date, revenue,
+    AVG(revenue) OVER (
+        ORDER BY sale_date
+        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    ) AS ma_7d
+FROM daily_sales;</code></pre>
+    <table class="compact-table">
+      <tr><th>Frame</th><th>Ý nghĩa</th></tr>
+      <tr><td><span class="inline-code">ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</span></td><td>7 dòng gần nhất kể cả hôm nay (MA-7)</td></tr>
+      <tr><td><span class="inline-code">ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING</span></td><td>Centered moving avg, 7 dòng quanh hiện tại</td></tr>
+      <tr><td><span class="inline-code">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span></td><td>Cumulative (running total)</td></tr>
+      <tr><td><span class="inline-code">ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING</span></td><td>"Reverse cumulative" — tổng từ đây đến hết</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Edge case — đầu chuỗi</div>
+      Cho MA-7, 6 ngày đầu chỉ có 1, 2, ... dòng để tính → MA chia trên ít hơn 7 dòng (avg vẫn hợp lệ). Nếu đề yêu cầu "chỉ tính khi có đủ 7 dòng", thêm điều kiện:
+<pre><code>CASE WHEN ROW_NUMBER() OVER (ORDER BY sale_date) &gt;= 7 THEN ma_7d END
+-- hoặc lọc trong WHERE bao ngoài</code></pre>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 6 ============ -->
+  <div class="slide section-divider" id="slide-22">
+    <h1>6. FIRST_VALUE, LAST_VALUE, NTH_VALUE</h1>
+  </div>
+
+  <div class="slide" id="slide-23">
+    <div class="slide-number">6.1</div>
+    <h2>6.1 Value functions và bẫy LAST_VALUE</h2>
+<pre><code>-- Đơn đầu tiên và cuối cùng của mỗi khách
+SELECT
+    customer_id, order_id, order_date,
+    FIRST_VALUE(order_id) OVER (PARTITION BY customer_id ORDER BY order_date) AS first_order,
+    LAST_VALUE (order_id) OVER (
+        PARTITION BY customer_id
+        ORDER BY order_date
+        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+    ) AS last_order
+FROM orders;</code></pre>
+    <div class="warning">
+      <div class="warning-label">Bẫy LAST_VALUE — phải explicit frame</div>
+      <p>Frame mặc định khi có ORDER BY là <span class="inline-code">RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>. Với LAST_VALUE, "last" trong frame này chính là CURRENT ROW — không phải cuối partition!</p>
+      <p>Phải thêm <span class="inline-code">ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</span> để LAST_VALUE hoạt động như mong đợi.</p>
+      <p>Đây là bug rất phổ biến trong code production và là câu hỏi follow-up senior interview hay xuất hiện. <strong>Pattern thay thế</strong>: dùng <span class="inline-code">FIRST_VALUE(...) OVER (... ORDER BY ... DESC)</span> — đảo thứ tự.</p>
+    </div>
+    <p><span class="inline-code">NTH_VALUE(col, n)</span>: lấy giá trị dòng thứ n trong frame. Ít dùng hơn — đa số bài "thứ N" giải bằng ranking.</p>
+  </div>
+
+  <!-- ============ SECTION 7 ============ -->
+  <div class="slide section-divider" id="slide-24">
+    <h1>7. Worked Examples</h1>
+  </div>
+
+  <div class="slide" id="slide-25">
+    <div class="slide-number">7.1</div>
+    <h2>7.1 LeetCode 178 — Rank Scores (Medium)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Scores(id INT PK, score DECIMAL(3,2))
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về (score, rank) sắp xếp giảm dần. Score bằng nhau cùng rank, không skip rank.</p>
+    <h3>Phân rã — chọn function nào?</h3>
+    <p>"Bằng nhau cùng rank" + "không skip" ⇒ <strong>DENSE_RANK</strong>.</p>
+    <h3>Lời giải</h3>
+<pre><code>SELECT
+    score,
+    DENSE_RANK() OVER (ORDER BY score DESC) AS "rank"
+FROM Scores
+ORDER BY score DESC;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Chú ý keyword "rank"</div>
+      <span class="inline-code">rank</span> là từ khóa reserved ở một số dialect. Trong LeetCode (MySQL), bao bằng backticks <span class="inline-code">`rank`</span>. Trong PostgreSQL, double quotes <span class="inline-code">"rank"</span>. Tốt nhất đổi alias thành <span class="inline-code">score_rank</span> nếu được.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-26">
+    <div class="slide-number">7.2</div>
+    <h2>7.2 LeetCode 185 — Department Top Three Salaries (Hard)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Employee(id INT PK, name, salary INT, departmentId INT)
+Department(id INT PK, name)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Mỗi phòng, trả về 3 mức lương <em>cao nhất khác nhau</em> và tất cả nhân viên ở các mức đó. Có thể nhiều hơn 3 nhân viên/phòng nếu có ties.</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>"3 mức lương khác nhau" ⇒ <strong>DENSE_RANK</strong> (không phải ROW_NUMBER).</li>
+      <li>"Mỗi phòng" ⇒ <strong>PARTITION BY departmentId</strong>.</li>
+      <li>Lọc rank ≤ 3 ⇒ phải bao subquery (không filter window trực tiếp).</li>
+      <li>JOIN Department để lấy tên phòng.</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT
+    d.name AS Department,
+    e.name AS Employee,
+    e.salary AS Salary
+FROM (
+    SELECT
+        name, salary, departmentId,
+        DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rk
+    FROM Employee
+) e
+JOIN Department d ON d.id = e.departmentId
+WHERE e.rk &lt;= 3;</code></pre>
+    <p>Đây là bài SQL Hard — và lời giải chỉ 10 dòng nhờ window function. Không có window function, sẽ cần correlated subquery phức tạp với 3 EXISTS lồng nhau.</p>
+  </div>
+
+  <div class="slide" id="slide-27">
+    <div class="slide-number">7.3</div>
+    <h2>7.3 LeetCode 1321 — Restaurant Growth (Hard)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Customer(customer_id, name, visited_on DATE, amount INT)
+-- Một khách có thể có nhiều dòng cùng visited_on
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Tính moving sum và moving average 7 ngày của tổng amount, bắt đầu từ ngày thứ 7. Trả (visited_on, amount, average_amount), với amount là tổng 7 ngày, average_amount = amount/7 (làm tròn 2 chữ số).</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>Trước hết — gộp các dòng cùng ngày: GROUP BY visited_on rồi SUM amount.</li>
+      <li>Trên kết quả gộp, áp window <span class="inline-code">SUM</span> với frame ROWS BETWEEN 6 PRECEDING AND CURRENT ROW.</li>
+      <li>Lọc dòng có ít hơn 7 ngày trước đó — yêu cầu thứ tự ≥ 7.</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT
+    visited_on,
+    amount,
+    ROUND(amount / 7.0, 2) AS average_amount
+FROM (
+    SELECT
+        visited_on,
+        SUM(daily) OVER (
+            ORDER BY visited_on
+            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+        ) AS amount,
+        ROW_NUMBER() OVER (ORDER BY visited_on) AS rn
+    FROM (
+        SELECT visited_on, SUM(amount) AS daily
+        FROM Customer GROUP BY visited_on
+    ) daily_t
+) t
+WHERE rn &gt;= 7
+ORDER BY visited_on;</code></pre>
+    <p>Bài Hard điển hình — mix GROUP BY với window function trong 2 tầng subquery. Tuần 7 (CTE) sẽ làm code này dễ đọc hơn nhiều.</p>
+  </div>
+
+  <!-- ============ SECTION 8 ============ -->
+  <div class="slide section-divider" id="slide-28">
+    <h1>8. Knowledge Check</h1>
+  </div>
+
+  <div class="slide" id="slide-29">
+    <div class="slide-number">8.Q</div>
+    <h2>Knowledge Check — Tuần 6</h2>
+
+    <div class="quiz" id="q1">
+      <div class="quiz-question">Q1: Salary {120, 100, 100, 95}. Yêu cầu "trả về top-3 mức lương khác nhau". Function nào?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) ROW_NUMBER, lấy rn ≤ 3</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) RANK, lấy rk ≤ 3</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) DENSE_RANK, lấy dr ≤ 3</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) NTILE(3), lấy bucket = 1</button>
+      <div class="quiz-explanation">Yêu cầu "mức lương khác nhau" ⇒ DENSE_RANK đếm số mức phân biệt: 120→1, 100→2, 100→2, 95→3. ROW_NUMBER bỏ sót dòng 100 thứ hai. RANK bỏ sót 95 (rank=4 do skip). NTILE phân nhóm gần đều, không phù hợp với "top mức".</div>
+    </div>
+
+    <div class="quiz" id="q2">
+      <div class="quiz-question">Q2: <span class="inline-code">SUM(amount) OVER (ORDER BY date)</span> trên dữ liệu có hai dòng cùng date 2024-03-15 (amount 100 và 200). Running total cho hai dòng đó là gì? (Frame mặc định.)</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) 100 và 300 (tăng từng dòng)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 300 và 300 (cả hai cùng running)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) 100 và 200 (mỗi dòng độc lập)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) NULL và 300 (dòng đầu không có previous)</button>
+      <div class="quiz-explanation">Frame mặc định khi có ORDER BY là RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW. RANGE coi tất cả dòng cùng giá trị ORDER BY là một "step" → cả hai dòng cùng date đều bao gồm cả hai trong sum. Để tăng từng dòng, phải explicit ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW.</div>
+    </div>
+
+    <div class="quiz" id="q3">
+      <div class="quiz-question">Q3: Query nào ĐÚNG cho "top-1 đơn cao nhất mỗi khách"?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">SELECT * FROM orders WHERE ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY total DESC) = 1</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <span class="inline-code">SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY total DESC) AS rn FROM orders) t WHERE rn = 1</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) <span class="inline-code">SELECT *, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY total DESC) AS rn FROM orders HAVING rn = 1</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Cả ba đều đúng</button>
+      <div class="quiz-explanation">Window function chạy SAU WHERE/HAVING trong thứ tự thực thi → không filter trực tiếp được. A gây lỗi cú pháp/runtime. C cũng sai — HAVING không thấy alias rn. B đúng — bao window trong subquery rồi filter ở tầng ngoài. CTE (tuần 7) là alternative đẹp hơn.</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 9 ============ -->
+  <div class="slide section-divider" id="slide-30">
+    <h1>9. Bài tập về nhà</h1>
+  </div>
+
+  <div class="slide" id="slide-31">
+    <div class="slide-number">9.1</div>
+    <h2>9.1 Bài tập LeetCode (5 problem, mix Medium/Hard)</h2>
+    <ol>
+      <li><strong>178. Rank Scores</strong> (Medium) — đã giải tại lớp.</li>
+      <li><strong>185. Department Top Three Salaries</strong> (Hard) — đã giải tại lớp.</li>
+      <li><strong>184. Department Highest Salary</strong> (Medium) — bài tuần 5; viết lại bằng <span class="inline-code">RANK</span> hoặc <span class="inline-code">DENSE_RANK</span> và so sánh dòng code.</li>
+      <li><strong>1158. Market Analysis I</strong> (Medium) — JOIN + COUNT + GROUP BY, KHÔNG cần window. Dùng để check bạn không over-engineer.</li>
+      <li><strong>1321. Restaurant Growth</strong> (Hard) — đã giải tại lớp; viết lại nhưng dùng CTE preview (bao <span class="inline-code">WITH daily AS (...)</span>) — tuần 7 chính thức.</li>
+    </ol>
+    <h3>Bonus — speed challenge</h3>
+    <p>Cài SQLFiddle hoặc DB Fiddle local. Generate dataset 1M dòng (loại <span class="inline-code">orders</span>). Đo thời gian:</p>
+    <ul>
+      <li>"Top 3 đơn lớn nhất mỗi khách" bằng correlated subquery.</li>
+      <li>Cùng yêu cầu bằng window function ROW_NUMBER.</li>
+      <li>Dự đoán cái nào nhanh hơn? Khoảng bao nhiêu lần?</li>
+    </ul>
+    <p style="font-size:0.9rem;color:#666;">Trả lời điển hình: window 5–50× nhanh hơn correlated subquery, tùy index và optimizer.</p>
+  </div>
+
+  <div class="slide" id="slide-32">
+    <div class="slide-number">9.2</div>
+    <h2>9.2 Đọc thêm và tự kiểm tra</h2>
+    <h3>Đọc</h3>
+    <ul>
+      <li><em>SQL Window Functions Course</em> (Mode Analytics) — interactive tutorial xuất sắc.</li>
+      <li><em>SQL Cookbook</em> (Anthony Molinaro) — Chương 11 (Advanced Searching) phần ranking.</li>
+      <li>Markus Winand — <a style="color: #3b5998;">modern-sql.com/feature/window-functions</a> phần frame clause sâu.</li>
+      <li>PostgreSQL docs — <em>3.5 Window Functions</em>: tutorial chính thức ngắn gọn.</li>
+    </ul>
+    <h3>Tự kiểm tra (không nhìn slide)</h3>
+    <ul>
+      <li>Bạn nói được khác biệt ROW_NUMBER vs RANK vs DENSE_RANK trong 30 giây với ví dụ?</li>
+      <li>Bạn giải thích được vì sao "running total có ties" cho kết quả không như mong với frame mặc định?</li>
+      <li>Bạn viết được top-3 per group (gồm cả tie-breaker) trong dưới 2 phút?</li>
+      <li>Bạn nhớ pattern "không filter window trực tiếp — phải bao subquery"?</li>
+      <li>Bạn liệt kê được 3 use case của LAG/LEAD?</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Tuần sau — CTE và Recursive Queries</div>
+      Tuần 7: <span class="inline-code">WITH</span> clause cho code dễ đọc, recursive CTE cho hierarchy/path/sequence generation. Bạn đã thấy bài 1321 cần 2 tầng subquery — CTE sẽ làm code đó dễ đọc hơn rất nhiều. Recursive CTE mở khóa lớp bài "đường đi trong cây" và "gaps & islands" hoàn chỉnh.
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

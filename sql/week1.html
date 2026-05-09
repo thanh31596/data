@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 1 — Mô hình quan hệ và truy vấn nền tảng</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.15rem; color: #666; margin-bottom: 20px; font-style: italic; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8810a; margin-bottom: 6px; }
+    .warning {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-label { font-weight: bold; color: #c0392b; margin-bottom: 6px; }
+    pre {
+      background: #f5f5f5; padding: 14px 18px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.95rem; margin: 10px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 6px 12px; text-align: left;
+    }
+    th { background: #f0f0f0; font-weight: 600; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; margin-bottom: 12px; }
+    .illustration {
+      display: flex; justify-content: center; margin: 14px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.92rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .schema-block {
+      background: #fafafa; border: 1px solid #e0e0e0;
+      padding: 12px 16px; border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 0.92rem; margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ TITLE ============ -->
+  <div class="slide title-slide active" id="slide-0">
+    <h1>Tuần 1</h1>
+    <h1 style="font-size: 1.8rem; color: #555;">Mô hình quan hệ và truy vấn nền tảng</h1>
+    <p class="subtitle" style="margin-top: 24px;">SQL cho Interview — Lộ trình 10 tuần</p>
+    <p style="margin-top: 40px; color: #999; font-size: 0.9rem;">Nhấn phím → để bắt đầu &middot; T để xem mục lục</p>
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>1. Tổng quan và mục tiêu</h1>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Vì sao học SQL nghiêm túc?</h2>
+    <p>SQL không phải "kỹ năng phụ" trong interview kỹ thuật hiện đại — nó là <em>filter đầu tiên</em> cho rất nhiều vai trò:</p>
+    <ul>
+      <li><strong>Data Engineer / Data Analyst / Data Scientist:</strong> SQL screening hầu như luôn xuất hiện vòng đầu.</li>
+      <li><strong>Backend / Full-stack Engineer:</strong> nhiều công ty test SQL ở vòng technical, đặc biệt với schema design.</li>
+      <li><strong>ML Engineer:</strong> feature engineering pipeline phần lớn là SQL.</li>
+    </ul>
+    <p>Các nền tảng luyện đề chính:</p>
+    <ul>
+      <li><strong>LeetCode</strong> — hơn 80 SQL problem (Easy/Medium/Hard), dialect mặc định MySQL.</li>
+      <li><strong>StrataScratch</strong> — đề mô phỏng FAANG (Facebook, Airbnb, Uber), PostgreSQL.</li>
+      <li><strong>DataLemur</strong> — hướng analytics interview, có giải thích chi tiết.</li>
+      <li><strong>HackerRank, Codility</strong> — dùng cho coding screen ở nhiều công ty Việt Nam và Úc.</li>
+    </ul>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 Mục tiêu sau 10 tuần</h2>
+    <p>Cuối lộ trình, bạn cần đạt được các mốc cụ thể sau:</p>
+    <ul>
+      <li><strong>Easy LeetCode SQL</strong>: giải dưới 5 phút, không cần tra cú pháp.</li>
+      <li><strong>Medium LeetCode SQL</strong>: giải dưới 15 phút, viết clean với CTE.</li>
+      <li><strong>Hard LeetCode SQL</strong>: đọc đề và đề xuất hướng tiếp cận trong 5 phút, dù chưa code xong.</li>
+      <li><strong>Mock interview</strong>: think-aloud trong khi viết, đề xuất tối ưu, xử lý edge case chủ động.</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Lưu ý</div>
+      Mục tiêu KHÔNG phải nhớ cú pháp. Mục tiêu là <em>nhận ra pattern</em> và <em>phân rã bài toán</em>. Cú pháp tra được; tư duy thì phải luyện.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-4">
+    <div class="slide-number">1.3</div>
+    <h2>1.3 Bẫy lớn nhất: tư duy mệnh lệnh vs tư duy tập hợp</h2>
+    <p>Đây là rào cản số một với sinh viên đến từ Python/Java. Cùng một yêu cầu — "đếm số đơn hàng mỗi khách hàng":</p>
+    <div class="two-col">
+      <div>
+        <h3>Tư duy mệnh lệnh (Python)</h3>
+<pre><code>counts = {}
+for order in orders:
+    cid = order["customer_id"]
+    counts[cid] = counts.get(cid, 0) + 1</code></pre>
+        <p style="font-size: 0.9rem; color: #666;">"Với mỗi đơn, tăng counter cho khách hàng tương ứng."</p>
+      </div>
+      <div>
+        <h3>Tư duy tập hợp (SQL)</h3>
+<pre><code>SELECT customer_id, COUNT(*) AS n
+FROM orders
+GROUP BY customer_id;</code></pre>
+        <p style="font-size: 0.9rem; color: #666;">"Phân hoạch tập đơn theo customer_id, áp aggregator COUNT lên mỗi nhóm."</p>
+      </div>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Quy tắc vàng</div>
+      Khi đối mặt một bài SQL, đừng nghĩ "tôi sẽ duyệt thế nào". Hãy nghĩ "tôi cần phép biến đổi gì trên tập hợp dữ liệu này".
+    </div>
+  </div>
+
+  <div class="slide" id="slide-5">
+    <div class="slide-number">1.4</div>
+    <h2>1.4 Quy tắc làm việc cho tuần này</h2>
+    <ol>
+      <li><strong>Đọc schema trước.</strong> Trước khi gõ phím, viết ra: bảng nào có những cột gì, cột nào là PK/FK, cardinality giữa các bảng (1-1, 1-N, N-N).</li>
+      <li><strong>Vẽ phép biến đổi.</strong> Trên giấy nháp, ghi: bảng đầu vào → phép biến đổi → kết quả trung gian → phép biến đổi tiếp → output.</li>
+      <li><strong>Test edge case.</strong> Sau khi viết, hỏi: NULL thì sao? Bảng rỗng thì sao? Có khả năng có dòng trùng không?</li>
+      <li><strong>Đọc to query của mình.</strong> Mock interview yêu cầu think-aloud. Tập từ tuần đầu.</li>
+    </ol>
+  </div>
+
+  <!-- ============ SECTION 2 ============ -->
+  <div class="slide section-divider" id="slide-6">
+    <h1>2. Mô hình quan hệ</h1>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 Bảng, dòng, cột — terminology</h2>
+    <p>SQL được xây trên <strong>mô hình quan hệ</strong> (Codd, 1970). Ba khái niệm cốt lõi:</p>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <ul>
+        <li><strong>Quan hệ (Relation)</strong> = bảng, ví dụ <span class="inline-code">customers</span>.</li>
+        <li><strong>Tuple</strong> = dòng (một bản ghi cụ thể, ví dụ một khách hàng).</li>
+        <li><strong>Attribute</strong> = cột (một thuộc tính, ví dụ <span class="inline-code">name</span>).</li>
+        <li><strong>Domain</strong> = tập giá trị hợp lệ của một cột (kiểu dữ liệu + ràng buộc).</li>
+      </ul>
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ — bảng customers</div>
+      <table>
+        <tr><th>customer_id</th><th>name</th><th>country</th><th>signup_date</th></tr>
+        <tr><td>1</td><td>An Nguyễn</td><td>Vietnam</td><td>2023-03-12</td></tr>
+        <tr><td>2</td><td>Bình Trần</td><td>Australia</td><td>2024-01-05</td></tr>
+        <tr><td>3</td><td>Chi Lê</td><td>Vietnam</td><td>NULL</td></tr>
+      </table>
+      <p style="margin-top: 8px;">3 dòng (tuples), 4 cột (attributes). Cột <span class="inline-code">signup_date</span> có thể NULL.</p>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-8">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 Khóa chính (Primary Key)</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <strong>Khóa chính</strong> là một cột (hoặc tổ hợp cột) định danh <em>duy nhất</em> mỗi dòng trong bảng. Hai ràng buộc bắt buộc:
+      <ul>
+        <li><strong>Unique</strong> — không có hai dòng cùng giá trị PK.</li>
+        <li><strong>Not NULL</strong> — PK không bao giờ rỗng.</li>
+      </ul>
+    </div>
+    <p>Trong bảng <span class="inline-code">customers</span>, <span class="inline-code">customer_id</span> là PK. Trong bảng <span class="inline-code">order_items</span>, PK thường là tổ hợp <span class="inline-code">(order_id, product_id)</span> — gọi là <em>composite key</em>.</p>
+    <div class="key-point">
+      <div class="key-point-label">Tại sao quan trọng cho interview?</div>
+      Khi đọc đề, xác định ngay PK của mỗi bảng. Nó cho biết "1 dòng đại diện cho cái gì". Nhiều bài LeetCode bẫy ở chỗ assume PK sai.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-9">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 Khóa ngoại (Foreign Key)</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <strong>Khóa ngoại</strong> là cột tham chiếu đến PK của một bảng khác. Đây là cơ chế tạo <em>quan hệ</em> giữa các bảng.
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ</div>
+      <p>Bảng <span class="inline-code">orders</span> có cột <span class="inline-code">customer_id</span> — đây là FK trỏ đến PK của <span class="inline-code">customers</span>.</p>
+      <p>Mỗi đơn hàng phải thuộc về một khách hàng có tồn tại trong bảng customers (referential integrity).</p>
+    </div>
+    <p>FK có thể NULL (đơn hàng chưa gắn khách hàng), nhưng PK thì không.</p>
+    <h3>Cardinality — quan hệ giữa bảng</h3>
+    <ul>
+      <li><strong>1-1</strong>: một user — một profile.</li>
+      <li><strong>1-N</strong>: một customer — nhiều order. (Phổ biến nhất.)</li>
+      <li><strong>N-N</strong>: một order — nhiều product, một product trong nhiều order. Cần bảng trung gian (junction table).</li>
+    </ul>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">2.4</div>
+    <h2>2.4 Đọc Entity-Relationship Diagram (ERD)</h2>
+    <p>Trước khi viết bất kỳ query nào, hãy hiểu schema. ERD là cách trình bày trực quan các bảng và quan hệ:</p>
+    <div class="illustration">
+      <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- customers table -->
+        <rect x="20" y="60" width="180" height="160" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+        <rect x="20" y="60" width="180" height="28" fill="#3b5998"/>
+        <text x="110" y="80" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Helvetica">customers</text>
+        <text x="35" y="110" font-size="12" font-family="Courier New" font-weight="bold">PK customer_id</text>
+        <text x="35" y="135" font-size="12" font-family="Courier New">name</text>
+        <text x="35" y="160" font-size="12" font-family="Courier New">country</text>
+        <text x="35" y="185" font-size="12" font-family="Courier New">signup_date</text>
+
+        <!-- orders table -->
+        <rect x="260" y="60" width="180" height="160" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+        <rect x="260" y="60" width="180" height="28" fill="#3b5998"/>
+        <text x="350" y="80" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Helvetica">orders</text>
+        <text x="275" y="110" font-size="12" font-family="Courier New" font-weight="bold">PK order_id</text>
+        <text x="275" y="135" font-size="12" font-family="Courier New">FK customer_id</text>
+        <text x="275" y="160" font-size="12" font-family="Courier New">order_date</text>
+        <text x="275" y="185" font-size="12" font-family="Courier New">total</text>
+
+        <!-- order_items table -->
+        <rect x="500" y="60" width="180" height="160" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+        <rect x="500" y="60" width="180" height="28" fill="#3b5998"/>
+        <text x="590" y="80" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Helvetica">order_items</text>
+        <text x="515" y="110" font-size="12" font-family="Courier New" font-weight="bold">PK order_id</text>
+        <text x="515" y="125" font-size="12" font-family="Courier New" font-weight="bold">PK product_id</text>
+        <text x="515" y="150" font-size="12" font-family="Courier New">quantity</text>
+        <text x="515" y="175" font-size="12" font-family="Courier New">unit_price</text>
+
+        <!-- relationships -->
+        <line x1="200" y1="140" x2="260" y2="140" stroke="#1a1a1a" stroke-width="1.5"/>
+        <text x="210" y="135" font-size="11" fill="#4a7c59">1</text>
+        <text x="245" y="135" font-size="11" fill="#4a7c59">N</text>
+
+        <line x1="440" y1="140" x2="500" y2="140" stroke="#1a1a1a" stroke-width="1.5"/>
+        <text x="450" y="135" font-size="11" fill="#4a7c59">1</text>
+        <text x="485" y="135" font-size="11" fill="#4a7c59">N</text>
+
+        <text x="350" y="250" text-anchor="middle" font-size="13" fill="#666" font-style="italic">Một khách hàng có nhiều đơn; mỗi đơn có nhiều mặt hàng.</text>
+      </svg>
+    </div>
+    <div class="illustration-caption">Hình 2.1 — ERD đơn giản với 3 bảng và quan hệ 1-N.</div>
+  </div>
+
+  <!-- ============ SECTION 3 ============ -->
+  <div class="slide section-divider" id="slide-11">
+    <h1>3. Đại số quan hệ trực quan</h1>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.0</div>
+    <h2>3.0 Vì sao học đại số quan hệ trước SQL?</h2>
+    <p>Đại số quan hệ là <em>ngôn ngữ tư duy</em> đằng sau SQL. Mỗi câu lệnh SQL bạn viết, dù phức tạp tới đâu, đều có thể phân rã thành chuỗi các phép toán đại số quan hệ cơ bản.</p>
+    <p>Học các phép này trước giúp bạn:</p>
+    <ul>
+      <li><strong>Phân rã bài toán</strong> trước khi code — đây là kỹ năng số một trong mock interview.</li>
+      <li><strong>Hiểu vì sao</strong> một query chạy đúng (hoặc sai), không chỉ "thuộc cú pháp".</li>
+      <li><strong>Tối ưu</strong> — query optimizer trong RDBMS thực chất chuyển SQL về đại số quan hệ rồi sắp xếp lại.</li>
+    </ul>
+    <p>Năm phép cốt lõi cần thuộc: \(\sigma\) (selection), \(\pi\) (projection), \(\times\) (cross product), \(\bowtie\) (join), và bộ ba tập hợp \(\cup, \cap, -\).</p>
+  </div>
+
+  <div class="slide" id="slide-13">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 Selection \(\sigma\) — lọc dòng</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      \(\sigma_{\text{predicate}}(R)\) trả về tập con các dòng của \(R\) thỏa mãn predicate.
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ</div>
+      \(\sigma_{\text{country}=\text{'Vietnam'}}(\text{customers})\) — giữ lại các khách hàng ở Việt Nam.
+    </div>
+    <div class="illustration">
+      <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- input table -->
+        <text x="100" y="20" text-anchor="middle" font-size="13" font-weight="bold">customers (đầu vào)</text>
+        <rect x="20" y="30" width="180" height="160" fill="#fff" stroke="#1a1a1a" stroke-width="1"/>
+        <line x1="20" y1="55" x2="200" y2="55" stroke="#1a1a1a"/>
+        <text x="40" y="48" font-size="11" font-weight="bold">id</text>
+        <text x="80" y="48" font-size="11" font-weight="bold">name</text>
+        <text x="140" y="48" font-size="11" font-weight="bold">country</text>
+        <text x="40" y="75" font-size="11">1</text><text x="80" y="75" font-size="11">An</text><text x="140" y="75" font-size="11" fill="#4a7c59" font-weight="bold">Vietnam</text>
+        <text x="40" y="100" font-size="11">2</text><text x="80" y="100" font-size="11">Bình</text><text x="140" y="100" font-size="11">Australia</text>
+        <text x="40" y="125" font-size="11">3</text><text x="80" y="125" font-size="11">Chi</text><text x="140" y="125" font-size="11" fill="#4a7c59" font-weight="bold">Vietnam</text>
+        <text x="40" y="150" font-size="11">4</text><text x="80" y="150" font-size="11">Dũng</text><text x="140" y="150" font-size="11">UK</text>
+        <text x="40" y="175" font-size="11">5</text><text x="80" y="175" font-size="11">Ena</text><text x="140" y="175" font-size="11" fill="#4a7c59" font-weight="bold">Vietnam</text>
+
+        <!-- arrow -->
+        <line x1="220" y1="110" x2="370" y2="110" stroke="#3b5998" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="295" y="100" text-anchor="middle" font-size="13" fill="#3b5998" font-weight="bold">σ country='Vietnam'</text>
+        <defs>
+          <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 Z" fill="#3b5998"/>
+          </marker>
+        </defs>
+
+        <!-- output table -->
+        <text x="480" y="20" text-anchor="middle" font-size="13" font-weight="bold">đầu ra</text>
+        <rect x="400" y="30" width="180" height="110" fill="#fff" stroke="#1a1a1a" stroke-width="1"/>
+        <line x1="400" y1="55" x2="580" y2="55" stroke="#1a1a1a"/>
+        <text x="420" y="48" font-size="11" font-weight="bold">id</text>
+        <text x="460" y="48" font-size="11" font-weight="bold">name</text>
+        <text x="520" y="48" font-size="11" font-weight="bold">country</text>
+        <text x="420" y="75" font-size="11">1</text><text x="460" y="75" font-size="11">An</text><text x="520" y="75" font-size="11">Vietnam</text>
+        <text x="420" y="100" font-size="11">3</text><text x="460" y="100" font-size="11">Chi</text><text x="520" y="100" font-size="11">Vietnam</text>
+        <text x="420" y="125" font-size="11">5</text><text x="460" y="125" font-size="11">Ena</text><text x="520" y="125" font-size="11">Vietnam</text>
+      </svg>
+    </div>
+    <p>SQL tương đương: <span class="inline-code">SELECT * FROM customers WHERE country = 'Vietnam';</span></p>
+  </div>
+
+  <div class="slide" id="slide-14">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 Projection \(\pi\) — chọn cột</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      \(\pi_{a_1, a_2, \ldots}(R)\) trả về quan hệ chỉ chứa các cột được chọn (loại bỏ duplicate trong toán học thuần; SQL không tự loại trừ khi viết DISTINCT).
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ</div>
+      \(\pi_{\text{name}, \text{country}}(\text{customers})\) — chỉ lấy hai cột name và country.
+    </div>
+    <div class="illustration">
+      <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- input -->
+        <rect x="20" y="20" width="200" height="160" fill="#fff" stroke="#1a1a1a"/>
+        <line x1="20" y1="45" x2="220" y2="45" stroke="#1a1a1a"/>
+        <text x="35" y="38" font-size="11" font-weight="bold">id</text>
+        <text x="65" y="38" font-size="11" font-weight="bold" fill="#4a7c59">name</text>
+        <text x="115" y="38" font-size="11" font-weight="bold" fill="#4a7c59">country</text>
+        <text x="180" y="38" font-size="11" font-weight="bold">date</text>
+        <text x="35" y="62" font-size="11">1</text><text x="65" y="62" font-size="11">An</text><text x="115" y="62" font-size="11">Vietnam</text><text x="180" y="62" font-size="11">23-03</text>
+        <text x="35" y="82" font-size="11">2</text><text x="65" y="82" font-size="11">Bình</text><text x="115" y="82" font-size="11">Australia</text><text x="180" y="82" font-size="11">24-01</text>
+        <text x="35" y="102" font-size="11">3</text><text x="65" y="102" font-size="11">Chi</text><text x="115" y="102" font-size="11">Vietnam</text><text x="180" y="102" font-size="11">23-07</text>
+
+        <line x1="240" y1="100" x2="370" y2="100" stroke="#3b5998" stroke-width="2" marker-end="url(#arr2)"/>
+        <text x="305" y="92" text-anchor="middle" font-size="13" fill="#3b5998" font-weight="bold">π name, country</text>
+        <defs>
+          <marker id="arr2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 Z" fill="#3b5998"/>
+          </marker>
+        </defs>
+
+        <!-- output -->
+        <rect x="400" y="20" width="180" height="120" fill="#fff" stroke="#1a1a1a"/>
+        <line x1="400" y1="45" x2="580" y2="45" stroke="#1a1a1a"/>
+        <text x="420" y="38" font-size="11" font-weight="bold">name</text>
+        <text x="490" y="38" font-size="11" font-weight="bold">country</text>
+        <text x="420" y="62" font-size="11">An</text><text x="490" y="62" font-size="11">Vietnam</text>
+        <text x="420" y="82" font-size="11">Bình</text><text x="490" y="82" font-size="11">Australia</text>
+        <text x="420" y="102" font-size="11">Chi</text><text x="490" y="102" font-size="11">Vietnam</text>
+      </svg>
+    </div>
+    <p>SQL tương đương: <span class="inline-code">SELECT name, country FROM customers;</span></p>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 Cross Product \(\times\) và Join \(\bowtie\)</h2>
+    <div class="definition">
+      <div class="definition-label">Cross Product</div>
+      \(R \times S\) ghép <em>mọi cặp</em> (dòng từ R, dòng từ S). Nếu \(|R| = m, |S| = n\) thì kết quả có \(m \cdot n\) dòng.
+    </div>
+    <div class="definition">
+      <div class="definition-label">Join (Inner Join)</div>
+      \(R \bowtie_{\theta} S = \sigma_\theta(R \times S)\). Tức là cross product, sau đó lọc theo predicate \(\theta\) (thường là so khớp khóa).
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ</div>
+      \(\text{customers} \bowtie_{c.id = o.customer\_id} \text{orders}\) — ghép mỗi đơn hàng với khách hàng tương ứng.
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Tại sao quan trọng</div>
+      Nắm được join = "cross product + filter" giúp bạn hiểu vì sao thiếu điều kiện join sẽ bùng nổ kết quả (Cartesian explosion). Đây là bug kinh điển trong interview.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-16">
+    <div class="slide-number">3.4</div>
+    <h2>3.4 Phép tập hợp: \(\cup, \cap, -\)</h2>
+    <p>Áp dụng cho hai quan hệ <strong>cùng schema</strong> (cùng số cột, cùng kiểu):</p>
+    <div class="illustration">
+      <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Union -->
+        <text x="100" y="20" text-anchor="middle" font-size="14" font-weight="bold">A ∪ B (Union)</text>
+        <circle cx="80" cy="100" r="45" fill="#3b5998" fill-opacity="0.4" stroke="#3b5998"/>
+        <circle cx="125" cy="100" r="45" fill="#3b5998" fill-opacity="0.4" stroke="#3b5998"/>
+        <text x="100" y="180" text-anchor="middle" font-size="11" fill="#666">tất cả phần tử ở A hoặc B</text>
+
+        <!-- Intersection -->
+        <text x="305" y="20" text-anchor="middle" font-size="14" font-weight="bold">A ∩ B (Intersection)</text>
+        <circle cx="285" cy="100" r="45" fill="none" stroke="#3b5998"/>
+        <circle cx="330" cy="100" r="45" fill="none" stroke="#3b5998"/>
+        <path d="M 308 65 A 45 45 0 0 1 308 135 A 45 45 0 0 1 308 65" fill="#4a7c59" fill-opacity="0.5" stroke="none"/>
+        <text x="305" y="180" text-anchor="middle" font-size="11" fill="#666">phần tử ở cả A và B</text>
+
+        <!-- Difference -->
+        <text x="510" y="20" text-anchor="middle" font-size="14" font-weight="bold">A − B (Difference)</text>
+        <circle cx="490" cy="100" r="45" fill="#c0392b" fill-opacity="0.4" stroke="#c0392b"/>
+        <circle cx="535" cy="100" r="45" fill="#fff" stroke="#3b5998"/>
+        <path d="M 513 65 A 45 45 0 0 1 513 135 A 45 45 0 0 1 513 65" fill="#fff" stroke="none"/>
+        <text x="510" y="180" text-anchor="middle" font-size="11" fill="#666">ở A nhưng không ở B</text>
+      </svg>
+    </div>
+    <p>SQL tương đương:</p>
+    <ul>
+      <li>\(A \cup B\) → <span class="inline-code">UNION</span> (loại trùng) hoặc <span class="inline-code">UNION ALL</span> (giữ trùng)</li>
+      <li>\(A \cap B\) → <span class="inline-code">INTERSECT</span></li>
+      <li>\(A - B\) → <span class="inline-code">EXCEPT</span> (PostgreSQL/SQL Server) hoặc <span class="inline-code">MINUS</span> (Oracle)</li>
+    </ul>
+  </div>
+
+  <div class="slide" id="slide-17">
+    <div class="slide-number">3.5</div>
+    <h2>3.5 Composition — kết hợp các phép biến đổi</h2>
+    <p>Mọi query SQL phức tạp đều là <em>composition</em> các phép cơ bản. Đọc query phức tạp = đọc chuỗi phép biến đổi từ trong ra ngoài.</p>
+    <div class="example">
+      <div class="example-label">Yêu cầu</div>
+      Lấy tên khách hàng Việt Nam đăng ký sau 2023.
+    </div>
+    <div class="example">
+      <div class="example-label">Đại số quan hệ</div>
+      $$\pi_{\text{name}}\Big(\sigma_{\text{country}=\text{'Vietnam'} \,\wedge\, \text{signup\_date} > \text{'2023-01-01'}}(\text{customers})\Big)$$
+      <p style="margin-top: 6px;">Đọc từ trong ra: lọc → chiếu.</p>
+    </div>
+    <div class="example">
+      <div class="example-label">SQL tương đương</div>
+<pre><code>SELECT name
+FROM customers
+WHERE country = 'Vietnam'
+  AND signup_date > '2023-01-01';</code></pre>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Bài tập tại lớp</div>
+      Trên giấy, viết biểu thức đại số quan hệ cho yêu cầu: "Lấy customer_id và total của các đơn trên 1000 đặt bởi khách Australia". (Cần \(\sigma\), \(\bowtie\), \(\pi\).)
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4 ============ -->
+  <div class="slide section-divider" id="slide-18">
+    <h1>4. SQL nền tảng</h1>
+  </div>
+
+  <div class="slide" id="slide-19">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 Cấu trúc câu lệnh SELECT</h2>
+    <p>Câu lệnh SQL cơ bản nhất có dạng:</p>
+<pre><code>SELECT  &lt;columns&gt;     -- chọn cột (Projection π)
+FROM    &lt;table&gt;       -- nguồn dữ liệu
+WHERE   &lt;predicate&gt;   -- lọc dòng (Selection σ)
+ORDER BY &lt;column&gt;     -- sắp xếp
+LIMIT   &lt;n&gt;;          -- giới hạn số dòng</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Thứ tự thực thi logic (KHÁC thứ tự viết)</div>
+      <ol>
+        <li>FROM — lấy bảng nguồn</li>
+        <li>WHERE — lọc dòng</li>
+        <li>SELECT — chọn cột</li>
+        <li>ORDER BY — sắp xếp</li>
+        <li>LIMIT — cắt</li>
+      </ol>
+      Hiểu thứ tự này quan trọng vì giải thích tại sao bạn không dùng được alias từ SELECT trong WHERE (ở hầu hết dialect).
+    </div>
+  </div>
+
+  <div class="slide" id="slide-20">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 WHERE — toán tử so sánh</h2>
+    <table>
+      <tr><th>Toán tử</th><th>Ý nghĩa</th><th>Ví dụ</th></tr>
+      <tr><td><span class="inline-code">=</span></td><td>bằng</td><td><span class="inline-code">country = 'Vietnam'</span></td></tr>
+      <tr><td><span class="inline-code">&lt;&gt;</span> hoặc <span class="inline-code">!=</span></td><td>khác</td><td><span class="inline-code">status &lt;&gt; 'closed'</span></td></tr>
+      <tr><td><span class="inline-code">&lt;, &gt;, &lt;=, &gt;=</span></td><td>so sánh thứ tự</td><td><span class="inline-code">price &gt;= 100</span></td></tr>
+      <tr><td><span class="inline-code">BETWEEN ... AND</span></td><td>trong khoảng (bao gồm)</td><td><span class="inline-code">price BETWEEN 10 AND 50</span></td></tr>
+      <tr><td><span class="inline-code">IN</span></td><td>thuộc tập</td><td><span class="inline-code">country IN ('VN','AU','UK')</span></td></tr>
+      <tr><td><span class="inline-code">LIKE</span></td><td>khớp pattern</td><td><span class="inline-code">name LIKE 'A%'</span></td></tr>
+      <tr><td><span class="inline-code">IS NULL / IS NOT NULL</span></td><td>kiểm tra rỗng</td><td><span class="inline-code">signup_date IS NULL</span></td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Cảnh báo NULL</div>
+      <span class="inline-code">signup_date = NULL</span> luôn trả về <em>UNKNOWN</em>, không phải TRUE. Phải dùng <span class="inline-code">IS NULL</span>.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-21">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 Logic ba giá trị: TRUE, FALSE, UNKNOWN</h2>
+    <p>SQL không phải logic Boolean thông thường. Khi NULL tham gia, kết quả là UNKNOWN.</p>
+    <table>
+      <tr><th>A</th><th>B</th><th>A AND B</th><th>A OR B</th></tr>
+      <tr><td>TRUE</td><td>NULL</td><td>NULL</td><td>TRUE</td></tr>
+      <tr><td>FALSE</td><td>NULL</td><td>FALSE</td><td>NULL</td></tr>
+      <tr><td>NULL</td><td>NULL</td><td>NULL</td><td>NULL</td></tr>
+    </table>
+    <p>WHERE chỉ giữ dòng có predicate = TRUE. Dòng UNKNOWN bị loại.</p>
+    <div class="warning">
+      <div class="warning-label">Bẫy interview kinh điển</div>
+      <p>Yêu cầu: "Lấy khách hàng KHÔNG ở Vietnam".</p>
+<pre><code>-- SAI: bỏ sót khách có country = NULL
+SELECT * FROM customers WHERE country &lt;&gt; 'Vietnam';
+
+-- ĐÚNG: cần xử lý NULL rõ ràng
+SELECT * FROM customers
+WHERE country &lt;&gt; 'Vietnam' OR country IS NULL;</code></pre>
+      Đây là bài LeetCode 584 (sẽ làm trong Section 5).
+    </div>
+  </div>
+
+  <div class="slide" id="slide-22">
+    <div class="slide-number">4.4</div>
+    <h2>4.4 ORDER BY và LIMIT</h2>
+    <p><strong>ORDER BY</strong> sắp xếp kết quả. Mặc định ASC (tăng dần). Có thể sắp xếp theo nhiều cột.</p>
+<pre><code>SELECT name, signup_date
+FROM customers
+ORDER BY signup_date DESC, name ASC;</code></pre>
+    <p><strong>LIMIT</strong> giới hạn số dòng (chỉ MySQL/PostgreSQL/SQLite):</p>
+<pre><code>SELECT * FROM customers ORDER BY signup_date DESC LIMIT 10;
+-- Bỏ qua 10 dòng đầu, lấy 10 dòng tiếp:
+SELECT * FROM customers ORDER BY signup_date DESC LIMIT 10 OFFSET 10;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Khác biệt phương ngữ — interview hay test</div>
+      <ul>
+        <li>MySQL / PostgreSQL: <span class="inline-code">LIMIT n OFFSET m</span></li>
+        <li>SQL Server: <span class="inline-code">SELECT TOP n ... OFFSET m ROWS FETCH NEXT n ROWS ONLY</span></li>
+        <li>Oracle: <span class="inline-code">FETCH FIRST n ROWS ONLY</span> (12c+) hoặc <span class="inline-code">ROWNUM</span></li>
+      </ul>
+      LeetCode mặc định MySQL — bám LIMIT.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-23">
+    <div class="slide-number">4.5</div>
+    <h2>4.5 DISTINCT — loại bỏ trùng lặp</h2>
+    <p>SQL <em>không</em> tự loại bỏ dòng trùng (khác đại số quan hệ thuần). Phải dùng DISTINCT.</p>
+<pre><code>-- Có thể trả 1000 dòng vì nhiều khách cùng quốc gia
+SELECT country FROM customers;
+
+-- Trả các quốc gia duy nhất
+SELECT DISTINCT country FROM customers;
+
+-- DISTINCT áp dụng cho TỔ HỢP cột
+SELECT DISTINCT country, signup_year FROM customers;</code></pre>
+    <div class="warning">
+      <div class="warning-label">DISTINCT có chi phí</div>
+      DISTINCT phải sort hoặc hash toàn bộ kết quả để loại trùng. Trên dữ liệu lớn, đắt. Khi có thể, dùng GROUP BY hoặc kiểm tra logic xem có thực sự cần DISTINCT không — nhiều bug "dòng trùng" thực ra là bug join, không phải thiếu DISTINCT.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <div class="slide section-divider" id="slide-24">
+    <h1>5. Worked Examples — LeetCode Easy</h1>
+  </div>
+
+  <div class="slide" id="slide-25">
+    <div class="slide-number">5.0</div>
+    <h2>5.0 Quy trình giải bài LeetCode</h2>
+    <p>Áp dụng cho mọi problem, dù Easy hay Hard:</p>
+    <ol>
+      <li><strong>Đọc đề 2 lần.</strong> Lần 1 hiểu yêu cầu, lần 2 chú ý edge case (NULL, ties, duplicates).</li>
+      <li><strong>Đọc schema.</strong> Xác định PK, FK, kiểu dữ liệu, xem có cột NULLABLE không.</li>
+      <li><strong>Phân rã đại số quan hệ.</strong> Trên giấy: \(\sigma\)? \(\pi\)? \(\bowtie\)?</li>
+      <li><strong>Code.</strong> Viết stub trước (SELECT ... FROM ... WHERE ...), điền chi tiết.</li>
+      <li><strong>Test mental.</strong> Chạy query qua sample data trong đầu. Có dòng nào sai không?</li>
+      <li><strong>Edge case.</strong> Bảng rỗng? Tất cả NULL? Có ties?</li>
+    </ol>
+  </div>
+
+  <div class="slide" id="slide-26">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 LeetCode 1757 — Recyclable and Low Fat Products</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Products(product_id INT PK, low_fats ENUM('Y','N'), recyclable ENUM('Y','N'))
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về <span class="inline-code">product_id</span> của những sản phẩm vừa low_fat = 'Y' vừa recyclable = 'Y'.</p>
+    <h3>Phân rã</h3>
+    <p>Phép biến đổi: \(\pi_{\text{product\_id}}(\sigma_{\text{low\_fats}=\text{'Y'} \wedge \text{recyclable}=\text{'Y'}}(\text{Products}))\)</p>
+    <h3>Lời giải</h3>
+<pre><code>SELECT product_id
+FROM Products
+WHERE low_fats = 'Y' AND recyclable = 'Y';</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Take-away</div>
+      Đây là dạng đơn giản nhất: chỉ cần \(\sigma + \pi\). Đừng overthink. Nhiều bài Easy chính là kiểu này — hãy giải dưới 2 phút.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-27">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 LeetCode 584 — Find Customer Referee</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Customer(id INT PK, name VARCHAR, referee_id INT NULL)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về tên khách hàng <em>không</em> được giới thiệu bởi khách hàng có id = 2.</p>
+    <h3>Bẫy</h3>
+    <p>Cột <span class="inline-code">referee_id</span> NULLABLE. Predicate <span class="inline-code">referee_id &lt;&gt; 2</span> sẽ trả NULL khi referee_id IS NULL → bị WHERE loại oan.</p>
+    <h3>Lời giải sai vs đúng</h3>
+<pre><code>-- SAI: bỏ sót khách có referee_id = NULL
+SELECT name FROM Customer WHERE referee_id &lt;&gt; 2;
+
+-- ĐÚNG
+SELECT name
+FROM Customer
+WHERE referee_id &lt;&gt; 2 OR referee_id IS NULL;</code></pre>
+    <div class="warning">
+      <div class="warning-label">Lý do</div>
+      Logic ba giá trị: <span class="inline-code">NULL &lt;&gt; 2</span> = UNKNOWN, không phải TRUE. WHERE loại UNKNOWN. Phải dùng <span class="inline-code">IS NULL</span> để bắt riêng.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-28">
+    <div class="slide-number">5.3</div>
+    <h2>5.3 LeetCode 595 — Big Countries</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+World(name VARCHAR PK, continent VARCHAR, area INT, population INT, gdp BIGINT)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Một quốc gia "lớn" nếu area ≥ 3,000,000 <strong>HOẶC</strong> population ≥ 25,000,000. Trả về name, population, area của các quốc gia lớn.</p>
+    <h3>Phân rã</h3>
+    <p>$$\pi_{\text{name}, \text{population}, \text{area}}\Big(\sigma_{\text{area} \ge 3{,}000{,}000 \,\vee\, \text{population} \ge 25{,}000{,}000}(\text{World})\Big)$$</p>
+    <h3>Lời giải</h3>
+<pre><code>SELECT name, population, area
+FROM World
+WHERE area &gt;= 3000000 OR population &gt;= 25000000;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Lưu ý — câu hỏi follow-up cho mock interview</div>
+      "Nếu bảng World có 100 triệu dòng, làm sao tối ưu query này?"<br>
+      → Câu trả lời tốt: index trên area và population (hai single-column index, optimizer sẽ chọn — composite không giúp với OR), hoặc rewrite thành <span class="inline-code">UNION ALL</span> hai SELECT.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 6 ============ -->
+  <div class="slide section-divider" id="slide-29">
+    <h1>6. Knowledge Check</h1>
+  </div>
+
+  <div class="slide" id="slide-30">
+    <div class="slide-number">6.Q</div>
+    <h2>Knowledge Check — Tuần 1</h2>
+
+    <div class="quiz" id="q1">
+      <div class="quiz-question">Q1: Predicate <span class="inline-code">salary &lt;&gt; 5000</span> sẽ giữ lại dòng nào trong các dòng sau?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Chỉ dòng có salary = 5000</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Dòng có salary khác 5000 và không NULL</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) Dòng có salary khác 5000 hoặc NULL</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Tất cả các dòng trừ khi bảng rỗng</button>
+      <div class="quiz-explanation">Logic ba giá trị: NULL ≠ 5000 cho UNKNOWN, không phải TRUE. WHERE loại UNKNOWN. Phải <span class="inline-code">OR salary IS NULL</span> nếu muốn giữ NULL.</div>
+    </div>
+
+    <div class="quiz" id="q2">
+      <div class="quiz-question">Q2: Trong đại số quan hệ, biểu thức nào tương đương với <span class="inline-code">SELECT name FROM customers WHERE country = 'VN';</span></div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) \(\sigma_{\text{name}}(\pi_{\text{country}=\text{VN}}(\text{customers}))\)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) \(\pi_{\text{name}}(\sigma_{\text{country}=\text{VN}}(\text{customers}))\)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) \(\sigma_{\text{name}}(\sigma_{\text{country}=\text{VN}}(\text{customers}))\)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) \(\pi_{\text{country}=\text{VN}}(\pi_{\text{name}}(\text{customers}))\)</button>
+      <div class="quiz-explanation">σ lọc dòng (WHERE), π chọn cột (SELECT). Lọc trước rồi chiếu — đọc từ trong ra ngoài.</div>
+    </div>
+
+    <div class="quiz" id="q3">
+      <div class="quiz-question">Q3: Bảng orders có 1M dòng, customers có 10K dòng. <span class="inline-code">SELECT * FROM orders, customers;</span> trả về bao nhiêu dòng?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) 1,000,000 (giữ orders)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) 10,000 (giữ customers)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) 10,000,000,000 (cross product)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Lỗi cú pháp</button>
+      <div class="quiz-explanation">Dấu phẩy trong FROM = CROSS JOIN. Không có WHERE để lọc → cross product 1M × 10K = 10 tỷ dòng. Đây là Cartesian explosion — bug kinh điển khi quên ON.</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 7 ============ -->
+  <div class="slide section-divider" id="slide-31">
+    <h1>7. Bài tập về nhà</h1>
+  </div>
+
+  <div class="slide" id="slide-32">
+    <div class="slide-number">7.1</div>
+    <h2>7.1 Schema chuẩn cho cả khóa học</h2>
+    <p>Mọi bài tập trong 10 tuần dùng schema e-commerce này. In ra hoặc lưu lại để tham khảo:</p>
+    <div class="schema-block">
+customers (
+    customer_id    INT PRIMARY KEY,
+    name           VARCHAR(100),
+    country        VARCHAR(50),
+    signup_date    DATE
+)
+
+products (
+    product_id     INT PRIMARY KEY,
+    name           VARCHAR(100),
+    category       VARCHAR(50),
+    price          DECIMAL(10,2),
+    low_fat        CHAR(1),
+    recyclable     CHAR(1)
+)
+
+orders (
+    order_id       INT PRIMARY KEY,
+    customer_id    INT REFERENCES customers,
+    order_date     DATE,
+    status         VARCHAR(20)
+)
+
+order_items (
+    order_id       INT,
+    product_id     INT,
+    quantity       INT,
+    unit_price     DECIMAL(10,2),
+    PRIMARY KEY (order_id, product_id)
+)
+    </div>
+  </div>
+
+  <div class="slide" id="slide-33">
+    <div class="slide-number">7.2</div>
+    <h2>7.2 Bài tập LeetCode (5 problem Easy)</h2>
+    <ol>
+      <li><strong>1757. Recyclable and Low Fat Products</strong> — đã giải tại lớp, viết lại không nhìn.</li>
+      <li><strong>584. Find Customer Referee</strong> — chú ý NULL.</li>
+      <li><strong>595. Big Countries</strong> — đơn giản, viết dưới 2 phút.</li>
+      <li><strong>183. Customers Who Never Order</strong> — gợi ý: <span class="inline-code">NOT IN</span> hoặc <span class="inline-code">LEFT JOIN ... WHERE NULL</span>. Sẽ học chi tiết tuần 4.</li>
+      <li><strong>1873. Calculate Special Bonus</strong> — gợi ý: dùng <span class="inline-code">CASE WHEN</span>. Sẽ học tuần 2.</li>
+    </ol>
+    <h3>Yêu cầu nộp bài</h3>
+    <ul>
+      <li>Mỗi problem viết kèm 1-2 dòng comment ghi pattern bạn nhận ra (\(\sigma\)? \(\pi\)? \(\bowtie\)?).</li>
+      <li>Với problem 4 và 5, ghi rõ "chưa học pattern này, cách tiếp cận thử của tôi là...".</li>
+      <li>Thời gian giải mỗi bài (đo thực tế).</li>
+    </ul>
+  </div>
+
+  <div class="slide" id="slide-34">
+    <div class="slide-number">7.3</div>
+    <h2>7.3 Đọc thêm và ôn tập</h2>
+    <h3>Đọc</h3>
+    <ul>
+      <li><em>SQL Cookbook</em> (Anthony Molinaro) — Chương 1 (Retrieving Records).</li>
+      <li><em>Database System Concepts</em> (Silberschatz) — Chương 2 (Relational Model), §2.1–2.3.</li>
+      <li><a style="color: #3b5998;">SQLZoo</a> — Tutorial 1 (SELECT basics) và Tutorial 2 (SELECT from World).</li>
+    </ul>
+    <h3>Tự kiểm tra</h3>
+    <ul>
+      <li>Bạn vẽ được ERD của schema khóa học không nhìn?</li>
+      <li>Bạn giải thích được vì sao <span class="inline-code">WHERE x &lt;&gt; 5</span> bỏ sót dòng x = NULL?</li>
+      <li>Bạn dịch được "lấy email của user Việt Nam đăng ký 2024" thành biểu thức đại số quan hệ?</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Tuần sau</div>
+      Tuần 2: Lọc nâng cao và xử lý NULL. <span class="inline-code">CASE WHEN</span>, string functions, date arithmetic, COALESCE/IFNULL — chuẩn bị cho Section 7 question 5 ở trên.
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

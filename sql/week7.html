@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 7 — CTE và Recursive Queries</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.15rem; color: #666; margin-bottom: 20px; font-style: italic; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8810a; margin-bottom: 6px; }
+    .warning {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-label { font-weight: bold; color: #c0392b; margin-bottom: 6px; }
+    pre {
+      background: #f5f5f5; padding: 14px 18px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.95rem; margin: 10px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 6px 12px; text-align: left;
+    }
+    th { background: #f0f0f0; font-weight: 600; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; margin-bottom: 12px; }
+    .illustration {
+      display: flex; justify-content: center; margin: 14px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.92rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .schema-block {
+      background: #fafafa; border: 1px solid #e0e0e0;
+      padding: 12px 16px; border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 0.92rem; margin: 8px 0;
+    }
+    .dialect-table th { background: #e8f0fe; }
+    .compact-table { font-size: 0.9rem; }
+    .compact-table td, .compact-table th { padding: 4px 10px; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ TITLE ============ -->
+  <div class="slide title-slide active" id="slide-0">
+    <h1>Tuần 7</h1>
+    <h1 style="font-size: 1.8rem; color: #555;">CTE và Recursive Queries</h1>
+    <p class="subtitle" style="margin-top: 24px;">SQL cho Interview — Lộ trình 10 tuần</p>
+    <p style="margin-top: 40px; color: #999; font-size: 0.9rem;">Nhấn phím → để bắt đầu &middot; T để xem mục lục</p>
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>1. Tổng quan tuần 7</h1>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Mục tiêu — code dễ đọc và mở khóa lớp bài mới</h2>
+    <p>Sau tuần 6 bạn đã có vũ khí mạnh nhất (window function). Tuần này có hai mục tiêu khác hẳn:</p>
+    <ol>
+      <li><strong>CTE</strong> — không thêm khả năng mới, chỉ làm code <em>đẹp và đọc được</em>. Sẽ thấy LC 1321 từ tuần 6 ngắn lại 30%.</li>
+      <li><strong>Recursive CTE</strong> — mở khóa lớp bài hierarchy (cây tổ chức), path finding, sinh chuỗi, gaps and islands.</li>
+    </ol>
+    <h3>Sau tuần 7 bạn cần làm được</h3>
+    <ul>
+      <li>Refactor mọi query phức tạp thành chuỗi CTE rõ ràng — viết và đọc đều dễ hơn nhiều.</li>
+      <li>Viết recursive CTE cho hierarchy traversal (manager — direct report — report của report).</li>
+      <li>Sinh chuỗi số/ngày on-the-fly bằng recursive CTE.</li>
+      <li>Áp dụng pattern gaps and islands cho bài "chuỗi đăng nhập liên tiếp", "khoảng giá ổn định".</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Ghi chú phương ngữ</div>
+      MySQL hỗ trợ CTE từ 8.0 (recursive cũng từ 8.0). PostgreSQL từ 8.4. SQL Server từ 2005. SQLite từ 3.8.3. <strong>LeetCode hiện chạy MySQL 8+ ⇒ CTE và recursive CTE đều dùng được</strong>.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 CTE = derived table có tên</h2>
+    <p>CTE (Common Table Expression) là cú pháp <span class="inline-code">WITH ... AS (...)</span> đặt ở đầu query. Mỗi CTE giống một <em>bảng tạm</em> chỉ tồn tại trong query đó.</p>
+    <div class="two-col">
+      <div>
+        <h3>Subquery / Derived table (cũ)</h3>
+<pre><code>SELECT t.dept, t.avg_sal
+FROM (
+    SELECT dept, AVG(salary) AS avg_sal
+    FROM employees
+    GROUP BY dept
+) t
+WHERE t.avg_sal &gt; 80000;</code></pre>
+      </div>
+      <div>
+        <h3>CTE (mới)</h3>
+<pre><code>WITH dept_avg AS (
+    SELECT dept, AVG(salary) AS avg_sal
+    FROM employees
+    GROUP BY dept
+)
+SELECT dept, avg_sal
+FROM dept_avg
+WHERE avg_sal &gt; 80000;</code></pre>
+      </div>
+    </div>
+    <p>Cùng kết quả. CTE thắng ở:</p>
+    <ul>
+      <li><strong>Đặt tên có nghĩa</strong> (<span class="inline-code">dept_avg</span> tốt hơn <span class="inline-code">t</span>).</li>
+      <li><strong>Đọc top-down</strong> — định nghĩa trước, dùng sau, giống đọc paragraph.</li>
+      <li><strong>Tái sử dụng</strong> — một CTE có thể được dùng nhiều lần trong query chính.</li>
+      <li><strong>Recursive</strong> — derived table không làm được.</li>
+    </ul>
+  </div>
+
+  <!-- ============ SECTION 2 ============ -->
+  <div class="slide section-divider" id="slide-4">
+    <h1>2. Basic CTE</h1>
+  </div>
+
+  <div class="slide" id="slide-5">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 Cú pháp WITH</h2>
+<pre><code>WITH cte_name [(col1, col2, ...)] AS (
+    SELECT ...
+)
+SELECT ... FROM cte_name ...;</code></pre>
+    <p>Cột phần <span class="inline-code">[(col1, col2, ...)]</span> tùy chọn — nếu không khai báo, dùng tên cột từ SELECT bên trong.</p>
+    <div class="example">
+      <div class="example-label">Ví dụ — đặt tên cột rõ ràng</div>
+<pre><code>WITH top_customers (id, total_spent) AS (
+    SELECT customer_id, SUM(total)
+    FROM orders
+    GROUP BY customer_id
+    ORDER BY 2 DESC
+    LIMIT 10
+)
+SELECT c.name, tc.total_spent
+FROM top_customers tc
+JOIN customers c ON c.customer_id = tc.id;</code></pre>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Quy tắc</div>
+      <ul>
+        <li>CTE chỉ "tồn tại" trong duy nhất câu lệnh ngay sau WITH.</li>
+        <li>Câu lệnh chính có thể là SELECT, INSERT, UPDATE, DELETE (trong phương ngữ hỗ trợ).</li>
+        <li>Mỗi CTE có thể được tham chiếu trong câu chính HOẶC bởi CTE sau nó (nhưng không trước).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-6">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 CTE vs subquery vs derived table</h2>
+    <table>
+      <tr><th></th><th>Subquery (WHERE)</th><th>Derived table (FROM)</th><th>CTE (WITH)</th></tr>
+      <tr><td>Đặt ở đâu</td><td>Trong WHERE/SELECT/HAVING</td><td>Trong FROM</td><td>Trên đầu query</td></tr>
+      <tr><td>Có tên?</td><td>Không</td><td>Bắt buộc alias</td><td>Bắt buộc tên CTE</td></tr>
+      <tr><td>Tái sử dụng?</td><td>Phải copy-paste</td><td>Phải copy-paste</td><td>Tham chiếu nhiều lần</td></tr>
+      <tr><td>Đa bước</td><td>Lồng nhau (khó đọc)</td><td>Lồng FROM (rất khó đọc)</td><td>Liệt kê tuần tự (dễ đọc)</td></tr>
+      <tr><td>Recursive</td><td>Không</td><td>Không</td><td>Có (<span class="inline-code">WITH RECURSIVE</span>)</td></tr>
+      <tr><td>Performance</td><td>Optimizer thường inline</td><td>Optimizer thường inline</td><td>Tùy phương ngữ — xem cảnh báo</td></tr>
+    </table>
+    <div class="warning">
+      <div class="warning-label">Bẫy performance — PostgreSQL trước version 12</div>
+      Trước PG 12, CTE bị "optimization fence" — engine luôn materialize CTE thành bảng tạm, ngay cả khi inline tốt hơn. Trên dữ liệu lớn, query chậm bất ngờ. Từ PG 12+ optimizer thông minh hơn.<br>
+      MySQL 8+ và SQL Server không có vấn đề này.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 Multiple CTEs — chuỗi nhiều bước</h2>
+    <p>CTE thứ hai có thể tham chiếu CTE thứ nhất. Đây là điểm mạnh chính.</p>
+<pre><code>WITH
+    daily_revenue AS (
+        SELECT order_date, SUM(total) AS revenue
+        FROM orders GROUP BY order_date
+    ),
+    revenue_with_avg AS (
+        SELECT
+            order_date,
+            revenue,
+            AVG(revenue) OVER (
+                ORDER BY order_date
+                ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+            ) AS ma_7d
+        FROM daily_revenue
+    ),
+    flagged AS (
+        SELECT *,
+               CASE WHEN revenue &gt; ma_7d * 1.5 THEN 'spike' END AS flag
+        FROM revenue_with_avg
+    )
+SELECT * FROM flagged WHERE flag = 'spike';</code></pre>
+    <p>Đọc từ trên xuống: mỗi CTE là một <em>bước biến đổi</em> rõ ràng. Cùng yêu cầu viết bằng nested subquery sẽ là 3 tầng SELECT lồng nhau — đọc ngược, debug khó.</p>
+  </div>
+
+  <div class="slide" id="slide-8">
+    <div class="slide-number">2.4</div>
+    <h2>2.4 Refactor — LC 1321 với CTE</h2>
+    <p>Lấy bài Restaurant Growth (Hard) tuần 6, viết lại với CTE.</p>
+    <h3>Tuần 6 — 2 tầng subquery</h3>
+<pre><code>SELECT visited_on, amount, ROUND(amount/7.0, 2) AS average_amount
+FROM (
+    SELECT
+        visited_on,
+        SUM(daily) OVER (ORDER BY visited_on
+                         ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS amount,
+        ROW_NUMBER() OVER (ORDER BY visited_on) AS rn
+    FROM (
+        SELECT visited_on, SUM(amount) AS daily
+        FROM Customer GROUP BY visited_on
+    ) daily_t
+) t
+WHERE rn &gt;= 7
+ORDER BY visited_on;</code></pre>
+    <h3>Tuần 7 — CTE</h3>
+<pre><code>WITH
+    daily_total AS (
+        SELECT visited_on, SUM(amount) AS daily
+        FROM Customer
+        GROUP BY visited_on
+    ),
+    moving AS (
+        SELECT
+            visited_on,
+            SUM(daily) OVER (ORDER BY visited_on
+                             ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS amount,
+            ROW_NUMBER() OVER (ORDER BY visited_on) AS rn
+        FROM daily_total
+    )
+SELECT visited_on, amount, ROUND(amount/7.0, 2) AS average_amount
+FROM moving
+WHERE rn &gt;= 7
+ORDER BY visited_on;</code></pre>
+    <p>Cùng số dòng, nhưng <em>tinh thần</em> khác: hai bước có tên rõ ràng — "tổng theo ngày" rồi "moving sum". Code đọc tự nhiên top-down.</p>
+  </div>
+
+  <!-- ============ SECTION 3 ============ -->
+  <div class="slide section-divider" id="slide-9">
+    <h1>3. Multi-step Decomposition</h1>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 Pattern: chia bài lớn thành các CTE bước</h2>
+    <p>Đây là <strong>kỹ năng tư duy quan trọng nhất</strong> cho mock interview SQL ở level Medium/Hard. Quy trình 4 bước:</p>
+    <ol>
+      <li><strong>Đọc đề</strong> — xác định bảng input, output mong muốn.</li>
+      <li><strong>Phân rã</strong> — đặt tên cho mỗi bước biến đổi (động từ + đối tượng):
+        <ul>
+          <li>"Lọc đơn paid" → CTE <span class="inline-code">paid_orders</span></li>
+          <li>"Tổng theo customer" → CTE <span class="inline-code">customer_totals</span></li>
+          <li>"Rank theo region" → CTE <span class="inline-code">ranked_customers</span></li>
+        </ul>
+      </li>
+      <li><strong>Viết stub</strong> — khung WITH với từng CTE rỗng, ghi comment yêu cầu mỗi CTE.</li>
+      <li><strong>Điền chi tiết</strong> — từng CTE một, test nhỏ trước khi viết CTE tiếp.</li>
+    </ol>
+    <div class="key-point">
+      <div class="key-point-label">Tại sao quan trọng cho interview</div>
+      Khi interviewer đưa bài Hard, candidate yếu ngồi gõ ngay. Candidate mạnh nói:<br>
+      <em>"Tôi sẽ chia bài này thành 3 bước. Bước 1 lọc..., bước 2 aggregate..., bước 3 rank..."</em><br>
+      Sau đó viết WITH với 3 CTE comment-only, rồi điền. Tín hiệu structure thinking — interviewer thường accept candidate ngay từ moment này.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-11">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 Worked example — 4 bước CTE</h2>
+    <p>Yêu cầu: với mỗi quốc gia, tìm 3 customer có tổng chi tiêu cao nhất (đã chi trả) và % của họ trên tổng chi tiêu quốc gia.</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>Lọc đơn paid → <span class="inline-code">paid_orders</span></li>
+      <li>Tổng chi tiêu mỗi customer → <span class="inline-code">customer_spend</span> (kèm country)</li>
+      <li>Rank trong country + tổng country → <span class="inline-code">ranked</span></li>
+      <li>Lọc top 3 và tính % → output</li>
+    </ol>
+<pre><code>WITH
+    paid_orders AS (
+        SELECT customer_id, total
+        FROM orders
+        WHERE status = 'paid'
+    ),
+    customer_spend AS (
+        SELECT
+            c.country,
+            c.customer_id,
+            c.name,
+            SUM(po.total) AS spent
+        FROM customers c
+        JOIN paid_orders po ON po.customer_id = c.customer_id
+        GROUP BY c.country, c.customer_id, c.name
+    ),
+    ranked AS (
+        SELECT *,
+               ROW_NUMBER() OVER (PARTITION BY country ORDER BY spent DESC) AS rk,
+               SUM(spent)  OVER (PARTITION BY country)                       AS country_total
+        FROM customer_spend
+    )
+SELECT
+    country, name, spent,
+    ROUND(100.0 * spent / country_total, 2) AS pct_of_country
+FROM ranked
+WHERE rk &lt;= 3
+ORDER BY country, rk;</code></pre>
+    <p>Mỗi CTE có thể test riêng — chạy <span class="inline-code">SELECT * FROM customer_spend</span> để debug giữa chừng.</p>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 Quy tắc sạch khi viết CTE</h2>
+    <ol>
+      <li><strong>Đặt tên động từ + đối tượng.</strong> <span class="inline-code">filtered_orders</span>, <span class="inline-code">customer_spend</span>, <span class="inline-code">top_3_per_dept</span>. Tránh <span class="inline-code">t1, t2, x, q</span>.</li>
+      <li><strong>Một CTE = một mục đích.</strong> Đừng dồn 3 phép biến đổi vào 1 CTE để "ngắn lại" — chia ra.</li>
+      <li><strong>Comment khi cần.</strong> Một dòng <span class="inline-code">-- gộp các đơn paid theo customer</span> trên đầu CTE giúp người đọc.</li>
+      <li><strong>Không lạm dụng.</strong> Query đơn giản 5 dòng không cần CTE — đọc thẳng dễ hơn.</li>
+      <li><strong>CTE cho debug.</strong> Khi bug, comment câu chính, viết <span class="inline-code">SELECT * FROM cte_name</span> để inspect output trung gian.</li>
+    </ol>
+    <div class="example">
+      <div class="example-label">Code review checklist</div>
+      Khi review query có CTE, kiểm tra:
+      <ul>
+        <li>Có CTE nào không được dùng (dead code)?</li>
+        <li>Tên CTE có phản ánh đúng output không?</li>
+        <li>Có CTE nào chỉ filter mà có thể gộp vào CTE sau không?</li>
+        <li>Có chỗ nào nên là CTE nhưng đang là subquery lồng?</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4 ============ -->
+  <div class="slide section-divider" id="slide-13">
+    <h1>4. Recursive CTE</h1>
+  </div>
+
+  <div class="slide" id="slide-14">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 Cấu trúc — Anchor + Recursive</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      Recursive CTE là CTE <em>tham chiếu chính nó</em>. Cấu trúc bắt buộc 2 phần nối bằng <span class="inline-code">UNION ALL</span>:
+      <ol>
+        <li><strong>Anchor</strong> — query xuất phát, không tham chiếu CTE.</li>
+        <li><strong>Recursive</strong> — query tham chiếu CTE (chính nó), build dòng mới từ kết quả lần lặp trước.</li>
+      </ol>
+    </div>
+<pre><code>WITH RECURSIVE cte_name AS (
+    -- Anchor: dòng khởi đầu
+    SELECT ...
+    
+    UNION ALL
+    
+    -- Recursive: từ output trước, sinh dòng mới
+    SELECT ...
+    FROM cte_name JOIN ... 
+    WHERE ...    -- điều kiện dừng (rất quan trọng!)
+)
+SELECT * FROM cte_name;</code></pre>
+    <h3>Engine xử lý</h3>
+    <ol>
+      <li>Chạy anchor → tập kết quả \(R_0\).</li>
+      <li>Chạy recursive với \(R_0\) → \(R_1\) (dòng mới).</li>
+      <li>Lặp với \(R_1\) → \(R_2\), v.v.</li>
+      <li>Dừng khi recursive query trả 0 dòng.</li>
+      <li>Output cuối = \(R_0 \cup R_1 \cup R_2 \cup \ldots\).</li>
+    </ol>
+    <p><strong>Lưu ý phương ngữ</strong>: PostgreSQL/MySQL/SQLite cần keyword <span class="inline-code">RECURSIVE</span>. SQL Server không cần (nhưng vẫn hoạt động nếu thêm).</p>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 Sinh chuỗi số / ngày</h2>
+    <p>Một use case đơn giản nhất — sinh chuỗi mà không cần bảng có sẵn.</p>
+<pre><code>-- Sinh số 1..10
+WITH RECURSIVE seq AS (
+    SELECT 1 AS n              -- anchor: bắt đầu từ 1
+    UNION ALL
+    SELECT n + 1 FROM seq      -- recursive: thêm 1
+    WHERE n &lt; 10               -- dừng khi đạt 10
+)
+SELECT * FROM seq;</code></pre>
+<pre><code>-- Sinh chuỗi ngày trong năm 2024
+WITH RECURSIVE dates AS (
+    SELECT DATE '2024-01-01' AS d
+    UNION ALL
+    SELECT d + INTERVAL 1 DAY FROM dates
+    WHERE d &lt; '2024-12-31'
+)
+SELECT * FROM dates;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Use case interview</div>
+      "Báo cáo doanh thu mỗi ngày, kể cả ngày 0 đơn." Tuần 4 dùng CROSS JOIN với bảng calendar. Bây giờ có recursive CTE, không cần bảng riêng:
+<pre><code>WITH RECURSIVE dates AS (...)
+SELECT d.d, COALESCE(SUM(o.total), 0) AS revenue
+FROM dates d
+LEFT JOIN orders o ON o.order_date = d.d
+GROUP BY d.d ORDER BY d.d;</code></pre>
+    </div>
+    <p style="font-size:0.9rem;color:#666;">PostgreSQL có hàm tắt <span class="inline-code">generate_series('2024-01-01'::date, '2024-12-31', '1 day')</span> — đẹp hơn. MySQL không có, phải recursive CTE.</p>
+  </div>
+
+  <div class="slide" id="slide-16">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 Hierarchy traversal — cây tổ chức</h2>
+    <div class="example">
+      <div class="example-label">Schema</div>
+      <span class="inline-code">Employee(id, name, manager_id)</span> — manager_id trỏ về id (self-FK).
+    </div>
+    <h3>Yêu cầu: tất cả nhân viên trực tiếp/gián tiếp report cho manager 5 (LC 1270 dạng tổng quát)</h3>
+<pre><code>WITH RECURSIVE subordinates AS (
+    -- Anchor: nhân viên trực tiếp report manager 5
+    SELECT id, name, manager_id, 1 AS level
+    FROM Employee
+    WHERE manager_id = 5
+    
+    UNION ALL
+    
+    -- Recursive: nhân viên report cho người đã trong subordinates
+    SELECT e.id, e.name, e.manager_id, s.level + 1
+    FROM Employee e
+    JOIN subordinates s ON e.manager_id = s.id
+)
+SELECT * FROM subordinates ORDER BY level, id;</code></pre>
+    <div class="illustration">
+      <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="300" cy="30" r="18" fill="#3b5998"/>
+        <text x="300" y="35" text-anchor="middle" fill="#fff" font-size="11">5</text>
+        <text x="300" y="15" text-anchor="middle" font-size="10" fill="#666">Manager</text>
+
+        <line x1="290" y1="45" x2="200" y2="80" stroke="#3b5998"/>
+        <line x1="300" y1="48" x2="300" y2="80" stroke="#3b5998"/>
+        <line x1="310" y1="45" x2="400" y2="80" stroke="#3b5998"/>
+
+        <circle cx="200" cy="100" r="18" fill="#4a7c59"/>
+        <text x="200" y="105" text-anchor="middle" fill="#fff" font-size="11">7</text>
+        <circle cx="300" cy="100" r="18" fill="#4a7c59"/>
+        <text x="300" y="105" text-anchor="middle" fill="#fff" font-size="11">8</text>
+        <circle cx="400" cy="100" r="18" fill="#4a7c59"/>
+        <text x="400" y="105" text-anchor="middle" fill="#fff" font-size="11">9</text>
+        <text x="450" y="105" font-size="10" fill="#666" font-style="italic">level=1 (anchor)</text>
+
+        <line x1="195" y1="115" x2="170" y2="150" stroke="#4a7c59"/>
+        <line x1="205" y1="115" x2="230" y2="150" stroke="#4a7c59"/>
+        <line x1="395" y1="115" x2="380" y2="150" stroke="#4a7c59"/>
+
+        <circle cx="170" cy="170" r="14" fill="#c0392b"/>
+        <text x="170" y="174" text-anchor="middle" fill="#fff" font-size="10">12</text>
+        <circle cx="230" cy="170" r="14" fill="#c0392b"/>
+        <text x="230" y="174" text-anchor="middle" fill="#fff" font-size="10">13</text>
+        <circle cx="380" cy="170" r="14" fill="#c0392b"/>
+        <text x="380" y="174" text-anchor="middle" fill="#fff" font-size="10">15</text>
+        <text x="450" y="175" font-size="10" fill="#666" font-style="italic">level=2 (recursive lần 1)</text>
+      </svg>
+    </div>
+    <p>Recursive CTE leo xuống từng tầng cho đến khi không còn nhân viên report cho ai trong tập hiện tại.</p>
+  </div>
+
+  <div class="slide" id="slide-17">
+    <div class="slide-number">4.4</div>
+    <h2>4.4 Path tracking và termination safety</h2>
+    <h3>Track path đi qua</h3>
+    <p>Có thể tích lũy đường đi như chuỗi:</p>
+<pre><code>WITH RECURSIVE org_path AS (
+    SELECT id, name, manager_id, CAST(name AS CHAR(500)) AS path
+    FROM Employee WHERE manager_id IS NULL  -- CEO
+    UNION ALL
+    SELECT e.id, e.name, e.manager_id,
+           CONCAT(p.path, ' &gt; ', e.name)
+    FROM Employee e
+    JOIN org_path p ON e.manager_id = p.id
+)
+SELECT * FROM org_path;</code></pre>
+    <p>Output: "CEO &gt; VP Eng &gt; Director &gt; Manager &gt; IC".</p>
+    <div class="warning">
+      <div class="warning-label">Cảnh báo infinite loop</div>
+      Nếu graph có chu trình (A là manager của B, B là manager của A — bug data), recursive CTE chạy mãi. Phòng:
+      <ul>
+        <li>MySQL: <span class="inline-code">cte_max_recursion_depth</span> mặc định 1000 — sẽ lỗi sau 1000 lần lặp.</li>
+        <li>PostgreSQL/SQL Server: không tự dừng — phải tự thêm điều kiện <span class="inline-code">level &lt; 100</span> trong recursive query.</li>
+        <li>Pattern an toàn: track visited nodes, dừng nếu node đã visit.</li>
+      </ul>
+<pre><code>-- Track visited bằng path string
+WHERE NOT FIND_IN_SET(e.id, p.path)  -- MySQL
+WHERE p.path NOT LIKE '%' || e.id || '%'  -- PostgreSQL</code></pre>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <div class="slide section-divider" id="slide-18">
+    <h1>5. Gaps and Islands</h1>
+  </div>
+
+  <div class="slide" id="slide-19">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 Pattern gaps and islands — định nghĩa</h2>
+    <div class="definition">
+      <div class="definition-label">Pattern</div>
+      Cho một chuỗi giá trị có thứ tự (số, ngày). Chia thành các <strong>"island"</strong> — chuỗi liên tiếp — và <strong>"gap"</strong> — khoảng trống giữa chúng.
+    </div>
+    <div class="example">
+      <div class="example-label">Use case kinh điển</div>
+      <ul>
+        <li>Chuỗi đăng nhập liên tiếp của user (login streak).</li>
+        <li>Khoảng giá ổn định trước khi tăng/giảm.</li>
+        <li>Số nhân viên cùng vị trí liên tiếp trong ranking.</li>
+        <li>Khoảng thời gian server uptime/downtime liên tục.</li>
+      </ul>
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ cụ thể</div>
+      User login dates: <span class="inline-code">[01-01, 01-02, 01-03, 01-07, 01-08, 01-15]</span>
+      <ul>
+        <li>Island 1: 01-01 → 01-03 (3 ngày)</li>
+        <li>Gap: 01-04 → 01-06</li>
+        <li>Island 2: 01-07 → 01-08 (2 ngày)</li>
+        <li>Gap: 01-09 → 01-14</li>
+        <li>Island 3: 01-15 (1 ngày)</li>
+      </ul>
+    </div>
+    <p>Yêu cầu interview thường là: "tìm island dài nhất" hoặc "đếm số island" hoặc "list start/end của mỗi island".</p>
+  </div>
+
+  <div class="slide" id="slide-20">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 Trick ROW_NUMBER — chìa khóa vàng</h2>
+    <p>Pattern đẹp nhất cho gaps and islands sử dụng tính chất:</p>
+    <p style="margin-left:20px;font-style:italic;">Nếu các dòng liên tiếp (theo date) có ROW_NUMBER liên tiếp (1, 2, 3, ...), thì <span class="inline-code">date − ROW_NUMBER</span> là <strong>hằng số trên cùng một island</strong>.</p>
+    <table class="compact-table">
+      <tr><th>login_date</th><th>row_num</th><th>diff = date − row_num</th><th>island</th></tr>
+      <tr><td>2024-01-01</td><td>1</td><td>2023-12-31</td><td>A</td></tr>
+      <tr><td>2024-01-02</td><td>2</td><td>2023-12-31</td><td>A</td></tr>
+      <tr><td>2024-01-03</td><td>3</td><td>2023-12-31</td><td>A</td></tr>
+      <tr><td>2024-01-07</td><td>4</td><td>2024-01-03</td><td>B</td></tr>
+      <tr><td>2024-01-08</td><td>5</td><td>2024-01-03</td><td>B</td></tr>
+      <tr><td>2024-01-15</td><td>6</td><td>2024-01-09</td><td>C</td></tr>
+    </table>
+    <p>Cột <span class="inline-code">diff</span> hoạt động như "island ID" — group theo cột này để aggregate mỗi island.</p>
+<pre><code>WITH islands AS (
+    SELECT
+        user_id, login_date,
+        DATE_SUB(login_date, INTERVAL ROW_NUMBER() OVER (
+            PARTITION BY user_id ORDER BY login_date
+        ) DAY) AS island_id
+    FROM logins
+)
+SELECT user_id,
+       MIN(login_date) AS start_date,
+       MAX(login_date) AS end_date,
+       COUNT(*)        AS streak_length
+FROM islands
+GROUP BY user_id, island_id
+ORDER BY user_id, start_date;</code></pre>
+  </div>
+
+  <div class="slide" id="slide-21">
+    <div class="slide-number">5.3</div>
+    <h2>5.3 Variant — gaps and islands trên giá trị</h2>
+    <p>Pattern tổng quát hơn: tìm chuỗi liên tiếp dòng có cùng "trạng thái".</p>
+    <div class="example">
+      <div class="example-label">Bài toán</div>
+      Bảng <span class="inline-code">server_status(time, status)</span> với status 'up' hoặc 'down'. Tìm các khoảng thời gian server liên tục up.
+    </div>
+    <h3>Trick: 2 ROW_NUMBER trừ nhau</h3>
+<pre><code>WITH numbered AS (
+    SELECT
+        time, status,
+        ROW_NUMBER() OVER (ORDER BY time) AS rn_all,
+        ROW_NUMBER() OVER (PARTITION BY status ORDER BY time) AS rn_status
+    FROM server_status
+)
+SELECT
+    status,
+    MIN(time) AS island_start,
+    MAX(time) AS island_end,
+    COUNT(*) AS duration
+FROM numbered
+GROUP BY status, rn_all - rn_status
+HAVING status = 'up'
+ORDER BY island_start;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Vì sao trick này hoạt động</div>
+      Trên cùng một island (status không đổi), <span class="inline-code">rn_all</span> và <span class="inline-code">rn_status</span> đều tăng cùng tốc độ — hiệu hằng số. Khi status đổi, <span class="inline-code">rn_all</span> tiếp tục nhưng <span class="inline-code">rn_status</span> reset (cho status khác) hoặc lệch (cho cùng status quay lại) → hiệu thay đổi → island mới.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 6 ============ -->
+  <div class="slide section-divider" id="slide-22">
+    <h1>6. Worked Examples</h1>
+  </div>
+
+  <div class="slide" id="slide-23">
+    <div class="slide-number">6.1</div>
+    <h2>6.1 LeetCode 180 — Consecutive Numbers (Medium)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Logs(id INT PK auto-increment, num INT)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Tìm các số xuất hiện ít nhất 3 lần liên tiếp (theo id tăng dần).</p>
+    <h3>Cách 1 — LAG (gọn nhất)</h3>
+<pre><code>WITH window_3 AS (
+    SELECT
+        num,
+        LAG(num, 1) OVER (ORDER BY id) AS prev1,
+        LAG(num, 2) OVER (ORDER BY id) AS prev2
+    FROM Logs
+)
+SELECT DISTINCT num AS ConsecutiveNums
+FROM window_3
+WHERE num = prev1 AND num = prev2;</code></pre>
+    <h3>Cách 2 — gaps and islands</h3>
+<pre><code>WITH islands AS (
+    SELECT num,
+           id - ROW_NUMBER() OVER (PARTITION BY num ORDER BY id) AS island
+    FROM Logs
+)
+SELECT DISTINCT num AS ConsecutiveNums
+FROM islands
+GROUP BY num, island
+HAVING COUNT(*) &gt;= 3;</code></pre>
+    <p>Cách 2 tổng quát hơn — đổi 3 thành 5 chỉ là sửa <span class="inline-code">HAVING</span>. Cách 1 phải thêm LAG(num, 3), LAG(num, 4)...</p>
+  </div>
+
+  <div class="slide" id="slide-24">
+    <div class="slide-number">6.2</div>
+    <h2>6.2 LeetCode 1270 — All People Report to Given Manager (Medium)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Employees(employee_id INT PK, employee_name VARCHAR, manager_id INT)
+-- Ai cũng có manager. Manager 1 (head) report cho chính mình.
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Tìm tất cả nhân viên report (trực tiếp/gián tiếp) cho manager <span class="inline-code">employee_id = 1</span>, với độ sâu tối đa 3 cấp.</p>
+    <h3>Lời giải — recursive CTE</h3>
+<pre><code>WITH RECURSIVE subordinates AS (
+    -- Anchor: nhân viên trực tiếp report cho 1 (loại trừ chính 1)
+    SELECT employee_id, manager_id, 1 AS depth
+    FROM Employees
+    WHERE manager_id = 1 AND employee_id &lt;&gt; 1
+    
+    UNION ALL
+    
+    -- Recursive: từ subordinates, leo xuống tầng tiếp
+    SELECT e.employee_id, e.manager_id, s.depth + 1
+    FROM Employees e
+    JOIN subordinates s ON e.manager_id = s.employee_id
+    WHERE s.depth &lt; 3   -- giới hạn tối đa 3 cấp
+)
+SELECT employee_id FROM subordinates;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Lưu ý</div>
+      Bài LC nói "tối đa 3 cấp" — predicate <span class="inline-code">depth &lt; 3</span> trong recursive query là vital. Không có nó, query vẫn chạy đúng (giả sử graph hữu hạn) nhưng chậm hơn nếu cây sâu hơn.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-25">
+    <div class="slide-number">6.3</div>
+    <h2>6.3 LeetCode 601 — Human Traffic of Stadium (Hard)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Stadium(id INT, visit_date DATE, people INT)
+-- (id) là PK, mỗi ngày có 1 dòng
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Tìm các dòng có ít nhất 3 ngày liên tiếp với <span class="inline-code">people ≥ 100</span>. Trả tất cả các dòng trong các chuỗi đó.</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>Lọc chỉ ngày có ≥ 100 → <span class="inline-code">popular</span>.</li>
+      <li>Trên popular, tính island theo trick id − ROW_NUMBER → <span class="inline-code">tagged</span>.</li>
+      <li>Đếm size mỗi island, giữ island ≥ 3 → output.</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>WITH
+    popular AS (
+        SELECT * FROM Stadium WHERE people &gt;= 100
+    ),
+    tagged AS (
+        SELECT *,
+               id - ROW_NUMBER() OVER (ORDER BY id) AS island
+        FROM popular
+    ),
+    big_islands AS (
+        SELECT island
+        FROM tagged
+        GROUP BY island
+        HAVING COUNT(*) &gt;= 3
+    )
+SELECT id, visit_date, people
+FROM tagged
+WHERE island IN (SELECT island FROM big_islands)
+ORDER BY visit_date;</code></pre>
+    <p>Bài Hard trong 15 dòng nhờ kết hợp CTE multi-step + trick gaps and islands. Không có CTE, code lồng 3 tầng subquery — gần như không debug được.</p>
+  </div>
+
+  <!-- ============ SECTION 7 ============ -->
+  <div class="slide section-divider" id="slide-26">
+    <h1>7. Knowledge Check</h1>
+  </div>
+
+  <div class="slide" id="slide-27">
+    <div class="slide-number">7.Q</div>
+    <h2>Knowledge Check — Tuần 7</h2>
+
+    <div class="quiz" id="q1">
+      <div class="quiz-question">Q1: Recursive CTE có 2 phần nối bằng <span class="inline-code">UNION ALL</span>. Phần nào gọi là "anchor"?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Phần KHÔNG tham chiếu CTE — query xuất phát</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) Phần tham chiếu CTE — leo tầng</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) Phần WHERE điều kiện dừng</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Phần SELECT cuối cùng ngoài WITH</button>
+      <div class="quiz-explanation">Anchor là query khởi đầu — không tham chiếu CTE. Engine chạy nó trước để có tập \(R_0\). Phần thứ hai (recursive) tham chiếu CTE để build tầng tiếp. Hai phần nối bằng UNION ALL bắt buộc — UNION sẽ dedup mỗi vòng và làm chậm.</div>
+    </div>
+
+    <div class="quiz" id="q2">
+      <div class="quiz-question">Q2: Pattern gaps and islands dùng <span class="inline-code">date - ROW_NUMBER()</span> để làm gì?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Tính số ngày từ epoch</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) Sinh chuỗi số liên tiếp</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) Tạo "island ID" — hằng số trên cùng một chuỗi liên tiếp</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Đo gap giữa các dòng</button>
+      <div class="quiz-explanation">Trên cùng island, date tăng đều 1 đơn vị, ROW_NUMBER cũng tăng 1 đơn vị → hiệu là hằng số. Khi gap (nhảy ngày), date tăng &gt;1 nhưng ROW_NUMBER vẫn tăng 1 → hiệu thay đổi → island mới. GROUP BY hiệu này tách các island.</div>
+    </div>
+
+    <div class="quiz" id="q3">
+      <div class="quiz-question">Q3: Khi nào CTE là chọn lựa TỐT NHẤT (so với subquery/derived table)?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Mọi query có hơn 5 dòng</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi cần multi-step decomposition, recursive, hoặc tái sử dụng kết quả trung gian</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khi muốn query nhanh hơn — CTE luôn nhanh hơn subquery</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Bất cứ khi nào có ORDER BY</button>
+      <div class="quiz-explanation">CTE không nhanh hơn subquery về performance (đôi khi chậm hơn trên PG cũ). Lợi ích thực sự là (1) đặt tên có nghĩa cho bước trung gian, (2) tái sử dụng nhiều lần, (3) recursive. Đối với query đơn giản, viết thẳng đọc dễ hơn.</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 8 ============ -->
+  <div class="slide section-divider" id="slide-28">
+    <h1>8. Bài tập về nhà</h1>
+  </div>
+
+  <div class="slide" id="slide-29">
+    <div class="slide-number">8.1</div>
+    <h2>8.1 Bài tập LeetCode (5 problem)</h2>
+    <ol>
+      <li><strong>180. Consecutive Numbers</strong> (Medium) — đã giải tại lớp; viết cả hai cách (LAG và gaps-islands), so sánh.</li>
+      <li><strong>1270. All People Report to the Given Manager</strong> (Medium) — đã giải tại lớp.</li>
+      <li><strong>601. Human Traffic of Stadium</strong> (Hard) — đã giải tại lớp.</li>
+      <li><strong>1454. Active Users</strong> (Medium) — gaps and islands variant: tìm user có ≥ 5 ngày login liên tiếp.</li>
+      <li><strong>262. Trips and Users</strong> (Hard) — JOIN + filter phức tạp; viết bằng CTE multi-step (3-4 CTE).</li>
+    </ol>
+    <h3>Bonus — recursive challenge</h3>
+    <p>Cho schema cây tổ chức <span class="inline-code">Employee(id, name, manager_id)</span>:</p>
+    <ol>
+      <li>Liệt kê toàn bộ subtree dưới một manager bất kỳ kèm depth (đã làm).</li>
+      <li>Mở rộng: tính path từ CEO đến mỗi nhân viên dưới dạng "CEO &gt; VP &gt; Director &gt; Manager".</li>
+      <li>Mở rộng: với mỗi nhân viên, đếm số subordinates (trực tiếp + gián tiếp).</li>
+    </ol>
+    <p>Đây là bài tập nền cho <em>graph traversal</em> trong system design interview — không chỉ SQL.</p>
+  </div>
+
+  <div class="slide" id="slide-30">
+    <div class="slide-number">8.2</div>
+    <h2>8.2 Đọc thêm và tự kiểm tra</h2>
+    <h3>Đọc</h3>
+    <ul>
+      <li><em>SQL Cookbook</em> (Anthony Molinaro) — Chương 9 (Date Arithmetic) phần "Gaps in Series".</li>
+      <li>PostgreSQL docs — <em>7.8 WITH Queries</em> (Common Table Expressions): tutorial chính thức.</li>
+      <li>Markus Winand — <a style="color: #3b5998;">modern-sql.com/feature/with</a> phần CTE và recursive.</li>
+      <li>Itzik Ben-Gan — <em>T-SQL Querying</em>, chương 5 về CTE và recursive (concept áp dụng đa dialect).</li>
+    </ul>
+    <h3>Tự kiểm tra (không nhìn slide)</h3>
+    <ul>
+      <li>Bạn refactor được query 3-tầng-subquery thành chuỗi CTE trong 5 phút?</li>
+      <li>Bạn nhớ cấu trúc anchor + recursive với <span class="inline-code">UNION ALL</span>?</li>
+      <li>Bạn giải thích được vì sao <span class="inline-code">date − ROW_NUMBER</span> tạo island ID?</li>
+      <li>Bạn nói được khi nào CTE là chọn lựa đúng vs khi nào nên viết thẳng subquery?</li>
+      <li>Bạn nhớ điều kiện dừng và phòng infinite loop trong recursive?</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Tuần sau — Pattern Interview Tổng hợp</div>
+      Tuần 8: tổng hợp 6 pattern phổ biến nhất trong interview (Top-N per group, Median, Gaps & Islands, Consecutive sequences, Pivot, Cumulative metrics) với mỗi pattern 1-2 bài LeetCode đại diện. Đây là tuần "rèn phản xạ" — sau tuần 8 bạn nhận ra pattern trong 30 giây đầu của mỗi bài.
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

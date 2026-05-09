@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 1 — Python & Phân tích Big-O</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== SLIDE 1: COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 1</div>
+  <h1>Python &amp; Phân tích Big-O</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 700px;">
+    Nền tảng ngôn ngữ và tư duy phân tích độ phức tạp — hai công cụ tiên quyết
+    cho mọi bài toán LeetCode &amp; Codility.
+  </p>
+  <div class="meta">14 tuần · 100–120 bài tập · Mock interview cuối khoá</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Mở đầu khoá học</h1>
+  <div class="subtitle">Mục tiêu, triết lý học tập, và cách thiết lập môi trường</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Mục tiêu khoá học</h2>
+  <p>Sau 14 tuần, sinh viên sẽ có khả năng:</p>
+  <ul>
+    <li>Giải <strong>80% bài Easy</strong> và <strong>50% bài Medium</strong> trên LeetCode trong vòng 30 phút.</li>
+    <li>Vượt qua bài kiểm tra <strong>Codility 60–70 điểm</strong> trong các đợt phỏng vấn entry/mid-level.</li>
+    <li>Phân tích độ phức tạp thời gian và bộ nhớ của một thuật toán bất kỳ.</li>
+    <li>Nhận diện <strong>15–20 pattern thuật toán</strong> phổ biến và áp dụng vào bài mới.</li>
+    <li>Trình bày lời giải mạch lạc trong môi trường mock interview 45–60 phút.</li>
+  </ul>
+  <div class="key-point">
+    <div class="key-point-label">Quan điểm cốt lõi:</div>
+    Khoá học này không dạy <em>thuộc lòng</em> 200 bài. Chúng ta học <em>cách suy nghĩ</em>
+    để giải bài chưa từng gặp.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Triết lý: Pattern trước Problem</h2>
+  <p>Đa số người mới mắc lỗi là cày bài lẻ tẻ — giải xong bài này, gặp bài tương tự vẫn không nhận ra.
+  Khoá học áp dụng ba nguyên tắc khoa học học tập:</p>
+  <ol>
+    <li><strong>Pattern trước Problem.</strong> Mỗi tuần học 1–2 pattern, mỗi pattern luyện 4–6 bài đại diện. Bài thứ 7 trở đi nên là bài mới hoàn toàn để kiểm tra khả năng nhận pattern.</li>
+    <li><strong>Phân tích trước khi code.</strong> Bắt buộc viết complexity dự kiến và pseudo-code <em>trước khi</em> gõ dòng đầu tiên. Đây là kỹ năng phỏng vấn thực sự được chấm điểm.</li>
+    <li><strong>Spaced retrieval.</strong> Mỗi bài làm xong phải code lại từ đầu sau 1 tuần và sau 3 tuần. Đây là cách duy nhất để pattern chìm vào trí nhớ dài hạn.</li>
+  </ol>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Thiết lập môi trường thực hành</h2>
+  <h3>Tài khoản online (bắt buộc)</h3>
+  <ul>
+    <li><strong>LeetCode</strong> (leetcode.com) — kho bài chính, có giải tự động.</li>
+    <li><strong>Codility</strong> (app.codility.com/programmers/lessons) — bài học miễn phí từ Lesson 1–17.</li>
+    <li><strong>NeetCode 150</strong> (neetcode.io) — danh sách bài đã sắp xếp theo pattern, có video.</li>
+  </ul>
+  <h3>Môi trường code cục bộ</h3>
+  <ul>
+    <li>Python 3.10 trở lên.</li>
+    <li>VS Code với extension <em>Python</em> và <em>LeetCode</em>.</li>
+    <li>Tạo repo Git riêng với cấu trúc <code>week01/two-sum.py</code> để theo dõi tiến độ.</li>
+  </ul>
+  <div class="example">
+    <div class="example-label">Yêu cầu nộp bài:</div>
+    Mỗi bài có 3 file: <code>solution.py</code>, <code>tests.py</code> (3 test tự nghĩ),
+    và <code>analysis.md</code> (1 đoạn ngắn về complexity và lý do chọn approach).
+  </div>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Python cho Competitive Programming</h1>
+  <div class="subtitle">Bộ công cụ tối thiểu cần thông thạo trước khi vào pattern</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Vì sao chọn Python?</h2>
+  <p>Khoá học mặc định dùng Python. Bốn lý do:</p>
+  <ol>
+    <li><strong>Ít boilerplate.</strong> Một bài có thể giải trong 15–25 dòng thay vì 40–60 dòng Java/C++. Tiết kiệm thời gian phỏng vấn.</li>
+    <li><strong>Cấu trúc dữ liệu mạnh sẵn có.</strong> <code>dict</code>, <code>set</code>, <code>list</code>, <code>tuple</code> đều hiệu năng tốt và cú pháp gọn.</li>
+    <li><strong>Hỗ trợ tốt trên LeetCode/Codility.</strong> Hầu hết bài đều chấp nhận Python với time limit hào phóng hơn (thường ×3 so với C++).</li>
+    <li><strong>Phổ biến trong ngành.</strong> ML, data, backend đều dùng Python. Kỹ năng chuyển trực tiếp sang công việc.</li>
+  </ol>
+  <div class="key-point">
+    <div class="key-point-label">Khi nào không dùng Python?</div>
+    Một số bài Codility chấm chặt chẽ time limit cho input lớn (n ≥ 10⁷).
+    Trong trường hợp đó, C++ hoặc Java là lựa chọn tốt hơn. Khoá học sẽ điểm qua cú pháp Java tương đương ở Tuần 14.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Bốn cấu trúc dữ liệu nội tại</h2>
+  <table>
+    <tr>
+      <th>Cấu trúc</th>
+      <th>Mô tả</th>
+      <th>Truy cập</th>
+      <th>Thay đổi được?</th>
+    </tr>
+    <tr>
+      <td><code>list</code></td>
+      <td>Mảng động, có thứ tự</td>
+      <td>O(1) theo index</td>
+      <td>Có</td>
+    </tr>
+    <tr>
+      <td><code>tuple</code></td>
+      <td>Mảng cố định, có thứ tự</td>
+      <td>O(1) theo index</td>
+      <td>Không</td>
+    </tr>
+    <tr>
+      <td><code>dict</code></td>
+      <td>Bảng băm key → value</td>
+      <td>O(1) trung bình theo key</td>
+      <td>Có</td>
+    </tr>
+    <tr>
+      <td><code>set</code></td>
+      <td>Tập hợp không trùng</td>
+      <td>O(1) trung bình kiểm tra thuộc</td>
+      <td>Có</td>
+    </tr>
+  </table>
+  <div class="definition">
+    <div class="definition-label">Lưu ý kỹ thuật:</div>
+    <code>dict</code> và <code>set</code> đều cài đặt bằng <strong>hash table</strong>.
+    Trong worst case (hash collision dày đặc), thao tác có thể là O(n) — nhưng thực tế cực hiếm xảy ra ngoài bài bịa nhằm phá hash.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 List — Operations và độ phức tạp</h2>
+  <table>
+    <tr><th>Thao tác</th><th>Cú pháp</th><th>Complexity</th></tr>
+    <tr><td>Truy cập index</td><td><code>a[i]</code></td><td>O(1)</td></tr>
+    <tr><td>Thêm vào cuối</td><td><code>a.append(x)</code></td><td>O(1) amortised</td></tr>
+    <tr><td>Thêm vào đầu</td><td><code>a.insert(0, x)</code></td><td><strong>O(n)</strong></td></tr>
+    <tr><td>Xoá ở cuối</td><td><code>a.pop()</code></td><td>O(1)</td></tr>
+    <tr><td>Xoá ở đầu</td><td><code>a.pop(0)</code></td><td><strong>O(n)</strong></td></tr>
+    <tr><td>Tìm phần tử</td><td><code>x in a</code></td><td>O(n)</td></tr>
+    <tr><td>Sort</td><td><code>a.sort()</code></td><td>O(n log n)</td></tr>
+    <tr><td>Slicing</td><td><code>a[i:j]</code></td><td>O(j − i)</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Bẫy phổ biến:</div>
+    Sinh viên hay dùng <code>list.insert(0, x)</code> hoặc <code>list.pop(0)</code> trong vòng lặp,
+    biến O(n) thành O(n²). Khi cần thêm/xoá ở đầu, dùng <code>collections.deque</code> (O(1) cả hai đầu).
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Dict &amp; Set — Hashing trong thực tế</h2>
+  <pre><code># Đếm tần suất ký tự — O(n)
+freq = {}
+for ch in s:
+    freq[ch] = freq.get(ch, 0) + 1
+
+# Cách viết Pythonic hơn
+from collections import Counter
+freq = Counter(s)
+
+# Set: kiểm tra trùng — O(1)
+seen = set()
+for x in nums:
+    if x in seen:        # O(1) trung bình
+        return True
+    seen.add(x)
+return False</code></pre>
+  <div class="example">
+    <div class="example-label">Quan sát:</div>
+    Đoạn <code>seen</code> trên là pattern <strong>"hash để khử O(n²)"</strong>. Đây là pattern xuất hiện
+    ở khoảng 25% số bài Easy/Medium đầu tiên trên LeetCode. Nhận diện được pattern này là thắng nửa trận.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 String — Bất biến (immutable) và slicing</h2>
+  <p>String trong Python là <strong>immutable</strong>. Mỗi thao tác ghép tạo ra string mới:</p>
+  <pre><code># BẪY: O(n²) vì mỗi += copy toàn bộ string cũ
+result = ""
+for word in words:
+    result += word
+
+# ĐÚNG: O(n) tổng
+result = "".join(words)</code></pre>
+  <h3>Slicing và đảo chuỗi</h3>
+  <pre><code>s = "leetcode"
+s[0:4]      # "leet"
+s[-3:]      # "ode"  (3 ký tự cuối)
+s[::-1]     # "edocteel" (đảo ngược)
+s[::2]      # "lecd" (mỗi 2 ký tự)</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc:</div>
+    Khi cần build string từ nhiều mảnh, luôn dùng <code>join</code> hoặc <code>list</code> tạm rồi
+    <code>"".join(list)</code>. Đừng <code>+=</code> trong vòng lặp.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.6 ===== -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 Idioms quan trọng</h2>
+  <h3>List comprehension</h3>
+  <pre><code>squares = [x*x for x in range(10)]
+evens   = [x for x in nums if x % 2 == 0]
+matrix  = [[0]*n for _ in range(m)]   # ma trận m×n
+
+# BẪY: KHÔNG dùng [[0]*n] * m — tất cả hàng là cùng 1 reference</code></pre>
+  <h3>Unpacking và enumerate / zip</h3>
+  <pre><code>a, b = b, a                          # swap không cần biến tạm
+for i, x in enumerate(nums):         # truy cập index + giá trị
+    ...
+for k, v in d.items():               # duyệt dict
+    ...
+for x, y in zip(arr1, arr2):         # ghép cặp 2 mảng
+    ...</code></pre>
+  <h3>Multi-assignment trong logic</h3>
+  <pre><code>prev, curr = curr, prev + curr       # Fibonacci 1 dòng</code></pre>
+</div>
+
+<!-- ===== SLIDE 2.7 ===== -->
+<div class="slide">
+  <div class="slide-number">2.7</div>
+  <h2>2.7 Built-in functions thiết yếu</h2>
+  <table>
+    <tr><th>Hàm</th><th>Tác dụng</th><th>Ví dụ</th></tr>
+    <tr><td><code>sorted</code></td><td>Sort không inplace, trả về list mới</td><td><code>sorted(nums, reverse=True)</code></td></tr>
+    <tr><td><code>min/max</code></td><td>Min/max của iterable</td><td><code>max(nums, key=abs)</code></td></tr>
+    <tr><td><code>sum</code></td><td>Tổng iterable</td><td><code>sum(nums)</code></td></tr>
+    <tr><td><code>any/all</code></td><td>Có ít nhất 1 / tất cả True</td><td><code>any(x &lt; 0 for x in nums)</code></td></tr>
+    <tr><td><code>enumerate</code></td><td>Cặp (index, value)</td><td><code>for i,x in enumerate(a)</code></td></tr>
+    <tr><td><code>zip</code></td><td>Ghép cặp nhiều iterable</td><td><code>zip(a, b)</code></td></tr>
+    <tr><td><code>map/filter</code></td><td>Áp dụng / lọc</td><td><code>list(map(int, line.split()))</code></td></tr>
+    <tr><td><code>reversed</code></td><td>Đảo iterable</td><td><code>for x in reversed(a)</code></td></tr>
+  </table>
+  <div class="example">
+    <div class="example-label">Ý nhị:</div>
+    Tham số <code>key=</code> trong <code>sorted/min/max</code> cực mạnh.
+    <code>sorted(words, key=len)</code> sort theo độ dài; <code>sorted(points, key=lambda p: p[0]**2 + p[1]**2)</code> sort theo khoảng cách từ gốc toạ độ.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.8 ===== -->
+<div class="slide">
+  <div class="slide-number">2.8</div>
+  <h2>2.8 Module <code>collections</code> — ba bảo bối</h2>
+  <h3>defaultdict</h3>
+  <pre><code>from collections import defaultdict
+graph = defaultdict(list)            # giá trị mặc định: list rỗng
+graph[u].append(v)                   # không cần check key tồn tại</code></pre>
+  <h3>Counter</h3>
+  <pre><code>from collections import Counter
+c = Counter("leetcode")              # {'e':3, 'l':1, 't':1, 'c':1, 'o':1, 'd':1}
+c.most_common(2)                     # [('e', 3), ('l', 1)]</code></pre>
+  <h3>deque (double-ended queue)</h3>
+  <pre><code>from collections import deque
+q = deque([1, 2, 3])
+q.appendleft(0)                      # O(1)
+q.popleft()                          # O(1) — ngược với list.pop(0) là O(n)</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Khi nào dùng deque?</div>
+    Bất cứ khi nào cần queue (BFS), sliding window, hoặc thao tác hai đầu.
+    Đây là vũ khí chuẩn cho Tuần 4 (Sliding Window) và Tuần 10 (BFS).
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Phần 2</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Đoạn code <code>nums = [1,2,3]; nums.insert(0, 0)</code> có complexity là gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) O(1)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) O(n)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) O(log n)</button>
+    <div class="quiz-explanation">Insert ở đầu list buộc Python phải dịch tất cả phần tử hiện có sang phải 1 vị trí, do đó O(n). Để thêm ở đầu O(1), dùng <code>deque.appendleft</code>.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Cách nào ghép một mảng string <code>words</code> thành một string với complexity tốt nhất?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Lặp với <code>result += w</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <code>"".join(words)</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) <code>sum(words, "")</code></button>
+    <div class="quiz-explanation">Vì string immutable, <code>+=</code> trong vòng lặp tạo ra string mới mỗi lần, dẫn tới O(n²). <code>join</code> tính tổng độ dài trước rồi cấp phát một lần, đạt O(n).</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. Phân tích độ phức tạp Big-O</h1>
+  <div class="subtitle">Ngôn ngữ chung của mọi thuật toán</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Vì sao quan tâm complexity?</h2>
+  <p>Một bài LeetCode điển hình có time limit ~1 giây. Máy chạy được khoảng <strong>10⁸ thao tác đơn giản/giây</strong>.
+  Đối chiếu với input size:</p>
+  <table>
+    <tr><th>n tối đa</th><th>Complexity yêu cầu</th><th>Ví dụ thuật toán</th></tr>
+    <tr><td>≤ 10</td><td>O(n!) hoặc O(2ⁿ)</td><td>Permutation, brute backtrack</td></tr>
+    <tr><td>≤ 20</td><td>O(2ⁿ)</td><td>Subset enumeration</td></tr>
+    <tr><td>≤ 500</td><td>O(n³)</td><td>Floyd-Warshall, DP 3 chiều nhẹ</td></tr>
+    <tr><td>≤ 5,000</td><td>O(n²)</td><td>DP 2 chiều</td></tr>
+    <tr><td>≤ 10⁶</td><td>O(n log n)</td><td>Sort, segment tree</td></tr>
+    <tr><td>≤ 10⁸</td><td>O(n) hoặc O(n log log n)</td><td>Two pointers, sliding window</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc đầu tiên cần thuộc:</div>
+    Đọc constraint <em>trước</em> khi bắt đầu nghĩ thuật toán. Constraint cho biết bậc complexity tối đa được phép.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Định nghĩa Big-O</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa hình thức:</div>
+    Hàm \(f(n)\) là \(O(g(n))\) nếu tồn tại các hằng số \(c &gt; 0\) và \(n_0 \geq 0\) sao cho:
+    $$ f(n) \leq c \cdot g(n) \quad \text{với mọi } n \geq n_0 $$
+    Tức là kể từ một ngưỡng \(n_0\) trở đi, \(g(n)\) là <strong>cận trên</strong> của \(f(n)\) (sai số hằng số bỏ qua).
+  </div>
+  <h3>Ý nghĩa thực tế</h3>
+  <p>Big-O đo <strong>tốc độ tăng</strong>, không đo thời gian thực. Hai thuật toán cùng O(n) có thể khác nhau 10 lần về thời gian thực — nhưng cùng tăng tuyến tính theo n.</p>
+  <h3>Quy tắc đơn giản hoá</h3>
+  <ul>
+    <li>Bỏ hằng số: \(O(2n)\) = \(O(n)\); \(O(\frac{n}{2})\) = \(O(n)\).</li>
+    <li>Bỏ bậc thấp: \(O(n^2 + n)\) = \(O(n^2)\).</li>
+    <li>Hai vòng lặp tách rời: \(O(n) + O(m) = O(n + m)\).</li>
+    <li>Hai vòng lặp lồng: \(O(n) \times O(m) = O(nm)\).</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Các bậc complexity phổ biến</h2>
+  <div class="illustration">
+    <svg viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg">
+      <!-- Axes -->
+      <line x1="60" y1="280" x2="540" y2="280" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="60" y1="280" x2="60" y2="20" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="540" y="300" font-size="12" fill="#1a1a1a" text-anchor="end">n (input size)</text>
+      <text x="40" y="20" font-size="12" fill="#1a1a1a">ops</text>
+
+      <!-- O(1) -->
+      <line x1="60" y1="270" x2="540" y2="270" stroke="#4a7c59" stroke-width="2"/>
+      <text x="545" y="273" font-size="12" fill="#4a7c59">O(1)</text>
+
+      <!-- O(log n) -->
+      <path d="M 60 270 Q 200 250, 340 235 T 540 220" stroke="#3b5998" stroke-width="2" fill="none"/>
+      <text x="545" y="223" font-size="12" fill="#3b5998">O(log n)</text>
+
+      <!-- O(n) -->
+      <line x1="60" y1="270" x2="540" y2="120" stroke="#1a1a1a" stroke-width="2"/>
+      <text x="545" y="123" font-size="12" fill="#1a1a1a">O(n)</text>
+
+      <!-- O(n log n) -->
+      <path d="M 60 270 Q 200 250, 340 180 T 540 80" stroke="#f9a825" stroke-width="2" fill="none"/>
+      <text x="545" y="83" font-size="12" fill="#f9a825">O(n log n)</text>
+
+      <!-- O(n^2) -->
+      <path d="M 60 270 Q 250 240, 380 130 T 480 30" stroke="#c0392b" stroke-width="2" fill="none"/>
+      <text x="490" y="33" font-size="12" fill="#c0392b">O(n²)</text>
+
+      <!-- O(2^n) -->
+      <path d="M 60 270 Q 200 270, 280 200 T 360 20" stroke="#8e44ad" stroke-width="2" fill="none"/>
+      <text x="365" y="20" font-size="12" fill="#8e44ad">O(2ⁿ)</text>
+    </svg>
+  </div>
+  <div class="illustration-caption">Hình 3.1: So sánh tốc độ tăng của các bậc complexity phổ biến.</div>
+  <p style="font-size: 0.95rem;">Khoảng cách giữa O(n) và O(n²) khi n = 10⁵ là <strong>100,000 lần</strong>. Đó là khác biệt giữa &quot;chạy 1 giây&quot; và &quot;chạy 1 ngày&quot;.</p>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Đọc complexity từ code</h2>
+  <p>Quy trình 3 bước:</p>
+  <ol>
+    <li>Xác định <strong>vòng lặp ngoài cùng</strong> chạy bao nhiêu lần.</li>
+    <li>Xác định công việc <strong>bên trong</strong> mỗi lần lặp tốn bao nhiêu.</li>
+    <li>Nhân lại, đơn giản hoá theo quy tắc Big-O.</li>
+  </ol>
+  <pre><code># Ví dụ
+def has_pair(nums, target):
+    for i in range(len(nums)):           # vòng ngoài: n lần
+        for j in range(i+1, len(nums)):  # vòng trong: trung bình n/2 lần
+            if nums[i] + nums[j] == target:
+                return True
+    return False
+# Tổng: n × n/2 = n²/2  →  O(n²)</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Lưu ý ẩn:</div>
+    Một số thao tác <em>trông</em> như O(1) nhưng thực ra không. Ví dụ <code>x in lst</code>
+    nếu <code>lst</code> là list thì O(n); nếu là set thì O(1). Luôn check kiểu dữ liệu.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.5 ===== -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 Worked Example: Linear scan</h2>
+  <pre><code>def max_value(nums):
+    m = float('-inf')
+    for x in nums:        # n lần
+        if x &gt; m:         # O(1)
+            m = x         # O(1)
+    return m</code></pre>
+  <p><strong>Phân tích:</strong></p>
+  <ul>
+    <li>Vòng lặp chạy đúng n lần.</li>
+    <li>Mỗi lần làm O(1) việc.</li>
+    <li>Tổng: \(n \cdot O(1) = O(n)\).</li>
+  </ul>
+  <p><strong>Space:</strong> chỉ dùng biến <code>m</code> — O(1).</p>
+  <div class="example">
+    <div class="example-label">Mẫu tổng quát:</div>
+    Một vòng <code>for</code> chạy qua mảng + công việc O(1) mỗi bước = O(n) thời gian, O(1) bộ nhớ.
+    Đây là cấu trúc ~30% bài Easy.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.6 ===== -->
+<div class="slide">
+  <div class="slide-number">3.6</div>
+  <h2>3.6 Worked Example: Vòng lặp lồng nhau</h2>
+  <pre><code>def count_inversions(nums):
+    count = 0
+    for i in range(len(nums)):           # n lần
+        for j in range(i+1, len(nums)):  # (n-1) + (n-2) + ... + 0
+            if nums[i] &gt; nums[j]:
+                count += 1
+    return count</code></pre>
+  <p><strong>Phân tích:</strong></p>
+  <p>Tổng số lần thao tác bên trong:</p>
+  $$ \sum_{i=0}^{n-1} (n - 1 - i) = \frac{n(n-1)}{2} \approx \frac{n^2}{2} $$
+  <p>Bỏ hằng số ½ → <strong>O(n²)</strong>. Space: O(1).</p>
+  <div class="key-point">
+    <div class="key-point-label">Bài này về sau sẽ làm O(n log n):</div>
+    Bằng merge sort cải tiến (Tuần 8). Đây là ví dụ điển hình của việc <em>tối ưu thuật toán đổi lấy
+    complexity tốt hơn</em> — kỹ năng cốt lõi của khoá.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.7 ===== -->
+<div class="slide">
+  <div class="slide-number">3.7</div>
+  <h2>3.7 Worked Example: Đệ quy</h2>
+  <pre><code>def fib(n):
+    if n &lt;= 1:
+        return n
+    return fib(n-1) + fib(n-2)</code></pre>
+  <p><strong>Phân tích:</strong> Mỗi lần gọi <code>fib(n)</code> sinh ra 2 lời gọi nhỏ hơn.
+  Cây gọi đệ quy có chiều cao ~n và phân nhánh 2 → tổng số nút ~\(2^n\).</p>
+  $$ T(n) = T(n-1) + T(n-2) + O(1) \implies T(n) = O(2^n) $$
+  <p>Space: O(n) cho call stack tại bất kỳ thời điểm nào.</p>
+  <div class="example">
+    <div class="example-label">Bài học:</div>
+    Đệ quy <em>naive</em> như trên là cấm kỵ. Tuần 12 (DP) sẽ học <strong>memoisation</strong>
+    để biến O(2ⁿ) → O(n). Nhận ra "có lời gọi lặp lại" là dấu hiệu cần memoisation.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.8 ===== -->
+<div class="slide">
+  <div class="slide-number">3.8</div>
+  <h2>3.8 Space Complexity</h2>
+  <p>Phỏng vấn ngày càng quan tâm bộ nhớ, không chỉ thời gian. Hai loại space cần đếm:</p>
+  <h3>1. Auxiliary space (bộ nhớ phụ trợ)</h3>
+  <p>Bộ nhớ thuật toán dùng <em>thêm</em> ngoài input. Đây là cái phỏng vấn thường hỏi.</p>
+  <h3>2. Total space (tổng bộ nhớ)</h3>
+  <p>Bao gồm cả input. Ít quan tâm hơn vì input là "miễn phí".</p>
+  <pre><code># Auxiliary O(n)
+def double_array(nums):
+    return [x*2 for x in nums]   # tạo list mới size n
+
+# Auxiliary O(1)
+def double_inplace(nums):
+    for i in range(len(nums)):   # sửa trực tiếp
+        nums[i] *= 2</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Đừng quên call stack:</div>
+    Đệ quy có space ẩn = chiều sâu stack. <code>fib(n)</code> đệ quy có space O(n) dù không tạo mảng nào.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.9 ===== -->
+<div class="slide">
+  <div class="slide-number">3.9</div>
+  <h2>3.9 Đọc constraints để đoán complexity yêu cầu</h2>
+  <p>Đây là <strong>kỹ năng quan trọng nhất</strong> của tuần này. Mở một bài LeetCode bất kỳ, mục
+    "Constraints" cho biết:</p>
+  <pre><code>Constraints:
+  1 &lt;= nums.length &lt;= 10^5
+  -10^9 &lt;= nums[i] &lt;= 10^9</code></pre>
+  <p>Khi thấy <code>n ≤ 10⁵</code>, lập tức biết:</p>
+  <ul>
+    <li>O(n²) sẽ <strong>TLE</strong> (Time Limit Exceeded): 10¹⁰ thao tác &gt;&gt; 10⁸/giây.</li>
+    <li>Cần đạt O(n log n) hoặc O(n).</li>
+  </ul>
+  <p>Khi thấy <code>n ≤ 10⁹</code>, biết:</p>
+  <ul>
+    <li>Không được đụng tới mảng size n. Có thể là binary search trên answer space, hoặc công thức toán.</li>
+  </ul>
+  <div class="key-point">
+    <div class="key-point-label">Quy trình mở bài:</div>
+    (1) Đọc đề · (2) Đọc constraints · (3) Tính bậc complexity cho phép · (4) <em>Mới</em> nghĩ thuật toán.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Phần 3</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Thuật toán O(n²) chạy được tối đa input size khoảng bao nhiêu trong giới hạn 1 giây?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) 10⁶</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 10⁴</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) 10⁸</button>
+    <div class="quiz-explanation">Với 10⁸ thao tác/giây, O(n²) yêu cầu n² ≤ 10⁸, suy ra n ≤ 10⁴ (an toàn). Một số bài có thể nhồi tới n = 5×10⁴ nhưng nguy cơ TLE.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Hàm <code>fib(n)</code> đệ quy naive (không memo) có space complexity bao nhiêu?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) O(1)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) O(n) cho call stack</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) O(2ⁿ)</button>
+    <div class="quiz-explanation">Dù không cấp phát mảng, đệ quy có chiều sâu stack tối đa n (đường <code>fib(n) → fib(n-1) → ... → fib(0)</code>). Time là O(2ⁿ) nhưng space chỉ O(n).</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Bài có <code>n ≤ 20</code> gợi ý thuật toán bậc nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) O(n)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) O(n log n)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) O(2ⁿ) — duyệt tập con / backtracking</button>
+    <div class="quiz-explanation">n nhỏ bất thường (≤ 20) thường là dấu hiệu thuật toán bậc mũ trên tập con (2²⁰ ≈ 10⁶). Đây là pattern quen thuộc cho subset sum, TSP nhỏ, bitmask DP.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Bài tập thực hành</h1>
+  <div class="subtitle">Áp dụng những gì đã học vào ba bài LeetCode Easy kinh điển</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Bài 1: Two Sum (LeetCode #1)</h2>
+  <p><strong>Đề:</strong> Cho mảng <code>nums</code> và số <code>target</code>. Tìm hai chỉ số i, j sao cho
+  <code>nums[i] + nums[j] == target</code>. Giả sử có đúng một đáp án.</p>
+  <p><strong>Constraints:</strong> 2 ≤ n ≤ 10⁴.</p>
+  <h3>Approach 1 — Brute Force</h3>
+  <pre><code>def twoSum(nums, target):
+    for i in range(len(nums)):
+        for j in range(i+1, len(nums)):
+            if nums[i] + nums[j] == target:
+                return [i, j]</code></pre>
+  <p>Time O(n²), space O(1). Với n = 10⁴ thì ~5×10⁷ thao tác — chạy được nhưng rất sát giới hạn.</p>
+  <div class="key-point">
+    <div class="key-point-label">Câu hỏi:</div>
+    Có thể giảm xuống O(n) không? Dấu hiệu nào trong đề gợi ý điều đó?
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Two Sum — Tối ưu với Hash Map</h2>
+  <p>Quan sát: với mỗi <code>nums[i]</code>, ta cần tìm <code>complement = target - nums[i]</code>
+  trong phần còn lại. Tìm trong list là O(n), nhưng tìm trong set/dict là O(1).</p>
+  <pre><code>def twoSum(nums, target):
+    seen = {}                       # value → index
+    for i, x in enumerate(nums):
+        complement = target - x
+        if complement in seen:      # O(1)
+            return [seen[complement], i]
+        seen[x] = i
+    return []</code></pre>
+  <p>Time <strong>O(n)</strong>, space O(n).</p>
+  <div class="example">
+    <div class="example-label">Pattern rút ra:</div>
+    "Đổi space lấy time" — dùng O(n) bộ nhớ phụ để giảm time từ O(n²) xuống O(n).
+    Đây là pattern sẽ xuất hiện ở Tuần 3 (Hashing) hàng chục lần.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 Bài 2: Valid Anagram (LeetCode #242)</h2>
+  <p><strong>Đề:</strong> Cho hai string <code>s</code> và <code>t</code>. Trả về <code>True</code> nếu
+  <code>t</code> là một anagram (đảo chữ) của <code>s</code>.</p>
+  <h3>Approach 1 — Sort</h3>
+  <pre><code>def isAnagram(s, t):
+    return sorted(s) == sorted(t)
+# Time: O(n log n), Space: O(n)</code></pre>
+  <h3>Approach 2 — Counter (tốt hơn)</h3>
+  <pre><code>from collections import Counter
+def isAnagram(s, t):
+    return Counter(s) == Counter(t)
+# Time: O(n), Space: O(k)  với k = số ký tự khác nhau</code></pre>
+  <h3>Approach 3 — Mảng đếm thủ công (chỉ với chữ thường a-z)</h3>
+  <pre><code>def isAnagram(s, t):
+    if len(s) != len(t): return False
+    cnt = [0] * 26
+    for ch in s: cnt[ord(ch) - ord('a')] += 1
+    for ch in t: cnt[ord(ch) - ord('a')] -= 1
+    return all(c == 0 for c in cnt)
+# Time: O(n), Space: O(1)  vì 26 là hằng số</code></pre>
+</div>
+
+<!-- ===== SLIDE 4.4 ===== -->
+<div class="slide">
+  <div class="slide-number">4.4</div>
+  <h2>4.4 Bài 3: Best Time to Buy and Sell Stock (LeetCode #121)</h2>
+  <p><strong>Đề:</strong> Mảng <code>prices[i]</code> = giá cổ phiếu ngày i. Mua 1 ngày, bán 1 ngày sau đó.
+  Tính lợi nhuận tối đa (≥ 0).</p>
+  <p><strong>Constraints:</strong> 1 ≤ n ≤ 10⁵ → cần O(n).</p>
+  <h3>Brute force — TLE</h3>
+  <pre><code># O(n²) — sẽ vượt time limit
+for i in range(n):
+    for j in range(i+1, n):
+        profit = max(profit, prices[j] - prices[i])</code></pre>
+  <h3>Tối ưu — One pass O(n)</h3>
+  <pre><code>def maxProfit(prices):
+    min_so_far = float('inf')
+    best = 0
+    for p in prices:
+        min_so_far = min(min_so_far, p)
+        best = max(best, p - min_so_far)
+    return best</code></pre>
+  <div class="example">
+    <div class="example-label">Quan sát:</div>
+    Tại mỗi vị trí, ta chỉ cần biết <em>min từ đầu đến trước đó</em>. Không cần lưu cả mảng.
+    Đây là mầm mống của <strong>Dynamic Programming</strong> (Tuần 12).
+  </div>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">5.0</div>
+  <h2>Tổng kết Tuần 1</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li>Bốn cấu trúc dữ liệu Python nội tại và độ phức tạp của các thao tác.</li>
+    <li>Module <code>collections</code>: <code>defaultdict</code>, <code>Counter</code>, <code>deque</code>.</li>
+    <li>Định nghĩa Big-O và quy tắc đơn giản hoá.</li>
+    <li>Cách đọc complexity từ code (vòng lặp, đệ quy).</li>
+    <li>Đọc constraints để đoán bậc complexity yêu cầu.</li>
+    <li>Pattern đầu tiên: <strong>"Đổi space lấy time"</strong> qua hashing.</li>
+  </ul>
+  <h3>Bài về nhà (8 bài)</h3>
+  <ol>
+    <li>LeetCode #1 — Two Sum (đã chữa, code lại không nhìn lời giải)</li>
+    <li>LeetCode #242 — Valid Anagram (cả 3 approach)</li>
+    <li>LeetCode #121 — Best Time to Buy and Sell Stock</li>
+    <li>LeetCode #217 — Contains Duplicate</li>
+    <li>LeetCode #136 — Single Number</li>
+    <li>LeetCode #169 — Majority Element</li>
+    <li>LeetCode #283 — Move Zeroes</li>
+    <li>LeetCode #14 — Longest Common Prefix</li>
+  </ol>
+  <p style="margin-top: 12px; color: #666; font-style: italic;">
+    Mỗi bài: nộp <code>solution.py</code> + <code>tests.py</code> (3 test tự nghĩ) +
+    <code>analysis.md</code> (complexity và lý do chọn approach).
+  </p>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 2 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 700px;">
+    <strong>Array &amp; String — Two Pointers và Prefix Sum</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 700px;">
+    Hai pattern cốt lõi giải quyết ~30% bài Easy/Medium đầu tiên trên LeetCode.
+    Sẽ áp dụng trực tiếp Big-O đã học để chứng minh tại sao two pointers giảm O(n²) xuống O(n).
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 1 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>

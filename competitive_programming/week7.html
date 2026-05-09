@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 7 — Binary Search</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 7</div>
+  <h1>Binary Search</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Pattern cổ điển nhất, mạnh nhất. Biến O(n) thành <strong>O(log n)</strong> — và áp dụng được không
+    chỉ trên array sort mà còn trên <em>answer space</em>, một kỹ thuật then chốt cho phỏng vấn senior.
+  </p>
+  <div class="meta">10 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng Binary Search</h1>
+  <div class="subtitle">Template chuẩn để tránh off-by-one mãi mãi</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Binary Search là gì?</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa:</div>
+    Tìm kiếm trên một <em>không gian có thứ tự</em> bằng cách <strong>chia đôi</strong> không gian sau mỗi bước.
+    Sau k bước, vùng còn lại là <code>n / 2^k</code>. Khi vùng còn 1 phần tử, thuật toán dừng → tổng <strong>O(log n)</strong>.
+  </div>
+  <h3>Hai điều kiện phải có để áp dụng</h3>
+  <ol>
+    <li><strong>Không gian có thứ tự</strong> — array đã sort, hoặc một thuộc tính monoton trên answer space.</li>
+    <li><strong>Hàm kiểm tra (predicate)</strong> trả True/False, và là <em>monoton</em>: F → F → ... → T → T → ...
+    Tìm boundary giữa F và T là mục tiêu.</li>
+  </ol>
+  <h3>Vì sao mạnh?</h3>
+  <p>Với n = 10⁹, O(log n) = 30 bước. Đây là khác biệt giữa "1 giây" và "10 năm". Nhiều bài có
+  <code>n ≤ 10⁹</code> bắt buộc phải dùng Binary Search hoặc công thức toán.</p>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Template chuẩn — Half-open <code>[left, right)</code></h2>
+  <p>Có rất nhiều phiên bản Binary Search. Khoá học này dùng <strong>1 template duy nhất</strong> để tránh nhầm:</p>
+  <pre><code>def binary_search(arr, target):
+    left, right = 0, len(arr)         # half-open: right không truy cập
+    while left &lt; right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] &lt; target:
+            left = mid + 1
+        else:
+            right = mid
+    return -1</code></pre>
+  <h3>Vì sao chọn half-open?</h3>
+  <ul>
+    <li><code>right = len(arr)</code> ban đầu — không có "off-by-one" với index cuối.</li>
+    <li>Điều kiện <code>left &lt; right</code> — vùng rỗng khi <code>left == right</code>.</li>
+    <li><code>left = mid + 1</code> và <code>right = mid</code> — không bao giờ kẹt vô tận.</li>
+    <li>Khi thoát, <code>left == right</code> = vị trí "lower bound" của target.</li>
+  </ul>
+  <p>Template này dùng được cho cả "tìm chính xác" và "tìm boundary" — chỉ thay đổi điều kiện so sánh.</p>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Lower bound vs Upper bound</h2>
+  <p>Hai biến thể quan trọng của BS — phải phân biệt rõ:</p>
+  <h3>Lower bound — vị trí đầu tiên mà <code>arr[i] ≥ target</code></h3>
+  <pre><code>def lower_bound(arr, target):
+    left, right = 0, len(arr)
+    while left &lt; right:
+        mid = (left + right) // 2
+        if arr[mid] &lt; target:
+            left = mid + 1
+        else:
+            right = mid
+    return left</code></pre>
+  <h3>Upper bound — vị trí đầu tiên mà <code>arr[i] &gt; target</code></h3>
+  <pre><code>def upper_bound(arr, target):
+    left, right = 0, len(arr)
+    while left &lt; right:
+        mid = (left + right) // 2
+        if arr[mid] &lt;= target:
+            left = mid + 1
+        else:
+            right = mid
+    return left</code></pre>
+  <p>Khác biệt: <strong>so sánh với <code>≤</code> hay <code>&lt;</code></strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Quan sát:</div>
+    Số lần xuất hiện của target trong mảng sort = <code>upper_bound − lower_bound</code>.
+    Đây là cách giải First and Last Position (#34) gọn nhất.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Bốn bẫy kinh điển</h2>
+  <ol>
+    <li><strong>Vòng lặp vô tận.</strong>
+    <pre><code># SAI — kẹt khi left = mid:
+while left &lt; right:
+    mid = (left + right) // 2
+    if condition: left = mid          # mid không đổi!
+# ĐÚNG: left = mid + 1</code></pre></li>
+
+    <li><strong>Tràn số khi tính mid.</strong>
+    Trong C++/Java, <code>(left + right) / 2</code> tràn nếu cả hai gần INT_MAX. Dùng
+    <code>left + (right − left) // 2</code>. Python không có vấn đề này nhưng nên viết theo thói quen.</li>
+
+    <li><strong>Nhầm <code>left ≤ right</code> với <code>left &lt; right</code>.</strong>
+    Hai loại template tồn tại; trộn chúng dẫn đến bug. Khuyên dùng <em>nhất quán</em> half-open.</li>
+
+    <li><strong>Nghĩ rằng BS chỉ chạy trên array.</strong>
+    BS chạy trên <em>mọi không gian có thứ tự với predicate monoton</em>. Đây là ý tưởng then chốt cho Phần 4.</li>
+  </ol>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Binary Search trên Array</h1>
+  <div class="subtitle">Bài tập kinh điển — luyện template cho nhuyễn</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Worked Example 1 — Classic Binary Search</h2>
+  <p><strong>Đề (LeetCode #704):</strong> Mảng <code>nums</code> sort tăng. Tìm index của <code>target</code>, -1 nếu không có.</p>
+  <pre><code>def search(nums, target):
+    left, right = 0, len(nums)
+    while left &lt; right:
+        mid = (left + right) // 2
+        if nums[mid] == target:
+            return mid
+        elif nums[mid] &lt; target:
+            left = mid + 1
+        else:
+            right = mid
+    return -1</code></pre>
+  <h3>Trace với <code>nums = [-1, 0, 3, 5, 9, 12]</code>, <code>target = 9</code></h3>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>left</th><th>right</th><th>mid</th><th>nums[mid]</th><th>Hành động</th></tr>
+    <tr><td>1</td><td>0</td><td>6</td><td>3</td><td>5</td><td>5 &lt; 9 → left=4</td></tr>
+    <tr><td>2</td><td>4</td><td>6</td><td>5</td><td>12</td><td>12 &gt; 9 → right=5</td></tr>
+    <tr><td>3</td><td>4</td><td>5</td><td>4</td><td>9</td><td>match → return 4</td></tr>
+  </table>
+  <p>Time <strong>O(log n)</strong>, Space <strong>O(1)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 2 — Find First and Last Position</h2>
+  <p><strong>Đề (LeetCode #34):</strong> Mảng sort. Tìm index đầu và cuối của <code>target</code>. Trả [-1, -1] nếu không có. Yêu cầu O(log n).</p>
+  <h3>Dùng lower_bound + upper_bound</h3>
+  <pre><code>def searchRange(nums, target):
+    def lower(t):
+        l, r = 0, len(nums)
+        while l &lt; r:
+            m = (l + r) // 2
+            if nums[m] &lt; t: l = m + 1
+            else: r = m
+        return l
+
+    first = lower(target)
+    if first == len(nums) or nums[first] != target:
+        return [-1, -1]
+    last = lower(target + 1) - 1     # mẹo: upper bound = lower(target+1)
+    return [first, last]</code></pre>
+  <p>Time <strong>O(log n)</strong>, Space <strong>O(1)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 First and Last Position — Trace</h2>
+  <p><code>nums = [5,7,7,8,8,10]</code>, <code>target = 8</code>. Kỳ vọng: [3, 4].</p>
+  <h3><code>lower(8)</code></h3>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>l</th><th>r</th><th>m</th><th>nums[m]</th><th>Hành động</th></tr>
+    <tr><td>1</td><td>0</td><td>6</td><td>3</td><td>8</td><td>không &lt; 8 → r=3</td></tr>
+    <tr><td>2</td><td>0</td><td>3</td><td>1</td><td>7</td><td>&lt; 8 → l=2</td></tr>
+    <tr><td>3</td><td>2</td><td>3</td><td>2</td><td>7</td><td>&lt; 8 → l=3</td></tr>
+    <tr><td>—</td><td>3</td><td>3</td><td>—</td><td>—</td><td>thoát, trả 3</td></tr>
+  </table>
+  <h3><code>lower(9) − 1</code> = upper bound của 8 trừ 1</h3>
+  <p>Tương tự, <code>lower(9) = 5</code> → last = 4.</p>
+  <p>Kết quả: [3, 4]. Time <strong>O(log n)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Mẹo "lower(target + 1) − 1":</div>
+    Trong array số nguyên, vị trí cuối của target = vị trí đầu của (target + 1) trừ 1.
+    Cho phép viết <em>một template lower_bound</em> dùng cho mọi bài.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Worked Example 3 — Search Insert Position</h2>
+  <p><strong>Đề (LeetCode #35):</strong> Mảng sort, target. Trả về index nơi target nên được chèn vào.</p>
+  <p>Đây <em>chính là</em> lower_bound — vị trí đầu tiên ≥ target.</p>
+  <pre><code>def searchInsert(nums, target):
+    left, right = 0, len(nums)
+    while left &lt; right:
+        mid = (left + right) // 2
+        if nums[mid] &lt; target:
+            left = mid + 1
+        else:
+            right = mid
+    return left</code></pre>
+  <p>Time <strong>O(log n)</strong>, Space <strong>O(1)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Vì sao trả <code>left</code>, không phải <code>right</code>?</div>
+    Khi thoát, <code>left == right</code> — trả cái nào cũng được. Quy ước trả <code>left</code> để code thống nhất.
+    Khi <code>target</code> lớn hơn mọi phần tử, <code>left = len(nums)</code> — đây là vị trí chèn cuối, đúng với yêu cầu.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 Worked Example 4 — Sqrt(x) bằng Binary Search</h2>
+  <p><strong>Đề (LeetCode #69):</strong> Cho số nguyên không âm <code>x</code>. Trả <code>floor(sqrt(x))</code>. Không dùng built-in sqrt.</p>
+  <h3>BS trên answer space [0, x]</h3>
+  <p>Đây là bài <em>đầu tiên</em> minh hoạ "BS không nhất thiết trên array". Tìm số <code>r</code> lớn nhất sao cho <code>r² ≤ x</code>.</p>
+  <pre><code>def mySqrt(x):
+    if x &lt; 2: return x
+    left, right = 1, x
+    while left &lt; right:
+        mid = (left + right + 1) // 2     # ceil — tìm cận trên
+        if mid * mid &lt;= x:
+            left = mid
+        else:
+            right = mid - 1
+    return left</code></pre>
+  <p>Time <strong>O(log x)</strong>, Space <strong>O(1)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Mẹo "ceil mid":</div>
+    Khi <code>left = mid</code> (giữ mid là ứng viên), phải dùng <code>(left + right + 1) // 2</code> (ceil) để tránh
+    vòng lặp vô tận khi <code>left = right − 1</code>. Đây là một trong các template "BS tìm cận trên".
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — BS trên Array</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong template half-open, vì sao khi điều kiện đúng thì <code>right = mid</code> chứ không phải <code>right = mid − 1</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để chạy nhanh hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Vì <code>right</code> là biên không truy cập (half-open) — <code>mid</code> đã được loại nhưng các vị trí trước nó cần giữ</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì Python không cho phép −1</button>
+    <div class="quiz-explanation">Half-open có nghĩa right là "vùng cấm" — vị trí right không được xem xét nữa. Khi <code>mid</code> đã không phải đáp án (hoặc cần loại), gán <code>right = mid</code> là loại đúng <code>mid</code> mà không loại nhầm các vị trí trước.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Số lần xuất hiện của target trong mảng sort được tính bằng?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) <code>upper_bound + lower_bound</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <code>upper_bound − lower_bound</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Một lần BS bình thường</button>
+    <div class="quiz-explanation">Lower bound trả vị trí đầu tiên ≥ target; upper bound trả vị trí đầu tiên &gt; target. Khoảng giữa chính là tất cả vị trí của target. Mẹo này tổng quát cho bài "đếm" trên mảng sort.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Khi <code>left = mid</code>, vì sao phải dùng <code>mid = (l + r + 1) // 2</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Để tránh vòng lặp vô tận khi <code>l = r − 1</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Để tăng tốc</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để tránh tràn số</button>
+    <div class="quiz-explanation">Khi l = r − 1, mid floor = l, nếu gán l = mid thì l không đổi → vô tận. Mid ceil = r → l = r → thoát đúng. Quy tắc: cặp (l = mid, mid ceil) hoặc (l = mid + 1, mid floor).</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. BS trên Rotated/Non-trivial Arrays</h1>
+  <div class="subtitle">Khi mảng không sort thuần — tìm "phần sort" để áp dụng</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Rotated Sorted Array — Trực giác</h2>
+  <p><em>Rotated</em> = mảng sort nhưng bị "cắt và ghép" tại điểm pivot. Ví dụ: <code>[4,5,6,7,0,1,2]</code> là <code>[0,1,2,4,5,6,7]</code> rotated tại pivot 4.</p>
+  <h3>Quan sát then chốt</h3>
+  <p>Với mid bất kỳ, <strong>một trong hai nửa luôn còn sort</strong>: nửa trái <code>[l..mid]</code> hoặc nửa phải <code>[mid..r]</code>.</p>
+  <div class="illustration">
+    <svg viewBox="0 0 540 100" xmlns="http://www.w3.org/2000/svg">
+      <g>
+        <rect x="20" y="40" width="55" height="40" fill="#eaf5ea" stroke="#4a7c59"/>
+        <rect x="75" y="40" width="55" height="40" fill="#eaf5ea" stroke="#4a7c59"/>
+        <rect x="130" y="40" width="55" height="40" fill="#eaf5ea" stroke="#4a7c59"/>
+        <rect x="185" y="40" width="55" height="40" fill="#eaf5ea" stroke="#4a7c59"/>
+        <rect x="240" y="40" width="55" height="40" fill="#fdf0ef" stroke="#c0392b"/>
+        <rect x="295" y="40" width="55" height="40" fill="#fdf0ef" stroke="#c0392b"/>
+        <rect x="350" y="40" width="55" height="40" fill="#fdf0ef" stroke="#c0392b"/>
+        <text x="47" y="65" font-size="14" text-anchor="middle">4</text>
+        <text x="102" y="65" font-size="14" text-anchor="middle">5</text>
+        <text x="157" y="65" font-size="14" text-anchor="middle">6</text>
+        <text x="212" y="65" font-size="14" text-anchor="middle">7</text>
+        <text x="267" y="65" font-size="14" text-anchor="middle">0</text>
+        <text x="322" y="65" font-size="14" text-anchor="middle">1</text>
+        <text x="377" y="65" font-size="14" text-anchor="middle">2</text>
+        <text x="125" y="20" font-size="12" fill="#4a7c59" text-anchor="middle">Phần sort 1 (cao)</text>
+        <text x="320" y="20" font-size="12" fill="#c0392b" text-anchor="middle">Phần sort 2 (thấp)</text>
+      </g>
+    </svg>
+  </div>
+  <p>Quy trình: kiểm tra nửa nào sort → nếu target nằm trong khoảng sort đó, BS bên đó; ngược lại bên kia.</p>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Worked Example 5 — Search in Rotated Sorted Array</h2>
+  <p><strong>Đề (LeetCode #33):</strong> Mảng đã rotate. Tìm <code>target</code>. O(log n).</p>
+  <pre><code>def search(nums, target):
+    left, right = 0, len(nums) - 1
+    while left &lt;= right:
+        mid = (left + right) // 2
+        if nums[mid] == target:
+            return mid
+        # Xác định nửa nào sort
+        if nums[left] &lt;= nums[mid]:                   # nửa trái sort
+            if nums[left] &lt;= target &lt; nums[mid]:
+                right = mid - 1
+            else:
+                left = mid + 1
+        else:                                         # nửa phải sort
+            if nums[mid] &lt; target &lt;= nums[right]:
+                left = mid + 1
+            else:
+                right = mid - 1
+    return -1</code></pre>
+  <p>Time <strong>O(log n)</strong>, Space <strong>O(1)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Quan trọng — chú ý dấu <code>≤</code>:</div>
+    <code>nums[left] ≤ nums[mid]</code> với "≤" để xử lý case mid = left (mảng size 2). Quên dấu = sẽ sai trên test nhỏ.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Search Rotated — Trace</h2>
+  <p><code>nums = [4,5,6,7,0,1,2]</code>, <code>target = 0</code>. Kỳ vọng: 4.</p>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>l</th><th>r</th><th>mid</th><th>nums[mid]</th><th>Phân tích</th><th>Hành động</th></tr>
+    <tr><td>1</td><td>0</td><td>6</td><td>3</td><td>7</td><td>nums[0]=4 ≤ 7 → trái sort. 0 không trong [4,7) → bên phải</td><td>l=4</td></tr>
+    <tr><td>2</td><td>4</td><td>6</td><td>5</td><td>1</td><td>nums[4]=0 ≤ 1 → trái sort. 0 trong [0,1) → bên trái</td><td>r=4</td></tr>
+    <tr><td>3</td><td>4</td><td>4</td><td>4</td><td>0</td><td>match</td><td>return 4</td></tr>
+  </table>
+  <p>3 bước log₂(7) ≈ 3 — đúng O(log n).</p>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Worked Example 6 — Find Minimum in Rotated Sorted Array</h2>
+  <p><strong>Đề (LeetCode #153):</strong> Mảng đã rotate, không trùng. Tìm phần tử nhỏ nhất.</p>
+  <h3>Quan sát</h3>
+  <p>Min nằm ở "vết cắt" — vị trí mà <code>nums[i] &lt; nums[i-1]</code>. So sánh <code>nums[mid]</code> với <code>nums[right]</code>:</p>
+  <ul>
+    <li>Nếu <code>nums[mid] &gt; nums[right]</code>: vết cắt ở bên phải mid → <code>left = mid + 1</code>.</li>
+    <li>Ngược lại: vết cắt ở bên trái hoặc tại mid → <code>right = mid</code>.</li>
+  </ul>
+  <pre><code>def findMin(nums):
+    left, right = 0, len(nums) - 1
+    while left &lt; right:
+        mid = (left + right) // 2
+        if nums[mid] &gt; nums[right]:
+            left = mid + 1
+        else:
+            right = mid
+    return nums[left]</code></pre>
+  <p>Time <strong>O(log n)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Vì sao so sánh với right, không phải left?</div>
+    So sánh với left không đủ: case không rotate (sorted), nums[mid] luôn ≥ nums[left] → không phân biệt được.
+    So sánh với right tận dụng được tính chất: bên có giá trị nhỏ hơn cuối là bên chứa min.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.5 ===== -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 Worked Example 7 — Find Peak Element</h2>
+  <p><strong>Đề (LeetCode #162):</strong> Mảng <code>nums</code>. Một "peak" là <code>nums[i] &gt; nums[i-1]</code> và <code>nums[i] &gt; nums[i+1]</code>.
+  Trả về index của một peak bất kỳ. Giả sử <code>nums[-1] = nums[n] = -∞</code>. <strong>Yêu cầu O(log n).</strong></p>
+  <h3>Trực giác</h3>
+  <p>Mảng không cần sort. Nhưng vẫn áp dụng BS được vì có "monotonicity" cục bộ: nếu <code>nums[mid] &lt; nums[mid+1]</code>,
+  bên phải <em>chắc chắn</em> có peak (vì hàm đang đi lên và phải xuống lại sau hữu hạn bước).</p>
+  <pre><code>def findPeakElement(nums):
+    left, right = 0, len(nums) - 1
+    while left &lt; right:
+        mid = (left + right) // 2
+        if nums[mid] &lt; nums[mid + 1]:
+            left = mid + 1                # peak bên phải
+        else:
+            right = mid                   # peak bên trái hoặc tại mid
+    return left</code></pre>
+  <p>Time <strong>O(log n)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Bài học mở rộng:</div>
+    BS không cần "sort toàn cục". Đủ là <em>monotonicity cục bộ</em> hoặc một <em>predicate monoton</em>
+    đảm bảo có thể loại bỏ một nửa không gian.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — BS trên Rotated</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Search in Rotated, vì sao luôn có "ít nhất một nửa sort"?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì input đảm bảo</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Vết cắt chỉ ở MỘT nơi → chia mảng tại mid, một bên không chứa vết cắt → bên đó sort</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì BS chia đôi</button>
+    <div class="quiz-explanation">Mảng rotate có chính xác 1 vết cắt (giữa max và min). Khi chia tại mid, vết cắt chỉ thuộc 1 trong 2 nửa → nửa kia liên tục sort. Đây là tính chất mấu chốt cho phép BS hoạt động.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Find Peak Element, tại sao không cần mảng sort?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì BS chỉ cần input có thứ tự cục bộ</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Cần monotonicity cục bộ — nếu đang đi lên (nums[mid] &lt; nums[mid+1]), bên phải chắc chắn có peak</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì peak luôn ở giữa</button>
+    <div class="quiz-explanation">BS làm việc trên không gian có "decision predicate monoton". Ở đây predicate là "đi lên hay đi xuống". Nếu đi lên ở mid, bên phải sẽ có peak vì nums[n] = -∞ buộc hàm phải xuống lại.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Binary Search on Answer Space</h1>
+  <div class="subtitle">Pattern nâng cao nhất — biến bài "tối ưu" thành "kiểm tra"</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Pattern: Parametric Binary Search</h2>
+  <div class="definition">
+    <div class="definition-label">Ý tưởng cốt lõi:</div>
+    Khi bài hỏi "tìm <em>giá trị nhỏ nhất/lớn nhất</em> X sao cho có thể làm Y", thay vì đi tìm X trực tiếp,
+    ta <strong>đoán X</strong> rồi kiểm tra "với X này có làm được Y không?". Predicate <code>canDo(X)</code> phải monoton —
+    nếu <code>canDo(X)</code> = True thì <code>canDo(X+1)</code> cũng True (hoặc ngược lại).
+  </div>
+  <h3>Tín hiệu nhận biết</h3>
+  <ul>
+    <li>Đề có "minimum X such that...", "maximum X such that...".</li>
+    <li>Phạm vi của X có thể rất lớn (10⁹ trở lên).</li>
+    <li>Hàm kiểm tra <code>canDo(X)</code> dễ viết và chạy nhanh (thường O(n) hoặc O(n log n)).</li>
+  </ul>
+  <p>Khi cả ba có → BS trên answer space.</p>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Template Parametric BS</h2>
+  <pre><code>def parametric_bs(low, high, can_do):
+    """Tìm X nhỏ nhất sao cho can_do(X) == True."""
+    while low &lt; high:
+        mid = (low + high) // 2
+        if can_do(mid):
+            high = mid                # mid khả thi → cố nhỏ hơn
+        else:
+            low = mid + 1             # mid không khả thi → phải lớn hơn
+    return low</code></pre>
+  <h3>Quy trình thiết kế</h3>
+  <ol>
+    <li>Xác định <strong>biên answer space</strong>: <code>low</code> = giá trị nhỏ nhất khả dĩ; <code>high</code> = giá trị lớn nhất.</li>
+    <li>Viết hàm <code>can_do(X)</code>: cho X này, có làm được không? Kiểm tra monoton (vẽ trên giấy: với X tăng thì can_do từ False/True đến True/True).</li>
+    <li>Áp dụng template.</li>
+  </ol>
+  <div class="key-point">
+    <div class="key-point-label">Phần khó nhất:</div>
+    Không phải BS — mà là <strong>thiết kế can_do và xác định biên</strong>. BS chỉ là "vỏ ngoài" gọi can_do nhiều lần.
+    Trong phỏng vấn, dành phần lớn thời gian giải thích can_do, không phải template BS.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 Worked Example 8 — Koko Eating Bananas</h2>
+  <p><strong>Đề (LeetCode #875):</strong> Koko có <code>piles[i]</code> chuối ở đống thứ i. Mỗi giờ ăn k quả từ một đống (nếu đống &lt; k, chỉ ăn hết đống). Bảo vệ về sau h giờ. Tìm <code>k</code> nhỏ nhất để ăn hết trước khi bảo vệ về.</p>
+  <h3>Phân tích</h3>
+  <ul>
+    <li><strong>Answer space</strong>: <code>k ∈ [1, max(piles)]</code> — không cần lớn hơn max.</li>
+    <li><strong>can_do(k)</strong>: tổng giờ với tốc độ k = <code>sum(ceil(p / k) for p in piles)</code>; can_do = (total ≤ h).</li>
+    <li><strong>Monotonicity</strong>: k tăng → tổng giờ giảm. Predicate from F → F → ... → T → T → ...</li>
+  </ul>
+  <pre><code>import math
+def minEatingSpeed(piles, h):
+    def can_do(k):
+        return sum(math.ceil(p / k) for p in piles) &lt;= h
+
+    low, high = 1, max(piles)
+    while low &lt; high:
+        mid = (low + high) // 2
+        if can_do(mid):
+            high = mid
+        else:
+            low = mid + 1
+    return low</code></pre>
+  <p>Time <strong>O(n log(max(piles)))</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 4.4 ===== -->
+<div class="slide">
+  <div class="slide-number">4.4</div>
+  <h2>4.4 Koko — Trace</h2>
+  <p><code>piles = [3, 6, 7, 11]</code>, <code>h = 8</code>. Kỳ vọng: 4.</p>
+  <p>Answer space: [1, 11].</p>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>low</th><th>high</th><th>mid</th><th>Tổng giờ với k=mid</th><th>can_do?</th><th>Hành động</th></tr>
+    <tr><td>1</td><td>1</td><td>11</td><td>6</td><td>1+1+2+2 = 6</td><td>6 ≤ 8 ✓</td><td>high=6</td></tr>
+    <tr><td>2</td><td>1</td><td>6</td><td>3</td><td>1+2+3+4 = 10</td><td>10 ≤ 8 ✗</td><td>low=4</td></tr>
+    <tr><td>3</td><td>4</td><td>6</td><td>5</td><td>1+2+2+3 = 8</td><td>8 ≤ 8 ✓</td><td>high=5</td></tr>
+    <tr><td>4</td><td>4</td><td>5</td><td>4</td><td>1+2+2+3 = 8</td><td>8 ≤ 8 ✓</td><td>high=4</td></tr>
+    <tr><td>—</td><td>4</td><td>4</td><td>—</td><td>—</td><td>—</td><td>thoát, trả 4</td></tr>
+  </table>
+  <p>Kết quả: k = 4. Chỉ tốn ~log₂(11) ≈ 4 lần can_do call.</p>
+</div>
+
+<!-- ===== SLIDE 4.5 ===== -->
+<div class="slide">
+  <div class="slide-number">4.5</div>
+  <h2>4.5 Worked Example 9 — Capacity to Ship Packages Within D Days</h2>
+  <p><strong>Đề (LeetCode #1011):</strong> Mảng <code>weights</code>, số ngày <code>days</code>. Tàu phải chở hàng theo thứ tự, mỗi ngày chở liên tiếp. Tìm capacity nhỏ nhất.</p>
+  <h3>Phân tích</h3>
+  <ul>
+    <li><strong>Answer space</strong>: <code>cap ∈ [max(weights), sum(weights)]</code>. Cận dưới phải ≥ max(weights) (kẻo không chở được 1 món); cận trên = sum (chở hết trong 1 ngày).</li>
+    <li><strong>can_do(cap)</strong>: greedy — chia mảng thành đoạn liên tiếp có tổng ≤ cap; can_do = (số đoạn ≤ days).</li>
+  </ul>
+  <pre><code>def shipWithinDays(weights, days):
+    def can_do(cap):
+        d = 1
+        cur = 0
+        for w in weights:
+            if cur + w &gt; cap:
+                d += 1
+                cur = 0
+            cur += w
+        return d &lt;= days
+
+    low, high = max(weights), sum(weights)
+    while low &lt; high:
+        mid = (low + high) // 2
+        if can_do(mid):
+            high = mid
+        else:
+            low = mid + 1
+    return low</code></pre>
+  <p>Time <strong>O(n log(sum))</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 4.6 ===== -->
+<div class="slide">
+  <div class="slide-number">4.6</div>
+  <h2>4.6 Worked Example 10 — Median of Two Sorted Arrays (Hard)</h2>
+  <p><strong>Đề (LeetCode #4, Hard):</strong> Hai mảng sort <code>nums1</code>, <code>nums2</code> tổng size n+m. Tìm median.
+  <strong>Yêu cầu O(log(n+m)).</strong></p>
+  <h3>Ý tưởng — BS trên "đường chia"</h3>
+  <p>Đặt <code>i</code> là số phần tử lấy từ nums1 cho nửa trái. Khi đó <code>j = (n+m+1)/2 − i</code> phần tử từ nums2.
+  Cần tìm i sao cho <code>nums1[i-1] ≤ nums2[j]</code> và <code>nums2[j-1] ≤ nums1[i]</code> — đảm bảo nửa trái ≤ nửa phải.</p>
+  <pre><code>def findMedianSortedArrays(A, B):
+    if len(A) &gt; len(B): A, B = B, A         # đảm bảo BS trên array nhỏ
+    n, m = len(A), len(B)
+    half = (n + m + 1) // 2
+    low, high = 0, n
+    while low &lt;= high:
+        i = (low + high) // 2
+        j = half - i
+        Aleft  = A[i-1] if i &gt; 0 else float('-inf')
+        Aright = A[i]   if i &lt; n else float('inf')
+        Bleft  = B[j-1] if j &gt; 0 else float('-inf')
+        Bright = B[j]   if j &lt; m else float('inf')
+        if Aleft &lt;= Bright and Bleft &lt;= Aright:
+            if (n + m) % 2:
+                return max(Aleft, Bleft)
+            return (max(Aleft, Bleft) + min(Aright, Bright)) / 2
+        elif Aleft &gt; Bright:
+            high = i - 1
+        else:
+            low = i + 1</code></pre>
+</div>
+
+<!-- ===== SLIDE 4.7 ===== -->
+<div class="slide">
+  <div class="slide-number">4.7</div>
+  <h2>4.7 Median of Two Sorted Arrays — Phân tích</h2>
+  <h3>Vì sao BS trên array nhỏ?</h3>
+  <p>Để đảm bảo <code>j = half − i</code> luôn hợp lệ (≥ 0). Nếu n &lt; m, biên của i ∈ [0, n] hẹp hơn ⟹ j ≥ 0 luôn được đảm bảo.</p>
+  <h3>Trực giác đường chia</h3>
+  <p>Hình dung "đường thẳng" chia mảng tổng thành 2 nửa bằng nhau. Đường này đi qua nums1 ở vị trí <code>i</code> và nums2 ở vị trí <code>j</code>.
+  Median sẽ ở chính giữa khi:</p>
+  $$ \max(\text{Aleft}, \text{Bleft}) \leq \min(\text{Aright}, \text{Bright}) $$
+  <h3>Vì sao "+1" trong half?</h3>
+  <p><code>(n + m + 1) // 2</code> đảm bảo nửa trái có ≥ nửa phải 0 hoặc 1 phần tử. Khi tổng lẻ, median = max nửa trái.
+  Khi tổng chẵn, median = average của max nửa trái và min nửa phải.</p>
+  <p>Time <strong>O(log min(n, m))</strong>. Đây là một trong những bài Hard kinh điển nhất — sinh viên hiểu được = đã làm chủ BS.</p>
+  <div class="key-point">
+    <div class="key-point-label">Lời khuyên:</div>
+    Đừng tự code bài này từ đầu trong phỏng vấn. Hãy giải thích ý tưởng đường chia, viết code khung, và trao đổi
+    với phỏng vấn viên về các edge case. Bài này test "thinking process" hơn là "memorisation".
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.Q</div>
+  <h2>Knowledge Check — BS on Answer Space</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Parametric BS, điều kiện gì PHẢI có để pattern hoạt động?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Mảng đã sort</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Predicate <code>can_do(X)</code> monoton — F→F→...→T→T (hoặc ngược lại)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Answer space phải nhỏ</button>
+    <div class="quiz-explanation">Đây là điều kiện then chốt. Không có monoton thì không thể "loại bỏ một nửa" — pattern không áp dụng. Verify monoton là bước quan trọng nhất khi thiết kế parametric BS.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Capacity to Ship Packages, vì sao <code>low = max(weights)</code> chứ không phải 1?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để chạy nhanh hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Vì nếu cap &lt; max(weights) thì không thể chở được phần tử nặng nhất → can_do luôn False</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì max là answer</button>
+    <div class="quiz-explanation">Biên answer space phải hợp lý. Cap nhỏ hơn max(weights) là vô lý → loại bỏ trước. Đây là kỹ năng "tighten the search space" — quan trọng để BS chạy nhanh và đúng.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Trong Median of Two Sorted Arrays, vì sao luôn BS trên mảng NHỎ hơn?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để giảm time complexity</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để đảm bảo <code>j = half − i</code> luôn ≥ 0 và ≤ m</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì mảng nhỏ dễ debug</button>
+    <div class="quiz-explanation">Khi n ≤ m và i ∈ [0, n], j = half − i luôn hợp lệ. Nếu BS trên mảng lớn hơn, j có thể âm hoặc vượt biên → bug. Đây là edge case dễ quên nhất của bài.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5 ===== -->
+<div class="slide section-divider">
+  <h1>Phần 5. Tổng hợp</h1>
+  <div class="subtitle">Decision tree và bài về nhà</div>
+</div>
+
+<!-- ===== SLIDE 5.1 ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 Decision Tree — Khi nào dùng Binary Search?</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Biến thể BS</th></tr>
+    <tr><td>"Mảng sort, tìm phần tử"</td><td>Classic BS</td></tr>
+    <tr><td>"Vị trí đầu/cuối", "đếm số lần"</td><td>Lower/Upper bound</td></tr>
+    <tr><td>"Vị trí chèn"</td><td>Lower bound</td></tr>
+    <tr><td>"Mảng rotated", "tìm peak"</td><td>BS trên monotonicity cục bộ</td></tr>
+    <tr><td>"Sqrt(x)", "căn bậc k"</td><td>BS trên answer space [0, x]</td></tr>
+    <tr><td>"Min X sao cho có thể Y"</td><td>Parametric BS</td></tr>
+    <tr><td>"Constraint n ≤ 10⁹"</td><td>BS trên answer space (gần như chắc chắn)</td></tr>
+    <tr><td>"Median of two sorted arrays"</td><td>BS trên đường chia</td></tr>
+  </table>
+  <h3>Ba câu hỏi check trước khi code</h3>
+  <ol>
+    <li>Không gian tìm kiếm là gì? (mảng / answer space / 2D matrix)</li>
+    <li>Predicate monoton như thế nào? (F→T hay T→F?)</li>
+    <li>Biên low/high tighten đến mức nào hợp lý?</li>
+  </ol>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>Tổng kết Tuần 7</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>Template chuẩn half-open</strong> — một template cho mọi bài, tránh off-by-one.</li>
+    <li><strong>Lower/Upper bound</strong> — kỹ thuật cốt lõi để đếm và tìm boundary.</li>
+    <li><strong>BS trên rotated array</strong> — quan sát "luôn có 1 nửa sort"; mở rộng đến Find Peak (monotonicity cục bộ).</li>
+    <li><strong>Parametric BS / BS on Answer Space</strong> — pattern then chốt cho phỏng vấn senior;
+    biến bài "tối ưu" thành bài "kiểm tra".</li>
+    <li><strong>Boss-level</strong>: Median of Two Sorted Arrays — BS trên đường chia.</li>
+    <li><strong>Tín hiệu mạnh</strong>: constraint <code>n ≤ 10⁹</code> hoặc cụm "min X sao cho có thể Y" → BS.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #704 — Binary Search</li>
+    <li>LeetCode #34 — Find First and Last Position</li>
+    <li>LeetCode #35 — Search Insert Position</li>
+    <li>LeetCode #69 — Sqrt(x)</li>
+    <li>LeetCode #33 — Search in Rotated Sorted Array</li>
+    <li>LeetCode #153 — Find Minimum in Rotated Sorted Array</li>
+    <li>LeetCode #162 — Find Peak Element</li>
+    <li>LeetCode #875 — Koko Eating Bananas</li>
+    <li>LeetCode #1011 — Capacity to Ship Packages Within D Days</li>
+    <li>LeetCode #410 — Split Array Largest Sum (parametric BS)</li>
+    <li>LeetCode #4 — Median of Two Sorted Arrays (Hard)</li>
+    <li>LeetCode #74 — Search a 2D Matrix</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 8 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>Recursion &amp; Tree — DFS, Tree Traversal, Divide &amp; Conquer</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Cấu trúc cây và đệ quy đi đôi với nhau. Học ba phép duyệt (preorder, inorder, postorder),
+    pattern "đệ quy trả về thông tin tổng hợp", áp dụng vào bài như Maximum Depth, Diameter, Lowest Common Ancestor,
+    Path Sum. Kỹ thuật Divide &amp; Conquer (Merge Sort, Quick Sort) cũng được giới thiệu để chuẩn bị
+    cho Tuần 9 (Heap) và Tuần 12 (DP).
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 7 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>

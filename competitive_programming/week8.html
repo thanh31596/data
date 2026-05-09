@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 8 — Recursion &amp; Tree</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 8</div>
+  <h1>Recursion &amp; Tree</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Đệ quy là ngôn ngữ tự nhiên của cây. Học cách "tin tưởng" vào lời gọi đệ quy con
+    (leap of faith), thiết kế trả về thông tin tổng hợp, và áp dụng Divide &amp; Conquer.
+  </p>
+  <div class="meta">10 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng Recursion</h1>
+  <div class="subtitle">Cách tư duy đúng đắn về đệ quy — không phải "tự gọi mình"</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Recursion là gì?</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa:</div>
+    Hàm đệ quy giải bài toán bằng cách <em>quy bài toán hiện tại về một hoặc nhiều bài toán <strong>nhỏ hơn</strong>
+    của cùng cấu trúc</em>, cho đến khi chạm một <strong>base case</strong> không cần đệ quy nữa.
+  </div>
+  <h3>Hai thành phần bắt buộc</h3>
+  <ol>
+    <li><strong>Base case</strong> — điều kiện dừng. Ví dụ: <code>n == 0</code>, <code>node is None</code>.</li>
+    <li><strong>Recursive case</strong> — quy về bài nhỏ hơn. Ví dụ: <code>fib(n-1) + fib(n-2)</code>.</li>
+  </ol>
+  <p>Nếu <em>thiếu base case</em> → vô tận, stack overflow. Nếu <em>recursive case</em> không thực sự nhỏ hơn → cũng vô tận.</p>
+  <h3>Ví dụ kinh điển</h3>
+  <pre><code>def factorial(n):
+    if n &lt;= 1: return 1            # base case
+    return n * factorial(n - 1)    # recursive case — gọi với n nhỏ hơn</code></pre>
+  <p>Hai dòng — toàn bộ định nghĩa giai thừa.</p>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Cách suy nghĩ đúng — "Leap of Faith"</h2>
+  <p>Đa số sinh viên thất bại với đệ quy vì cố <em>theo dấu</em> mọi lời gọi trong đầu. Đó là sai lầm.</p>
+  <div class="key-point">
+    <div class="key-point-label">Triết lý đúng:</div>
+    <strong>Tin tưởng rằng lời gọi đệ quy con sẽ trả về kết quả đúng.</strong> Việc của em chỉ là:
+    <br>(1) Viết base case đúng.
+    <br>(2) Giả định lời gọi con đã đúng — kết hợp kết quả của chúng để giải bài hiện tại.
+    Nếu cả hai đúng, đệ quy <em>tự động</em> đúng.
+  </div>
+  <h3>Ví dụ — Tổng node trong cây</h3>
+  <pre><code>def total(root):
+    if not root: return 0                          # base
+    return root.val + total(root.left) + total(root.right)
+    # Tin rằng total(root.left) trả tổng cây con trái — không cần lo cách nó tính</code></pre>
+  <p>Đừng cố hình dung "total đi đến đâu rồi quay lại". Hãy nghĩ: "Nếu hai cây con có tổng đúng, tổng cả cây = root + tổng trái + tổng phải".</p>
+  <p>Đây là kỹ năng quan trọng nhất của tuần. Khi nắm được, mọi bài tree trở nên dễ.</p>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Recursion vs Iteration</h2>
+  <table>
+    <tr><th>Aspect</th><th>Recursion</th><th>Iteration</th></tr>
+    <tr><td>Đọc / viết</td><td>Tự nhiên cho cấu trúc cây, đệ quy</td><td>Tự nhiên cho mảng, vòng lặp tuần tự</td></tr>
+    <tr><td>Space</td><td>O(depth) — call stack</td><td>O(1) thường</td></tr>
+    <tr><td>Performance</td><td>Có overhead gọi hàm</td><td>Nhanh hơn ~2-3 lần thường</td></tr>
+    <tr><td>Stack overflow</td><td>Có thể với đệ quy sâu (n &gt; 10⁴)</td><td>Không bao giờ</td></tr>
+    <tr><td>Tail call optimisation</td><td>Python KHÔNG có (khác Scheme/Haskell)</td><td>—</td></tr>
+  </table>
+  <h3>Khi nào ưu tiên cái nào?</h3>
+  <ul>
+    <li><strong>Recursion</strong>: cây, đồ thị, divide &amp; conquer, backtracking — đệ quy là ngôn ngữ tự nhiên.</li>
+    <li><strong>Iteration</strong>: array, sliding window, pattern tuần tự — đơn giản và an toàn về stack.</li>
+  </ul>
+  <p>Trong phỏng vấn, nếu được hỏi cả hai cách (như Reverse Linked List ở Tuần 5), nên biết để đáp ứng.</p>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Bốn bẫy đệ quy thường gặp</h2>
+  <ol>
+    <li><strong>Quên / sai base case.</strong> Chương trình chạy mãi → RecursionError. Luôn xử lý <code>None</code>, mảng rỗng, n = 0/1.</li>
+
+    <li><strong>Lời gọi không "nhỏ hơn".</strong>
+    <pre><code># SAI — n không nhỏ đi
+def f(n):
+    if n == 0: return 0
+    return f(n) + 1   # vô tận!</code></pre></li>
+
+    <li><strong>Đệ quy ngây thơ với lời gọi lặp.</strong> Fibonacci kiểu O(2ⁿ) → cực chậm. Cần memoisation (Tuần 12).</li>
+
+    <li><strong>Mutate biến shared.</strong>
+    <pre><code># Bài Path Sum II — backtracking với list
+def dfs(node, path):
+    path.append(node.val)
+    ...
+    # QUÊN path.pop() ở cuối → các nhánh sau bị "ô nhiễm"</code></pre>
+    Sẽ đào sâu ở Tuần 11 (Backtracking).</li>
+  </ol>
+  <p>Python mặc định giới hạn đệ quy ~1000. Tăng bằng <code>sys.setrecursionlimit(10000)</code> nếu cần.</p>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Nền tảng Tree</h1>
+  <div class="subtitle">TreeNode, ba phép duyệt, level-order</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 TreeNode trong Python</h2>
+  <pre><code>class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right</code></pre>
+  <h3>Các loại tree quan trọng</h3>
+  <ul>
+    <li><strong>Binary Tree</strong>: mỗi node có ≤ 2 con. Không ràng buộc thêm.</li>
+    <li><strong>Binary Search Tree (BST)</strong>: với mọi node, <em>tất cả</em> giá trị bên trái &lt; root.val, bên phải &gt; root.val.</li>
+    <li><strong>Balanced Tree</strong>: chiều cao trái và phải khác nhau ≤ 1 với mọi node. Đảm bảo O(log n) operations.</li>
+    <li><strong>Complete Tree</strong>: mọi level đầy, trừ level cuối lấp từ trái.</li>
+    <li><strong>Full Tree</strong>: mỗi node có đúng 0 hoặc 2 con.</li>
+  </ul>
+  <div class="key-point">
+    <div class="key-point-label">Lưu ý:</div>
+    BST cho phép operations O(log n) trung bình — nhưng worst case O(n) nếu cây bị skewed.
+    Để đảm bảo O(log n) mọi trường hợp, cần balanced BST (AVL, Red-Black). LeetCode hiếm khi yêu cầu cài balanced từ đầu.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Ba phép duyệt — Trực quan</h2>
+  <div class="illustration">
+    <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#1a1a1a" fill="#f8f9fa">
+        <circle cx="300" cy="40" r="22"/>
+        <circle cx="220" cy="110" r="22"/>
+        <circle cx="380" cy="110" r="22"/>
+        <circle cx="170" cy="180" r="22"/>
+        <circle cx="270" cy="180" r="22"/>
+        <circle cx="430" cy="180" r="22"/>
+      </g>
+      <text x="300" y="46" font-size="16" text-anchor="middle">1</text>
+      <text x="220" y="116" font-size="16" text-anchor="middle">2</text>
+      <text x="380" y="116" font-size="16" text-anchor="middle">3</text>
+      <text x="170" y="186" font-size="16" text-anchor="middle">4</text>
+      <text x="270" y="186" font-size="16" text-anchor="middle">5</text>
+      <text x="430" y="186" font-size="16" text-anchor="middle">6</text>
+      <line x1="285" y1="55" x2="235" y2="95" stroke="#1a1a1a"/>
+      <line x1="315" y1="55" x2="365" y2="95" stroke="#1a1a1a"/>
+      <line x1="208" y1="125" x2="180" y2="165" stroke="#1a1a1a"/>
+      <line x1="232" y1="125" x2="260" y2="165" stroke="#1a1a1a"/>
+      <line x1="392" y1="125" x2="420" y2="165" stroke="#1a1a1a"/>
+    </svg>
+  </div>
+  <table>
+    <tr><th>Phép duyệt</th><th>Thứ tự</th><th>Kết quả trên ví dụ</th></tr>
+    <tr><td><strong>Preorder</strong></td><td>Root → Left → Right</td><td>1, 2, 4, 5, 3, 6</td></tr>
+    <tr><td><strong>Inorder</strong></td><td>Left → Root → Right</td><td>4, 2, 5, 1, 3, 6</td></tr>
+    <tr><td><strong>Postorder</strong></td><td>Left → Right → Root</td><td>4, 5, 2, 6, 3, 1</td></tr>
+    <tr><td><strong>Level-order</strong></td><td>Theo mức (BFS)</td><td>1, 2, 3, 4, 5, 6</td></tr>
+  </table>
+  <p><strong>Tính chất quan trọng:</strong> Inorder của BST cho ra sequence sort tăng dần — dùng để verify BST hoặc tìm phần tử thứ k nhỏ nhất.</p>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Code ba phép duyệt</h2>
+  <h3>Recursive — gọn nhất</h3>
+  <pre><code>def preorder(root):
+    if not root: return
+    print(root.val)         # xử lý ROOT
+    preorder(root.left)
+    preorder(root.right)
+
+def inorder(root):
+    if not root: return
+    inorder(root.left)
+    print(root.val)         # xử lý ROOT giữa
+    inorder(root.right)
+
+def postorder(root):
+    if not root: return
+    postorder(root.left)
+    postorder(root.right)
+    print(root.val)         # xử lý ROOT cuối</code></pre>
+  <h3>Iterative Inorder — dùng stack (kinh điển)</h3>
+  <pre><code>def inorder(root):
+    stack, cur = [], root
+    while cur or stack:
+        while cur:
+            stack.append(cur)        # đi sâu nhất bên trái
+            cur = cur.left
+        cur = stack.pop()
+        print(cur.val)
+        cur = cur.right</code></pre>
+  <p>Time <strong>O(n)</strong> cho mọi phép duyệt; Space <strong>O(h)</strong> với h = chiều cao.</p>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Level-order Traversal — BFS với Queue</h2>
+  <p>Thay vì DFS, đôi khi cần duyệt theo từng tầng (level). Dùng <code>deque</code> như queue:</p>
+  <pre><code>from collections import deque
+def levelOrder(root):
+    if not root: return []
+    res = []
+    q = deque([root])
+    while q:
+        level = []
+        for _ in range(len(q)):                # snapshot kích thước hiện tại
+            node = q.popleft()
+            level.append(node.val)
+            if node.left: q.append(node.left)
+            if node.right: q.append(node.right)
+        res.append(level)
+    return res</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Mẹo "snapshot len(q)":</div>
+    Vòng <code>for _ in range(len(q))</code> đóng băng kích thước queue trước khi vòng lặp bắt đầu →
+    đảm bảo chỉ xử lý các node cùng level. Nếu không snapshot, queue sẽ tăng lên trong khi lặp → sai logic.
+    Pattern này xuất hiện ở mọi bài "level-by-level".
+  </div>
+  <p>Áp dụng: Right Side View, Zigzag Traversal, Average of Levels, Connect Next Right Pointers.</p>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. DFS Patterns trên Tree</h1>
+  <div class="subtitle">Top-down vs Bottom-up — hai cách tư duy đệ quy</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Top-down vs Bottom-up DFS</h2>
+  <table>
+    <tr><th>Aspect</th><th>Top-down</th><th>Bottom-up</th></tr>
+    <tr><td>Hướng truyền</td><td>Root → Leaf (truyền tham số xuống)</td><td>Leaf → Root (trả giá trị lên)</td></tr>
+    <tr><td>Khi nào dùng?</td><td>Cần biết "đường đi từ root đến node hiện tại"</td><td>Cần tổng hợp thông tin từ cây con</td></tr>
+    <tr><td>Cú pháp</td><td>Hàm phụ với tham số tích luỹ</td><td>Return value từ đệ quy</td></tr>
+    <tr><td>Ví dụ</td><td>Path Sum, Same Tree, Validate BST</td><td>Maximum Depth, Diameter, LCA</td></tr>
+  </table>
+  <h3>Top-down — mẫu</h3>
+  <pre><code>def helper(node, accumulated_info):
+    if not node: return
+    new_info = combine(accumulated_info, node.val)
+    helper(node.left, new_info)
+    helper(node.right, new_info)</code></pre>
+  <h3>Bottom-up — mẫu</h3>
+  <pre><code>def helper(node):
+    if not node: return base_value
+    left_info = helper(node.left)
+    right_info = helper(node.right)
+    return combine(node.val, left_info, right_info)</code></pre>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Worked Example 1 — Maximum Depth (Bottom-up)</h2>
+  <p><strong>Đề (LeetCode #104):</strong> Cho root của cây nhị phân. Tìm chiều sâu lớn nhất (số node trên đường dài nhất từ root đến leaf).</p>
+  <pre><code>def maxDepth(root):
+    if not root: return 0                  # base — cây rỗng có chiều sâu 0
+    left = maxDepth(root.left)             # tin: trả đúng chiều sâu cây con trái
+    right = maxDepth(root.right)
+    return 1 + max(left, right)            # 1 (cho root hiện tại) + chiều sâu lớn hơn của 2 con</code></pre>
+  <h3>Trace với cây ở slide 2.2</h3>
+  <ul>
+    <li><code>maxDepth(4) = 1 + max(0, 0) = 1</code></li>
+    <li><code>maxDepth(5) = 1 + max(0, 0) = 1</code></li>
+    <li><code>maxDepth(6) = 1 + max(0, 0) = 1</code></li>
+    <li><code>maxDepth(2) = 1 + max(1, 1) = 2</code></li>
+    <li><code>maxDepth(3) = 1 + max(0, 1) = 2</code></li>
+    <li><code>maxDepth(1) = 1 + max(2, 2) = 3</code> ✓</li>
+  </ul>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(h)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Tinh thần leap of faith:</div>
+    Khi tính <code>maxDepth(1)</code>, ta <em>không cần</em> đi vào chi tiết maxDepth(2) hay maxDepth(3) hoạt động như thế nào.
+    Tin rằng chúng đúng — và ráp lại theo công thức.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Worked Example 2 — Same Tree (Top-down)</h2>
+  <p><strong>Đề (LeetCode #100):</strong> Cho hai cây <code>p</code>, <code>q</code>. Trả True nếu cấu trúc và giá trị giống nhau.</p>
+  <pre><code>def isSameTree(p, q):
+    if not p and not q: return True             # cả hai rỗng → đúng
+    if not p or not q: return False             # một rỗng → sai
+    if p.val != q.val: return False             # giá trị khác → sai
+    return (isSameTree(p.left, q.left)
+            and isSameTree(p.right, q.right))</code></pre>
+  <p>Time <strong>O(n)</strong> với n = số node của cây nhỏ hơn (dừng sớm khi khác); Space <strong>O(h)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Đặc trưng top-down:</div>
+    Hàm <em>không trả về thông tin tổng hợp</em> mà <em>truyền cặp node song song</em> từ trên xuống.
+    Đây là pattern chuẩn cho bài "so sánh hai cây": Same Tree, Symmetric Tree, Subtree of Another Tree.
+  </div>
+  <h3>Cách viết khác — gộp base case</h3>
+  <pre><code>def isSameTree(p, q):
+    if not p or not q: return p is q            # hai cùng None → True; một None → False
+    return p.val == q.val and \
+           isSameTree(p.left, q.left) and \
+           isSameTree(p.right, q.right)</code></pre>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Worked Example 3 — Symmetric Tree</h2>
+  <p><strong>Đề (LeetCode #101):</strong> Trả True nếu cây đối xứng qua trục giữa.</p>
+  <h3>Quan sát</h3>
+  <p>Cây đối xứng ⟺ cây con trái và cây con phải <em>là phản chiếu</em> của nhau:</p>
+  <ul>
+    <li>Trái của trái = Phải của phải.</li>
+    <li>Phải của trái = Trái của phải.</li>
+  </ul>
+  <pre><code>def isSymmetric(root):
+    def mirror(a, b):
+        if not a and not b: return True
+        if not a or not b: return False
+        return (a.val == b.val
+                and mirror(a.left, b.right)
+                and mirror(a.right, b.left))
+    return mirror(root.left, root.right) if root else True</code></pre>
+  <p>Cùng tinh thần Same Tree, nhưng so sánh <em>chéo</em> thay vì cùng phía.</p>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(h)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.5 ===== -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 Worked Example 4 — Invert Binary Tree</h2>
+  <p><strong>Đề (LeetCode #226):</strong> Đổi <code>left</code> và <code>right</code> tại mọi node.</p>
+  <pre><code>def invertTree(root):
+    if not root: return None
+    root.left, root.right = invertTree(root.right), invertTree(root.left)
+    return root</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(h)</strong>.</p>
+  <h3>Phân tích — Tinh thần "leap of faith" tột bậc</h3>
+  <p>Một dòng để invert. Tại sao đúng?</p>
+  <ul>
+    <li><code>invertTree(root.left)</code> trả về cây con trái <em>đã được đảo</em>.</li>
+    <li><code>invertTree(root.right)</code> trả về cây con phải <em>đã được đảo</em>.</li>
+    <li>Gán chéo → cây hiện tại được đảo.</li>
+  </ul>
+  <div class="key-point">
+    <div class="key-point-label">Bài học:</div>
+    Khi tin tưởng đệ quy, bài Invert Tree từ "khó" trở thành 1 dòng. Nếu cố theo dấu thì rất rối.
+    Đây là minh chứng tinh thần "leap of faith" mạnh nhất.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — DFS Patterns</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Pattern nào phù hợp khi cần "tổng hợp thông tin từ các cây con để tính cho node hiện tại"?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Top-down</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Bottom-up</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) BFS</button>
+    <div class="quiz-explanation">Bottom-up: gọi đệ quy con trước, lấy kết quả, kết hợp tại node hiện tại. Maximum Depth, Diameter, sum tổng đều theo pattern này. Top-down ngược lại — truyền thông tin xuống.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Tính chất nào của Inorder Traversal trên BST quan trọng?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Cho ra dãy phân tán</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Cho ra dãy sort tăng dần</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Cho ra dãy reverse</button>
+    <div class="quiz-explanation">Vì BST có "trái &lt; root &lt; phải", inorder (Left → Root → Right) cho dãy tăng dần. Tính chất này dùng để verify BST, tìm phần tử thứ k nhỏ nhất, hoặc convert BST sang sorted list.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Trong Level-order BFS, vì sao cần <code>for _ in range(len(q))</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để tăng tốc</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để snapshot kích thước queue, đảm bảo chỉ xử lý các node cùng level</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì queue có thể rỗng</button>
+    <div class="quiz-explanation">Trong khi xử lý level k, queue được thêm các node level k+1. Nếu không snapshot, vòng lặp sẽ ăn lan sang level sau → mất ranh giới level. Pattern <code>for _ in range(len(q))</code> giải quyết.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Information Aggregation Pattern</h1>
+  <div class="subtitle">Đệ quy trả về thông tin tổng hợp — pattern then chốt cho bài tree khó</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Pattern: Đệ quy trả về thông tin tổng hợp</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình tổng quát:</div>
+    Khi bài cần tính một thuộc tính phức tạp tại mỗi node, đệ quy trả về <em>nhiều giá trị</em>:
+    <strong>(thông tin chính cần truyền lên, kết quả đáp án phụ tới điểm này)</strong>.
+  </div>
+  <h3>Khi nào áp dụng?</h3>
+  <ul>
+    <li>Cần biết "chiều sâu cây con" + cập nhật "đường dài nhất qua tổng cây".</li>
+    <li>Cần biết "max gain qua node" + cập nhật "max path sum".</li>
+    <li>Cần verify thuộc tính (BST) + truyền biên (min, max) qua các con.</li>
+  </ul>
+  <p>Pattern này xuất hiện ở: Diameter, Max Path Sum, Validate BST, House Robber III. Đây là pattern đặc trưng của bài tree Medium/Hard.</p>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Worked Example 5 — Diameter of Binary Tree</h2>
+  <p><strong>Đề (LeetCode #543):</strong> Diameter = số <em>cạnh</em> trên đường dài nhất giữa hai node bất kỳ. Đường có thể không đi qua root.</p>
+  <h3>Quan sát then chốt</h3>
+  <p>Đường dài nhất qua node X có cấu trúc: <code>nhánh trái sâu nhất + node X + nhánh phải sâu nhất</code> = <code>depth(X.left) + depth(X.right)</code>.</p>
+  <p>Đáp án = max của tổng này qua mọi node.</p>
+  <pre><code>def diameterOfBinaryTree(root):
+    diameter = 0
+    def depth(node):
+        nonlocal diameter
+        if not node: return 0
+        left = depth(node.left)
+        right = depth(node.right)
+        diameter = max(diameter, left + right)        # cập nhật ans
+        return 1 + max(left, right)                   # trả depth lên cha
+    depth(root)
+    return diameter</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(h)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 Diameter — Vì sao "split" tại node?</h2>
+  <p>Bài này minh hoạ rõ pattern <strong>"thông tin trả lên ≠ ans"</strong>:</p>
+  <ul>
+    <li><code>depth(node)</code> trả về chiều sâu — để cha dùng.</li>
+    <li><code>diameter</code> được cập nhật <em>như side effect</em> — đáp án thực sự.</li>
+  </ul>
+  <h3>Vì sao không thể trả "diameter" và truyền lên?</h3>
+  <p>Vì cha không thể "ghép" diameter của con trái với diameter của con phải để ra diameter của cha. Hai diameter của con có thể là đường <em>không đi qua node hiện tại</em>.</p>
+  <p>Cha chỉ cần biết "nhánh sâu nhất xuyên qua mỗi con" để tính đường mới qua chính cha.</p>
+  <div class="key-point">
+    <div class="key-point-label">Mẫu chuẩn:</div>
+    <ol>
+      <li>Đệ quy trả về thông tin <em>cha cần</em> để tính tiếp.</li>
+      <li>Trong thân đệ quy, cập nhật ans như "ứng viên qua node hiện tại".</li>
+      <li>Ans cuối = max/min qua mọi node — dùng <code>nonlocal</code> hoặc instance variable.</li>
+    </ol>
+    Pattern này áp dụng cho 80% bài tree Medium/Hard.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4.4 ===== -->
+<div class="slide">
+  <div class="slide-number">4.4</div>
+  <h2>4.4 Worked Example 6 — Path Sum I &amp; II</h2>
+  <p><strong>Đề Path Sum (LeetCode #112):</strong> Trả True nếu có đường từ root đến leaf có tổng = target.</p>
+  <pre><code>def hasPathSum(root, target):
+    if not root: return False
+    if not root.left and not root.right:           # leaf
+        return root.val == target
+    remain = target - root.val
+    return (hasPathSum(root.left, remain)
+            or hasPathSum(root.right, remain))</code></pre>
+  <p>Top-down — truyền <code>remain</code> xuống.</p>
+  <h3>Path Sum II (#113) — liệt kê mọi đường</h3>
+  <pre><code>def pathSum(root, target):
+    res = []
+    def dfs(node, remain, path):
+        if not node: return
+        path.append(node.val)
+        if not node.left and not node.right and remain == node.val:
+            res.append(path[:])                    # COPY path!
+        dfs(node.left, remain - node.val, path)
+        dfs(node.right, remain - node.val, path)
+        path.pop()                                 # backtrack
+    dfs(root, target, [])
+    return res</code></pre>
+  <p>Time <strong>O(n²)</strong> worst (mỗi đường có thể dài O(n), copy O(n)). Bẫy: quên <code>path.pop()</code>
+  hoặc quên <code>path[:]</code> để copy. Sẽ học sâu ở Tuần 11.</p>
+</div>
+
+<!-- ===== SLIDE 4.5 ===== -->
+<div class="slide">
+  <div class="slide-number">4.5</div>
+  <h2>4.5 Worked Example 7 — Lowest Common Ancestor</h2>
+  <p><strong>Đề (LeetCode #236):</strong> Cho cây và hai node <code>p</code>, <code>q</code>. Tìm tổ tiên chung thấp nhất.</p>
+  <pre><code>def lowestCommonAncestor(root, p, q):
+    if not root or root == p or root == q:
+        return root
+    left = lowestCommonAncestor(root.left, p, q)
+    right = lowestCommonAncestor(root.right, p, q)
+    if left and right: return root                 # p và q ở hai phía
+    return left if left else right                 # cả hai ở một phía</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(h)</strong>.</p>
+  <h3>Phân tích 4 case</h3>
+  <ol>
+    <li>Cả p và q ở cây con trái → <code>left ≠ None</code>, <code>right = None</code> → trả <code>left</code>.</li>
+    <li>Cả p và q ở cây con phải → tương tự → trả <code>right</code>.</li>
+    <li>Một ở trái, một ở phải → cả <code>left</code> và <code>right</code> ≠ None → root chính là LCA.</li>
+    <li>Root chính là p hoặc q → base case trả ngay.</li>
+  </ol>
+</div>
+
+<!-- ===== SLIDE 4.6 ===== -->
+<div class="slide">
+  <div class="slide-number">4.6</div>
+  <h2>4.6 LCA — Tinh thần và bẫy</h2>
+  <h3>Vì sao base case <code>root == p or root == q</code> đủ?</h3>
+  <p>Khi gặp p (hoặc q), trả về luôn — không cần tiếp tục đi sâu. Vì:</p>
+  <ul>
+    <li>Nếu q là hậu duệ của p → p chính là LCA. Trả p, hàm cha không tìm thấy q ở nhánh khác → trả p lên.</li>
+    <li>Nếu q không phải hậu duệ → ở nhánh khác. Hàm cha sẽ nhận left = p, right = q (hoặc ngược) → trả root cha.</li>
+  </ul>
+  <p>Đề bảo đảm p và q tồn tại — đó là điều kiện then chốt cho trick này hoạt động.</p>
+  <h3>Biến thể BST — đơn giản hơn</h3>
+  <pre><code>def lowestCommonAncestorBST(root, p, q):
+    while root:
+        if p.val &lt; root.val and q.val &lt; root.val:
+            root = root.left
+        elif p.val &gt; root.val and q.val &gt; root.val:
+            root = root.right
+        else:
+            return root        # phân kỳ → root là LCA</code></pre>
+  <p>Tận dụng tính chất BST: O(h) thay vì O(n). h = log n nếu cây balanced.</p>
+</div>
+
+<!-- ===== SLIDE 4.7 ===== -->
+<div class="slide">
+  <div class="slide-number">4.7</div>
+  <h2>4.7 Worked Example 8 — Validate Binary Search Tree</h2>
+  <p><strong>Đề (LeetCode #98):</strong> Cho root. Trả True nếu cây là BST hợp lệ.</p>
+  <h3>Bẫy phổ biến</h3>
+  <pre><code># SAI — chỉ check con trực tiếp, không check toàn cây con
+def isValidBST_WRONG(root):
+    if not root: return True
+    if root.left and root.left.val &gt;= root.val: return False
+    if root.right and root.right.val &lt;= root.val: return False
+    return isValidBST_WRONG(root.left) and isValidBST_WRONG(root.right)
+# Sai trên cây [5, 1, 4, null, null, 3, 6] — node 3 nhỏ hơn 5 nhưng nằm bên phải</code></pre>
+  <h3>Đúng — truyền biên (min, max)</h3>
+  <pre><code>def isValidBST(root):
+    def valid(node, low, high):
+        if not node: return True
+        if node.val &lt;= low or node.val &gt;= high:
+            return False
+        return (valid(node.left, low, node.val)
+                and valid(node.right, node.val, high))
+    return valid(root, float('-inf'), float('inf'))</code></pre>
+  <p>Top-down: truyền biên xuống. Mỗi khi đi trái, biên trên = root.val; đi phải, biên dưới = root.val.</p>
+  <h3>Cách 2 — In-order check</h3>
+  <p>Inorder của BST sort tăng → kiểm tra "phần tử trước &lt; phần tử hiện tại" qua từng bước inorder.</p>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.Q</div>
+  <h2>Knowledge Check — Information Aggregation</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Diameter of Binary Tree, vì sao hàm <code>depth</code> trả về chiều sâu, nhưng đáp án là <code>diameter</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì depth dễ tính hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Cha cần biết depth của con để tính tiếp; đường dài nhất qua node X (tại chính node) là side effect</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Diameter của con không hữu ích</button>
+    <div class="quiz-explanation">Pattern "thông tin truyền lên ≠ ans". Cha cần depth để tính chuỗi sâu nhất. Đáp án = max của <code>left + right</code> tại mỗi node — không thể "ghép" được nên cập nhật như side effect.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Bài Validate BST cần truyền biên (low, high) thay vì chỉ check con trực tiếp vì sao?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Vì BST yêu cầu MỌI node trong cây con trái &lt; root, không chỉ con trực tiếp</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Để code ngắn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để tăng tốc</button>
+    <div class="quiz-explanation">Định nghĩa BST: TẤT CẢ giá trị bên trái &lt; root.val. Check con trực tiếp bỏ sót cháu, chắt. Truyền biên đảm bảo mọi node trong cây con tuân thủ ràng buộc tích luỹ từ tổ tiên.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Trong Path Sum II, dòng <code>res.append(path[:])</code> có vai trò gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để code đẹp</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Tạo bản copy của path — vì path bị mutate ở các nhánh sau, không copy sẽ lưu reference đến list rỗng cuối</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để tăng tốc</button>
+    <div class="quiz-explanation">path là list mutable shared qua các đệ quy. Sau khi backtrack (path.pop()), path rỗng dần. Append <code>path[:]</code> tạo snapshot tại thời điểm hiện tại; append <code>path</code> lưu reference, sau cùng mọi entry đều trỏ tới list cuối (thường rỗng).</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 5. Divide &amp; Conquer</h1>
+  <div class="subtitle">Tinh thần đệ quy mở rộng cho mảng — Merge Sort, Quick Sort</div>
+</div>
+
+<!-- ===== SLIDE 5.1 ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 Pattern Divide &amp; Conquer</h2>
+  <div class="definition">
+    <div class="definition-label">Ba bước:</div>
+    <ol>
+      <li><strong>Divide</strong>: chia bài toán thành các bài con cùng cấu trúc, kích thước nhỏ hơn.</li>
+      <li><strong>Conquer</strong>: giải đệ quy các bài con (tin tưởng).</li>
+      <li><strong>Combine</strong>: ghép kết quả con lại để có đáp án cho bài lớn.</li>
+    </ol>
+  </div>
+  <h3>Master Theorem (sơ lược)</h3>
+  <p>Với <code>T(n) = a·T(n/b) + O(n^c)</code>:</p>
+  <ul>
+    <li>Nếu <code>c &gt; log_b(a)</code>: T(n) = O(n^c).</li>
+    <li>Nếu <code>c = log_b(a)</code>: T(n) = O(n^c · log n).</li>
+    <li>Nếu <code>c &lt; log_b(a)</code>: T(n) = O(n^(log_b a)).</li>
+  </ul>
+  <p>Ví dụ Merge Sort: <code>T(n) = 2·T(n/2) + O(n)</code> → a=2, b=2, c=1, log₂(2) = 1 → case giữa → <strong>O(n log n)</strong>.</p>
+  <p>Sinh viên không cần học thuộc Master Theorem — chỉ cần hiểu để giải thích tại sao Merge Sort là O(n log n).</p>
+</div>
+
+<!-- ===== SLIDE 5.2 ===== -->
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>5.2 Worked Example 9 — Merge Sort</h2>
+  <pre><code>def mergeSort(arr):
+    if len(arr) &lt;= 1: return arr               # base
+    mid = len(arr) // 2
+    left = mergeSort(arr[:mid])                # divide + conquer
+    right = mergeSort(arr[mid:])
+    return merge(left, right)                  # combine
+
+def merge(a, b):
+    res = []
+    i = j = 0
+    while i &lt; len(a) and j &lt; len(b):
+        if a[i] &lt;= b[j]:
+            res.append(a[i]); i += 1
+        else:
+            res.append(b[j]); j += 1
+    res.extend(a[i:]); res.extend(b[j:])
+    return res</code></pre>
+  <p>Time <strong>O(n log n)</strong>, Space <strong>O(n)</strong>.</p>
+  <h3>Tính chất</h3>
+  <ul>
+    <li><strong>Stable</strong>: phần tử bằng nhau giữ thứ tự gốc.</li>
+    <li><strong>Worst case = Average = Best</strong>: luôn O(n log n) — không phụ thuộc input.</li>
+    <li>Tốn O(n) bộ nhớ phụ — bất lợi so với Quick Sort.</li>
+  </ul>
+  <p>Đây là thuật toán <code>sorted</code> trong Python (Timsort = Merge Sort cải tiến).</p>
+</div>
+
+<!-- ===== SLIDE 5.3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.3</div>
+  <h2>5.3 Worked Example 10 — Quick Sort</h2>
+  <pre><code>def quickSort(arr, lo=0, hi=None):
+    if hi is None: hi = len(arr) - 1
+    if lo &lt; hi:
+        p = partition(arr, lo, hi)
+        quickSort(arr, lo, p - 1)
+        quickSort(arr, p + 1, hi)
+
+def partition(arr, lo, hi):
+    pivot = arr[hi]
+    i = lo - 1
+    for j in range(lo, hi):
+        if arr[j] &lt;= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    arr[i+1], arr[hi] = arr[hi], arr[i+1]
+    return i + 1</code></pre>
+  <h3>Tính chất</h3>
+  <ul>
+    <li><strong>Time</strong>: O(n log n) trung bình; O(n²) worst case (mảng đã sort, pivot kém).</li>
+    <li><strong>In-place</strong>: O(log n) space cho call stack.</li>
+    <li><strong>Không stable</strong>.</li>
+  </ul>
+  <h3>Mở rộng: Quick Select — tìm phần tử thứ k trong O(n) trung bình</h3>
+  <p>Áp dụng partition + đệ quy 1 phía. Là pattern quan trọng cho Top K Frequent (Tuần 9 — Heap có cách khác).</p>
+  <div class="key-point">
+    <div class="key-point-label">So sánh Merge vs Quick:</div>
+    Merge: stable, đảm bảo O(n log n), tốn space. Quick: in-place, average tốt nhưng worst kém. Trong phỏng vấn, biết khi nào ưu tiên cái nào là dấu hiệu chiều sâu.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.Q</div>
+  <h2>Knowledge Check — D&amp;C</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Vì sao Merge Sort luôn O(n log n) bất kể input?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Vì phép divide luôn chia đôi; combine luôn O(n) — bất kể giá trị input</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Vì Python tối ưu</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì merge luôn nhanh</button>
+    <div class="quiz-explanation">Cấu trúc đệ quy của Merge Sort không phụ thuộc giá trị: chia đôi → 2 đệ quy → merge O(n). Cây đệ quy có chiều cao log n, mỗi tầng O(n) công việc → O(n log n).</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Quick Sort worst case O(n²) xảy ra khi nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Khi mảng quá lớn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi pivot luôn là phần tử nhỏ nhất hoặc lớn nhất — phân chia không cân bằng</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khi có duplicate</button>
+    <div class="quiz-explanation">Pivot kém → một bên rỗng, bên kia size n−1. Cây đệ quy biến thành "linked list" độ sâu n. Tổng công việc 1+2+...+n = O(n²). Random pivot hoặc median-of-three giúp tránh worst case.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6 ===== -->
+<div class="slide">
+  <div class="slide-number">6.0</div>
+  <h2>6.0 Decision Tree — Bài Tree</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Pattern</th></tr>
+    <tr><td>"Chiều sâu", "depth"</td><td>Bottom-up DFS (Maximum Depth)</td></tr>
+    <tr><td>"So sánh hai cây"</td><td>Top-down DFS song song (Same/Symmetric Tree)</td></tr>
+    <tr><td>"Đường dài nhất / max path sum"</td><td>Information Aggregation (Diameter)</td></tr>
+    <tr><td>"Đường từ root đến leaf"</td><td>Top-down DFS truyền tích luỹ (Path Sum)</td></tr>
+    <tr><td>"LCA / Common Ancestor"</td><td>Bottom-up DFS với 4-case logic</td></tr>
+    <tr><td>"Validate BST"</td><td>Top-down truyền biên (low, high)</td></tr>
+    <tr><td>"Theo level / right view / zigzag"</td><td>Level-order BFS với snapshot len(q)</td></tr>
+    <tr><td>"Sort O(n log n) đảm bảo"</td><td>Merge Sort</td></tr>
+    <tr><td>"Tìm phần tử thứ k trong array"</td><td>Quick Select (partition + đệ quy 1 phía)</td></tr>
+  </table>
+  <h3>Quy trình code bài tree</h3>
+  <ol>
+    <li>Vẽ cây mẫu trên giấy.</li>
+    <li>Tự hỏi: "Đệ quy con cần trả gì để giải bài hiện tại?"</li>
+    <li>Viết base case (None → ?).</li>
+    <li>Viết recursive case dựa trên "leap of faith".</li>
+  </ol>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">6.1</div>
+  <h2>Tổng kết Tuần 8</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>Recursion mindset</strong>: leap of faith — tin lời gọi con đúng, ráp lại tại node hiện tại.</li>
+    <li><strong>Tree basics</strong>: TreeNode, ba phép duyệt (preorder, inorder, postorder), tính chất inorder của BST.</li>
+    <li><strong>Level-order BFS</strong> với mẹo <code>for _ in range(len(q))</code>.</li>
+    <li><strong>Top-down vs Bottom-up DFS</strong>: hai cách tư duy đệ quy.</li>
+    <li><strong>Information Aggregation Pattern</strong>: trả về thông tin truyền lên ≠ ans, cập nhật ans như side effect.</li>
+    <li><strong>Bài tree kinh điển</strong>: Maximum Depth, Diameter, Path Sum, LCA, Validate BST, Same/Symmetric/Invert Tree.</li>
+    <li><strong>Divide &amp; Conquer</strong>: Merge Sort O(n log n) đảm bảo, Quick Sort average O(n log n) in-place.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #104 — Maximum Depth of Binary Tree</li>
+    <li>LeetCode #100 — Same Tree</li>
+    <li>LeetCode #101 — Symmetric Tree</li>
+    <li>LeetCode #226 — Invert Binary Tree</li>
+    <li>LeetCode #543 — Diameter of Binary Tree</li>
+    <li>LeetCode #112 — Path Sum &amp; #113 Path Sum II</li>
+    <li>LeetCode #236 — Lowest Common Ancestor of Binary Tree</li>
+    <li>LeetCode #235 — LCA of BST (variant)</li>
+    <li>LeetCode #98 — Validate Binary Search Tree</li>
+    <li>LeetCode #102 — Binary Tree Level Order Traversal</li>
+    <li>LeetCode #199 — Binary Tree Right Side View</li>
+    <li>LeetCode #124 — Binary Tree Maximum Path Sum (Hard)</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 9 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>BST &amp; Heap — Top-K Patterns và K-way Merge</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Hai cấu trúc dữ liệu nâng cao. <em>Heap</em> (priority queue) qua module <code>heapq</code> giải hiệu quả các bài Top-K, K-way Merge,
+    Median Stream. Đào sâu BST với operations cơ bản. Áp dụng Quick Select đã học để giải Top K Frequent với time O(n) trung bình.
+    Tuần 9 sẽ tổng hợp toàn bộ kỹ năng đã học để giải các bài "boss" như Find Median from Data Stream, Merge K Sorted Lists.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 8 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>

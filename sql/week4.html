@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 4 — JOIN sâu</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.15rem; color: #666; margin-bottom: 20px; font-style: italic; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8810a; margin-bottom: 6px; }
+    .warning {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-label { font-weight: bold; color: #c0392b; margin-bottom: 6px; }
+    pre {
+      background: #f5f5f5; padding: 14px 18px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.95rem; margin: 10px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 6px 12px; text-align: left;
+    }
+    th { background: #f0f0f0; font-weight: 600; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; margin-bottom: 12px; }
+    .illustration {
+      display: flex; justify-content: center; margin: 14px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.92rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .schema-block {
+      background: #fafafa; border: 1px solid #e0e0e0;
+      padding: 12px 16px; border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 0.92rem; margin: 8px 0;
+    }
+    .dialect-table th { background: #e8f0fe; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ TITLE ============ -->
+  <div class="slide title-slide active" id="slide-0">
+    <h1>Tuần 4</h1>
+    <h1 style="font-size: 1.8rem; color: #555;">JOIN sâu — INNER, OUTER, SELF, CROSS, ANTI</h1>
+    <p class="subtitle" style="margin-top: 24px;">SQL cho Interview — Lộ trình 10 tuần</p>
+    <p style="margin-top: 40px; color: #999; font-size: 0.9rem;">Nhấn phím → để bắt đầu &middot; T để xem mục lục</p>
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>1. Tổng quan tuần 4</h1>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Mục tiêu — JOIN là vũ khí thứ ba</h2>
+    <p>Bạn đã học hai trục lớn: <strong>filter</strong> (tuần 1–2) và <strong>aggregate</strong> (tuần 3). Tuần này thêm trục thứ ba — <strong>JOIN</strong>: ghép dữ liệu từ nhiều bảng theo cầu nối khóa.</p>
+    <h3>Sau tuần 4 bạn cần làm được</h3>
+    <ul>
+      <li>Phân biệt rõ INNER, LEFT, RIGHT, FULL OUTER, CROSS qua hành vi cụ thể, không chỉ định nghĩa.</li>
+      <li>Giải thích vì sao đặt predicate trong <span class="inline-code">WHERE</span> phá vỡ semantics của OUTER JOIN.</li>
+      <li>Viết self-join cho bài toán "so sánh dòng với dòng cùng bảng" (employee/manager, consecutive rows).</li>
+      <li>Implement bài "không có dữ liệu" (anti-join) bằng ba cách: <span class="inline-code">NOT EXISTS</span>, <span class="inline-code">LEFT JOIN ... IS NULL</span>, <span class="inline-code">NOT IN</span>, và biết cái nào an toàn nhất.</li>
+      <li>Nhận ra "Cartesian explosion" và sửa được trong 30 giây.</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Insight</div>
+      Sau tuần 4, bạn sẽ giải được hầu hết bài Easy LeetCode SQL. Tuần 5 (subquery) sẽ unlock thêm khoảng 50% Medium.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 Mental model — JOIN là Cartesian + Filter</h2>
+    <p>Mọi dạng JOIN đều có thể nghĩ qua hai bước:</p>
+    <ol>
+      <li><strong>Cartesian product</strong> — ghép mọi cặp (dòng A, dòng B).</li>
+      <li><strong>Filter</strong> — giữ lại các cặp thỏa predicate (thường là <span class="inline-code">A.key = B.key</span>).</li>
+      <li><em>(Với OUTER JOIN)</em> Bổ sung dòng "không match" với NULL.</li>
+    </ol>
+    <p>Đây là cách bạn nên tư duy <em>khi gỡ bug</em>. Engine không thực sự làm cross product (quá đắt) — nó dùng hash join hoặc merge join — nhưng kết quả tương đương.</p>
+    <div class="warning">
+      <div class="warning-label">Hệ quả: Cartesian explosion</div>
+      <p>Nếu bạn quên ON, hoặc dùng <span class="inline-code">FROM A, B</span> mà không có WHERE, kết quả là cross product đầy đủ:</p>
+      <p style="margin-left:20px;"><span class="inline-code">A</span> 1M dòng × <span class="inline-code">B</span> 10K dòng = <strong>10 tỷ</strong> dòng. Server treo.</p>
+      <p>Đã xuất hiện trong quiz tuần 1. Tuần này sẽ học cách phát hiện sớm bằng kiểm tra predicate ON.</p>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2 ============ -->
+  <div class="slide section-divider" id="slide-4">
+    <h1>2. INNER JOIN</h1>
+  </div>
+
+  <div class="slide" id="slide-5">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 INNER JOIN — chỉ giữ cặp match</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">A INNER JOIN B ON A.k = B.k</span> trả về các cặp (a, b) sao cho <span class="inline-code">a.k = b.k</span>. Dòng không có match ở bên kia bị <strong>loại bỏ</strong>.
+    </div>
+    <div class="illustration">
+      <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="150" cy="110" r="70" fill="none" stroke="#3b5998" stroke-width="2"/>
+        <circle cx="240" cy="110" r="70" fill="none" stroke="#3b5998" stroke-width="2"/>
+        <path d="M 195 60 A 70 70 0 0 1 195 160 A 70 70 0 0 1 195 60" fill="#3b5998" fill-opacity="0.55" stroke="none"/>
+        <text x="120" y="115" text-anchor="middle" font-size="14" font-weight="bold">A</text>
+        <text x="270" y="115" text-anchor="middle" font-size="14" font-weight="bold">B</text>
+        <text x="195" y="200" text-anchor="middle" font-size="12" font-style="italic" fill="#666">vùng tô = INNER JOIN</text>
+      </svg>
+    </div>
+<pre><code>-- Lấy đơn hàng kèm tên khách
+SELECT o.order_id, o.total, c.name
+FROM orders o
+INNER JOIN customers c ON c.customer_id = o.customer_id;</code></pre>
+    <p>Đơn không có khách hàng tương ứng (FK rỗng) bị loại. Khách không có đơn cũng bị loại.</p>
+    <div class="key-point">
+      <div class="key-point-label">Cú pháp tắt</div>
+      <span class="inline-code">JOIN</span> không có chữ <span class="inline-code">INNER</span> ⇒ mặc định là INNER. <span class="inline-code">FROM A, B WHERE A.k = B.k</span> cũng tương đương (cú pháp cũ, không khuyến khích).
+    </div>
+  </div>
+
+  <div class="slide" id="slide-6">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 ON vs USING vs NATURAL JOIN</h2>
+<pre><code>-- ON: predicate tự do, rõ ràng nhất, dùng phổ biến
+SELECT o.order_id, c.name
+FROM orders o JOIN customers c ON c.customer_id = o.customer_id;
+
+-- USING: khi tên cột giống hệt, gộp thành 1 cột trong kết quả
+SELECT order_id, name
+FROM orders JOIN customers USING (customer_id);
+-- (customer_id chỉ xuất hiện 1 lần, không phải c.customer_id và o.customer_id)
+
+-- NATURAL JOIN: tự động JOIN trên mọi cột cùng tên — TRÁNH DÙNG
+SELECT * FROM orders NATURAL JOIN customers;</code></pre>
+    <div class="warning">
+      <div class="warning-label">Vì sao tránh NATURAL JOIN?</div>
+      <p>NATURAL JOIN dùng <em>mọi cột cùng tên</em>. Một ngày DBA thêm cột <span class="inline-code">created_at</span> vào cả hai bảng → query đột ngột thay đổi semantic và có thể trả 0 dòng. Bug ngầm khó phát hiện.</p>
+      <p><strong>Khuyên</strong>: luôn ON, hoặc USING khi tên cột chắc chắn ổn định.</p>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Quy tắc nhỏ — đặt alias bảng</div>
+      Mọi query có JOIN nên dùng alias bảng (<span class="inline-code">orders o</span>, <span class="inline-code">customers c</span>) và <em>luôn</em> qualify cột (<span class="inline-code">o.order_id</span>, không chỉ <span class="inline-code">order_id</span>). Code dễ đọc hơn và phòng bug khi cùng tên cột ở nhiều bảng.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 JOIN nhiều bảng (chain JOIN)</h2>
+    <p>Một query có thể JOIN nhiều bảng liên tiếp. Engine xử lý trái-sang-phải theo mặc định.</p>
+<pre><code>-- Lấy chi tiết: ai đặt cái gì, bao nhiêu tiền
+SELECT
+    c.name        AS customer,
+    o.order_date,
+    p.name        AS product,
+    oi.quantity,
+    oi.unit_price
+FROM customers c
+JOIN orders      o  ON o.customer_id = c.customer_id
+JOIN order_items oi ON oi.order_id   = o.order_id
+JOIN products    p  ON p.product_id  = oi.product_id
+WHERE c.country = 'Vietnam'
+ORDER BY c.name, o.order_date;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Đọc query chain JOIN</div>
+      <ol>
+        <li>Bắt đầu từ "anchor table" — bảng FROM.</li>
+        <li>Mỗi JOIN là <em>một bước mở rộng</em> dữ liệu, ON là cầu nối.</li>
+        <li>Vẽ ERD trong đầu và highlight cột nào nối đến cột nào.</li>
+      </ol>
+      Trong mock interview, narrate mỗi bước: "tôi bắt đầu từ customers, ghép orders qua customer_id, sau đó ghép order_items qua order_id..." — interviewer thấy bạn có cấu trúc tư duy.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-8">
+    <div class="slide-number">2.4</div>
+    <h2>2.4 INNER JOIN và NULL trong khóa</h2>
+    <p>Predicate <span class="inline-code">A.k = B.k</span> là phép so sánh thông thường — và bạn đã biết: <span class="inline-code">NULL = NULL</span> trả UNKNOWN, không phải TRUE.</p>
+    <div class="example">
+      <div class="example-label">Hệ quả</div>
+      Nếu <span class="inline-code">orders.customer_id</span> có thể NULL (đơn guest checkout), những đơn này <strong>không bao giờ</strong> match dòng nào trong <span class="inline-code">customers</span> qua INNER JOIN — kể cả khi customers cũng có dòng NULL.
+<pre><code>-- Đơn guest sẽ bị bỏ qua
+SELECT o.order_id, c.name
+FROM orders o
+INNER JOIN customers c ON c.customer_id = o.customer_id;</code></pre>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Khi nào điều này quan trọng</div>
+      Yêu cầu interview: "đếm tổng đơn hàng, kèm tên khách nếu có" — INNER JOIN sai vì bỏ guest. Phải <strong>LEFT JOIN</strong> (Section 3). Đây là dấu hiệu đầu tiên cần OUTER JOIN.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3 ============ -->
+  <div class="slide section-divider" id="slide-9">
+    <h1>3. OUTER JOIN</h1>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 LEFT JOIN — giữ tất cả dòng từ bảng trái</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">A LEFT JOIN B ON A.k = B.k</span>: giữ <strong>tất cả</strong> dòng từ A. Dòng A nào không match thì cột B = NULL.
+    </div>
+    <div class="illustration">
+      <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="150" cy="110" r="70" fill="#3b5998" fill-opacity="0.55" stroke="#3b5998" stroke-width="2"/>
+        <circle cx="240" cy="110" r="70" fill="none" stroke="#3b5998" stroke-width="2"/>
+        <path d="M 195 60 A 70 70 0 0 1 195 160 A 70 70 0 0 1 195 60" fill="#3b5998" fill-opacity="0.55" stroke="none"/>
+        <text x="120" y="115" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">A</text>
+        <text x="270" y="115" text-anchor="middle" font-size="14" font-weight="bold">B</text>
+        <text x="195" y="200" text-anchor="middle" font-size="12" font-style="italic" fill="#666">vùng tô = LEFT JOIN</text>
+      </svg>
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ — đếm số đơn mỗi khách (kể cả khách 0 đơn)</div>
+<pre><code>SELECT
+    c.customer_id,
+    c.name,
+    COUNT(o.order_id) AS n_orders   -- không phải COUNT(*)!
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.customer_id
+GROUP BY c.customer_id, c.name;</code></pre>
+    </div>
+    <div class="warning">
+      <div class="warning-label">Bẫy COUNT(*) vs COUNT(col)</div>
+      Khách không có đơn ⇒ <span class="inline-code">o.order_id</span> NULL ⇒ <span class="inline-code">COUNT(o.order_id)</span> = 0 (đúng). <span class="inline-code">COUNT(*)</span> đếm cả dòng có NULL → trả 1 cho khách 0 đơn (sai). Đây là pattern interview kinh điển.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-11">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 RIGHT JOIN và FULL OUTER JOIN</h2>
+    <h3>RIGHT JOIN — đối xứng của LEFT</h3>
+    <p><span class="inline-code">A RIGHT JOIN B</span> = <span class="inline-code">B LEFT JOIN A</span>. Hiếm khi dùng trong thực tế — quy ước team thường viết LEFT JOIN và đảo thứ tự bảng để đọc tự nhiên.</p>
+    <h3>FULL OUTER JOIN — giữ cả hai bên</h3>
+    <p><span class="inline-code">A FULL OUTER JOIN B</span>: dòng A không match → B NULL; dòng B không match → A NULL; dòng match → bình thường.</p>
+    <div class="illustration">
+      <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="150" cy="100" r="70" fill="#3b5998" fill-opacity="0.55" stroke="#3b5998" stroke-width="2"/>
+        <circle cx="240" cy="100" r="70" fill="#3b5998" fill-opacity="0.55" stroke="#3b5998" stroke-width="2"/>
+        <text x="120" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">A</text>
+        <text x="270" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">B</text>
+        <text x="195" y="185" text-anchor="middle" font-size="12" font-style="italic" fill="#666">FULL OUTER = LEFT ∪ RIGHT</text>
+      </svg>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Phương ngữ</div>
+      <ul>
+        <li>PostgreSQL, SQL Server, Oracle: hỗ trợ <span class="inline-code">FULL OUTER JOIN</span>.</li>
+        <li>MySQL: <strong>không</strong> hỗ trợ. Mô phỏng bằng <span class="inline-code">LEFT JOIN ... UNION ... RIGHT JOIN</span>.</li>
+        <li>SQLite: hỗ trợ từ 3.39.</li>
+      </ul>
+      LeetCode (MySQL) ít khi yêu cầu FULL OUTER. Biết tồn tại là đủ.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 WHERE vs ON trong OUTER JOIN — bug đẳng cấp</h2>
+    <p>Đây là bug subtle nhất trong cả tuần. Đặt predicate trên cột bảng phải sai chỗ sẽ <strong>biến LEFT JOIN thành INNER JOIN</strong>.</p>
+    <div class="example">
+      <div class="example-label">Yêu cầu</div>
+      Liệt kê mọi customer kèm số đơn paid (kể cả khách 0 đơn paid).
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>SAI — predicate ở WHERE</h3>
+<pre><code>SELECT c.name, COUNT(o.order_id) AS n_paid
+FROM customers c
+LEFT JOIN orders o
+       ON o.customer_id = c.customer_id
+WHERE o.status = 'paid'
+GROUP BY c.name;</code></pre>
+        <p style="font-size:0.9rem;color:#c0392b;">Khách 0 đơn paid bị loại! Vì o.status NULL không thỏa <span class="inline-code">o.status = 'paid'</span>.</p>
+      </div>
+      <div>
+        <h3>ĐÚNG — predicate ở ON</h3>
+<pre><code>SELECT c.name, COUNT(o.order_id) AS n_paid
+FROM customers c
+LEFT JOIN orders o
+       ON o.customer_id = c.customer_id
+      AND o.status = 'paid'
+GROUP BY c.name;</code></pre>
+        <p style="font-size:0.9rem;color:#4a7c59;">Filter chạy <em>trong khi join</em>. Khách không có đơn paid vẫn xuất hiện với count = 0.</p>
+      </div>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Quy tắc xương sống</div>
+      <ul>
+        <li>Predicate trên bảng <strong>trái</strong> (anchor) ⇒ đặt ở WHERE.</li>
+        <li>Predicate trên bảng <strong>phải</strong> (LEFT JOIN-ed) ⇒ đặt ở ON.</li>
+        <li>Predicate so sánh <span class="inline-code">IS NULL</span> trên bảng phải ⇒ ở WHERE (đây là pattern anti-join, Section 6).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4 ============ -->
+  <div class="slide section-divider" id="slide-13">
+    <h1>4. Self-join</h1>
+  </div>
+
+  <div class="slide" id="slide-14">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 Self-join — bảng tham chiếu chính nó</h2>
+    <p>Self-join là kỹ thuật join một bảng với chính nó dưới hai alias khác nhau. Dùng khi:</p>
+    <ul>
+      <li>Bảng có FK trỏ về PK của <em>chính nó</em> (hierarchy).</li>
+      <li>Cần so sánh dòng với dòng khác cùng bảng (consecutive, pair).</li>
+    </ul>
+    <div class="example">
+      <div class="example-label">Pattern kinh điển — Employee/Manager</div>
+      <p>Schema: <span class="inline-code">Employee(id, name, manager_id)</span>. Cột <span class="inline-code">manager_id</span> trỏ về <span class="inline-code">id</span> trong cùng bảng.</p>
+<pre><code>-- Liệt kê (nhân viên, quản lý) cho mọi nhân viên có quản lý
+SELECT e.name AS employee, m.name AS manager
+FROM Employee e
+JOIN Employee m ON m.id = e.manager_id;</code></pre>
+      <p>Hai alias <span class="inline-code">e</span> và <span class="inline-code">m</span> tham chiếu cùng bảng nhưng đóng vai trò khác nhau — engine coi như hai bảng riêng biệt.</p>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">CEO không có manager?</div>
+      INNER JOIN bỏ CEO (manager_id NULL). Để giữ CEO, dùng <strong>LEFT JOIN</strong> — manager sẽ là NULL.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 So sánh dòng với dòng — pair queries</h2>
+    <p>Self-join với predicate <em>khác equality trên khóa</em> sẽ tạo các cặp dòng cần so sánh.</p>
+    <div class="example">
+      <div class="example-label">LeetCode 181 — Employee Earning More Than Their Managers</div>
+      Schema: <span class="inline-code">Employee(id, name, salary, manager_id)</span>.
+<pre><code>SELECT e.name AS Employee
+FROM Employee e
+JOIN Employee m
+  ON m.id = e.manager_id
+ AND e.salary &gt; m.salary;
+-- Hoặc tách điều kiện:
+-- ON m.id = e.manager_id WHERE e.salary &gt; m.salary;</code></pre>
+    </div>
+    <div class="example">
+      <div class="example-label">LeetCode 197 — Rising Temperature</div>
+      Schema: <span class="inline-code">Weather(id, recordDate, temperature)</span>. Tìm các ngày có nhiệt độ cao hơn ngày trước đó.
+<pre><code>SELECT today.id
+FROM Weather today
+JOIN Weather yesterday
+  ON yesterday.recordDate = today.recordDate - INTERVAL 1 DAY  -- MySQL
+ AND today.temperature &gt; yesterday.temperature;</code></pre>
+      <p style="font-size:0.9rem;color:#666;">Đây cũng có thể giải bằng window function <span class="inline-code">LAG</span> (tuần 6) — gọn hơn. Self-join là cách "cổ điển".</p>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-16">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 Pair generation và bẫy duplicate</h2>
+    <p>Khi tạo cặp (a, b) từ cùng bảng, cần cẩn thận về <em>thứ tự</em> và <em>trùng lặp</em>.</p>
+    <div class="example">
+      <div class="example-label">Bài toán</div>
+      Cho bảng <span class="inline-code">friends(user_a, user_b)</span> (mỗi cặp xuất hiện 1 lần). Tìm các cặp <em>bạn của bạn</em> — tức cặp (X, Z) sao cho có Y mà (X, Y) và (Y, Z) đều là bạn.
+    </div>
+<pre><code>-- Naive
+SELECT f1.user_a, f2.user_b
+FROM friends f1
+JOIN friends f2 ON f1.user_b = f2.user_a;</code></pre>
+    <div class="warning">
+      <div class="warning-label">Bug</div>
+      <ul>
+        <li>Có thể cho ra (X, X) — X là bạn của chính X qua Y.</li>
+        <li>Có thể cho cả (X, Z) <em>và</em> (Z, X) — duplicate logic.</li>
+        <li>Nếu (X, Z) đã là bạn trực tiếp, vẫn xuất hiện trong kết quả.</li>
+      </ul>
+    </div>
+<pre><code>-- Sạch hơn
+SELECT DISTINCT
+    LEAST(f1.user_a, f2.user_b)    AS u1,
+    GREATEST(f1.user_a, f2.user_b) AS u2
+FROM friends f1
+JOIN friends f2 ON f1.user_b = f2.user_a
+WHERE f1.user_a &lt;&gt; f2.user_b
+  AND NOT EXISTS (
+      SELECT 1 FROM friends ff
+      WHERE (ff.user_a = f1.user_a AND ff.user_b = f2.user_b)
+         OR (ff.user_a = f2.user_b AND ff.user_b = f1.user_a)
+  );</code></pre>
+    <p style="font-size:0.9rem;color:#666;">Pattern: dùng <span class="inline-code">LEAST</span>/<span class="inline-code">GREATEST</span> để chuẩn hóa thứ tự cặp, NOT EXISTS để loại friend trực tiếp.</p>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <div class="slide section-divider" id="slide-17">
+    <h1>5. CROSS JOIN</h1>
+  </div>
+
+  <div class="slide" id="slide-18">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 CROSS JOIN — Cartesian có chủ đích</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">A CROSS JOIN B</span>: ghép mọi cặp (a, b). Không có ON. Kết quả có \(|A| \times |B|\) dòng.
+    </div>
+    <p>Ngược lại với "Cartesian explosion" tai nạn, CROSS JOIN <em>cố ý</em> dùng cho các pattern hữu ích.</p>
+    <div class="example">
+      <div class="example-label">Use case 1 — Dense reporting</div>
+      <p>Yêu cầu: bảng "doanh thu mỗi (region × month) năm 2024" cho mọi tổ hợp, kể cả region không bán gì trong tháng đó (cần hiện 0).</p>
+<pre><code>-- Tạo 4 region × 12 tháng = 48 dòng baseline, sau đó LEFT JOIN sales
+SELECT r.region, m.month, COALESCE(SUM(s.amount), 0) AS revenue
+FROM regions r
+CROSS JOIN months m
+LEFT JOIN sales s
+       ON s.region = r.region
+      AND s.month  = m.month
+      AND s.year   = 2024
+GROUP BY r.region, m.month
+ORDER BY r.region, m.month;</code></pre>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Khi nào cần</div>
+      Khi user yêu cầu "đầy đủ tổ hợp" — không phải "chỉ những tổ hợp có data". Pivot reports, cohort tables, calendar fills. Đây cũng là kỹ thuật cho LeetCode 1280 (sẽ giải ở Section 7).
+    </div>
+  </div>
+
+  <div class="slide" id="slide-19">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 Generate sequences với CROSS JOIN</h2>
+    <p>Khi không có bảng calendar/numbers sẵn, có thể tạo ad-hoc bằng CROSS JOIN.</p>
+<pre><code>-- PostgreSQL có generate_series, đơn giản nhất:
+SELECT day::date FROM generate_series('2024-01-01'::date, '2024-12-31', '1 day') day;
+
+-- MySQL phải tự sinh (ad-hoc, dùng để demo):
+WITH RECURSIVE days AS (
+    SELECT DATE '2024-01-01' AS day
+    UNION ALL
+    SELECT day + INTERVAL 1 DAY FROM days WHERE day &lt; '2024-12-31'
+)
+SELECT * FROM days;
+-- Recursive CTE chính thức học tuần 7</code></pre>
+    <div class="example">
+      <div class="example-label">Trick CROSS JOIN — sinh chuỗi 0–99</div>
+<pre><code>SELECT a.n + b.n*10 AS num
+FROM (SELECT 0 AS n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4
+      UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) a
+CROSS JOIN
+     (SELECT 0 AS n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4
+      UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) b
+ORDER BY num;</code></pre>
+    </div>
+    <p>Generation bằng recursive CTE sẽ học chính thức tuần 7. Tạm biết CROSS JOIN có thể dùng cho mục đích này.</p>
+  </div>
+
+  <!-- ============ SECTION 6 ============ -->
+  <div class="slide section-divider" id="slide-20">
+    <h1>6. Anti-join — bài toán "không có"</h1>
+  </div>
+
+  <div class="slide" id="slide-21">
+    <div class="slide-number">6.1</div>
+    <h2>6.1 Ba cách viết anti-join</h2>
+    <div class="example">
+      <div class="example-label">Yêu cầu (LeetCode 183)</div>
+      Lấy customer chưa từng đặt đơn nào.
+    </div>
+    <h3>Cách 1 — NOT EXISTS (khuyên dùng)</h3>
+<pre><code>SELECT c.name
+FROM customers c
+WHERE NOT EXISTS (
+    SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id
+);</code></pre>
+    <h3>Cách 2 — LEFT JOIN ... IS NULL</h3>
+<pre><code>SELECT c.name
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.customer_id
+WHERE o.order_id IS NULL;</code></pre>
+    <h3>Cách 3 — NOT IN (CẨN THẬN)</h3>
+<pre><code>SELECT c.name
+FROM customers c
+WHERE c.customer_id NOT IN (
+    SELECT customer_id FROM orders WHERE customer_id IS NOT NULL
+    -- IS NOT NULL bắt buộc — nếu không sẽ trả tập rỗng (bug tuần 2)
+);</code></pre>
+    <p>Ba query trên cùng kết quả (giả sử dữ liệu sạch). Khác biệt nằm ở <strong>an toàn NULL</strong> và <strong>performance</strong> — slide tiếp theo.</p>
+  </div>
+
+  <div class="slide" id="slide-22">
+    <div class="slide-number">6.2</div>
+    <h2>6.2 So sánh: an toàn NULL và performance</h2>
+    <table>
+      <tr><th>Approach</th><th>An toàn NULL</th><th>Đọc</th><th>Performance</th></tr>
+      <tr><td><span class="inline-code">NOT EXISTS</span></td><td><strong>An toàn</strong> tự nhiên</td><td>Tốt</td><td>Tốt — optimizer thường tối ưu thành anti-join</td></tr>
+      <tr><td><span class="inline-code">LEFT JOIN ... IS NULL</span></td><td>An toàn</td><td>Khá</td><td>Tốt — tương đương NOT EXISTS</td></tr>
+      <tr><td><span class="inline-code">NOT IN</span></td><td><strong>NGUY HIỂM</strong> — bug tập rỗng nếu subquery có NULL</td><td>Ngắn</td><td>Khá đến chậm — cần materialize subquery</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Khuyên</div>
+      <strong>NOT EXISTS</strong> là default. Lý do:
+      <ul>
+        <li>Tự nhiên semantic "không có dòng nào thỏa".</li>
+        <li>Không bug NULL.</li>
+        <li>Optimizer hiện đại (PostgreSQL 9+, SQL Server, MySQL 8+) chuyển thành anti-join hiệu quả.</li>
+        <li>Code di chuyển dialect dễ.</li>
+      </ul>
+      <strong>LEFT JOIN ... IS NULL</strong> dùng khi: bạn đã LEFT JOIN sẵn cho lý do khác và chỉ thêm filter NULL — dễ đọc. <br>
+      <strong>NOT IN</strong>: <em>tránh trừ khi subquery chắc chắn không NULL</em>.
+    </div>
+    <p style="font-size:0.9rem;color:#666;">Trong mock interview, viết NOT EXISTS và giải thích "tôi chọn vì an toàn NULL" — interviewer sẽ thấy bạn hiểu sâu.</p>
+  </div>
+
+  <!-- ============ SECTION 7 ============ -->
+  <div class="slide section-divider" id="slide-23">
+    <h1>7. Worked Examples</h1>
+  </div>
+
+  <div class="slide" id="slide-24">
+    <div class="slide-number">7.1</div>
+    <h2>7.1 LeetCode 175 — Combine Two Tables</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Person(personId INT PK, firstName, lastName)
+Address(addressId INT PK, personId INT, city, state)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về (firstName, lastName, city, state) cho <em>mọi</em> Person — kể cả Person không có Address.</p>
+    <h3>Phân rã</h3>
+    <p>"Mọi Person" ⇒ Person là bảng anchor ⇒ LEFT JOIN Address.</p>
+    <h3>Lời giải</h3>
+<pre><code>SELECT p.firstName, p.lastName, a.city, a.state
+FROM Person p
+LEFT JOIN Address a ON a.personId = p.personId;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Pattern</div>
+      Bất cứ khi đề bài có cụm "kể cả ... không có ...", ngay lập tức nghĩ LEFT JOIN. Dấu hiệu rõ nhất: 
+      <em>"return all customers, even those without orders"</em>, <em>"list all employees, including those who haven't logged in"</em>.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-25">
+    <div class="slide-number">7.2</div>
+    <h2>7.2 LeetCode 181 — Employees Earning More Than Their Managers</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Employee(id INT PK, name, salary INT, managerId INT NULL)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về tên các nhân viên có salary &gt; salary của manager họ.</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>Mỗi nhân viên (e) có một manager (m) qua e.managerId = m.id → self-join.</li>
+      <li>Filter e.salary &gt; m.salary.</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT e.name AS Employee
+FROM Employee e
+JOIN Employee m
+  ON m.id = e.managerId
+WHERE e.salary &gt; m.salary;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Vì sao INNER JOIN, không LEFT?</div>
+      Đề chỉ quan tâm nhân viên CÓ manager (vì cần so sánh). CEO (managerId NULL) không có gì để so → loại tự nhiên qua INNER JOIN. Dùng LEFT JOIN cũng được nhưng filter <span class="inline-code">m.salary IS NOT NULL</span> sẽ tự lọc CEO — tương đương.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-26">
+    <div class="slide-number">7.3</div>
+    <h2>7.3 LeetCode 183 — Customers Who Never Order</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Customers(id INT PK, name)
+Orders(id INT PK, customerId INT)
+    </div>
+    <h3>Ba cách giải — tất cả đều pass</h3>
+<pre><code>-- Cách 1: NOT EXISTS (khuyên)
+SELECT name AS Customers
+FROM Customers c
+WHERE NOT EXISTS (SELECT 1 FROM Orders o WHERE o.customerId = c.id);
+
+-- Cách 2: LEFT JOIN ... IS NULL
+SELECT c.name AS Customers
+FROM Customers c
+LEFT JOIN Orders o ON o.customerId = c.id
+WHERE o.id IS NULL;
+
+-- Cách 3: NOT IN (chỉ an toàn nếu Orders.customerId NOT NULL)
+SELECT name AS Customers
+FROM Customers
+WHERE id NOT IN (SELECT customerId FROM Orders);</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Trong mock interview</div>
+      Viết Cách 1, sau đó nói: "có hai cách khác là Cách 2 và Cách 3. Tôi chọn NOT EXISTS vì an toàn với NULL — Cách 3 sẽ trả tập rỗng nếu subquery có một dòng NULL." Interviewer sẽ gật đầu.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-27">
+    <div class="slide-number">7.4</div>
+    <h2>7.4 LeetCode 1280 — Students and Examinations (Medium)</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Students(student_id INT PK, student_name)
+Subjects(subject_name VARCHAR PK)
+Examinations(student_id, subject_name)  -- nhiều dòng/sinh viên/môn
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Với <strong>mỗi (student, subject)</strong> — kể cả khi sinh viên chưa thi môn đó — trả về số lần thi.</p>
+    <h3>Phân rã — kết hợp 3 kỹ thuật tuần này</h3>
+    <ol>
+      <li>"Mỗi (student, subject)" ⇒ <strong>CROSS JOIN</strong> Students với Subjects để tạo grid đầy đủ.</li>
+      <li>Đếm số lần thi ⇒ <strong>LEFT JOIN</strong> Examinations (kể cả 0 lần).</li>
+      <li>GROUP BY và COUNT đúng cột (không phải <span class="inline-code">COUNT(*)</span>!).</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT
+    s.student_id,
+    s.student_name,
+    sub.subject_name,
+    COUNT(e.subject_name) AS attended_exams
+FROM Students s
+CROSS JOIN Subjects sub
+LEFT JOIN Examinations e
+       ON e.student_id   = s.student_id
+      AND e.subject_name = sub.subject_name
+GROUP BY s.student_id, s.student_name, sub.subject_name
+ORDER BY s.student_id, sub.subject_name;</code></pre>
+    <p>Đây là bài Medium chỉ với kỹ thuật tuần 4. Cảm giác "all click together" này là dấu hiệu bạn đã thấm.</p>
+  </div>
+
+  <!-- ============ SECTION 8 ============ -->
+  <div class="slide section-divider" id="slide-28">
+    <h1>8. Knowledge Check</h1>
+  </div>
+
+  <div class="slide" id="slide-29">
+    <div class="slide-number">8.Q</div>
+    <h2>Knowledge Check — Tuần 4</h2>
+
+    <div class="quiz" id="q1">
+      <div class="quiz-question">Q1: Yêu cầu "đếm tổng đơn paid của mỗi customer, kể cả khách 0 đơn paid". Query nào ĐÚNG?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id WHERE o.status = 'paid' GROUP BY c.id</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <span class="inline-code">FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id AND o.status = 'paid' GROUP BY c.id</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) <span class="inline-code">FROM customers c JOIN orders o ON o.customer_id = c.customer_id AND o.status = 'paid' GROUP BY c.id</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Tất cả đều đúng</button>
+      <div class="quiz-explanation">A sai: WHERE chạy sau LEFT JOIN, nên khách 0 đơn paid (o.status NULL) bị WHERE loại — biến LEFT thành INNER. C sai: INNER JOIN bỏ luôn khách 0 đơn. B đúng: predicate trên bảng phải đặt trong ON, đảm bảo OUTER semantic.</div>
+    </div>
+
+    <div class="quiz" id="q2">
+      <div class="quiz-question">Q2: Bảng <span class="inline-code">orders.customer_id</span> NULLABLE và có dòng NULL. Query nào trả khách chưa từng đặt đơn?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">SELECT id FROM customers WHERE id NOT IN (SELECT customer_id FROM orders)</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <span class="inline-code">SELECT id FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) <span class="inline-code">SELECT c.id FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.customer_id IS NOT NULL</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) <span class="inline-code">SELECT id FROM customers EXCEPT SELECT customer_id FROM orders</span></button>
+      <div class="quiz-explanation">A trả tập rỗng do bug NOT IN với NULL (đã học tuần 2). B đúng — NOT EXISTS an toàn. C sai logic — IS NOT NULL trả khách CÓ đơn. D phụ thuộc dialect (MySQL không có EXCEPT) và không xử lý NULL chuẩn.</div>
+    </div>
+
+    <div class="quiz" id="q3">
+      <div class="quiz-question">Q3: <span class="inline-code">A</span> có 1000 dòng, <span class="inline-code">B</span> có 50 dòng. <span class="inline-code">SELECT * FROM A CROSS JOIN B</span> trả bao nhiêu dòng?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) 1000</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) 1050</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) 50,000</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Lỗi vì không có ON</button>
+      <div class="quiz-explanation">CROSS JOIN là Cartesian product có chủ đích — không cần ON. 1000 × 50 = 50,000 dòng. Đây là feature, không phải bug; dùng cho dense reporting (như LeetCode 1280) và sinh chuỗi.</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 9 ============ -->
+  <div class="slide section-divider" id="slide-30">
+    <h1>9. Bài tập về nhà</h1>
+  </div>
+
+  <div class="slide" id="slide-31">
+    <div class="slide-number">9.1</div>
+    <h2>9.1 Bài tập LeetCode (5 problem)</h2>
+    <ol>
+      <li><strong>175. Combine Two Tables</strong> (Easy) — đã giải tại lớp.</li>
+      <li><strong>181. Employees Earning More Than Their Managers</strong> (Easy) — đã giải tại lớp.</li>
+      <li><strong>183. Customers Who Never Order</strong> (Easy) — viết bằng cả 3 cách, đo thời gian execution trên LeetCode.</li>
+      <li><strong>1280. Students and Examinations</strong> (Easy/Medium) — đã giải tại lớp.</li>
+      <li><strong>1731. The Number of Employees Which Report to Each Employee</strong> (Easy) — self-join + GROUP BY + AVG. <em>Bẫy</em>: chỉ tính manager có ≥ 1 báo cáo trực tiếp.</li>
+    </ol>
+    <h3>Bonus — viết 3 cách cho bài 183 và so sánh EXPLAIN</h3>
+    <p>Trên LeetCode, sau khi submit, click "Compile/Run" để xem thời gian. Trên dialect bạn dùng (MySQL/PostgreSQL local), chạy <span class="inline-code">EXPLAIN</span> trước query và so sánh execution plan của ba cách. Note lại: cách nào dùng "anti-join" hash, cách nào hiện "Nested Loop".</p>
+    <div class="warning">
+      <div class="warning-label">Tránh các bài này tuần này</div>
+      LeetCode 196 (DELETE), 1158, 1532 — sẽ học sau khi có window function (tuần 6) và CTE (tuần 7). Ép giải tuần này sẽ ra code dài 30 dòng không cần thiết.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-32">
+    <div class="slide-number">9.2</div>
+    <h2>9.2 Đọc thêm và tự kiểm tra</h2>
+    <h3>Đọc</h3>
+    <ul>
+      <li><em>SQL Cookbook</em> (Anthony Molinaro) — Chương 4 (Inserting, Updating, Deleting) §4.7–4.9 và Chương 6 nâng cao về JOIN.</li>
+      <li><em>SQL Antipatterns</em> (Bill Karwin) — Chương "Implicit Columns" và "Diplomatic Immunity" về bẫy NATURAL JOIN.</li>
+      <li>Markus Winand — <a style="color: #3b5998;">use-the-index-luke.com</a> phần "Joins" về index strategy cho join.</li>
+    </ul>
+    <h3>Tự kiểm tra (không nhìn slide)</h3>
+    <ul>
+      <li>Bạn vẽ được Venn diagram cho INNER, LEFT, RIGHT, FULL OUTER không cần nhìn?</li>
+      <li>Bạn giải thích được vì sao đặt <span class="inline-code">o.status = 'paid'</span> trong WHERE phá LEFT JOIN?</li>
+      <li>Bạn viết được self-join cho "tìm cặp employee cùng phòng có salary chênh lệch &gt; 1000" trong dưới 2 phút?</li>
+      <li>Bạn nhớ ba cách viết anti-join và lý do chọn NOT EXISTS làm default?</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Tuần sau — Subquery và Set Operations</div>
+      Tuần 5: scalar/row/table subquery, correlated subquery, EXISTS sâu hơn, UNION/INTERSECT/EXCEPT. Bạn đã thấy NOT EXISTS tuần này — tuần sau khám phá toàn bộ "thế giới subquery" và unlock thêm khoảng 50% bài Medium LeetCode.
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

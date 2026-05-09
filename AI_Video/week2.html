@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 2 — Nền tảng kể chuyện cho phim hoạt hình AI</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px 60px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 26px; }
+    li { margin-bottom: 4px; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 12px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 4px; font-size: 0.95rem; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 12px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 4px; font-size: 0.95rem; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 12px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8860b; margin-bottom: 4px; font-size: 0.95rem; }
+    .compare {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 12px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    pre {
+      background: #f5f5f5; padding: 14px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.9rem; margin: 10px 0;
+      font-family: 'Courier New', monospace;
+    }
+    code { font-family: 'Courier New', monospace; font-size: 0.95em; }
+    table {
+      border-collapse: collapse; width: 100%; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ddd; padding: 8px 12px; text-align: left;
+    }
+    th { background: #f5f5f5; font-weight: 600; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 18px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 18px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 60px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.section-divider .subtitle {
+      font-size: 1.15rem; color: #666; margin-top: 14px; font-style: italic;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide .course-code {
+      font-size: 1rem; color: #666; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .slide.title-slide h1 {
+      font-size: 2.8rem; margin-bottom: 16px;
+    }
+    .slide.title-slide .subtitle {
+      font-size: 1.2rem; color: #444; font-style: italic; margin-bottom: 36px;
+    }
+    .slide.title-slide .author {
+      font-size: 0.95rem; color: #888; margin-top: 8px;
+    }
+    .illustration {
+      display: flex; justify-content: center; margin: 16px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.98rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.93rem;
+    }
+    .quiz-explanation.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ====================== TITLE ====================== -->
+  <div class="slide title-slide active" id="slide-0">
+    <div class="course-code">AI Filmmaking — Tuần 2</div>
+    <h1>Nền tảng kể chuyện</h1>
+    <div class="subtitle">Three-Act Structure · Beat Sheet · Character Arc · Show Don't Tell · Logline</div>
+    <div class="author">Khoá học: Sử dụng AI để tạo phim hoạt hình một cách bài bản</div>
+  </div>
+
+  <!-- ====================== SECTION 1 ====================== -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>Phần 1 — Tại sao học storytelling?</h1>
+    <div class="subtitle">Câu hỏi mở đầu cho cả khoá</div>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Mục tiêu tuần này</h2>
+    <p>Sau buổi học này, sinh viên có thể:</p>
+    <ul>
+      <li>Phân tích cấu trúc 3 hồi của một phim ngắn bất kỳ</li>
+      <li>Lập <em>beat sheet</em> cho ý tưởng phim 2–3 phút</li>
+      <li>Phân biệt <em>character arc</em> tích cực, tiêu cực, và phẳng</li>
+      <li>Áp dụng nguyên lý <em>show, don't tell</em> ở cấp độ hình ảnh</li>
+      <li>Viết được logline đạt chuẩn ngành cho ý tưởng của mình</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Deliverable cuối tuần</div>
+      Bản nháp kịch bản (script) đầu tiên cho phim 1–2 phút, kèm logline và character arc statement.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 Tại sao học storytelling khi đã có AI?</h2>
+    <p>Một quan niệm sai phổ biến năm 2026: <em>"AI giờ làm phim được rồi, chỉ cần biết viết prompt là đủ."</em></p>
+    <p>Sự thật:</p>
+    <ul>
+      <li><strong>AI tạo cảnh, không tạo câu chuyện.</strong> Veo 3.1, Kling 3.0, Runway Gen-4.5 sinh ra clip 5–15 giây — thứ kết nối các clip thành phim là <em>cấu trúc</em>, do con người thiết kế.</li>
+      <li><strong>Prompt giỏi đến đâu cũng vô dụng nếu beat sai.</strong> Bạn có thể tạo cảnh đẹp lung linh, nhưng nếu khán giả không biết <em>tại sao họ phải quan tâm</em>, họ sẽ tắt video sau 8 giây.</li>
+      <li><strong>Storytelling là phần "không lỗi thời".</strong> Tool AI thay đổi 6 tháng/lần. Cấu trúc 3 hồi đã ổn định 2,400 năm kể từ Aristotle.</li>
+    </ul>
+    <div class="example">
+      <div class="example-label">Quan sát thực tế</div>
+      Trên các nền tảng social 2026, video AI có cấu trúc kể chuyện rõ ràng đạt retention rate cao gấp 3–5 lần video chỉ "đẹp về kỹ thuật".
+    </div>
+  </div>
+
+  <div class="slide" id="slide-4">
+    <div class="slide-number">1.3</div>
+    <h2>1.3 Tại sao não người yêu cầu cấu trúc?</h2>
+    <p>Câu chuyện không phải "phong cách trình bày" — nó là <strong>kiến trúc nhận thức</strong>:</p>
+    <ul>
+      <li><strong>Predictive processing:</strong> Não dự đoán liên tục. Cấu trúc tạo ra kỳ vọng để bẻ gãy hoặc thoả mãn.</li>
+      <li><strong>Causal reasoning:</strong> Não nhớ thông tin theo quan hệ nguyên nhân–kết quả tốt hơn 22 lần so với danh sách rời rạc (Heath &amp; Heath, 2007).</li>
+      <li><strong>Empathic mirroring:</strong> Khi xem nhân vật vật lộn, neurons gương kích hoạt như chính ta đang trải nghiệm — chỉ xảy ra nếu nhân vật được thiết lập đủ rõ.</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Hệ quả cho người làm phim AI</div>
+      Bạn không cạnh tranh với người làm phim khác — bạn cạnh tranh với <em>thuật toán dopamine của TikTok</em>. Cấu trúc là vũ khí duy nhất.
+    </div>
+  </div>
+
+  <!-- ====================== SECTION 2 ====================== -->
+  <div class="slide section-divider" id="slide-5">
+    <h1>Phần 2 — Cấu trúc 3 hồi</h1>
+    <div class="subtitle">Aristotle, Syd Field, và phim 2 phút của bạn</div>
+  </div>
+
+  <div class="slide" id="slide-6">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 Three-Act Structure: tổng quan</h2>
+    <p>Cấu trúc 3 hồi mô tả <em>đường cong căng thẳng</em> (tension curve) của câu chuyện theo thời gian. Aristotle (Poetics, 335 TCN) gọi là beginning–middle–end; Syd Field (1979) hiện đại hoá thành Setup–Confrontation–Resolution.</p>
+    <div class="illustration">
+      <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Axes -->
+        <line x1="60" y1="280" x2="660" y2="280" stroke="#1a1a1a" stroke-width="1.5"/>
+        <line x1="60" y1="40" x2="60" y2="280" stroke="#1a1a1a" stroke-width="1.5"/>
+        <text x="350" y="305" text-anchor="middle" font-size="13" fill="#1a1a1a" font-family="Georgia">Thời gian</text>
+        <text x="20" y="160" font-size="13" fill="#1a1a1a" font-family="Georgia" transform="rotate(-90 20 160)">Căng thẳng</text>
+
+        <!-- Tension curve -->
+        <path d="M 60 270 Q 130 250 175 220 L 200 200 Q 260 195 310 175 L 350 150 Q 410 145 460 110 L 510 80 L 540 70 L 560 100 Q 600 200 660 270"
+              fill="none" stroke="#c0392b" stroke-width="2.5"/>
+
+        <!-- Act dividers -->
+        <line x1="200" y1="40" x2="200" y2="280" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="540" y1="40" x2="540" y2="280" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>
+
+        <!-- Act labels -->
+        <text x="130" y="35" text-anchor="middle" font-size="14" fill="#3b5998" font-family="Georgia" font-weight="bold">HỒI 1</text>
+        <text x="130" y="52" text-anchor="middle" font-size="11" fill="#666" font-family="Georgia">Setup (25%)</text>
+
+        <text x="370" y="35" text-anchor="middle" font-size="14" fill="#3b5998" font-family="Georgia" font-weight="bold">HỒI 2</text>
+        <text x="370" y="52" text-anchor="middle" font-size="11" fill="#666" font-family="Georgia">Confrontation (50%)</text>
+
+        <text x="600" y="35" text-anchor="middle" font-size="14" fill="#3b5998" font-family="Georgia" font-weight="bold">HỒI 3</text>
+        <text x="600" y="52" text-anchor="middle" font-size="11" fill="#666" font-family="Georgia">Resolution (25%)</text>
+
+        <!-- Plot points -->
+        <circle cx="200" cy="200" r="5" fill="#f9a825"/>
+        <text x="200" y="190" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">PP1</text>
+
+        <circle cx="370" cy="155" r="5" fill="#f9a825"/>
+        <text x="370" y="145" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">Midpoint</text>
+
+        <circle cx="540" cy="70" r="5" fill="#c0392b"/>
+        <text x="540" y="60" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">Climax</text>
+
+        <circle cx="660" cy="270" r="5" fill="#4a7c59"/>
+        <text x="660" y="260" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">Resolution</text>
+      </svg>
+    </div>
+    <div class="illustration-caption">Hình 2.1: Đường cong căng thẳng cổ điển — tension tăng dần qua hồi 2, đỉnh điểm gần cuối hồi 3, rồi rơi nhanh.</div>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 Hồi 1 — Setup (25%)</h2>
+    <p>Mục tiêu: cho khán giả lý do <em>để quan tâm</em>.</p>
+    <ul>
+      <li><strong>Establish world:</strong> ai? ở đâu? quy luật nào? (genre, tone)</li>
+      <li><strong>Establish protagonist:</strong> họ muốn gì (want)? thiếu gì (need)?</li>
+      <li><strong>Inciting incident:</strong> sự kiện phá vỡ "ngày bình thường" — thường ở khoảng 10% phim</li>
+      <li><strong>Plot Point 1:</strong> nhân vật quyết định hành động → bước vào hồi 2</li>
+    </ul>
+    <div class="example">
+      <div class="example-label">Ví dụ — Toy Story (1995), 81 phút</div>
+      Setup (0–20'): Andy yêu Woody. Woody là leader của đồ chơi. <em>Inciting incident:</em> sinh nhật → đồ chơi mới có thể thay thế Woody. <em>PP1:</em> Buzz Lightyear xuất hiện, đe doạ vị trí của Woody.
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Cho phim 2 phút</div>
+      Hồi 1 chỉ ~30 giây. Bạn phải establish world + character + inciting incident <em>cực kỳ kinh tế</em>. Mọi shot trong 30s đầu phải làm việc gấp đôi.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-8">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 Hồi 2 — Confrontation (50%)</h2>
+    <p>Đây là hồi dài nhất và là nơi <strong>nhiều phim ngắn AI thất bại</strong> — vì người mới làm hay nghĩ "đã có inciting incident rồi, giờ chỉ cần đến climax thôi".</p>
+    <p>Sai. Hồi 2 cần:</p>
+    <ul>
+      <li><strong>Rising action:</strong> khó khăn tăng dần, không phải một đường thẳng</li>
+      <li><strong>Obstacles &amp; complications:</strong> mỗi giải pháp tạo ra vấn đề mới</li>
+      <li><strong>Midpoint:</strong> điểm xoay giữa hồi — thông tin mới làm thay đổi mục tiêu hoặc hiểu biết của nhân vật</li>
+      <li><strong>Plot Point 2 / All Is Lost:</strong> khoảnh khắc nhân vật tưởng đã thất bại — thường ở 75%</li>
+    </ul>
+    <div class="compare">
+      <strong>Sai lầm phổ biến:</strong> Hồi 2 chỉ là "cảnh hành động liên tục". Đúng: hồi 2 là chuỗi <em>quyết định</em> — mỗi quyết định bộc lộ thêm về nhân vật và đẩy stakes lên.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-9">
+    <div class="slide-number">2.4</div>
+    <h2>2.4 Hồi 3 — Resolution (25%)</h2>
+    <p>Mục tiêu: trả lời câu hỏi đặt ra ở hồi 1, theo cách bất ngờ nhưng tất yếu (Aristotle: "surprising yet inevitable").</p>
+    <ul>
+      <li><strong>Climax:</strong> đối đầu cuối cùng — nhân vật phải <em>chủ động</em>, dùng cái họ học được trong hồi 2</li>
+      <li><strong>Falling action:</strong> hậu quả của climax</li>
+      <li><strong>Denouement:</strong> "thế giới mới" — cho thấy sự thay đổi</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Quy tắc vàng cho climax</div>
+      Climax phải được <em>nhân vật chính</em> giải quyết, dùng sự thay đổi nội tâm họ vừa trải qua. <em>Deus ex machina</em> (giải pháp từ trên trời rơi xuống) là cách nhanh nhất giết câu chuyện.
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ phim 2 phút (giả định)</div>
+      Một robot dọn rác trên hành tinh chết. Climax: nó tìm thấy hạt giống cuối cùng. Nó không cần "đánh bại" ai — chỉ cần <em>quyết định</em> trồng hạt giống thay vì nén lại thành rác. Kết: mầm xanh đầu tiên.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">2.5</div>
+    <h2>2.5 Áp dụng cho phim AI 2–3 phút</h2>
+    <p>Tỷ lệ kinh điển vẫn đúng, chỉ là ép vào timeline ngắn hơn nhiều:</p>
+    <table>
+      <tr>
+        <th>Phim 90 phút</th>
+        <th>Phim 2 phút</th>
+        <th>Phim 30 giây (TikTok)</th>
+      </tr>
+      <tr>
+        <td>Hồi 1: 22'</td>
+        <td>Hồi 1: 30s</td>
+        <td>Hồi 1: 7s</td>
+      </tr>
+      <tr>
+        <td>Hồi 2: 45'</td>
+        <td>Hồi 2: 60s</td>
+        <td>Hồi 2: 15s</td>
+      </tr>
+      <tr>
+        <td>Hồi 3: 23'</td>
+        <td>Hồi 3: 30s</td>
+        <td>Hồi 3: 8s</td>
+      </tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Hệ quả thiết kế</div>
+      Mỗi shot trong phim AI 2 phút (giả sử shot trung bình 4s) chỉ có ~30 shot tổng. Hồi 1 = 7–8 shot. Mỗi shot phải làm việc cực hiệu quả — không có chỗ cho cảnh "đẹp mà thừa".
+    </div>
+  </div>
+
+  <!-- ====================== SECTION 3 ====================== -->
+  <div class="slide section-divider" id="slide-11">
+    <h1>Phần 3 — Beat Sheet</h1>
+    <div class="subtitle">Save the Cat, Hero's Journey, và mini-beat cho short film</div>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 Beat sheet là gì?</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <strong>Beat sheet</strong> là danh sách các "khoảnh khắc bắt buộc" (story beats) cần xảy ra theo thứ tự để câu chuyện hoạt động. Nó nằm giữa logline (1 câu) và kịch bản (full script).
+    </div>
+    <p>Tại sao quan trọng cho phim AI:</p>
+    <ul>
+      <li>Beat sheet ép bạn xác định <em>chính xác</em> điều gì xảy ra ở phút nào, trước khi đốt credit AI</li>
+      <li>Sửa beat sheet rẻ. Sửa 30 shot đã render đắt</li>
+      <li>Beat sheet là input tốt nhất cho cả storyboard AI lẫn script-to-video pipeline</li>
+    </ul>
+    <p>Hai khung phổ biến nhất: <strong>Save the Cat</strong> (Blake Snyder, 2005) và <strong>Hero's Journey</strong> (Joseph Campbell, 1949).</p>
+  </div>
+
+  <div class="slide" id="slide-13">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 Save the Cat — 15 beats (Snyder, 2005)</h2>
+    <table>
+      <tr><th>#</th><th>Beat</th><th>% phim</th><th>Vai trò</th></tr>
+      <tr><td>1</td><td>Opening Image</td><td>0%</td><td>Snapshot "trước"</td></tr>
+      <tr><td>2</td><td>Theme Stated</td><td>5%</td><td>Câu thoại đặt theme ngầm</td></tr>
+      <tr><td>3</td><td>Set-Up</td><td>1–10%</td><td>Thế giới + nhân vật + flaw</td></tr>
+      <tr><td>4</td><td>Catalyst</td><td>10%</td><td>Inciting incident</td></tr>
+      <tr><td>5</td><td>Debate</td><td>10–20%</td><td>"Tôi có nên...?"</td></tr>
+      <tr><td>6</td><td>Break into Two</td><td>20%</td><td>Quyết định hành động</td></tr>
+      <tr><td>7</td><td>B Story</td><td>22%</td><td>Subplot/relationship</td></tr>
+      <tr><td>8</td><td>Fun and Games</td><td>20–50%</td><td>"Promise of the premise"</td></tr>
+      <tr><td>9</td><td>Midpoint</td><td>50%</td><td>False victory/defeat</td></tr>
+      <tr><td>10</td><td>Bad Guys Close In</td><td>50–75%</td><td>Stakes tăng</td></tr>
+      <tr><td>11</td><td>All Is Lost</td><td>75%</td><td>Đáy</td></tr>
+      <tr><td>12</td><td>Dark Night of the Soul</td><td>75–80%</td><td>Suy ngẫm</td></tr>
+      <tr><td>13</td><td>Break into Three</td><td>80%</td><td>Giải pháp loé sáng</td></tr>
+      <tr><td>14</td><td>Finale</td><td>80–99%</td><td>Climax</td></tr>
+      <tr><td>15</td><td>Final Image</td><td>100%</td><td>Snapshot "sau"</td></tr>
+    </table>
+  </div>
+
+  <div class="slide" id="slide-14">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 Hero's Journey — Campbell &amp; Vogler</h2>
+    <p>Khung 12 stage của Vogler (1992), rút gọn từ 17 stage của Campbell. Phù hợp với phim hành động, fantasy, sci-fi.</p>
+    <div class="illustration">
+      <svg viewBox="0 0 500 380" xmlns="http://www.w3.org/2000/svg">
+        <!-- Threshold line -->
+        <line x1="250" y1="20" x2="250" y2="360" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="180" y="15" text-anchor="end" font-size="11" fill="#666" font-family="Georgia">Ordinary World</text>
+        <text x="320" y="15" text-anchor="start" font-size="11" fill="#666" font-family="Georgia">Special World</text>
+
+        <!-- Circle -->
+        <circle cx="250" cy="195" r="155" fill="none" stroke="#3b5998" stroke-width="1.5"/>
+
+        <!-- Stage points and labels -->
+        <g font-family="Georgia" font-size="11" fill="#1a1a1a">
+          <!-- 1. Ordinary World - top left -->
+          <circle cx="250" cy="40" r="5" fill="#4a7c59"/>
+          <text x="240" y="32" text-anchor="end">1. Ordinary World</text>
+
+          <!-- 2. Call to Adventure -->
+          <circle cx="172" cy="65" r="5" fill="#4a7c59"/>
+          <text x="160" y="63" text-anchor="end">2. Call to Adventure</text>
+
+          <!-- 3. Refusal -->
+          <circle cx="115" cy="120" r="5" fill="#4a7c59"/>
+          <text x="103" y="123" text-anchor="end">3. Refusal</text>
+
+          <!-- 4. Meeting the Mentor -->
+          <circle cx="95" cy="195" r="5" fill="#4a7c59"/>
+          <text x="83" y="198" text-anchor="end">4. Meeting Mentor</text>
+
+          <!-- 5. Crossing Threshold -->
+          <circle cx="115" cy="270" r="5" fill="#f9a825"/>
+          <text x="103" y="273" text-anchor="end">5. Crossing Threshold</text>
+
+          <!-- 6. Tests, Allies, Enemies -->
+          <circle cx="172" cy="325" r="5" fill="#f9a825"/>
+          <text x="160" y="328" text-anchor="end">6. Tests &amp; Allies</text>
+
+          <!-- 7. Approach -->
+          <circle cx="250" cy="350" r="5" fill="#f9a825"/>
+          <text x="250" y="370" text-anchor="middle">7. Approach</text>
+
+          <!-- 8. Ordeal -->
+          <circle cx="328" cy="325" r="5" fill="#c0392b"/>
+          <text x="340" y="328" text-anchor="start">8. Ordeal</text>
+
+          <!-- 9. Reward -->
+          <circle cx="385" cy="270" r="5" fill="#c0392b"/>
+          <text x="397" y="273" text-anchor="start">9. Reward</text>
+
+          <!-- 10. Road Back -->
+          <circle cx="405" cy="195" r="5" fill="#c0392b"/>
+          <text x="417" y="198" text-anchor="start">10. Road Back</text>
+
+          <!-- 11. Resurrection -->
+          <circle cx="385" cy="120" r="5" fill="#c0392b"/>
+          <text x="397" y="123" text-anchor="start">11. Resurrection</text>
+
+          <!-- 12. Return -->
+          <circle cx="328" cy="65" r="5" fill="#4a7c59"/>
+          <text x="340" y="63" text-anchor="start">12. Return with Elixir</text>
+        </g>
+      </svg>
+    </div>
+    <div class="illustration-caption">Hình 3.3: Hero's Journey vẽ thành vòng tròn — phía trái là thế giới quen thuộc, phía phải là "thế giới đặc biệt" nơi nhân vật biến đổi.</div>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">3.4</div>
+    <h2>3.4 Mini Beat Sheet cho phim 2–3 phút</h2>
+    <p>Cho format ngắn, tôi đề xuất mini-beat 7 điểm — đủ cấu trúc, không quá tải:</p>
+    <ol>
+      <li><strong>Hook (0–10s):</strong> Hình ảnh mở khiến khán giả không scroll qua</li>
+      <li><strong>Setup (10–25s):</strong> Ai? Muốn gì? Ở đâu?</li>
+      <li><strong>Inciting Incident (25–35s):</strong> Sự kiện phá vỡ status quo</li>
+      <li><strong>Escalation (35–80s):</strong> 2–3 nỗ lực, mỗi cái thất bại theo cách thông tin hơn cái trước</li>
+      <li><strong>Crisis / All Is Lost (80–100s):</strong> Dường như bất khả thi</li>
+      <li><strong>Climax (100–115s):</strong> Quyết định/hành động cuối — bộc lộ sự thay đổi</li>
+      <li><strong>Resolution (115–120s):</strong> Hình ảnh cuối phản chiếu hình ảnh mở, cho thấy biến đổi</li>
+    </ol>
+    <div class="example">
+      <div class="example-label">Áp dụng — robot dọn rác (tiếp ví dụ slide 9)</div>
+      <strong>1.</strong> Robot ở giữa biển rác. <strong>2.</strong> Routine: nén rác mỗi ngày. <strong>3.</strong> Tìm thấy hạt giống. <strong>4a.</strong> Định nén → ngần ngừ. <strong>4b.</strong> Đào lỗ → đất quá khô. <strong>4c.</strong> Tìm nguồn nước cuối cùng. <strong>5.</strong> Hết pin. <strong>6.</strong> Dùng giọt dầu của chính mình tưới hạt giống. <strong>7.</strong> Mầm xanh đầu tiên.
+    </div>
+  </div>
+
+  <!-- ====================== SECTION 4 ====================== -->
+  <div class="slide section-divider" id="slide-16">
+    <h1>Phần 4 — Character Arc</h1>
+    <div class="subtitle">Sự thay đổi nội tâm của nhân vật</div>
+  </div>
+
+  <div class="slide" id="slide-17">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 Character Arc là gì?</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <strong>Character arc</strong> là sự biến đổi nội tâm của nhân vật từ đầu đến cuối câu chuyện — cụ thể là sự thay đổi trong <em>niềm tin sai</em> (false belief) mà nhân vật mang theo từ đầu.
+    </div>
+    <p>Plot là chuỗi sự kiện. Character arc là chuỗi <em>nhận thức</em>. Cả hai phải xảy ra song song — sự kiện ngoài dồn ép nhân vật vào những hoàn cảnh buộc niềm tin sai phải bị thử thách.</p>
+    <div class="key-point">
+      <div class="key-point-label">Test phim của bạn</div>
+      Hỏi: <em>"Nhân vật tin gì sai ở phút 0? Họ tin gì đúng ở phút cuối?"</em> Nếu không trả lời được, phim chưa có character arc — chỉ có chuỗi sự kiện.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-18">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 Năm loại Character Arc</h2>
+    <div class="illustration">
+      <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Axes -->
+        <line x1="50" y1="240" x2="660" y2="240" stroke="#1a1a1a" stroke-width="1.2"/>
+        <line x1="50" y1="20" x2="50" y2="240" stroke="#1a1a1a" stroke-width="1.2"/>
+        <text x="40" y="30" text-anchor="end" font-size="10" fill="#666" font-family="Georgia">Tốt</text>
+        <text x="40" y="245" text-anchor="end" font-size="10" fill="#666" font-family="Georgia">Xấu</text>
+        <text x="350" y="265" text-anchor="middle" font-size="11" fill="#666" font-family="Georgia">Thời gian</text>
+
+        <!-- 1. Positive (rise) -->
+        <path d="M 50 200 Q 200 195 350 130 T 660 50" fill="none" stroke="#4a7c59" stroke-width="2"/>
+        <text x="670" y="55" font-size="11" fill="#4a7c59" font-family="Georgia">Positive (tăng tiến)</text>
+
+        <!-- 2. Negative (fall) -->
+        <path d="M 50 80 Q 200 90 350 140 T 660 220" fill="none" stroke="#c0392b" stroke-width="2"/>
+        <text x="670" y="225" font-size="11" fill="#c0392b" font-family="Georgia">Negative (suy thoái)</text>
+
+        <!-- 3. Flat -->
+        <path d="M 50 130 L 660 130" fill="none" stroke="#3b5998" stroke-width="2" stroke-dasharray="5,4"/>
+        <text x="670" y="135" font-size="11" fill="#3b5998" font-family="Georgia">Flat (kiên định)</text>
+
+        <!-- 4. Corruption -->
+        <path d="M 50 60 Q 250 70 400 160 Q 550 220 660 230" fill="none" stroke="#8e44ad" stroke-width="2"/>
+        <text x="670" y="235" font-size="11" fill="#8e44ad" font-family="Georgia">Corruption</text>
+
+        <!-- 5. Redemption -->
+        <path d="M 50 220 Q 250 220 350 180 Q 500 110 660 60" fill="none" stroke="#f9a825" stroke-width="2"/>
+        <text x="570" y="55" font-size="11" fill="#f9a825" font-family="Georgia">Redemption</text>
+      </svg>
+    </div>
+    <ol>
+      <li><strong>Positive arc:</strong> Niềm tin sai → niềm tin đúng (Frodo, Simba, WALL-E)</li>
+      <li><strong>Negative arc:</strong> Niềm tin sai → niềm tin sai hơn (Anakin → Vader)</li>
+      <li><strong>Flat arc:</strong> Niềm tin đúng từ đầu, nhân vật thay đổi <em>thế giới</em> thay vì bản thân (Captain America)</li>
+      <li><strong>Corruption arc:</strong> Niềm tin đúng → niềm tin sai (Walter White)</li>
+      <li><strong>Redemption arc:</strong> Niềm tin sai → niềm tin đúng <em>sau khi</em> đã đi quá xa (Darth Vader cuối)</li>
+    </ol>
+  </div>
+
+  <div class="slide" id="slide-19">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 Want vs Need — cốt lõi của character arc</h2>
+    <p>Khái niệm quan trọng nhất bạn sẽ học tuần này:</p>
+    <table>
+      <tr>
+        <th>Want (Ham muốn ngoài)</th>
+        <th>Need (Nhu cầu trong)</th>
+      </tr>
+      <tr>
+        <td>Mục tiêu cụ thể, hữu hình</td>
+        <td>Sự trưởng thành nội tâm</td>
+      </tr>
+      <tr>
+        <td>Lái plot (driving plot)</td>
+        <td>Lái character arc</td>
+      </tr>
+      <tr>
+        <td>Nhân vật biết rõ</td>
+        <td>Nhân vật không nhận ra (đến gần cuối)</td>
+      </tr>
+      <tr>
+        <td>"Tôi muốn thắng giải"</td>
+        <td>"Tôi cần học cách tin vào bản thân"</td>
+      </tr>
+    </table>
+    <div class="example">
+      <div class="example-label">Ví dụ — Up (Pixar, 2009)</div>
+      <strong>Want:</strong> Carl muốn đưa căn nhà bay đến thác Paradise Falls (lời hứa với Ellie). <strong>Need:</strong> Carl cần học cách buông quá khứ và mở lòng với cuộc sống mới (Russell). Climax: Carl <em>thả</em> căn nhà — vì want đã được thay thế bởi need.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-20">
+    <div class="slide-number">4.4</div>
+    <h2>4.4 Knowledge Check — Phần 1–4</h2>
+
+    <div class="quiz" id="quiz-1">
+      <div class="quiz-question">Q1: Theo Aristotle và Syd Field, climax của một câu chuyện nên được giải quyết bởi ai?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Một sự kiện ngoại cảnh xảy ra đúng lúc</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Chính nhân vật chính, sử dụng sự thay đổi nội tâm họ trải qua</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) Một nhân vật phụ mạnh hơn xuất hiện cứu nguy</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Một twist khiến vấn đề tự biến mất</button>
+      <div class="quiz-explanation">Climax phải là kết quả của character arc. Giải pháp ngoại cảnh được gọi là "deus ex machina" và làm câu chuyện mất sức nặng vì nhân vật không phải <em>kiếm</em> được kết cục.</div>
+    </div>
+
+    <div class="quiz" id="quiz-2">
+      <div class="quiz-question">Q2: Trong phim Up, sự khác biệt giữa Want và Need của Carl là gì?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Want và Need là cùng một thứ</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) Want = mở lòng với Russell; Need = tới Paradise Falls</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) Want = tới Paradise Falls; Need = buông quá khứ và kết nối với người sống</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Carl không có character arc</button>
+      <div class="quiz-explanation">Want là mục tiêu hữu hình lái plot (đưa nhà tới thác). Need là sự trưởng thành nội tâm (kết nối với Russell). Climax xảy ra khi Carl chọn Need over Want — thả căn nhà.</div>
+    </div>
+  </div>
+
+  <!-- ====================== SECTION 5 ====================== -->
+  <div class="slide section-divider" id="slide-21">
+    <h1>Phần 5 — Show, Don't Tell</h1>
+    <div class="subtitle">Nguyên tắc quan trọng nhất cho phim AI</div>
+  </div>
+
+  <div class="slide" id="slide-22">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 Nguyên tắc cốt lõi</h2>
+    <div class="definition">
+      <div class="definition-label">Show, Don't Tell</div>
+      Truyền tải thông tin qua <em>hành vi quan sát được</em> thay vì lời giải thích trực tiếp. Khán giả tự suy luận → cảm xúc gấp 10 lần.
+    </div>
+    <p>Đặc biệt quan trọng cho phim AI vì:</p>
+    <ul>
+      <li>AI video models cực giỏi tạo cảnh, kém ở viết thoại tự nhiên</li>
+      <li>Phim ngắn không có thời gian giải thích bằng lời</li>
+      <li>Visual storytelling là <em>ngôn ngữ gốc</em> của phim — Pixar có quy tắc nội bộ "no dialogue in the first 10 minutes" cho nhiều phim ngắn</li>
+    </ul>
+  </div>
+
+  <div class="slide" id="slide-23">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 Tell vs Show — Ví dụ</h2>
+    <table>
+      <tr><th>Tell ❌</th><th>Show ✓</th></tr>
+      <tr>
+        <td>Voice-over: "John rất cô đơn."</td>
+        <td>John ngồi ăn tối một mình, đặt 2 bộ đũa vì quen, rồi cất lại 1 bộ.</td>
+      </tr>
+      <tr>
+        <td>Thoại: "Tôi rất giàu có."</td>
+        <td>Anh ta đốt một tờ tiền để châm xì gà.</td>
+      </tr>
+      <tr>
+        <td>Text on screen: "5 năm trôi qua"</td>
+        <td>Cùng góc máy, đứa bé giờ đã cao bằng cha mình.</td>
+      </tr>
+      <tr>
+        <td>"Cô ấy không tin tưởng anh ta"</td>
+        <td>Cô đặt tay lên ví khi anh ta đến gần.</td>
+      </tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Test 3 giây</div>
+      Tắt tiếng phim của bạn 3 giây bất kỳ. Người xem có hiểu được điều gì đang xảy ra về mặt cảm xúc không? Nếu không → bạn đang <em>tell</em> quá nhiều.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-24">
+    <div class="slide-number">5.3</div>
+    <h2>5.3 Bốn kênh "show" trong phim hoạt hình</h2>
+    <ol>
+      <li><strong>Hành vi (action):</strong> Nhân vật làm gì khi không ai nhìn</li>
+      <li><strong>Phản ứng (reaction):</strong> Mặt nhân vật đáp lại sự kiện — thường mạnh hơn chính sự kiện (Hitchcock: "the reaction shot is the entire art")</li>
+      <li><strong>Môi trường (environment):</strong> Đồ vật trong phòng, ánh sáng, weather. <em>Production design = personality.</em></li>
+      <li><strong>Quan hệ không gian (blocking):</strong> Khoảng cách giữa các nhân vật trong khung — gần/xa, cao/thấp, ai chiếm trung tâm</li>
+    </ol>
+    <div class="example">
+      <div class="example-label">Ví dụ Pixar — opening của Up</div>
+      Trong 4 phút đầu phim Up, không có một câu thoại nào — chỉ có Carl và Ellie sống cả đời với nhau. Cả 4 kênh trên đều được dùng tối đa: hành vi (đập tiết kiệm), phản ứng (Carl khi biết tin Ellie không thể có con), môi trường (chai bia rỗng trong cảnh viện), blocking (Carl ngồi một mình trong nhà thờ rộng).
+    </div>
+  </div>
+
+  <!-- ====================== SECTION 6 ====================== -->
+  <div class="slide section-divider" id="slide-25">
+    <h1>Phần 6 — Logline</h1>
+    <div class="subtitle">Một câu chứa cả phim của bạn</div>
+  </div>
+
+  <div class="slide" id="slide-26">
+    <div class="slide-number">6.1</div>
+    <h2>6.1 Logline là gì?</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <strong>Logline</strong> = 1–2 câu mô tả phim, gồm: nhân vật chính, mục tiêu, đối kháng, stakes. Là công cụ test quan trọng nhất giai đoạn ý tưởng.
+    </div>
+    <p>Ba lý do bắt buộc viết logline trước khi viết kịch bản:</p>
+    <ul>
+      <li><strong>Lọc ý tưởng:</strong> Nếu logline nghe nhạt, kịch bản sẽ nhạt. Sửa logline rẻ hơn sửa 30 cảnh.</li>
+      <li><strong>Định hướng prompt:</strong> Logline tốt → prompt cho AI image gen tốt. Mọi style frame nên align với logline.</li>
+      <li><strong>Pitch &amp; distribution:</strong> Festival, social, đồng nghiệp — ai cũng hỏi "phim của em về cái gì?". Trả lời 10 giây.</li>
+    </ul>
+  </div>
+
+  <div class="slide" id="slide-27">
+    <div class="slide-number">6.2</div>
+    <h2>6.2 Công thức logline</h2>
+    <p>Có nhiều biến thể, công thức 5 phần là phổ biến nhất:</p>
+    <div class="illustration">
+      <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="60" width="120" height="50" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.5" rx="4"/>
+        <text x="80" y="80" text-anchor="middle" font-size="11" fill="#4a7c59" font-family="Georgia" font-weight="bold">1. Hook</text>
+        <text x="80" y="98" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">"Khi/Sau khi..."</text>
+
+        <rect x="155" y="60" width="120" height="50" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.5" rx="4"/>
+        <text x="215" y="80" text-anchor="middle" font-size="11" fill="#3b5998" font-family="Georgia" font-weight="bold">2. Protagonist</text>
+        <text x="215" y="98" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">tính từ + danh từ</text>
+
+        <rect x="290" y="60" width="120" height="50" fill="#fff8e1" stroke="#f9a825" stroke-width="1.5" rx="4"/>
+        <text x="350" y="80" text-anchor="middle" font-size="11" fill="#b8860b" font-family="Georgia" font-weight="bold">3. Goal</text>
+        <text x="350" y="98" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">"phải / để..."</text>
+
+        <rect x="425" y="60" width="120" height="50" fill="#fdf0ef" stroke="#c0392b" stroke-width="1.5" rx="4"/>
+        <text x="485" y="80" text-anchor="middle" font-size="11" fill="#c0392b" font-family="Georgia" font-weight="bold">4. Antagonist</text>
+        <text x="485" y="98" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">"chống lại..."</text>
+
+        <rect x="560" y="60" width="120" height="50" fill="#f5f5f5" stroke="#666" stroke-width="1.5" rx="4"/>
+        <text x="620" y="80" text-anchor="middle" font-size="11" fill="#1a1a1a" font-family="Georgia" font-weight="bold">5. Stakes</text>
+        <text x="620" y="98" text-anchor="middle" font-size="10" fill="#1a1a1a" font-family="Georgia">"nếu không..."</text>
+
+        <text x="350" y="160" text-anchor="middle" font-size="13" fill="#1a1a1a" font-family="Georgia" font-style="italic">[Hook], [protagonist] phải [goal] chống lại [antagonist] nếu không [stakes].</text>
+      </svg>
+    </div>
+    <div class="example">
+      <div class="example-label">Logline cho ví dụ robot dọn rác</div>
+      "Trên một hành tinh chết phủ rác, một robot dọn rác cô độc phải tìm cách trồng được hạt giống cuối cùng còn sót, đối mặt với việc pin sắp cạn — nếu thất bại, sự sống sẽ tuyệt diệt vĩnh viễn."
+    </div>
+  </div>
+
+  <div class="slide" id="slide-28">
+    <div class="slide-number">6.3</div>
+    <h2>6.3 Workshop — phân tích logline</h2>
+    <p>Phân tích các logline kinh điển:</p>
+    <div class="example">
+      <div class="example-label">Jaws (1975)</div>
+      "Một cảnh sát trưởng sợ nước phải săn một con cá mập trắng khổng lồ đang khủng bố một thị trấn biển trước Lễ Quốc khánh."
+      <br><br>
+      <strong>Phân tích:</strong> Hook (cảnh sát trưởng <em>sợ nước</em> — irony!) · Goal (săn cá mập) · Antagonist (cá mập) · Stakes (thị trấn, deadline 4/7).
+    </div>
+    <div class="example">
+      <div class="example-label">WALL-E (2008)</div>
+      "Một robot dọn rác cô đơn cuối cùng còn sót lại trên Trái Đất phải lén theo robot trinh sát mà cậu phải lòng vào không gian, để cứu nhân loại khỏi 700 năm sống thụ động trên tàu vũ trụ."
+      <br><br>
+      <strong>Phân tích:</strong> Đầy đủ 5 phần — và đặc biệt là "phải lòng" làm logline thành story chứ không phải premise.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-29">
+    <div class="slide-number">6.4</div>
+    <h2>6.4 Lỗi logline thường gặp</h2>
+    <ol>
+      <li><strong>Premise không phải story:</strong> "Một thế giới nơi loài mèo cai trị" — đây là <em>setting</em>, không có nhân vật, mục tiêu, xung đột.</li>
+      <li><strong>Quá vague:</strong> "Một anh hùng phải chiến đấu với cái ác" — không specific.</li>
+      <li><strong>Giới thiệu plot, quên character:</strong> "Cậu bé tìm thấy chiếc nhẫn ma thuật và phải đi xa". Không có irony, không có gì để quan tâm.</li>
+      <li><strong>Spoiler ending:</strong> Logline nên chứa setup + central conflict, không phải kết.</li>
+      <li><strong>Quá dài:</strong> Logline hơn 50 từ là dấu hiệu story chưa được nghĩ kỹ.</li>
+    </ol>
+    <div class="key-point">
+      <div class="key-point-label">Iron rule</div>
+      Logline không chứa câu hỏi. Đừng viết "Liệu anh ta sẽ thành công?" — câu hỏi đó phải <em>nảy ra trong đầu khán giả</em> sau khi nghe logline.
+    </div>
+  </div>
+
+  <!-- ====================== SECTION 7 ====================== -->
+  <div class="slide section-divider" id="slide-30">
+    <h1>Phần 7 — Tổng kết và bài tập</h1>
+    <div class="subtitle">Áp dụng vào quy trình AI filmmaking</div>
+  </div>
+
+  <div class="slide" id="slide-31">
+    <div class="slide-number">7.1</div>
+    <h2>7.1 Tích hợp vào pipeline AI</h2>
+    <p>Mọi thứ học hôm nay sẽ là input cho các tuần tiếp theo:</p>
+    <table>
+      <tr><th>Output tuần 2</th><th>Sẽ dùng ở tuần</th><th>Mục đích</th></tr>
+      <tr><td>Logline</td><td>4 (style bible)</td><td>Định hướng visual style</td></tr>
+      <tr><td>Beat sheet 7 điểm</td><td>6 (storyboard)</td><td>Map từng beat thành shot</td></tr>
+      <tr><td>Character arc statement</td><td>5 (character design)</td><td>Quyết định trang phục/biểu cảm thay đổi thế nào</td></tr>
+      <tr><td>Want vs Need</td><td>9 (voice/audio)</td><td>Định hướng tone of voice</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Đừng skip</div>
+      Hấp dẫn của AI là "render ngay". Đừng. Một tuần đầu tư vào pre-production tiết kiệm cho bạn 5–10× compute cost ở giai đoạn generation.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-32">
+    <div class="slide-number">7.2</div>
+    <h2>7.2 Bài tập tuần 2</h2>
+    <p>Nộp trước buổi học tuần 3 (file PDF, 1–2 trang):</p>
+    <ol>
+      <li><strong>Logline (1 câu, &lt;50 từ)</strong> cho phim 2–3 phút bạn sẽ làm cuối khoá. Phải có đủ 5 thành phần.</li>
+      <li><strong>Want vs Need statement:</strong> 2 câu, mỗi câu 1 dòng.</li>
+      <li><strong>Mini beat sheet 7 điểm</strong> (theo format slide 3.4), mỗi beat 1–2 câu.</li>
+      <li><strong>Character arc statement:</strong> Loại arc nào (positive/negative/flat...)? Niềm tin sai ở đầu? Niềm tin đúng ở cuối? Khoảnh khắc nào trong beat sheet là điểm "lật" nhận thức?</li>
+      <li><strong>Reference film:</strong> Tìm 1 phim ngắn (2–10 phút) trên Vimeo Staff Picks hoặc Pixar SparkShorts có cấu trúc bạn ngưỡng mộ. Phân tích 3 hồi của nó (1 đoạn văn).</li>
+    </ol>
+    <p><strong>Tiêu chí chấm:</strong> độ chặt chẽ của cấu trúc (40%), độ specific của character (30%), khả năng film-able trong 2–3 phút (20%), reflection chất lượng (10%).</p>
+  </div>
+
+  <div class="slide" id="slide-33">
+    <div class="slide-number">7.3</div>
+    <h2>7.3 Đọc thêm và xem thêm</h2>
+    <h3>Sách (cốt lõi)</h3>
+    <ul>
+      <li><strong>Save the Cat!</strong> — Blake Snyder (2005). Bible cho beat sheet.</li>
+      <li><strong>Story</strong> — Robert McKee (1997). Sâu hơn, dày hơn, đáng đầu tư.</li>
+      <li><strong>The Anatomy of Story</strong> — John Truby (2007). Hệ thống 22-step alternative.</li>
+    </ul>
+    <h3>Bài viết / video</h3>
+    <ul>
+      <li>Pixar's Rules of Storytelling — 22 quy tắc của Emma Coats</li>
+      <li>StudioBinder YouTube channel — đặc biệt loạt "Cinematic Storytelling"</li>
+      <li>Lessons from the Screenplay (YouTube) — phân tích kịch bản phim hay</li>
+    </ul>
+    <h3>Phim ngắn nên xem</h3>
+    <ul>
+      <li><em>Paperman</em> (Disney, 2012, 7') — show don't tell mẫu mực</li>
+      <li><em>Bao</em> (Pixar, 2018, 8') — character arc trong phim không lời</li>
+      <li><em>The Present</em> (2014, 4') — beat sheet hoàn hảo</li>
+      <li><em>Kitbull</em> (Pixar SparkShorts, 2019, 9') — emotional arc</li>
+    </ul>
+  </div>
+
+  <div class="slide title-slide" id="slide-34">
+    <h1>Hết tuần 2</h1>
+    <div class="subtitle">Tuần sau: Cinematography &amp; 12 Animation Principles</div>
+    <div class="author">Mang theo logline + beat sheet — chúng ta sẽ visualise chúng</div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

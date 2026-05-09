@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuần 2 — Lọc nâng cao và xử lý NULL</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+    p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.15rem; color: #666; margin-bottom: 20px; font-style: italic; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point-label { font-weight: bold; color: #b8810a; margin-bottom: 6px; }
+    .warning {
+      background: #fdf0ef; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-label { font-weight: bold; color: #c0392b; margin-bottom: 6px; }
+    pre {
+      background: #f5f5f5; padding: 14px 18px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.95rem; margin: 10px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 12px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 6px 12px; text-align: left;
+    }
+    th { background: #f0f0f0; font-weight: 600; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #3b5998; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 6px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 14px;
+    }
+    .slide.title-slide {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; margin-bottom: 12px; }
+    .illustration {
+      display: flex; justify-content: center; margin: 14px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.88rem; color: #666;
+      margin-top: 4px; font-style: italic;
+    }
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.92rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .schema-block {
+      background: #fafafa; border: 1px solid #e0e0e0;
+      padding: 12px 16px; border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 0.92rem; margin: 8px 0;
+    }
+    .dialect-table th { background: #e8f0fe; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ TITLE ============ -->
+  <div class="slide title-slide active" id="slide-0">
+    <h1>Tuần 2</h1>
+    <h1 style="font-size: 1.8rem; color: #555;">Lọc nâng cao, biến đổi và xử lý NULL</h1>
+    <p class="subtitle" style="margin-top: 24px;">SQL cho Interview — Lộ trình 10 tuần</p>
+    <p style="margin-top: 40px; color: #999; font-size: 0.9rem;">Nhấn phím → để bắt đầu &middot; T để xem mục lục</p>
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <div class="slide section-divider" id="slide-1">
+    <h1>1. Tổng quan tuần 2</h1>
+  </div>
+
+  <div class="slide" id="slide-2">
+    <div class="slide-number">1.1</div>
+    <h2>1.1 Mục tiêu và nguyên tắc tuần này</h2>
+    <p>Tuần trước bạn đã viết được query đơn giản. Tuần này nâng cấp <em>vũ khí lọc</em> và học cách sống chung với NULL — kẻ thù số một trong interview SQL.</p>
+    <h3>Sau tuần 2 bạn cần làm được</h3>
+    <ul>
+      <li>Viết predicate phức tạp với BETWEEN, IN, LIKE, regex.</li>
+      <li>Giải thích chính xác vì sao một query "trông đúng" lại bỏ sót dòng NULL.</li>
+      <li>Dùng CASE WHEN để biến đổi dữ liệu trong SELECT, lọc trong WHERE, và sắp xếp tùy ý trong ORDER BY.</li>
+      <li>Sử dụng string và date function ở mức không cần tra docs.</li>
+      <li>Nhận diện sự khác biệt phương ngữ MySQL / PostgreSQL / SQL Server cho các function thường gặp.</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Câu hỏi định hướng</div>
+      Nếu một interviewer đưa bạn 5 query đã viết sẵn và hỏi "query nào có bug?", bạn cần trả lời được trong 30 giây mỗi query. Tuần này luyện reflex đó.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-3">
+    <div class="slide-number">1.2</div>
+    <h2>1.2 Tại sao NULL là bug interview #1</h2>
+    <p>Trong khảo sát các bài LeetCode SQL Easy/Medium được report nhiều nhất, hơn 60% lỗi của user đến từ NULL handling. Có 3 lý do:</p>
+    <ol>
+      <li><strong>NULL không phải là một giá trị</strong> — nó là "thiếu thông tin". Nó không bằng chính nó (<span class="inline-code">NULL = NULL</span> trả về NULL, không phải TRUE).</li>
+      <li><strong>Logic ba giá trị (TRUE/FALSE/NULL)</strong> phá vỡ trực giác Boolean của lập trình viên đến từ Python/Java.</li>
+      <li><strong>Aggregation và NULL ứng xử khác nhau</strong> tùy hàm: <span class="inline-code">COUNT(*)</span> đếm tất, <span class="inline-code">COUNT(col)</span> bỏ NULL.</li>
+    </ol>
+    <div class="warning">
+      <div class="warning-label">Reflex cần xây trong tuần này</div>
+      Mỗi khi nhìn thấy <span class="inline-code">&lt;&gt;</span>, <span class="inline-code">NOT IN</span>, <span class="inline-code">!=</span>, hoặc tham gia trong logic AND/OR phức tạp — phải tự hỏi: "cột này có thể NULL không?" Nếu có, viết <span class="inline-code">OR ... IS NULL</span> hoặc <span class="inline-code">COALESCE</span>.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2 ============ -->
+  <div class="slide section-divider" id="slide-4">
+    <h1>2. Predicate nâng cao</h1>
+  </div>
+
+  <div class="slide" id="slide-5">
+    <div class="slide-number">2.1</div>
+    <h2>2.1 BETWEEN — bao gồm cả hai biên</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">x BETWEEN a AND b</span> tương đương <span class="inline-code">x &gt;= a AND x &lt;= b</span>. <strong>Bao gồm cả hai biên.</strong>
+    </div>
+<pre><code>-- Lấy đơn hàng quý 1 năm 2024
+SELECT * FROM orders
+WHERE order_date BETWEEN '2024-01-01' AND '2024-03-31';</code></pre>
+    <div class="warning">
+      <div class="warning-label">Bẫy date — fence-post error</div>
+      <p>Cột <span class="inline-code">order_date</span> kiểu <strong>TIMESTAMP</strong> (có giờ phút giây): <span class="inline-code">BETWEEN '2024-03-01' AND '2024-03-31'</span> sẽ bỏ sót đơn lúc 14:00 ngày 31/3, vì <span class="inline-code">'2024-03-31'</span> được hiểu là <span class="inline-code">'2024-03-31 00:00:00'</span>.</p>
+<pre><code>-- ĐÚNG cho TIMESTAMP
+WHERE order_date &gt;= '2024-03-01'
+  AND order_date &lt;  '2024-04-01';   -- nửa-mở half-open</code></pre>
+      Nửa-mở (\([a, b)\)) là pattern an toàn cho mọi date arithmetic.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-6">
+    <div class="slide-number">2.2</div>
+    <h2>2.2 IN — kiểm tra thuộc tập</h2>
+<pre><code>-- Tương đương 3 OR:
+WHERE country IN ('Vietnam', 'Australia', 'Japan')
+-- = WHERE country = 'Vietnam' OR country = 'Australia' OR country = 'Japan'</code></pre>
+    <p>IN có thể nhận một <em>danh sách hằng</em>, hoặc một <em>subquery</em> trả về 1 cột (sẽ học chi tiết tuần 5):</p>
+<pre><code>-- Subquery: lấy customer đã có ít nhất 1 đơn
+SELECT name FROM customers
+WHERE customer_id IN (SELECT customer_id FROM orders);</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">IN vs OR — chọn cái nào?</div>
+      <ul>
+        <li><strong>Đọc</strong>: IN ngắn và rõ hơn khi danh sách dài.</li>
+        <li><strong>Tốc độ</strong>: optimizer thường biên dịch IN thành OR; thực tế hai dạng ngang nhau.</li>
+        <li><strong>NULL</strong>: cả hai đều có cùng bug với danh sách chứa NULL — sẽ nói ở slide 3.2.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-7">
+    <div class="slide-number">2.3</div>
+    <h2>2.3 LIKE — pattern matching cơ bản</h2>
+    <table>
+      <tr><th>Wildcard</th><th>Ý nghĩa</th><th>Ví dụ</th></tr>
+      <tr><td><span class="inline-code">%</span></td><td>không hoặc nhiều ký tự bất kỳ</td><td><span class="inline-code">'A%'</span> khớp 'An', 'Anna', 'A'</td></tr>
+      <tr><td><span class="inline-code">_</span></td><td>đúng một ký tự</td><td><span class="inline-code">'_n'</span> khớp 'An', 'In', không khớp 'Ann'</td></tr>
+    </table>
+<pre><code>-- Tên bắt đầu bằng 'A'
+WHERE name LIKE 'A%'
+-- Email gmail
+WHERE email LIKE '%@gmail.com'
+-- Tên có đúng 4 ký tự bắt đầu bằng B
+WHERE name LIKE 'B___'
+-- Escape % thật (không phải wildcard) bằng ESCAPE
+WHERE description LIKE '%50\%%' ESCAPE '\'</code></pre>
+    <div class="warning">
+      <div class="warning-label">Performance trap</div>
+      <span class="inline-code">LIKE 'A%'</span> dùng được index (prefix). <span class="inline-code">LIKE '%A'</span> hoặc <span class="inline-code">LIKE '%A%'</span> KHÔNG dùng được index — full scan. Khi cần search trong text, nghĩ đến full-text index.
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Phương ngữ</div>
+      MySQL mặc định LIKE <strong>không phân biệt hoa-thường</strong> (do collation). PostgreSQL <strong>phân biệt</strong>; dùng <span class="inline-code">ILIKE</span> để case-insensitive.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-8">
+    <div class="slide-number">2.4</div>
+    <h2>2.4 Regex — khi LIKE không đủ</h2>
+    <p>Khi pattern phức tạp (chữ số, alternation, character class), regex mạnh hơn LIKE rất nhiều — nhưng cú pháp khác giữa các phương ngữ.</p>
+    <table class="dialect-table">
+      <tr><th>Phương ngữ</th><th>Toán tử</th><th>Ví dụ</th></tr>
+      <tr><td>MySQL</td><td><span class="inline-code">REGEXP</span> hoặc <span class="inline-code">RLIKE</span></td><td><span class="inline-code">name REGEXP '^[A-Z][a-z]+$'</span></td></tr>
+      <tr><td>PostgreSQL</td><td><span class="inline-code">~</span> (match), <span class="inline-code">~*</span> (case-insensitive)</td><td><span class="inline-code">name ~ '^[A-Z][a-z]+$'</span></td></tr>
+      <tr><td>SQL Server</td><td>không có regex (chỉ LIKE mở rộng)</td><td><span class="inline-code">name LIKE '[A-Z][a-z]%'</span></td></tr>
+      <tr><td>Oracle</td><td><span class="inline-code">REGEXP_LIKE(col, pat)</span></td><td><span class="inline-code">REGEXP_LIKE(name, '^[A-Z]')</span></td></tr>
+    </table>
+    <div class="example">
+      <div class="example-label">Ví dụ — LeetCode 1517 Find Users With Valid E-Mails</div>
+<pre><code>-- MySQL
+SELECT * FROM Users
+WHERE mail REGEXP '^[A-Za-z][A-Za-z0-9_.\\-]*@leetcode[.]com$';</code></pre>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3 ============ -->
+  <div class="slide section-divider" id="slide-9">
+    <h1>3. NULL — Sinh tồn nâng cao</h1>
+  </div>
+
+  <div class="slide" id="slide-10">
+    <div class="slide-number">3.1</div>
+    <h2>3.1 Recap logic ba giá trị (3VL)</h2>
+    <p>SQL không phải Boolean logic. Mỗi predicate có thể trả về <strong>TRUE, FALSE, hoặc UNKNOWN</strong>. WHERE chỉ giữ TRUE.</p>
+    <table>
+      <tr><th>Biểu thức</th><th>Kết quả</th></tr>
+      <tr><td><span class="inline-code">5 = NULL</span></td><td>UNKNOWN</td></tr>
+      <tr><td><span class="inline-code">5 &lt;&gt; NULL</span></td><td>UNKNOWN</td></tr>
+      <tr><td><span class="inline-code">NULL = NULL</span></td><td>UNKNOWN (KHÔNG phải TRUE!)</td></tr>
+      <tr><td><span class="inline-code">5 IS NULL</span></td><td>FALSE</td></tr>
+      <tr><td><span class="inline-code">NULL IS NULL</span></td><td>TRUE</td></tr>
+      <tr><td><span class="inline-code">TRUE OR NULL</span></td><td>TRUE</td></tr>
+      <tr><td><span class="inline-code">FALSE OR NULL</span></td><td>NULL</td></tr>
+      <tr><td><span class="inline-code">TRUE AND NULL</span></td><td>NULL</td></tr>
+      <tr><td><span class="inline-code">FALSE AND NULL</span></td><td>FALSE</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Mnemonic</div>
+      OR coi NULL là FALSE (TRUE thắng). AND coi NULL là TRUE (FALSE thắng). Đó là semantic "có khả năng đúng/sai" — không xác định.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-11">
+    <div class="slide-number">3.2</div>
+    <h2>3.2 NOT IN với NULL — bug kinh điển interview</h2>
+    <div class="example">
+      <div class="example-label">Yêu cầu</div>
+      Lấy customer chưa từng đặt đơn nào. Schema: <span class="inline-code">orders.customer_id</span> có thể NULL (một số đơn guest checkout).
+    </div>
+<pre><code>-- "Trông có vẻ đúng"
+SELECT name FROM customers
+WHERE customer_id NOT IN (SELECT customer_id FROM orders);</code></pre>
+    <div class="warning">
+      <div class="warning-label">Kết quả: bảng RỖNG. Tại sao?</div>
+      <p>Nếu subquery trả về tập có chứa <span class="inline-code">NULL</span>, ví dụ <span class="inline-code">(1, 2, NULL)</span>, thì:</p>
+      <p style="margin-left:20px;"><span class="inline-code">x NOT IN (1, 2, NULL)</span> = <span class="inline-code">x &lt;&gt; 1 AND x &lt;&gt; 2 AND x &lt;&gt; NULL</span></p>
+      <p>Vế cuối luôn UNKNOWN ⇒ AND tổng luôn UNKNOWN hoặc FALSE ⇒ <strong>không dòng nào pass WHERE</strong>.</p>
+    </div>
+    <h3>Cách fix</h3>
+<pre><code>-- Cách 1: thêm IS NOT NULL trong subquery
+SELECT name FROM customers
+WHERE customer_id NOT IN (
+    SELECT customer_id FROM orders WHERE customer_id IS NOT NULL
+);
+
+-- Cách 2 (an toàn nhất): NOT EXISTS — không có bug NULL
+SELECT name FROM customers c
+WHERE NOT EXISTS (
+    SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id
+);</code></pre>
+    <p><strong>Khuyên</strong>: dùng <span class="inline-code">NOT EXISTS</span> mặc định. NOT IN chỉ an toàn khi subquery chắc chắn không có NULL.</p>
+  </div>
+
+  <div class="slide" id="slide-12">
+    <div class="slide-number">3.3</div>
+    <h2>3.3 COALESCE / IFNULL / NVL — thay thế NULL</h2>
+    <div class="definition">
+      <div class="definition-label">Định nghĩa</div>
+      <span class="inline-code">COALESCE(a, b, c, ...)</span> trả về giá trị <em>không-NULL đầu tiên</em>. Nếu tất cả đều NULL, trả NULL.
+    </div>
+<pre><code>-- Hiển thị 'Unknown' nếu country NULL
+SELECT name, COALESCE(country, 'Unknown') AS country
+FROM customers;
+
+-- Fallback chuỗi: ưu tiên nickname, không có thì name, không có nữa thì 'guest'
+SELECT COALESCE(nickname, name, 'guest') AS display
+FROM users;</code></pre>
+    <table class="dialect-table">
+      <tr><th>Hàm</th><th>Phương ngữ</th><th>Ghi chú</th></tr>
+      <tr><td><span class="inline-code">COALESCE(a, b, ...)</span></td><td>Chuẩn ANSI — chạy mọi phương ngữ</td><td><strong>Khuyên dùng</strong></td></tr>
+      <tr><td><span class="inline-code">IFNULL(a, b)</span></td><td>MySQL, SQLite</td><td>Chỉ 2 đối số</td></tr>
+      <tr><td><span class="inline-code">ISNULL(a, b)</span></td><td>SQL Server</td><td>Chỉ 2 đối số. KHÁC <span class="inline-code">IS NULL</span>!</td></tr>
+      <tr><td><span class="inline-code">NVL(a, b)</span></td><td>Oracle</td><td>Chỉ 2 đối số</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Khuyên</div>
+      Luôn dùng <span class="inline-code">COALESCE</span>. Là chuẩn ANSI, di chuyển dialect không phải sửa, và nhận nhiều đối số.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-13">
+    <div class="slide-number">3.4</div>
+    <h2>3.4 NULLIF và IS DISTINCT FROM</h2>
+    <h3>NULLIF — chuyển giá trị thành NULL</h3>
+    <p><span class="inline-code">NULLIF(a, b)</span> trả NULL nếu <span class="inline-code">a = b</span>, ngược lại trả <span class="inline-code">a</span>. Ứng dụng phổ biến: tránh divide by zero.</p>
+<pre><code>-- Nếu denominator = 0, NULLIF cho ra NULL → phép chia trả NULL thay vì lỗi
+SELECT revenue / NULLIF(num_users, 0) AS rev_per_user
+FROM metrics;</code></pre>
+    <h3>IS DISTINCT FROM — so sánh "an toàn NULL"</h3>
+    <p>Toán tử so sánh thông thường gặp NULL trả UNKNOWN. <span class="inline-code">IS DISTINCT FROM</span> coi NULL như giá trị có thật:</p>
+    <table>
+      <tr><th>Biểu thức</th><th>Kết quả</th></tr>
+      <tr><td><span class="inline-code">5 IS DISTINCT FROM 5</span></td><td>FALSE</td></tr>
+      <tr><td><span class="inline-code">5 IS DISTINCT FROM NULL</span></td><td>TRUE</td></tr>
+      <tr><td><span class="inline-code">NULL IS DISTINCT FROM NULL</span></td><td>FALSE</td></tr>
+    </table>
+    <div class="key-point">
+      <div class="key-point-label">Phương ngữ</div>
+      <ul>
+        <li>PostgreSQL, SQLite: <span class="inline-code">IS DISTINCT FROM</span> / <span class="inline-code">IS NOT DISTINCT FROM</span></li>
+        <li>MySQL: dùng toán tử <span class="inline-code">&lt;=&gt;</span> ("null-safe equals"). <span class="inline-code">a &lt;=&gt; b</span> = không phân biệt NULL.</li>
+        <li>SQL Server: không có; phải viết <span class="inline-code">(a = b OR (a IS NULL AND b IS NULL))</span>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4 ============ -->
+  <div class="slide section-divider" id="slide-14">
+    <h1>4. CASE WHEN — Branching trong SQL</h1>
+  </div>
+
+  <div class="slide" id="slide-15">
+    <div class="slide-number">4.1</div>
+    <h2>4.1 Hai dạng CASE: Simple và Searched</h2>
+    <h3>Simple CASE — so khớp giá trị</h3>
+<pre><code>SELECT name,
+       CASE country
+            WHEN 'Vietnam'   THEN 'VN'
+            WHEN 'Australia' THEN 'AU'
+            ELSE 'Other'
+       END AS country_code
+FROM customers;</code></pre>
+    <h3>Searched CASE — predicate tự do (mạnh hơn, dùng phổ biến hơn)</h3>
+<pre><code>SELECT name,
+       CASE WHEN salary &gt;= 100000 THEN 'High'
+            WHEN salary &gt;= 50000  THEN 'Mid'
+            WHEN salary IS NULL    THEN 'Unknown'
+            ELSE 'Low'
+       END AS bracket
+FROM employees;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Quy tắc</div>
+      <ul>
+        <li>WHEN được kiểm tra <strong>tuần tự từ trên xuống</strong> — match đầu tiên thắng.</li>
+        <li>Không có ELSE thì match-không-được trả NULL.</li>
+        <li>Mọi nhánh THEN phải <strong>cùng kiểu dữ liệu</strong> (hoặc convertible).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-16">
+    <div class="slide-number">4.2</div>
+    <h2>4.2 CASE trong SELECT — biến đổi cột</h2>
+    <p>Đây là use case phổ biến nhất: tạo cột mới dựa trên logic điều kiện.</p>
+    <div class="example">
+      <div class="example-label">LeetCode 627 — Swap Salary (đơn giản hóa)</div>
+      <p>Yêu cầu: hiển thị giới tính ngược lại.</p>
+<pre><code>SELECT id, name,
+       CASE sex WHEN 'm' THEN 'f' ELSE 'm' END AS sex_swapped
+FROM Salary;</code></pre>
+    </div>
+    <div class="example">
+      <div class="example-label">Categorisation thực tế</div>
+<pre><code>SELECT order_id, total,
+       CASE WHEN total &gt;= 1000 THEN 'Premium'
+            WHEN total &gt;= 100  THEN 'Standard'
+            ELSE 'Light'
+       END AS tier
+FROM orders;</code></pre>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-17">
+    <div class="slide-number">4.3</div>
+    <h2>4.3 CASE trong WHERE và ORDER BY</h2>
+    <h3>Trong WHERE — lọc có điều kiện theo cột khác</h3>
+<pre><code>-- Khách Premium yêu cầu total &gt; 5000, khách thường chỉ cần &gt; 100
+SELECT * FROM orders
+WHERE total &gt; CASE WHEN tier = 'Premium' THEN 5000 ELSE 100 END;</code></pre>
+    <h3>Trong ORDER BY — sắp xếp tùy ý</h3>
+<pre><code>-- Đặt status 'urgent' lên đầu, sau đó theo ngày
+SELECT * FROM tickets
+ORDER BY CASE status WHEN 'urgent'  THEN 1
+                     WHEN 'high'    THEN 2
+                     WHEN 'normal'  THEN 3
+                     ELSE 4 END,
+         created_at;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Use case interview</div>
+      "Sắp xếp employee Vietnam lên đầu, các nước khác sắp tự nhiên" — đây là CASE trong ORDER BY. Nhiều bài Medium ẩn pattern này.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-18">
+    <div class="slide-number">4.4</div>
+    <h2>4.4 Conditional aggregation — preview tuần 3</h2>
+    <p>Đặt CASE bên trong aggregator là kỹ thuật cực mạnh — biến một query thành "đếm có điều kiện" đa chiều trong một lần quét bảng.</p>
+<pre><code>-- Đếm số đơn từng status, một dòng kết quả
+SELECT
+    COUNT(*)                                          AS total,
+    SUM(CASE WHEN status = 'paid'      THEN 1 ELSE 0 END) AS n_paid,
+    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS n_cancelled,
+    SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END) AS n_pending
+FROM orders;</code></pre>
+    <p>Đây là <strong>pivot query</strong> kinh điển — biến dòng thành cột. Sẽ dạy chi tiết tuần 8.</p>
+    <div class="example">
+      <div class="example-label">Tip</div>
+      Có thể thay <span class="inline-code">SUM(CASE WHEN ... THEN 1 ELSE 0 END)</span> bằng ngắn hơn:
+<pre><code>COUNT(CASE WHEN status = 'paid' THEN 1 END) AS n_paid</code></pre>
+      vì <span class="inline-code">COUNT</span> bỏ qua NULL — không có ELSE thì giá trị ngầm định là NULL.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5 ============ -->
+  <div class="slide section-divider" id="slide-19">
+    <h1>5. String functions</h1>
+  </div>
+
+  <div class="slide" id="slide-20">
+    <div class="slide-number">5.1</div>
+    <h2>5.1 Concatenation và length</h2>
+    <h3>Nối chuỗi — đa phương ngữ</h3>
+    <table class="dialect-table">
+      <tr><th>Phương ngữ</th><th>Cú pháp</th></tr>
+      <tr><td>Chuẩn ANSI, PostgreSQL, Oracle, SQLite</td><td><span class="inline-code">'A' || 'B'</span></td></tr>
+      <tr><td>MySQL, SQL Server, PostgreSQL</td><td><span class="inline-code">CONCAT('A', 'B')</span></td></tr>
+      <tr><td>SQL Server (truyền thống)</td><td><span class="inline-code">'A' + 'B'</span></td></tr>
+    </table>
+    <p><strong>Khuyên</strong>: dùng <span class="inline-code">CONCAT</span> — chạy MySQL/PostgreSQL/SQL Server hiện đại. Tránh <span class="inline-code">||</span> nếu code có thể chạy trên MySQL (mặc định <span class="inline-code">||</span> là OR logic ở MySQL).</p>
+    <div class="warning">
+      <div class="warning-label">CONCAT và NULL</div>
+      <p>MySQL: <span class="inline-code">CONCAT('Hello ', NULL)</span> = <span class="inline-code">NULL</span> (toàn bộ kết quả NULL!).<br>
+      PostgreSQL CONCAT: bỏ qua NULL → trả <span class="inline-code">'Hello '</span>.<br>
+      Dùng <span class="inline-code">CONCAT_WS</span> (separator) hoặc <span class="inline-code">COALESCE</span> trên từng phần để an toàn:</p>
+<pre><code>CONCAT('Hi ', COALESCE(name, 'guest'))</code></pre>
+    </div>
+    <h3>Length — đếm ký tự</h3>
+    <ul>
+      <li><span class="inline-code">LENGTH(s)</span> — MySQL: byte length. PostgreSQL: ký tự.</li>
+      <li><span class="inline-code">CHAR_LENGTH(s)</span> hoặc <span class="inline-code">CHARACTER_LENGTH(s)</span> — luôn ký tự, an toàn cho Unicode/Tiếng Việt.</li>
+    </ul>
+    <p><strong>Quy tắc với Tiếng Việt</strong>: dùng <span class="inline-code">CHAR_LENGTH</span>, không phải <span class="inline-code">LENGTH</span>.</p>
+  </div>
+
+  <div class="slide" id="slide-21">
+    <div class="slide-number">5.2</div>
+    <h2>5.2 Case conversion, TRIM, SUBSTRING</h2>
+<pre><code>UPPER('hello')      -- 'HELLO'
+LOWER('HELLO')      -- 'hello'
+
+TRIM('  abc  ')     -- 'abc' (bỏ space hai đầu)
+LTRIM('  abc  ')    -- 'abc  '
+RTRIM('  abc  ')    -- '  abc'
+TRIM('x' FROM 'xxabcxx')  -- 'abc' (bỏ ký tự cụ thể)
+
+SUBSTRING(s FROM start FOR length)   -- chuẩn ANSI
+SUBSTR(s, start, length)              -- MySQL/PostgreSQL/SQLite
+LEFT(s, n)                            -- n ký tự đầu
+RIGHT(s, n)                           -- n ký tự cuối</code></pre>
+    <div class="example">
+      <div class="example-label">Ví dụ — chuẩn hóa email viết hoa thành lowercase</div>
+<pre><code>SELECT LOWER(TRIM(email)) AS clean_email FROM users;</code></pre>
+    </div>
+    <div class="example">
+      <div class="example-label">Ví dụ — lấy tên domain từ email</div>
+<pre><code>-- MySQL
+SELECT SUBSTRING(email FROM POSITION('@' IN email) + 1) AS domain
+FROM users;</code></pre>
+    </div>
+    <p><strong>Lưu ý vị trí</strong>: SQL hầu hết tính từ <strong>1</strong> (không phải 0 như Python). <span class="inline-code">SUBSTRING('abc', 1, 2)</span> = <span class="inline-code">'ab'</span>.</p>
+  </div>
+
+  <div class="slide" id="slide-22">
+    <div class="slide-number">5.3</div>
+    <h2>5.3 REPLACE, POSITION, padding</h2>
+    <h3>REPLACE — thay thế chuỗi con</h3>
+<pre><code>REPLACE('hello world', 'world', 'SQL')  -- 'hello SQL'
+-- Loại bỏ ký tự
+REPLACE(phone, '-', '')                  -- '0901234567' từ '090-123-4567'</code></pre>
+    <h3>POSITION / INSTR / CHARINDEX — tìm vị trí</h3>
+    <table class="dialect-table">
+      <tr><th>Phương ngữ</th><th>Cú pháp</th></tr>
+      <tr><td>Chuẩn ANSI, PostgreSQL, MySQL</td><td><span class="inline-code">POSITION('@' IN email)</span></td></tr>
+      <tr><td>MySQL, Oracle</td><td><span class="inline-code">INSTR(email, '@')</span></td></tr>
+      <tr><td>SQL Server</td><td><span class="inline-code">CHARINDEX('@', email)</span></td></tr>
+    </table>
+    <p>Trả vị trí ký tự đầu tiên match (1-indexed). Trả <strong>0</strong> nếu không tìm thấy.</p>
+    <h3>LPAD / RPAD — đệm chuỗi</h3>
+<pre><code>LPAD('5', 3, '0')   -- '005'  (đệm trái)
+RPAD('A', 5, '.')   -- 'A....' (đệm phải)</code></pre>
+    <p>Dùng cho format mã, ID, số có chữ số cố định.</p>
+  </div>
+
+  <!-- ============ SECTION 6 ============ -->
+  <div class="slide section-divider" id="slide-23">
+    <h1>6. Date / Time functions</h1>
+  </div>
+
+  <div class="slide" id="slide-24">
+    <div class="slide-number">6.1</div>
+    <h2>6.1 Current date/time và arithmetic</h2>
+    <table class="dialect-table">
+      <tr><th>Hàm</th><th>MySQL</th><th>PostgreSQL</th><th>SQL Server</th></tr>
+      <tr><td>Hiện tại (datetime)</td><td><span class="inline-code">NOW()</span></td><td><span class="inline-code">NOW()</span></td><td><span class="inline-code">GETDATE()</span></td></tr>
+      <tr><td>Hiện tại (date)</td><td><span class="inline-code">CURDATE()</span></td><td><span class="inline-code">CURRENT_DATE</span></td><td><span class="inline-code">CAST(GETDATE() AS DATE)</span></td></tr>
+    </table>
+    <h3>Cộng/trừ thời gian</h3>
+<pre><code>-- MySQL
+DATE_ADD(order_date, INTERVAL 7 DAY)
+order_date + INTERVAL 7 DAY
+-- PostgreSQL
+order_date + INTERVAL '7 days'
+-- SQL Server
+DATEADD(day, 7, order_date)</code></pre>
+    <h3>Khoảng cách giữa hai ngày</h3>
+<pre><code>-- MySQL: số ngày
+DATEDIFF(end_date, start_date)
+-- PostgreSQL: trừ trực tiếp ra interval
+end_date - start_date
+-- SQL Server: chỉ rõ unit
+DATEDIFF(day, start_date, end_date)</code></pre>
+  </div>
+
+  <div class="slide" id="slide-25">
+    <div class="slide-number">6.2</div>
+    <h2>6.2 Trích xuất thành phần ngày tháng</h2>
+    <h3>EXTRACT — chuẩn ANSI, chạy nhiều phương ngữ</h3>
+<pre><code>EXTRACT(YEAR  FROM order_date)   -- 2024
+EXTRACT(MONTH FROM order_date)   -- 3
+EXTRACT(DAY   FROM order_date)   -- 15
+EXTRACT(DOW   FROM order_date)   -- thứ trong tuần (0-6, PostgreSQL)
+EXTRACT(WEEK  FROM order_date)   -- tuần thứ N trong năm</code></pre>
+    <h3>Hàm tắt</h3>
+<pre><code>YEAR(order_date)    MONTH(order_date)    DAY(order_date)        -- MySQL, SQL Server
+DATE_TRUNC('month', order_date)   -- PostgreSQL: cắt về đầu tháng</code></pre>
+    <div class="example">
+      <div class="example-label">Pattern interview — group theo tháng</div>
+<pre><code>-- MySQL
+SELECT YEAR(order_date) AS y, MONTH(order_date) AS m, COUNT(*) AS n
+FROM orders
+GROUP BY y, m
+ORDER BY y, m;
+
+-- PostgreSQL — gọn hơn với DATE_TRUNC
+SELECT DATE_TRUNC('month', order_date) AS month, COUNT(*) AS n
+FROM orders
+GROUP BY month
+ORDER BY month;</code></pre>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-26">
+    <div class="slide-number">6.3</div>
+    <h2>6.3 Format và bug timezone</h2>
+    <h3>Format ngày thành chuỗi</h3>
+<pre><code>-- MySQL
+DATE_FORMAT(order_date, '%Y-%m-%d')        -- '2024-03-15'
+DATE_FORMAT(order_date, '%M %d, %Y')       -- 'March 15, 2024'
+-- PostgreSQL
+TO_CHAR(order_date, 'YYYY-MM-DD')
+TO_CHAR(order_date, 'Mon DD, YYYY')
+-- SQL Server
+FORMAT(order_date, 'yyyy-MM-dd')</code></pre>
+    <div class="warning">
+      <div class="warning-label">Bug interview — timezone</div>
+      <p>Nếu cột là <span class="inline-code">TIMESTAMP WITH TIME ZONE</span> nhưng bạn so sánh với <span class="inline-code">'2024-03-15'</span>, kết quả phụ thuộc <strong>session timezone</strong>. Một đơn lúc 23:30 Việt Nam có thể thuộc ngày 15 hoặc 14 tùy timezone server.</p>
+      <p>Trong mock interview, hỏi clarification: "Cột này có timezone không? Cần group theo timezone nào?" Đây là dấu hiệu của candidate senior.</p>
+    </div>
+    <div class="key-point">
+      <div class="key-point-label">Date arithmetic — fence-post lần nữa</div>
+      Dùng <strong>nửa-mở</strong>: <span class="inline-code">date &gt;= '2024-03-01' AND date &lt; '2024-04-01'</span>. An toàn cho cả DATE và TIMESTAMP, không bao giờ sót/thừa biên.
+    </div>
+  </div>
+
+  <!-- ============ SECTION 7 ============ -->
+  <div class="slide section-divider" id="slide-27">
+    <h1>7. Worked Examples</h1>
+  </div>
+
+  <div class="slide" id="slide-28">
+    <div class="slide-number">7.1</div>
+    <h2>7.1 LeetCode 1873 — Calculate Special Bonus</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Employees(employee_id INT PK, name VARCHAR, salary INT)
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Tính bonus cho mỗi nhân viên: bonus = salary nếu employee_id <strong>lẻ</strong> VÀ name <strong>không bắt đầu bằng 'M'</strong>; ngược lại bonus = 0. Trả về (employee_id, bonus) sắp xếp theo employee_id.</p>
+    <h3>Phân rã</h3>
+    <ol>
+      <li>Cho mỗi dòng, tính bonus theo điều kiện kép → <span class="inline-code">CASE WHEN</span>.</li>
+      <li>Chiếu hai cột → <span class="inline-code">π</span>.</li>
+      <li>Sắp xếp.</li>
+    </ol>
+    <h3>Lời giải</h3>
+<pre><code>SELECT employee_id,
+       CASE WHEN employee_id % 2 = 1
+             AND name NOT LIKE 'M%'
+            THEN salary
+            ELSE 0
+       END AS bonus
+FROM Employees
+ORDER BY employee_id;</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Take-away</div>
+      Ba kỹ thuật mới của tuần được dùng cùng nhau: modulo arithmetic, NOT LIKE pattern, CASE WHEN. Đây là pattern "biến đổi cột với điều kiện" — rất phổ biến trong report queries.
+    </div>
+  </div>
+
+  <div class="slide" id="slide-29">
+    <div class="slide-number">7.2</div>
+    <h2>7.2 LeetCode 1683 — Invalid Tweets</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Tweets(tweet_id INT PK, content VARCHAR(140))
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về tweet_id của các tweet <em>invalid</em> — content có nhiều hơn 15 ký tự.</p>
+    <h3>Phân rã</h3>
+    <p>$$\pi_{\text{tweet\_id}}\Big(\sigma_{\text{CHAR\_LENGTH(content)} > 15}(\text{Tweets})\Big)$$</p>
+    <h3>Lời giải</h3>
+<pre><code>SELECT tweet_id
+FROM Tweets
+WHERE CHAR_LENGTH(content) &gt; 15;</code></pre>
+    <div class="warning">
+      <div class="warning-label">Bẫy LENGTH vs CHAR_LENGTH</div>
+      <p>Nếu user chứa Tiếng Việt có dấu hoặc emoji, <span class="inline-code">LENGTH</span> ở MySQL trả <strong>byte</strong>, không phải ký tự. Tweet "Xin chào 👋 Việt Nam!" có thể là 18 ký tự nhưng 30+ byte.</p>
+      <p>LeetCode 1683 dùng <span class="inline-code">LENGTH</span> cũng pass vì test case không có Unicode, nhưng trong production luôn dùng <span class="inline-code">CHAR_LENGTH</span>.</p>
+    </div>
+  </div>
+
+  <div class="slide" id="slide-30">
+    <div class="slide-number">7.3</div>
+    <h2>7.3 LeetCode 1527 — Patients with a Condition</h2>
+    <h3>Schema</h3>
+    <div class="schema-block">
+Patients(patient_id INT PK, patient_name VARCHAR, conditions VARCHAR)
+-- conditions: chuỗi các code bệnh cách nhau bởi dấu space, ví dụ 'DIAB100 ABC123'
+    </div>
+    <h3>Yêu cầu</h3>
+    <p>Trả về bệnh nhân có ít nhất một condition là tiểu đường loại I — code bắt đầu bằng <span class="inline-code">'DIAB1'</span>.</p>
+    <h3>Bẫy</h3>
+    <p>Naive: <span class="inline-code">conditions LIKE 'DIAB1%'</span> — chỉ match khi DIAB1 ở <em>đầu chuỗi</em>. Bỏ sót các bệnh nhân có 'ABC123 DIAB100' (DIAB1 ở giữa).</p>
+    <h3>Lời giải</h3>
+<pre><code>SELECT patient_id, patient_name, conditions
+FROM Patients
+WHERE conditions LIKE 'DIAB1%'        -- DIAB1 ở đầu
+   OR conditions LIKE '% DIAB1%';     -- DIAB1 sau một space</code></pre>
+    <div class="key-point">
+      <div class="key-point-label">Pattern: word boundary trong LIKE</div>
+      <p>SQL LIKE không có khái niệm "word boundary" như regex (<span class="inline-code">\b</span>). Trick chuẩn: thêm space ở đầu và cuối, rồi search <span class="inline-code">' DIAB1'</span>:</p>
+<pre><code>WHERE CONCAT(' ', conditions, ' ') LIKE '% DIAB1%'</code></pre>
+      <p>Một dòng, không sót case. Trong mock interview, đề xuất giải pháp này khi interviewer hỏi "có cách nào gọn hơn không?".</p>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 8 ============ -->
+  <div class="slide section-divider" id="slide-31">
+    <h1>8. Knowledge Check</h1>
+  </div>
+
+  <div class="slide" id="slide-32">
+    <div class="slide-number">8.Q</div>
+    <h2>Knowledge Check — Tuần 2</h2>
+
+    <div class="quiz" id="q1">
+      <div class="quiz-question">Q1: Subquery <span class="inline-code">SELECT manager_id FROM employees</span> trả <span class="inline-code">{1, 2, NULL}</span>. Query <span class="inline-code">SELECT id FROM employees WHERE id NOT IN (SELECT manager_id FROM employees)</span> trả gì?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Tất cả id khác 1 và 2</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) id = 3, 4, 5, ...</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) Tập rỗng</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Lỗi vì NULL trong NOT IN</button>
+      <div class="quiz-explanation"><span class="inline-code">x NOT IN (1, 2, NULL)</span> = <span class="inline-code">x &lt;&gt; 1 AND x &lt;&gt; 2 AND x &lt;&gt; NULL</span>. Vế cuối luôn UNKNOWN ⇒ tổng AND luôn UNKNOWN/FALSE ⇒ không dòng nào pass. Fix: dùng NOT EXISTS hoặc thêm IS NOT NULL trong subquery.</div>
+    </div>
+
+    <div class="quiz" id="q2">
+      <div class="quiz-question">Q2: <span class="inline-code">CONCAT('Hi ', NULL, '!')</span> trả gì trong MySQL?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">'Hi !'</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <span class="inline-code">NULL</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) <span class="inline-code">'Hi NULL!'</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) Lỗi cú pháp</button>
+      <div class="quiz-explanation">MySQL CONCAT trả NULL ngay khi gặp một đối số NULL. PostgreSQL CONCAT thì bỏ qua NULL. Khác biệt phương ngữ này hay xuất hiện trong interview. Để an toàn dùng <span class="inline-code">CONCAT_WS</span> hoặc <span class="inline-code">COALESCE</span> trên từng phần.</div>
+    </div>
+
+    <div class="quiz" id="q3">
+      <div class="quiz-question">Q3: Cột <span class="inline-code">order_date</span> kiểu TIMESTAMP. Query nào lấy đúng tất cả đơn trong tháng 3/2024?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) <span class="inline-code">WHERE order_date BETWEEN '2024-03-01' AND '2024-03-31'</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) <span class="inline-code">WHERE order_date &gt;= '2024-03-01' AND order_date &lt; '2024-04-01'</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) <span class="inline-code">WHERE MONTH(order_date) = 3</span></button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) <span class="inline-code">WHERE order_date LIKE '2024-03%'</span></button>
+      <div class="quiz-explanation">A bỏ sót đơn ngày 31/3 sau 00:00:00 (<span class="inline-code">'2024-03-31'</span> được hiểu là đầu ngày). C lấy cả tháng 3 các năm khác. D không hoạt động trên kiểu TIMESTAMP. Nửa-mở (B) là pattern an toàn cho mọi date arithmetic và dùng được index.</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 9 ============ -->
+  <div class="slide section-divider" id="slide-33">
+    <h1>9. Bài tập về nhà</h1>
+  </div>
+
+  <div class="slide" id="slide-34">
+    <div class="slide-number">9.1</div>
+    <h2>9.1 Bài tập LeetCode (5 problem Easy)</h2>
+    <ol>
+      <li><strong>1873. Calculate Special Bonus</strong> — đã giải tại lớp; viết lại không nhìn.</li>
+      <li><strong>1683. Invalid Tweets</strong> — chú ý CHAR_LENGTH vs LENGTH.</li>
+      <li><strong>1527. Patients with a Condition</strong> — pattern word boundary trong LIKE.</li>
+      <li><strong>1517. Find Users With Valid E-Mails</strong> — regex (REGEXP / ~ tùy phương ngữ).</li>
+      <li><strong>1693. Daily Leads and Partners</strong> — COUNT(DISTINCT) + GROUP BY (preview tuần 3).</li>
+    </ol>
+    <h3>Bonus — debug challenge</h3>
+    <p>Cho query sau, tìm bug và sửa:</p>
+<pre><code>-- Yêu cầu: lấy customer KHÔNG ở Vietnam HOẶC chưa rõ quốc gia
+SELECT name FROM customers
+WHERE country &lt;&gt; 'Vietnam';</code></pre>
+    <p><em>Gợi ý: query bỏ sót dòng nào? Sửa thế nào? Viết 2 cách fix khác nhau.</em></p>
+  </div>
+
+  <div class="slide" id="slide-35">
+    <div class="slide-number">9.2</div>
+    <h2>9.2 Đọc thêm và tự kiểm tra</h2>
+    <h3>Đọc</h3>
+    <ul>
+      <li><em>SQL Cookbook</em> (Anthony Molinaro) — Chương 2 (Sorting Query Results), Chương 6 (Working with Strings), Chương 8 (Date Arithmetic).</li>
+      <li><em>SQL Antipatterns</em> (Bill Karwin) — Chương "Three-valued logic".</li>
+      <li>Markus Winand — <a style="color: #3b5998;">use-the-index-luke.com</a> mục "Pattern Matching" về LIKE và index.</li>
+    </ul>
+    <h3>Tự kiểm tra (không nhìn slide)</h3>
+    <ul>
+      <li>Bạn liệt kê được 3 cách thay <span class="inline-code">NOT IN</span> để tránh bug NULL?</li>
+      <li>Bạn giải thích được tại sao <span class="inline-code">CONCAT</span> trên MySQL khác PostgreSQL với NULL?</li>
+      <li>Bạn viết được biểu thức CASE phân loại salary thành 4 bracket trong 30 giây?</li>
+      <li>Bạn nhớ cú pháp date arithmetic của ít nhất hai phương ngữ?</li>
+    </ul>
+    <div class="key-point">
+      <div class="key-point-label">Tuần sau — Aggregation</div>
+      Tuần 3: GROUP BY, HAVING, COUNT/SUM/AVG/MIN/MAX, COUNT(DISTINCT), conditional aggregation chuyên sâu. Bạn đã preview bằng CASE trong SUM ở slide 4.4 — tuần sau sẽ làm chủ pattern này.
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">← → để chuyển slide &middot; T để mở mục lục</div>
+
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Mục lục</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Escape để đóng</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>

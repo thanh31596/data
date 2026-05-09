@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 9 — BST &amp; Heap</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.88rem; text-align: center; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 9</div>
+  <h1>BST &amp; Heap</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    <em>Heap (priority queue)</em> giải hiệu quả các bài Top-K, K-way Merge và Median Stream.
+    Kết hợp với BST operations từ Tuần 8 — bộ công cụ hoàn chỉnh cho cấu trúc dữ liệu nâng cao.
+  </p>
+  <div class="meta">10 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng Heap</h1>
+  <div class="subtitle">Cấu trúc dữ liệu cho phép truy cập "phần tử cực đoan" trong O(1)</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Heap là gì?</h2>
+  <div class="definition">
+    <div class="definition-label">Định nghĩa:</div>
+    <strong>Heap</strong> là cây nhị phân hoàn chỉnh thoả tính chất <em>heap property</em>:
+    <ul>
+      <li><strong>Min-heap</strong>: mọi parent ≤ con. Root là phần tử nhỏ nhất.</li>
+      <li><strong>Max-heap</strong>: mọi parent ≥ con. Root là phần tử lớn nhất.</li>
+    </ul>
+  </div>
+  <div class="illustration">
+    <svg viewBox="0 0 540 220" xmlns="http://www.w3.org/2000/svg">
+      <text x="135" y="20" font-size="14" font-weight="bold" fill="#1a1a1a" text-anchor="middle">Min-heap</text>
+      <g stroke="#1a1a1a" fill="#eaf5ea">
+        <circle cx="135" cy="50" r="20"/>
+        <circle cx="80" cy="110" r="20"/>
+        <circle cx="190" cy="110" r="20"/>
+        <circle cx="50" cy="170" r="20"/>
+        <circle cx="110" cy="170" r="20"/>
+      </g>
+      <text x="135" y="55" font-size="14" text-anchor="middle">1</text>
+      <text x="80" y="115" font-size="14" text-anchor="middle">3</text>
+      <text x="190" y="115" font-size="14" text-anchor="middle">5</text>
+      <text x="50" y="175" font-size="14" text-anchor="middle">7</text>
+      <text x="110" y="175" font-size="14" text-anchor="middle">9</text>
+      <line x1="120" y1="65" x2="95" y2="95" stroke="#1a1a1a"/>
+      <line x1="150" y1="65" x2="175" y2="95" stroke="#1a1a1a"/>
+      <line x1="68" y1="125" x2="58" y2="155" stroke="#1a1a1a"/>
+      <line x1="92" y1="125" x2="102" y2="155" stroke="#1a1a1a"/>
+
+      <text x="405" y="20" font-size="14" font-weight="bold" fill="#1a1a1a" text-anchor="middle">Max-heap</text>
+      <g stroke="#1a1a1a" fill="#fdf0ef">
+        <circle cx="405" cy="50" r="20"/>
+        <circle cx="350" cy="110" r="20"/>
+        <circle cx="460" cy="110" r="20"/>
+        <circle cx="320" cy="170" r="20"/>
+        <circle cx="380" cy="170" r="20"/>
+      </g>
+      <text x="405" y="55" font-size="14" text-anchor="middle">9</text>
+      <text x="350" y="115" font-size="14" text-anchor="middle">7</text>
+      <text x="460" y="115" font-size="14" text-anchor="middle">5</text>
+      <text x="320" y="175" font-size="14" text-anchor="middle">3</text>
+      <text x="380" y="175" font-size="14" text-anchor="middle">1</text>
+      <line x1="390" y1="65" x2="365" y2="95" stroke="#1a1a1a"/>
+      <line x1="420" y1="65" x2="445" y2="95" stroke="#1a1a1a"/>
+      <line x1="338" y1="125" x2="328" y2="155" stroke="#1a1a1a"/>
+      <line x1="362" y1="125" x2="372" y2="155" stroke="#1a1a1a"/>
+    </svg>
+  </div>
+  <p>Heap được lưu dưới dạng <em>mảng</em>: cha tại i, con trái tại 2i+1, con phải tại 2i+2. Mảng nhỏ gọn → ít overhead so với cây thực sự.</p>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 heapq trong Python — Mẹo cho Max-heap</h2>
+  <p>Module <code>heapq</code> chỉ cài <strong>min-heap</strong>. Để có max-heap, dùng mẹo <em>nhân âm</em>:</p>
+  <pre><code>import heapq
+
+# Min-heap
+h = []
+heapq.heappush(h, 3)
+heapq.heappush(h, 1)
+heapq.heappush(h, 5)
+heapq.heappop(h)        # 1 (nhỏ nhất)
+h[0]                    # 3 (peek không pop)
+
+# Max-heap idiom — nhân -1
+h = []
+heapq.heappush(h, -3)
+heapq.heappush(h, -1)
+heapq.heappush(h, -5)
+-heapq.heappop(h)       # 5 (lớn nhất, đảo dấu khi đọc)</code></pre>
+  <h3>heapify từ list có sẵn</h3>
+  <pre><code>arr = [9, 5, 6, 2, 3]
+heapq.heapify(arr)      # In-place, O(n)
+arr[0]                  # 2 — phần tử nhỏ nhất sau heapify</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Lưu ý <code>heapify</code> là O(n), không phải O(n log n):</div>
+    Tận dụng "bottom-up sift down". Đây là chi tiết quan trọng — heap n phần tử dựng được trong O(n),
+    nhanh hơn n lần push (O(n log n)). Khi cần dựng heap từ list, luôn dùng heapify.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Operations và complexity</h2>
+  <table>
+    <tr><th>Operation</th><th>Complexity</th><th>Mô tả</th></tr>
+    <tr><td><code>heappush(h, x)</code></td><td>O(log n)</td><td>Thêm x, duy trì heap property</td></tr>
+    <tr><td><code>heappop(h)</code></td><td>O(log n)</td><td>Lấy &amp; xoá phần tử cực đoan (root)</td></tr>
+    <tr><td><code>h[0]</code></td><td>O(1)</td><td>Peek root, không xoá</td></tr>
+    <tr><td><code>heapify(arr)</code></td><td>O(n)</td><td>Convert list thành heap in-place</td></tr>
+    <tr><td><code>heappushpop(h, x)</code></td><td>O(log n)</td><td>Push x rồi pop — gọn hơn 2 thao tác</td></tr>
+    <tr><td><code>nlargest(k, iter)</code></td><td>O(n log k)</td><td>k phần tử lớn nhất</td></tr>
+    <tr><td><code>nsmallest(k, iter)</code></td><td>O(n log k)</td><td>k phần tử nhỏ nhất</td></tr>
+  </table>
+  <h3>Heap với tuple — sort theo key custom</h3>
+  <pre><code>heapq.heappush(h, (priority, item))   # heap sort theo priority
+heapq.heappush(h, (priority, idx, item))  # tiebreaker = idx khi priority bằng</code></pre>
+  <div class="example">
+    <div class="example-label">Mẹo tiebreaker:</div>
+    Khi priority có thể bằng và item không sortable (như TreeNode, ListNode), thêm <code>idx</code> để tránh
+    "&lt; not supported between TreeNode" error. Đây là pattern bắt buộc cho Merge K Sorted Lists.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Khi nào dùng Heap?</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Pattern</th></tr>
+    <tr><td>"Top K", "K largest/smallest"</td><td>Heap size K (min-heap cho top-K largest)</td></tr>
+    <tr><td>"K closest", "K most frequent"</td><td>Heap size K</td></tr>
+    <tr><td>"Merge K sorted X"</td><td>K-way Merge với min-heap</td></tr>
+    <tr><td>"Find median in stream"</td><td>Two heaps (max + min)</td></tr>
+    <tr><td>"Schedule with priority"</td><td>Priority queue</td></tr>
+    <tr><td>"Dijkstra's shortest path" (Tuần 10)</td><td>Min-heap</td></tr>
+    <tr><td>"Lúc nào cũng cần biết min/max"</td><td>Heap (ưu tiên) hoặc deque monotonic</td></tr>
+  </table>
+  <h3>Heap vs Sort — khi nào ưu tiên cái nào?</h3>
+  <ul>
+    <li><strong>Sort</strong>: cần toàn bộ thứ tự, n nhỏ.</li>
+    <li><strong>Heap</strong>: chỉ cần K cực đoan, n lớn — đặc biệt khi <em>stream</em> (dữ liệu đến từng bước).</li>
+  </ul>
+  <p>Sort O(n log n) toàn bộ; Heap O(n log K) chỉ cho K phần tử quan tâm — lợi rõ rệt khi K &lt;&lt; n.</p>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Top-K Patterns</h1>
+  <div class="subtitle">Kỹ thuật cốt lõi: heap kích thước K để duy trì top-K trong O(n log K)</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Pattern Top-K với Heap size K</h2>
+  <div class="definition">
+    <div class="definition-label">Quy tắc đảo ngược:</div>
+    Để tìm <strong>K lớn nhất</strong>, dùng <strong>min-heap</strong> size K.
+    Để tìm <strong>K nhỏ nhất</strong>, dùng <strong>max-heap</strong> size K.
+    <br><br>
+    Lý do: heap size K luôn giữ K phần tử "ứng viên". Khi gặp x mới:
+    <ul>
+      <li>Nếu x "tốt hơn" root của heap → root không còn là ứng viên, thay nó bằng x.</li>
+      <li>Nếu không → bỏ qua x.</li>
+    </ul>
+    "Tốt hơn" = lớn hơn (cho top-K largest) hoặc nhỏ hơn (cho top-K smallest).
+  </div>
+  <h3>Template chuẩn</h3>
+  <pre><code>def top_k_largest(nums, k):
+    h = []
+    for x in nums:
+        heapq.heappush(h, x)
+        if len(h) &gt; k:
+            heapq.heappop(h)             # bỏ phần tử nhỏ nhất ngoài top-K
+    return h                              # K phần tử lớn nhất, không sort</code></pre>
+  <p>Time <strong>O(n log K)</strong>, Space <strong>O(K)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 1 — Kth Largest Element in an Array</h2>
+  <p><strong>Đề (LeetCode #215):</strong> Tìm phần tử lớn thứ k trong mảng (không khác nhau).</p>
+  <h3>Approach 1 — Sort</h3>
+  <pre><code>def findKthLargest(nums, k):
+    return sorted(nums)[-k]
+# Time O(n log n)</code></pre>
+  <h3>Approach 2 — Min-heap size K (chuẩn)</h3>
+  <pre><code>def findKthLargest(nums, k):
+    h = []
+    for x in nums:
+        heapq.heappush(h, x)
+        if len(h) &gt; k:
+            heapq.heappop(h)
+    return h[0]                       # nhỏ nhất trong top-K = phần tử thứ k lớn nhất
+# Time O(n log K)</code></pre>
+  <h3>Approach 3 — Quick Select (Tuần 8 review)</h3>
+  <pre><code># Trung bình O(n), worst case O(n²) — partition-based</code></pre>
+  <p>So sánh: Sort đơn giản nhất, Heap tốt nhất cho stream, Quick Select nhanh nhất trung bình.</p>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Kth Largest — Trace tay (Heap approach)</h2>
+  <p><code>nums = [3, 2, 1, 5, 6, 4]</code>, <code>k = 2</code>. Kỳ vọng: 5.</p>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>x</th><th>heap sau push</th><th>len &gt; k?</th><th>heap sau pop</th></tr>
+    <tr><td>1</td><td>3</td><td>[3]</td><td>1 ≤ 2</td><td>[3]</td></tr>
+    <tr><td>2</td><td>2</td><td>[2, 3]</td><td>2 ≤ 2</td><td>[2, 3]</td></tr>
+    <tr><td>3</td><td>1</td><td>[1, 3, 2]</td><td>3 &gt; 2 → pop 1</td><td>[2, 3]</td></tr>
+    <tr><td>4</td><td>5</td><td>[2, 3, 5]</td><td>3 &gt; 2 → pop 2</td><td>[3, 5]</td></tr>
+    <tr><td>5</td><td>6</td><td>[3, 5, 6]</td><td>3 &gt; 2 → pop 3</td><td>[5, 6]</td></tr>
+    <tr><td>6</td><td>4</td><td>[4, 6, 5]</td><td>3 &gt; 2 → pop 4</td><td>[5, 6]</td></tr>
+  </table>
+  <p>Trả <code>h[0] = 5</code> ✓.</p>
+  <div class="key-point">
+    <div class="key-point-label">Tinh thần:</div>
+    Heap luôn giữ k phần tử "ứng viên top-K". Phần tử nhỏ nhất trong các ứng viên (= root) là <em>phần tử thứ k lớn nhất</em> nếu mảng đã duyệt hết.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Worked Example 2 — Top K Frequent Elements (Heap revisit)</h2>
+  <p><strong>Đề (LeetCode #347):</strong> Top K phần tử xuất hiện nhiều nhất.</p>
+  <p>Tuần 3 đã làm với <strong>Bucket Sort O(n)</strong>. Giờ thêm cách <strong>Heap O(n log K)</strong>:</p>
+  <pre><code>from collections import Counter
+import heapq
+
+def topKFrequent(nums, k):
+    cnt = Counter(nums)
+    return heapq.nlargest(k, cnt.keys(), key=cnt.get)</code></pre>
+  <h3>Tự cài thay vì <code>nlargest</code></h3>
+  <pre><code>def topKFrequent(nums, k):
+    cnt = Counter(nums)
+    h = []
+    for num, freq in cnt.items():
+        heapq.heappush(h, (freq, num))      # min-heap theo freq
+        if len(h) &gt; k:
+            heapq.heappop(h)
+    return [num for freq, num in h]</code></pre>
+  <h3>So sánh 3 cách</h3>
+  <ul>
+    <li><strong>Sort</strong>: O(n log n)</li>
+    <li><strong>Heap O(n log K)</strong>: tốt khi K &lt;&lt; n</li>
+    <li><strong>Bucket Sort</strong>: O(n) — nhanh nhất nhưng cần biết miền giá trị</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 Worked Example 3 — K Closest Points to Origin</h2>
+  <p><strong>Đề (LeetCode #973):</strong> Mảng các điểm <code>points[i] = [x, y]</code>. Trả K điểm gần gốc toạ độ nhất.</p>
+  <h3>Quan sát</h3>
+  <p>"K nhỏ nhất" theo khoảng cách → dùng <strong>max-heap</strong> size K. Khi heap quá K, pop phần tử xa nhất.</p>
+  <pre><code>def kClosest(points, k):
+    h = []
+    for x, y in points:
+        d = x*x + y*y                     # bình phương khoảng cách (đủ để so sánh)
+        heapq.heappush(h, (-d, x, y))     # nhân -1 để max-heap
+        if len(h) &gt; k:
+            heapq.heappop(h)
+    return [[x, y] for _, x, y in h]</code></pre>
+  <p>Time <strong>O(n log K)</strong>, Space <strong>O(K)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Vì sao bình phương khoảng cách, không sqrt?</div>
+    Để so sánh thứ tự, không cần giá trị thực. <code>sqrt</code> chậm và có sai số floating-point.
+    Đây là tối ưu nhỏ nhưng quan trọng — luôn áp dụng khi có thể.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.6 ===== -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 Worked Example 4 — Last Stone Weight</h2>
+  <p><strong>Đề (LeetCode #1046):</strong> Mảng <code>stones</code>. Mỗi vòng, chọn 2 viên nặng nhất:
+  nếu bằng → cả hai biến mất; nếu khác → viên mới = hiệu. Trả về viên cuối còn lại (0 nếu hết).</p>
+  <h3>Pattern: max-heap với simulation</h3>
+  <pre><code>def lastStoneWeight(stones):
+    h = [-s for s in stones]              # max-heap idiom
+    heapq.heapify(h)                      # O(n)
+    while len(h) &gt; 1:
+        a = -heapq.heappop(h)             # nặng nhất
+        b = -heapq.heappop(h)             # nặng thứ hai
+        if a != b:
+            heapq.heappush(h, -(a - b))
+    return -h[0] if h else 0</code></pre>
+  <p>Time <strong>O(n log n)</strong>, Space <strong>O(n)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Idiom max-heap qua nhân -1:</div>
+    Thấy đoạn code dùng <code>-x</code> push vào và <code>-heapq.heappop(h)</code> đọc ra → đây là max-heap.
+    Pattern xuất hiện ở nhiều bài: Reorganize String, Task Scheduler, Maximum Performance of a Team.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Top-K Patterns</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Để tìm K phần tử LỚN NHẤT, dùng heap loại nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Max-heap</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Min-heap size K</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Sorted list</button>
+    <div class="quiz-explanation">"Quy tắc đảo ngược": min-heap size K cho top-K largest. Min-heap có root = phần tử nhỏ nhất trong K ứng viên — đó là ngưỡng để loại các giá trị nhỏ hơn. Dùng max-heap size K thì root = lớn nhất, không phải ngưỡng cần.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: <code>heapify(arr)</code> có complexity gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) O(n log n)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) O(n)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) O(n²)</button>
+    <div class="quiz-explanation">Tận dụng "bottom-up sift down". Phân tích chi tiết: tổng số bước sift down qua mọi tầng tỷ lệ với n (chứ không phải n × log n). Đây là chi tiết quan trọng — luôn dùng heapify thay vì n lần push.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Heap O(n log K) tốt hơn Sort O(n log n) khi nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Luôn luôn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi K &lt;&lt; n hoặc dữ liệu đến dưới dạng stream</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khi mảng đã sort</button>
+    <div class="quiz-explanation">Khi K = n, heap O(n log n) tương đương sort. Lợi rõ khi K nhỏ (K = 10, n = 10⁶). Cũng lợi với stream — heap cập nhật từng phần tử mới mà không cần biết toàn bộ trước.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. K-way Merge</h1>
+  <div class="subtitle">Merge K nguồn đã sort thành 1 dãy sort — pattern then chốt cho data pipeline</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Pattern K-way Merge</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình:</div>
+    Cho K mảng/list đã sort, tổng N phần tử. Merge thành 1 sequence sort.
+    <ul>
+      <li>Brute force: ghép tất cả + sort → O(N log N).</li>
+      <li><strong>K-way merge</strong>: heap chứa "đầu hiện tại" của K nguồn → O(N log K).</li>
+    </ul>
+  </div>
+  <h3>Tinh thần</h3>
+  <p>Tại mỗi bước, lấy <em>nhỏ nhất trong K đầu hiện tại</em>, đẩy vào kết quả, đẩy đầu mới của nguồn đó vào heap.</p>
+  <h3>Khi nào dùng?</h3>
+  <ul>
+    <li>Merge K Sorted Lists / Arrays.</li>
+    <li>Smallest range covering K lists.</li>
+    <li>K Smallest Pairs, K Smallest Sums.</li>
+    <li>External sort (merge nhiều file đã sort trên đĩa).</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Worked Example 5 — Merge K Sorted Lists (Hard)</h2>
+  <p><strong>Đề (LeetCode #23, Hard):</strong> Cho <code>k</code> linked list đã sort. Merge thành 1 list sort.</p>
+  <pre><code>import heapq
+def mergeKLists(lists):
+    h = []
+    # Push (val, idx, node) — idx làm tiebreaker để tránh "&lt; not supported"
+    for i, head in enumerate(lists):
+        if head:
+            heapq.heappush(h, (head.val, i, head))
+
+    dummy = ListNode(0)
+    tail = dummy
+    while h:
+        val, i, node = heapq.heappop(h)
+        tail.next = node
+        tail = tail.next
+        if node.next:
+            heapq.heappush(h, (node.next.val, i, node.next))
+    return dummy.next</code></pre>
+  <p>Time <strong>O(N log K)</strong> với N = tổng node, K = số list.</p>
+  <h3>Phân tích</h3>
+  <p>Heap tối đa K phần tử. Mỗi node được push 1 lần và pop 1 lần → tổng N × O(log K).</p>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Merge K Sorted Lists — Trace</h2>
+  <p>3 list: <code>[1→4→5]</code>, <code>[1→3→4]</code>, <code>[2→6]</code>.</p>
+  <table class="trace-table">
+    <tr><th>Bước</th><th>Heap</th><th>Pop (val, idx)</th><th>Push tiếp</th><th>Output</th></tr>
+    <tr><td>0</td><td>[(1,0,...), (1,1,...), (2,2,...)]</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>1</td><td>—</td><td>(1, 0)</td><td>(4, 0, ...)</td><td>1</td></tr>
+    <tr><td>2</td><td>—</td><td>(1, 1)</td><td>(3, 1, ...)</td><td>1, 1</td></tr>
+    <tr><td>3</td><td>—</td><td>(2, 2)</td><td>(6, 2, ...)</td><td>1, 1, 2</td></tr>
+    <tr><td>4</td><td>—</td><td>(3, 1)</td><td>(4, 1, ...)</td><td>1, 1, 2, 3</td></tr>
+    <tr><td>5</td><td>—</td><td>(4, 0)</td><td>(5, 0, ...)</td><td>1, 1, 2, 3, 4</td></tr>
+    <tr><td>6</td><td>—</td><td>(4, 1)</td><td>—</td><td>1, 1, 2, 3, 4, 4</td></tr>
+    <tr><td>7</td><td>—</td><td>(5, 0)</td><td>—</td><td>1, 1, 2, 3, 4, 4, 5</td></tr>
+    <tr><td>8</td><td>—</td><td>(6, 2)</td><td>—</td><td>1, 1, 2, 3, 4, 4, 5, 6</td></tr>
+  </table>
+  <p>Hết heap → trả output. Heap không vượt 3 phần tử.</p>
+  <div class="example">
+    <div class="example-label">Vai trò của idx (tiebreaker):</div>
+    Khi val bằng nhau (1 ở list 0 và list 1), Python tries so sánh node — không có <code>__lt__</code> → lỗi.
+    idx duy nhất đảm bảo so sánh không bao giờ chạm tới node.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Worked Example 6 — Find K Smallest Pairs</h2>
+  <p><strong>Đề (LeetCode #373):</strong> Hai mảng sort <code>nums1</code>, <code>nums2</code>, số <code>k</code>.
+  Trả K cặp <code>(u, v)</code> có tổng nhỏ nhất.</p>
+  <h3>Quan sát</h3>
+  <p>Tổng số cặp = n × m, có thể rất lớn. Brute force: tạo mọi cặp + sort → O(nm log(nm)). Cần tốt hơn.</p>
+  <h3>Min-heap với "expand" thông minh</h3>
+  <pre><code>def kSmallestPairs(nums1, nums2, k):
+    if not nums1 or not nums2: return []
+    h = []
+    # Khởi tạo: ghép nums1[i] với nums2[0], i ∈ [0, min(k, len(nums1)))
+    for i in range(min(k, len(nums1))):
+        heapq.heappush(h, (nums1[i] + nums2[0], i, 0))
+
+    res = []
+    while h and len(res) &lt; k:
+        s, i, j = heapq.heappop(h)
+        res.append([nums1[i], nums2[j]])
+        if j + 1 &lt; len(nums2):
+            heapq.heappush(h, (nums1[i] + nums2[j+1], i, j+1))
+    return res</code></pre>
+  <p>Time <strong>O(K log K)</strong>, Space <strong>O(K)</strong>.</p>
+  <div class="key-point">
+    <div class="key-point-label">Tinh thần "expand frontier":</div>
+    Heap chỉ chứa "biên giới ứng viên" — mỗi lần pop một cặp (i, j), thêm cặp (i, j+1) vào.
+    Pattern xuất hiện ở nhiều bài "tìm K nhỏ nhất từ ma trận sort" như Kth Smallest in Sorted Matrix.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — K-way Merge</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Merge K Sorted Lists, vì sao heap chỉ chứa tối đa K phần tử?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để tiết kiệm bộ nhớ</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Mỗi list đóng góp tối đa 1 node "đầu hiện tại" cùng lúc</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Heap có giới hạn cứng K</button>
+    <div class="quiz-explanation">Logic: pop một node → push node kế tiếp của CHÍNH list đó → kích thước heap không đổi (hoặc giảm khi list cạn). Vì mỗi list chỉ có 1 đại diện trong heap → tối đa K đại diện.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Tại sao cần idx tiebreaker trong heap chứa ListNode?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để xác định node thuộc list nào</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Vì khi val bằng nhau, Python sẽ thử so sánh ListNode — gây TypeError vì không có <code>__lt__</code></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để debug</button>
+    <div class="quiz-explanation">Tuple được so sánh từng phần tử. Khi (val, node) và (val', node') có val = val', Python so sánh node với node' → không có operator → lỗi. Chèn idx đảm bảo so sánh dừng tại idx (luôn khác nhau).</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Two Heaps Pattern</h1>
+  <div class="subtitle">Max-heap + Min-heap cân bằng — pattern cho Median Stream và bài "boss" của tuần</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Pattern Two Heaps</h2>
+  <div class="definition">
+    <div class="definition-label">Ý tưởng:</div>
+    Chia tập số thành hai nửa:
+    <ul>
+      <li><strong>lo (max-heap)</strong>: chứa nửa nhỏ. Top = max của nửa nhỏ = phần tử lớn nhất bên dưới median.</li>
+      <li><strong>hi (min-heap)</strong>: chứa nửa lớn. Top = min của nửa lớn = phần tử nhỏ nhất bên trên median.</li>
+    </ul>
+    Duy trì <em>kích thước cân bằng</em>: <code>|lo| = |hi|</code> hoặc <code>|lo| = |hi| + 1</code>.
+  </div>
+  <h3>Tính chất</h3>
+  <ul>
+    <li>Median = top của heap lớn hơn (khi tổng lẻ) hoặc trung bình hai top (khi tổng chẵn).</li>
+    <li>Add: O(log n). Find median: O(1).</li>
+  </ul>
+  <p>Pattern này áp dụng cho mọi bài "duy trì median động khi dữ liệu đến từng bước".</p>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Worked Example 7 — Find Median from Data Stream (Hard)</h2>
+  <p><strong>Đề (LeetCode #295, Hard):</strong> Cài data structure hỗ trợ:</p>
+  <ul>
+    <li><code>addNum(num)</code> — thêm số.</li>
+    <li><code>findMedian()</code> — trả median của các số đã thêm.</li>
+  </ul>
+  <pre><code>import heapq
+class MedianFinder:
+    def __init__(self):
+        self.lo = []                            # max-heap (nhân -1)
+        self.hi = []                            # min-heap
+
+    def addNum(self, num):
+        # Bước 1: đẩy vào lo, sau đó lấy top lo đẩy sang hi
+        heapq.heappush(self.lo, -num)
+        heapq.heappush(self.hi, -heapq.heappop(self.lo))
+        # Bước 2: nếu hi lớn hơn → cân bằng lại
+        if len(self.hi) &gt; len(self.lo):
+            heapq.heappush(self.lo, -heapq.heappop(self.hi))
+
+    def findMedian(self):
+        if len(self.lo) &gt; len(self.hi):
+            return -self.lo[0]
+        return (-self.lo[0] + self.hi[0]) / 2</code></pre>
+  <p>addNum <strong>O(log n)</strong>, findMedian <strong>O(1)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 Median Stream — Trace tay</h2>
+  <p>Stream: <code>1, 2, 3, 4, 5</code></p>
+  <table class="trace-table">
+    <tr><th>Add</th><th>Bước 1: lo→hi qua đỉnh</th><th>Cân bằng</th><th>lo (max-heap)</th><th>hi (min-heap)</th><th>Median</th></tr>
+    <tr><td>1</td><td>push 1 vào lo, top lo (1) → hi</td><td>hi &gt; lo → trả 1 về lo</td><td>[1]</td><td>[]</td><td>1</td></tr>
+    <tr><td>2</td><td>push 2 vào lo (top=2), 2 → hi</td><td>cân bằng (1=1)</td><td>[1]</td><td>[2]</td><td>(1+2)/2 = 1.5</td></tr>
+    <tr><td>3</td><td>push 3 vào lo (top=3), 3 → hi</td><td>hi &gt; lo → 2 về lo</td><td>[2, 1]</td><td>[3]</td><td>2</td></tr>
+    <tr><td>4</td><td>push 4 vào lo (top=4), 4 → hi</td><td>cân bằng (2=2)</td><td>[2, 1]</td><td>[3, 4]</td><td>(2+3)/2 = 2.5</td></tr>
+    <tr><td>5</td><td>push 5 vào lo (top=5), 5 → hi</td><td>hi &gt; lo → 3 về lo</td><td>[3, 1, 2]</td><td>[4, 5]</td><td>3</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Vì sao bước 1 luôn "vòng qua hi"?</div>
+    Để đảm bảo invariant: mọi phần tử trong lo ≤ mọi phần tử trong hi. Nếu push thẳng vào lo
+    (không vòng qua), num có thể lớn hơn min của hi → vi phạm thứ tự.
+  </div>
+</div>
+
+<!-- ===== SECTION 5 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 5. BST Operations</h1>
+  <div class="subtitle">Insert, Delete, và bài Kth Smallest tận dụng inorder traversal</div>
+</div>
+
+<!-- ===== SLIDE 5.1 ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 BST Operations — Tóm tắt</h2>
+  <table>
+    <tr><th>Operation</th><th>Average</th><th>Worst</th></tr>
+    <tr><td>Search</td><td>O(log n)</td><td>O(n)</td></tr>
+    <tr><td>Insert</td><td>O(log n)</td><td>O(n)</td></tr>
+    <tr><td>Delete</td><td>O(log n)</td><td>O(n)</td></tr>
+    <tr><td>Inorder traversal</td><td>O(n)</td><td>O(n)</td></tr>
+  </table>
+  <p>Worst case = O(n) khi cây bị skewed (mỗi node chỉ có 1 con). Balanced BST (AVL, Red-Black) đảm bảo O(log n) — nhưng LeetCode ít khi yêu cầu cài.</p>
+  <h3>Search và Insert — đơn giản</h3>
+  <pre><code>def search(root, target):
+    if not root or root.val == target: return root
+    if target &lt; root.val:
+        return search(root.left, target)
+    return search(root.right, target)</code></pre>
+  <p>Đệ quy theo nhánh duy nhất → O(h) với h = chiều cao cây.</p>
+</div>
+
+<!-- ===== SLIDE 5.2 ===== -->
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>5.2 Worked Example 8 — Kth Smallest in BST</h2>
+  <p><strong>Đề (LeetCode #230):</strong> Trả phần tử nhỏ thứ k trong BST.</p>
+  <h3>Quan sát then chốt</h3>
+  <p>Inorder của BST cho dãy sort tăng dần (Tuần 8). Phần tử thứ k của inorder = đáp án.</p>
+  <h3>Approach 1 — Inorder đầy đủ</h3>
+  <pre><code>def kthSmallest(root, k):
+    res = []
+    def inorder(node):
+        if not node: return
+        inorder(node.left)
+        res.append(node.val)
+        inorder(node.right)
+    inorder(root)
+    return res[k - 1]
+# Time O(n), Space O(n) — không tận dụng "dừng sớm"</code></pre>
+  <h3>Approach 2 — Inorder iterative với early stop</h3>
+  <pre><code>def kthSmallest(root, k):
+    stack = []
+    cur = root
+    while cur or stack:
+        while cur:
+            stack.append(cur)
+            cur = cur.left
+        cur = stack.pop()
+        k -= 1
+        if k == 0: return cur.val
+        cur = cur.right
+# Time O(h + k), Space O(h)</code></pre>
+</div>
+
+<!-- ===== SLIDE 5.3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.3</div>
+  <h2>5.3 Worked Example 9 — Insert into BST</h2>
+  <p><strong>Đề (LeetCode #701):</strong> Thêm node giá trị <code>val</code> vào BST. Trả root cây mới.</p>
+  <pre><code>def insertIntoBST(root, val):
+    if not root: return TreeNode(val)            # đến vị trí trống → tạo node
+    if val &lt; root.val:
+        root.left = insertIntoBST(root.left, val)
+    else:
+        root.right = insertIntoBST(root.right, val)
+    return root</code></pre>
+  <p>Time <strong>O(h)</strong>, Space <strong>O(h)</strong>.</p>
+  <h3>Phân tích leap of faith</h3>
+  <p>Tin rằng <code>insertIntoBST(root.left, val)</code> trả về cây con trái với val đã chèn. Gán lại
+  <code>root.left = ...</code> để cây cha "biết" thay đổi. Đây là pattern <em>"trả về node đã sửa, gán lại"</em> — xuất hiện ở Insert/Delete BST.</p>
+  <div class="example">
+    <div class="example-label">Vì sao gán <code>root.left = insertIntoBST(...)</code> chứ không gọi không gán?</div>
+    Khi cây con trái rỗng (None), insertIntoBST tạo node mới và trả về. Cha phải gán node này vào root.left.
+    Không gán → node mới bị bỏ rơi.
+  </div>
+</div>
+
+<!-- ===== SLIDE 5.4 ===== -->
+<div class="slide">
+  <div class="slide-number">5.4</div>
+  <h2>5.4 Worked Example 10 — Delete from BST</h2>
+  <p><strong>Đề (LeetCode #450):</strong> Xoá node có <code>key</code> trong BST. Trả root cây mới.</p>
+  <h3>Ba case quan trọng khi xoá</h3>
+  <ol>
+    <li><strong>Node là leaf</strong>: xoá thẳng (return None lên).</li>
+    <li><strong>Node có 1 con</strong>: thay node bằng con đó.</li>
+    <li><strong>Node có 2 con</strong>: thay bằng <em>inorder successor</em> (nhỏ nhất bên phải) hoặc inorder predecessor (lớn nhất bên trái), rồi đệ quy xoá successor đó.</li>
+  </ol>
+  <pre><code>def deleteNode(root, key):
+    if not root: return None
+    if key &lt; root.val:
+        root.left = deleteNode(root.left, key)
+    elif key &gt; root.val:
+        root.right = deleteNode(root.right, key)
+    else:                                          # node cần xoá
+        if not root.left: return root.right        # case 1+2
+        if not root.right: return root.left        # case 1+2
+        # Case 3: tìm successor
+        succ = root.right
+        while succ.left: succ = succ.left
+        root.val = succ.val                        # copy giá trị
+        root.right = deleteNode(root.right, succ.val)   # xoá successor
+    return root</code></pre>
+  <p>Time <strong>O(h)</strong>, Space <strong>O(h)</strong>.</p>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.Q</div>
+  <h2>Knowledge Check — Two Heaps &amp; BST</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Median Stream, vì sao addNum luôn "vòng qua" heap còn lại?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để code đẹp</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để duy trì invariant: mọi phần tử trong lo ≤ mọi phần tử trong hi</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để cân bằng kích thước</button>
+    <div class="quiz-explanation">Push thẳng num vào lo có thể vi phạm thứ tự (num lớn hơn min của hi). Push num → lo, top lo → hi đảm bảo phần tử "vào đúng vị trí" trong thứ tự tổng. Sau đó cân bằng kích thước.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Trong Delete BST, case "node có 2 con" cần làm gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Xoá luôn node</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Thay giá trị node bằng inorder successor (hoặc predecessor), rồi đệ quy xoá successor đó</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Gán cây con trái thành con phải</button>
+    <div class="quiz-explanation">Inorder successor = phần tử nhỏ nhất lớn hơn node hiện tại. Thay vào sẽ giữ tính chất BST. Sau đó successor cần xoá ở vị trí cũ — nhưng successor luôn có 0 hoặc 1 con (case dễ), nên đệ quy gọn.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Kth Smallest in BST cách nào tốt nhất khi k &lt;&lt; n?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Inorder đầy đủ → list, lấy phần tử k-1</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Inorder iterative với early stop khi k = 0 → O(h + k)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Sort lại cây</button>
+    <div class="quiz-explanation">Inorder đầy đủ luôn O(n) dù k nhỏ. Iterative với stack cho phép dừng ngay khi đến phần tử k → O(h + k). Khi cây balanced và k = 1, chỉ tốn O(log n).</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6 ===== -->
+<div class="slide">
+  <div class="slide-number">6.0</div>
+  <h2>6.0 Decision Tree — Khi nào dùng Heap?</h2>
+  <table>
+    <tr><th>Tín hiệu trong đề</th><th>Pattern</th></tr>
+    <tr><td>"Top K largest" với n lớn / stream</td><td>Min-heap size K</td></tr>
+    <tr><td>"Top K smallest"</td><td>Max-heap size K (idiom -x)</td></tr>
+    <tr><td>"K most frequent"</td><td>Counter + Heap (hoặc Bucket Sort O(n))</td></tr>
+    <tr><td>"K closest points"</td><td>Max-heap size K theo khoảng cách bình phương</td></tr>
+    <tr><td>"Merge K sorted lists/arrays"</td><td>K-way Merge với min-heap chứa "đầu hiện tại"</td></tr>
+    <tr><td>"K smallest pairs/sums"</td><td>Min-heap với "expand frontier"</td></tr>
+    <tr><td>"Median in stream"</td><td>Two heaps (max + min) cân bằng</td></tr>
+    <tr><td>"Schedule with priority"</td><td>Priority queue</td></tr>
+    <tr><td>"Find Kth in BST"</td><td>Inorder iterative với early stop</td></tr>
+    <tr><td>"Kth largest in array (one-shot)"</td><td>Quick Select O(n) trung bình hoặc Heap O(n log K)</td></tr>
+  </table>
+  <h3>Quy tắc chọn nhanh</h3>
+  <p>Tự hỏi: <em>"Mỗi bước có cần biết phần tử cực đoan của tập đã thấy không?"</em> Có → Heap.</p>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">6.1</div>
+  <h2>Tổng kết Tuần 9</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>Heap fundamentals</strong>: min/max heap, heapify O(n), idiom max-heap qua nhân -1.</li>
+    <li><strong>Top-K Pattern</strong>: quy tắc đảo ngược (min-heap cho top-K largest); template chuẩn O(n log K).</li>
+    <li><strong>K-way Merge</strong>: heap chứa K "đầu hiện tại", expand frontier; mẹo idx tiebreaker.</li>
+    <li><strong>Two Heaps</strong>: max-heap + min-heap cân bằng cho median stream — bài "boss" #295.</li>
+    <li><strong>BST Operations</strong>: insert/delete với "trả về node đã sửa, gán lại"; 3 case của delete; Kth Smallest qua inorder + early stop.</li>
+    <li><strong>So sánh Heap vs Sort vs Bucket Sort</strong>: chọn theo K vs n và miền giá trị.</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #215 — Kth Largest Element in an Array (3 approach)</li>
+    <li>LeetCode #347 — Top K Frequent Elements (heap approach)</li>
+    <li>LeetCode #973 — K Closest Points to Origin</li>
+    <li>LeetCode #1046 — Last Stone Weight</li>
+    <li>LeetCode #23 — Merge K Sorted Lists (Hard)</li>
+    <li>LeetCode #373 — Find K Pairs with Smallest Sums</li>
+    <li>LeetCode #295 — Find Median from Data Stream (Hard, boss)</li>
+    <li>LeetCode #621 — Task Scheduler (max-heap simulation)</li>
+    <li>LeetCode #230 — Kth Smallest Element in a BST</li>
+    <li>LeetCode #701 — Insert into a Binary Search Tree</li>
+    <li>LeetCode #450 — Delete Node in a BST</li>
+    <li>LeetCode #703 — Kth Largest Element in a Stream (online)</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 10 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>Graph — BFS, DFS, Connected Components, Topological Sort</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Cấu trúc dữ liệu cuối cùng cần làm chủ. Học cách biểu diễn graph (adjacency list, matrix), 
+    duyệt graph qua BFS (queue đã học) và DFS (recursion đã học), tìm thành phần liên thông qua Union-Find,
+    và Topological Sort cho graph có hướng không chu kỳ. Bài "boss": Course Schedule, Word Ladder, Number of Islands.
+    Min-heap (Tuần 9) sẽ tái xuất hiện ở Dijkstra's Shortest Path.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 9 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>

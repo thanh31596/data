@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuần 3 — Hashing &amp; Frequency Counting</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #fff; color: #1a1a1a;
+  overflow: hidden; height: 100vh;
+}
+.slide {
+  display: none; width: 100vw; height: 100vh;
+  padding: 50px 80px; position: relative;
+  flex-direction: column; justify-content: flex-start;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+.slide-number {
+  position: absolute; top: 20px; right: 30px;
+  font-size: 0.85rem; color: #999;
+}
+h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+h2 { font-size: 1.55rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+p, li { font-size: 1.02rem; line-height: 1.65; margin-bottom: 8px; }
+ul, ol { padding-left: 28px; }
+.example {
+  background: #f8f9fa; border-left: 4px solid #4a7c59;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+.definition {
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.definition-label { font-weight: bold; color: #3b5998; margin-bottom: 6px; }
+.key-point {
+  background: #fff8e1; border-left: 4px solid #f9a825;
+  padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+}
+.key-point-label { font-weight: bold; color: #b07810; margin-bottom: 6px; }
+pre {
+  background: #f5f5f5; padding: 14px; border-radius: 6px;
+  overflow-x: auto; font-size: 0.92rem; margin: 10px 0;
+  font-family: 'Courier New', monospace;
+}
+code { font-family: 'Courier New', monospace; }
+p code, li code, td code { background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-size: 0.92rem; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+th, td { border: 1px solid #ddd; padding: 9px 12px; text-align: left; font-size: 0.95rem; }
+th { background: #f5f5f5; font-weight: 600; }
+.two-col { display: flex; gap: 24px; }
+.two-col > div { flex: 1; }
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: #3b5998; transition: width 0.3s; z-index: 100;
+}
+.nav-indicator {
+  position: fixed; bottom: 20px; right: 30px;
+  font-size: 0.85rem; color: #999; z-index: 100;
+}
+.nav-hint {
+  position: fixed; bottom: 20px; left: 30px;
+  font-size: 0.75rem; color: #ccc; z-index: 100;
+}
+.toc-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.97); z-index: 200;
+  padding: 60px 80px; overflow-y: auto;
+}
+.toc-overlay.active { display: block; }
+.toc-overlay h2 { border: none; }
+.toc-item {
+  padding: 7px 0; cursor: pointer; color: #3b5998;
+  font-size: 1.02rem; border-bottom: 1px solid #f0f0f0;
+}
+.toc-item:hover { color: #1a1a1a; }
+.toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+.slide.section-divider {
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section-divider h1 {
+  font-size: 2.6rem; border-bottom: 3px solid #1a1a1a;
+  padding-bottom: 14px; max-width: 80%;
+}
+.slide.section-divider .subtitle {
+  font-size: 1.1rem; color: #666; margin-top: 16px; font-style: italic;
+}
+.illustration { display: flex; justify-content: center; margin: 14px 0; }
+.illustration svg { max-width: 100%; height: auto; }
+.illustration-caption {
+  text-align: center; font-size: 0.88rem; color: #666;
+  margin-top: 4px; font-style: italic;
+}
+.quiz { margin: 14px 0; }
+.quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.02rem; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin: 5px 0;
+  background: #f8f9fa; border: 2px solid #e0e0e0;
+  border-radius: 6px; cursor: pointer;
+  font-size: 0.97rem; font-family: inherit; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quiz-option:hover { border-color: #999; }
+.quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+.quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+.quiz-option.dimmed { opacity: 0.5; cursor: default; }
+.quiz-explanation {
+  display: none; margin-top: 10px; padding: 10px 14px;
+  background: #f0f4ff; border-left: 4px solid #3b5998;
+  border-radius: 4px; font-size: 0.92rem;
+}
+.quiz-explanation.visible { display: block; }
+.cover {
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover h1 { font-size: 2.8rem; border: none; margin-bottom: 8px; }
+.cover .course { font-size: 1.1rem; color: #666; margin-bottom: 30px; letter-spacing: 1px; }
+.cover .meta { font-size: 0.95rem; color: #999; margin-top: 30px; }
+.trace-table th, .trace-table td { font-family: 'Courier New', monospace; font-size: 0.9rem; text-align: center; padding: 6px 10px; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== COVER ===== -->
+<div class="slide cover active">
+  <div class="course">CHUYÊN ĐỀ COMPETITIVE PROGRAMMING — TUẦN 3</div>
+  <h1>Hashing &amp; Frequency Counting</h1>
+  <p style="font-size: 1.1rem; color: #444; max-width: 720px;">
+    Pattern xuất hiện ở khoảng <strong>40% bài Easy/Medium</strong> trên LeetCode và Codility.
+    Đào sâu vào nghệ thuật <em>thiết kế key</em> — sự khác biệt giữa O(n²) và O(n).
+  </p>
+  <div class="meta">10 worked examples · 3 knowledge checks · 12 bài về nhà</div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 1. Nền tảng Hashing</h1>
+  <div class="subtitle">Cơ chế bên trong, ba cấu trúc Python, và nghệ thuật thiết kế key</div>
+</div>
+
+<!-- ===== SLIDE 1.1 ===== -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 Vì sao Hashing là pattern quan trọng nhất?</h2>
+  <p>Tuần 1 đã giới thiệu mantra <strong>"đổi space lấy time"</strong>. Tuần 3 đào sâu cách áp dụng nó.</p>
+  <h3>Ba câu hỏi bài toán mà hash giải quyết hoàn hảo</h3>
+  <ol>
+    <li><strong>"X có tồn tại không?"</strong> → <code>set</code> + <code>x in s</code> O(1).</li>
+    <li><strong>"X xuất hiện bao nhiêu lần?"</strong> → <code>dict / Counter</code> O(1) per query.</li>
+    <li><strong>"Hai đối tượng có cùng đặc trưng không?"</strong> → so sánh hash key của chúng.</li>
+  </ol>
+  <div class="key-point">
+    <div class="key-point-label">Tư duy chính của tuần này:</div>
+    Bài toán không phải lúc nào cũng <em>nói</em> "dùng hash". Người học phải nhận ra: bài này có thể
+    quy về một trong ba câu hỏi trên không?
+  </div>
+  <p>Nếu có, thì câu hỏi tiếp theo là: <em>key của hash sẽ là gì?</em> Đó là phần nghệ thuật.</p>
+</div>
+
+<!-- ===== SLIDE 1.2 ===== -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Cơ chế bên trong — Vì sao O(1) trung bình?</h2>
+  <h3>Cấu trúc</h3>
+  <p>Hash table = mảng B "bucket" + hàm băm <code>h(key)</code>. Vị trí lưu key là <code>h(key) mod B</code>.</p>
+  <h3>Truy cập trung bình O(1)</h3>
+  <p>Nếu hàm băm phân phối đều và <code>n / B</code> nhỏ (load factor &lt; 1), mỗi bucket chứa ~1 phần tử.
+  Tìm/thêm/xoá là O(1) trung bình.</p>
+  <h3>Worst case</h3>
+  <p>Nếu nhiều key băm cùng bucket (collision), chuỗi tại bucket dài lên. Tệ nhất: mọi key cùng bucket → O(n) per operation.</p>
+  <div class="key-point">
+    <div class="key-point-label">Trong thực tế phỏng vấn:</div>
+    Nói "<strong>O(1) trung bình, O(n) worst case</strong>" là chuẩn. Đa số bài LeetCode coi như O(1)
+    vì input không cố tình phá hash. Nhưng phải biết khi nào điều này có thể sai —
+    nhất là trong môi trường security / adversarial input.
+  </div>
+  <p>Python <code>dict</code> dùng <em>open addressing</em> + random hash seed; thực tế gần như không bao giờ degrade.</p>
+</div>
+
+<!-- ===== SLIDE 1.3 ===== -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 Ba cấu trúc Python — Khi nào dùng cái nào?</h2>
+  <table>
+    <tr><th>Cấu trúc</th><th>Mục đích</th><th>Ví dụ điển hình</th></tr>
+    <tr><td><code>set</code></td><td>Kiểm tra "đã thấy chưa"</td><td>Detect duplicate, cycle detection</td></tr>
+    <tr><td><code>dict</code></td><td>Map key → value</td><td>Two Sum (value → index), counting</td></tr>
+    <tr><td><code>Counter</code></td><td>Đếm tần suất chuyên dụng</td><td>Anagram, top-K frequent</td></tr>
+  </table>
+  <h3>Counter — bốn thao tác đáng nhớ</h3>
+  <pre><code>from collections import Counter
+c = Counter("aabbbc")           # Counter({'b': 3, 'a': 2, 'c': 1})
+
+c.most_common(2)                # [('b', 3), ('a', 2)]
+c['x']                          # 0  — không tồn tại trả 0, không lỗi
+
+c1 = Counter("abc"); c2 = Counter("aab")
+c1 + c2                         # Counter({'a': 3, 'b': 2, 'c': 1})
+c1 &amp; c2                         # min(intersection): Counter({'a': 1, 'b': 1})</code></pre>
+  <div class="example">
+    <div class="example-label">Phép giao &amp;:</div>
+    <code>c1 &amp; c2</code> = phần chung của hai multiset. Ứng dụng cho bài
+    <em>Find Common Characters</em>, <em>Intersection of Two Arrays II</em>.
+  </div>
+</div>
+
+<!-- ===== SLIDE 1.4 ===== -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 Thiết kế key — Cái gì có thể là key?</h2>
+  <p>Python yêu cầu key của <code>dict</code>/<code>set</code> phải <strong>hashable</strong>:
+  hỗ trợ <code>__hash__</code> và bất biến.</p>
+  <table>
+    <tr><th>Hashable?</th><th>Loại</th><th>Ví dụ</th></tr>
+    <tr><td>Có</td><td>int, float, str, bool</td><td><code>42, "abc", 3.14</code></td></tr>
+    <tr><td>Có</td><td>tuple (chứa hashable)</td><td><code>(1, 2, "a")</code></td></tr>
+    <tr><td>Có</td><td>frozenset</td><td><code>frozenset([1,2,3])</code></td></tr>
+    <tr><td>Không</td><td>list, dict, set</td><td><code>[1,2]</code> — TypeError</td></tr>
+  </table>
+  <h3>Kỹ thuật "đóng gói" key</h3>
+  <pre><code># Sai: list không hashable
+seen = set()
+seen.add([1, 2, 3])                  # TypeError
+
+# Đúng: chuyển thành tuple
+seen.add(tuple([1, 2, 3]))           # OK
+
+# Hoặc frozenset nếu thứ tự không quan trọng
+seen.add(frozenset([1, 2, 3]))       # OK</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc thiết kế key:</div>
+    Key tốt là cái <em>biểu diễn duy nhất</em> đặc trưng cần so sánh. Hai đối tượng "tương đương"
+    phải có cùng key. Ví dụ ở 2.2 (Group Anagrams), key là sorted string hoặc tuple đếm 26 ký tự.
+  </div>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 2. Frequency Counting</h1>
+  <div class="subtitle">Đếm trước, xử lý sau — pattern đơn giản nhất nhưng phổ biến nhất</div>
+</div>
+
+<!-- ===== SLIDE 2.1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 Pattern Frequency Counting</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình tổng quát:</div>
+    <pre><code>cnt = Counter(data)            # Pha 1: O(n) — đếm
+result = process(cnt)          # Pha 2: O(n) hoặc O(k) — xử lý dựa trên tần suất</code></pre>
+  </div>
+  <h3>Tín hiệu nhận biết trong đề</h3>
+  <ul>
+    <li>Đề nói "đếm số lần xuất hiện".</li>
+    <li>So sánh hai chuỗi/mảng <em>theo nội dung</em> chứ không theo thứ tự (anagram).</li>
+    <li>Tìm phần tử đầu tiên / duy nhất xuất hiện k lần.</li>
+    <li>Top K phần tử thường xuyên nhất.</li>
+    <li>Sắp xếp theo tần suất.</li>
+  </ul>
+  <p>Đặc điểm chung: <strong>thứ tự ban đầu không quan trọng, chỉ quan trọng tần suất</strong>.
+  Đó là dấu hiệu Frequency Counting.</p>
+</div>
+
+<!-- ===== SLIDE 2.2 ===== -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Worked Example 1 — Group Anagrams</h2>
+  <p><strong>Đề (LeetCode #49):</strong> Cho mảng string <code>strs</code>. Nhóm các anagram cùng group.</p>
+  <p><strong>Ví dụ:</strong> <code>["eat","tea","tan","ate","nat","bat"]</code> →
+  <code>[["bat"],["nat","tan"],["ate","eat","tea"]]</code>.</p>
+  <h3>Câu hỏi cốt lõi: Key của hash là gì?</h3>
+  <p>Key phải có tính chất: <em>hai string là anagram \(\iff\) có cùng key</em>.</p>
+  <h3>Approach 1 — Sorted string làm key</h3>
+  <pre><code>from collections import defaultdict
+
+def groupAnagrams(strs):
+    groups = defaultdict(list)
+    for s in strs:
+        key = ''.join(sorted(s))     # "tea" → "aet"
+        groups[key].append(s)
+    return list(groups.values())</code></pre>
+  <p>Time <strong>O(n × k log k)</strong> với k = độ dài chuỗi (sort mỗi chuỗi).</p>
+</div>
+
+<!-- ===== SLIDE 2.3 ===== -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Group Anagrams — Tối ưu Key Design</h2>
+  <h3>Approach 2 — Tuple đếm 26 ký tự làm key</h3>
+  <pre><code>def groupAnagrams(strs):
+    groups = defaultdict(list)
+    for s in strs:
+        cnt = [0] * 26
+        for ch in s:
+            cnt[ord(ch) - ord('a')] += 1
+        key = tuple(cnt)             # tuple hashable, list thì không
+        groups[key].append(s)
+    return list(groups.values())</code></pre>
+  <p>Time <strong>O(n × k)</strong> — không cần sort.</p>
+  <h3>So sánh hai approach</h3>
+  <table>
+    <tr><th>Approach</th><th>Key</th><th>Time</th><th>Khi nào ưu tiên</th></tr>
+    <tr><td>Sorted</td><td>"aet"</td><td>O(n × k log k)</td><td>Code ngắn, chuỗi ngắn</td></tr>
+    <tr><td>Tuple đếm</td><td>(1,0,0,...,1,...)</td><td>O(n × k)</td><td>Chuỗi dài, tối ưu</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Bài học:</div>
+    Hai key cùng giải đúng nhưng độ phức tạp khác nhau. Trong phỏng vấn, đề xuất approach 1 trước
+    (đơn giản hơn), rồi nói "có thể tối ưu xuống O(nk) bằng tuple đếm" — thể hiện tư duy nâng cấp dần.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.4 ===== -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Worked Example 2 — Top K Frequent Elements</h2>
+  <p><strong>Đề (LeetCode #347):</strong> Mảng <code>nums</code>. Trả về k phần tử xuất hiện nhiều nhất.</p>
+  <p><strong>Constraints:</strong> Phải đạt tốt hơn O(n log n).</p>
+  <h3>Approach 1 — Sort theo tần suất</h3>
+  <pre><code>from collections import Counter
+def topKFrequent(nums, k):
+    cnt = Counter(nums)
+    return [x for x, _ in cnt.most_common(k)]
+# Time O(n log n), đạt nhưng chưa tốt nhất</code></pre>
+  <h3>Approach 2 — Min Heap kích thước k</h3>
+  <pre><code>import heapq
+def topKFrequent(nums, k):
+    cnt = Counter(nums)
+    return heapq.nlargest(k, cnt.keys(), key=cnt.get)
+# Time O(n log k) — tốt hơn khi k &lt;&lt; n</code></pre>
+  <p>Heap sẽ học chi tiết ở Tuần 9.</p>
+</div>
+
+<!-- ===== SLIDE 2.5 ===== -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 Top K Frequent — Bucket Sort O(n)</h2>
+  <h3>Approach 3 — Bucket Sort theo tần suất</h3>
+  <p>Quan sát: tần suất tối đa của một phần tử là n. Tạo n+1 bucket, bucket[f] chứa các phần tử
+  có tần suất f. Duyệt ngược từ bucket lớn nhất.</p>
+  <pre><code>def topKFrequent(nums, k):
+    cnt = Counter(nums)
+    n = len(nums)
+    buckets = [[] for _ in range(n + 1)]
+    for x, f in cnt.items():
+        buckets[f].append(x)
+    result = []
+    for f in range(n, 0, -1):
+        for x in buckets[f]:
+            result.append(x)
+            if len(result) == k:
+                return result
+    return result</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(n)</strong>.</p>
+  <div class="example">
+    <div class="example-label">Tinh thần Bucket Sort:</div>
+    Khi giá trị cần sort nằm trong khoảng nhỏ và đã biết trước (ở đây là [0, n]),
+    có thể sort bằng cách phân lô thay vì so sánh — đạt O(n) thay vì O(n log n).
+    Đây là kỹ thuật xuất hiện ở Counting Sort và Radix Sort.
+  </div>
+</div>
+
+<!-- ===== SLIDE 2.6 ===== -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 Worked Example 3 — First Unique Character</h2>
+  <p><strong>Đề (LeetCode #387):</strong> Cho string <code>s</code>. Trả về index của ký tự đầu tiên
+  xuất hiện đúng một lần. Nếu không có, trả về -1.</p>
+  <h3>Pattern hai pass</h3>
+  <pre><code>def firstUniqChar(s):
+    cnt = Counter(s)              # Pass 1: đếm — O(n)
+    for i, ch in enumerate(s):    # Pass 2: tìm theo thứ tự — O(n)
+        if cnt[ch] == 1:
+            return i
+    return -1</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(k)</strong> với k = số ký tự khác nhau (≤ 26 cho chữ thường).</p>
+  <div class="example">
+    <div class="example-label">Vì sao hai pass?</div>
+    Pass 1 không thể trả lời ngay — vì khi gặp ký tự, ta chưa biết nó có xuất hiện lại không.
+    Pass 2 quét theo thứ tự xuất hiện và lấy phần tử đầu tiên có tần suất 1.
+    <br><br>
+    Đây là pattern <strong>"đếm trước, quyết định sau"</strong> — gặp lại ở rất nhiều bài.
+  </div>
+  <p>Biến thể: <em>First Unique Character in a Stream</em> phải dùng cấu trúc dữ liệu khác (queue + count).</p>
+</div>
+
+<!-- ===== SLIDE 2.7 ===== -->
+<div class="slide">
+  <div class="slide-number">2.7</div>
+  <h2>2.7 Worked Example 4 — Find Common Characters</h2>
+  <p><strong>Đề (LeetCode #1002):</strong> Cho mảng các string <code>words</code>. Trả về các ký tự
+  xuất hiện trong <em>mọi</em> string (kể cả trùng lặp).</p>
+  <p><strong>Ví dụ:</strong> <code>["bella","label","roller"]</code> → <code>["e","l","l"]</code> (vì
+  'l' xuất hiện ≥ 2 trong cả 3 string, 'e' xuất hiện ≥ 1).</p>
+  <h3>Pattern: giao multiset bằng Counter</h3>
+  <pre><code>from collections import Counter
+from functools import reduce
+
+def commonChars(words):
+    common = reduce(lambda a, b: a &amp; b, map(Counter, words))
+    return list(common.elements())</code></pre>
+  <h3>Phân tích</h3>
+  <ul>
+    <li><code>Counter(s) &amp; Counter(t)</code> = giao multiset — lấy <code>min(count_s, count_t)</code> cho mỗi ký tự.</li>
+    <li><code>reduce</code> áp dụng phép giao lần lượt qua các Counter.</li>
+    <li><code>elements()</code> "duỗi" Counter ra: <code>Counter({'l':2,'e':1})</code> → <code>['l','l','e']</code>.</li>
+  </ul>
+  <p>Time <strong>O(n × k)</strong> với n = số string, k = độ dài trung bình.</p>
+  <div class="key-point">
+    <div class="key-point-label">Bài học:</div>
+    Counter có toàn bộ phép toán <em>multiset</em>: <code>+, -, &amp;, |</code>. Học thuộc 4 phép này
+    sẽ giúp viết code ngắn hơn nhiều ở các bài liên quan tần suất.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 1 ===== -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Frequency Counting</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Group Anagrams, vì sao <strong>tuple đếm 26 ký tự</strong> tốt hơn sorted string?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Tuple ngắn hơn nên hash nhanh hơn</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Đếm là O(k), sort là O(k log k) — với k lớn thì đếm thắng</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Sorted string không hashable</button>
+    <div class="quiz-explanation">Cả hai key đều hashable. Khác biệt là chi phí <em>tạo</em> key. Đếm 26 vị trí là O(k), trong khi sort là O(k log k). Với k = 100, đếm tiết kiệm ~7 lần.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Khi nào Bucket Sort có thể đạt O(n) thay vì O(n log n)?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Luôn đạt O(n)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Khi giá trị cần sort nằm trong khoảng nhỏ và đã biết trước</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khi mảng đã sort sẵn</button>
+    <div class="quiz-explanation">Bucket Sort phá rào O(n log n) bằng cách phân lô thay vì so sánh. Điều kiện: giá trị cần sort phải có miền hữu hạn đã biết — như tần suất 0..n trong Top K Frequent.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Pattern "đếm trước, quyết định sau" (hai pass) cần thiết khi nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Khi quyết định ở vị trí i phụ thuộc vào toàn bộ thông tin của mảng</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Khi mảng quá lớn để giữ trong memory</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Luôn cần — luôn an toàn hơn</button>
+    <div class="quiz-explanation">First Unique Character: ở pass 1 không thể quyết định vì chưa biết phần sau; pass 2 quyết định vì đã có Counter đầy đủ. Bài có thể giải 1 pass thì không cần — như Two Sum chỉ cần 1 pass với hash.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 3. HashMap as Lookup</h1>
+  <div class="subtitle">"Lưu cái đã thấy, để gặp lần sau biết ngay" — pattern then chốt giảm O(n²) → O(n)</div>
+</div>
+
+<!-- ===== SLIDE 3.1 ===== -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 Pattern Lookup</h2>
+  <div class="definition">
+    <div class="definition-label">Mô hình tổng quát:</div>
+    <pre><code>seen = {}                       # value → thông tin (index, count, time...)
+for i, x in enumerate(arr):
+    if &lt;điều kiện ghép với cái đã thấy&gt;:
+        # tìm trong seen O(1)
+        return ...
+    seen[x] = i                 # ghi nhận đã thấy</code></pre>
+  </div>
+  <h3>Tín hiệu</h3>
+  <ul>
+    <li>"Tìm cặp", "tìm bộ" thoả điều kiện cộng/hiệu/tích.</li>
+    <li>"Trùng lặp trong khoảng cách k".</li>
+    <li>"Mapping 1-1" giữa hai chuỗi.</li>
+    <li>Bài có thể giải brute force O(n²) bằng cách duyệt cặp (i, j) — đây là dấu hiệu mạnh
+    để thử chuyển sang lookup.</li>
+  </ul>
+</div>
+
+<!-- ===== SLIDE 3.2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Worked Example 5 — Contains Duplicate II</h2>
+  <p><strong>Đề (LeetCode #219):</strong> Mảng <code>nums</code>, số <code>k</code>. Trả <code>True</code>
+  nếu tồn tại i, j sao cho <code>nums[i] == nums[j]</code> và <code>|i - j| ≤ k</code>.</p>
+  <h3>Brute force</h3>
+  <pre><code># O(n × k)
+for i in range(len(nums)):
+    for j in range(i+1, min(i+k+1, len(nums))):
+        if nums[i] == nums[j]: return True
+return False</code></pre>
+  <h3>Pattern Lookup</h3>
+  <pre><code>def containsNearbyDuplicate(nums, k):
+    seen = {}                          # value → last index
+    for i, x in enumerate(nums):
+        if x in seen and i - seen[x] &lt;= k:
+            return True
+        seen[x] = i                    # cập nhật index mới nhất
+    return False</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(n)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 3.3 ===== -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Contains Duplicate II — Trace tay</h2>
+  <p><code>nums = [1, 2, 3, 1, 2, 3]</code>, <code>k = 2</code>. Kỳ vọng: False (mọi cặp trùng đều cách xa hơn 2).</p>
+  <table class="trace-table">
+    <tr><th>i</th><th>x</th><th>x trong seen?</th><th>khoảng cách</th><th>kết quả</th><th>seen sau</th></tr>
+    <tr><td>0</td><td>1</td><td>không</td><td>—</td><td>—</td><td>{1:0}</td></tr>
+    <tr><td>1</td><td>2</td><td>không</td><td>—</td><td>—</td><td>{1:0, 2:1}</td></tr>
+    <tr><td>2</td><td>3</td><td>không</td><td>—</td><td>—</td><td>{1:0, 2:1, 3:2}</td></tr>
+    <tr><td>3</td><td>1</td><td>có (idx 0)</td><td>3 − 0 = 3</td><td>3 &gt; k → tiếp</td><td>{1:3, 2:1, 3:2}</td></tr>
+    <tr><td>4</td><td>2</td><td>có (idx 1)</td><td>4 − 1 = 3</td><td>3 &gt; k → tiếp</td><td>{1:3, 2:4, 3:2}</td></tr>
+    <tr><td>5</td><td>3</td><td>có (idx 2)</td><td>5 − 2 = 3</td><td>3 &gt; k → tiếp</td><td>{1:3, 2:4, 3:5}</td></tr>
+  </table>
+  <p>Trả về False.</p>
+  <div class="key-point">
+    <div class="key-point-label">Vì sao luôn cập nhật index mới nhất?</div>
+    Để tối thiểu hoá khoảng cách trong các lần kiểm tra sau. Giữ index cũ nhất là không tối ưu —
+    có thể bỏ lỡ cặp gần hơn.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.4 ===== -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Worked Example 6 — Isomorphic Strings</h2>
+  <p><strong>Đề (LeetCode #205):</strong> Hai string <code>s</code>, <code>t</code> là isomorphic nếu
+  có thể thay thế ký tự trong s để được t, mỗi ký tự ánh xạ <em>duy nhất</em> sang một ký tự khác,
+  và <em>khác ký tự nguồn ánh xạ tới khác ký tự đích</em>.</p>
+  <p><strong>Ví dụ:</strong> "egg" ↔ "add" → True (e→a, g→d). "foo" ↔ "bar" → False (o→a và o→r mâu thuẫn).</p>
+  <h3>Pattern: hai map kiểm tra song ánh (bijection)</h3>
+  <pre><code>def isIsomorphic(s, t):
+    if len(s) != len(t): return False
+    s2t, t2s = {}, {}
+    for a, b in zip(s, t):
+        if a in s2t and s2t[a] != b: return False
+        if b in t2s and t2s[b] != a: return False
+        s2t[a] = b
+        t2s[b] = a
+    return True</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(k)</strong> với k = số ký tự khác nhau.</p>
+</div>
+
+<!-- ===== SLIDE 3.5 ===== -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 Isomorphic — Vì sao cần HAI map?</h2>
+  <p>Nhiều sinh viên chỉ dùng 1 map (s → t) và sai trên test "ab" ↔ "aa".</p>
+  <h3>Trace với 1 map (sai)</h3>
+  <pre><code>s = "ab", t = "aa"
+i=0: 'a' không trong map → map['a'] = 'a'.   map = {'a':'a'}
+i=1: 'b' không trong map → map['b'] = 'a'.   map = {'a':'a', 'b':'a'}
+Trả True ✗ — nhưng đáp án thực sự là False.</code></pre>
+  <p>Lỗi: cả 'a' và 'b' đều ánh xạ sang 'a' — vi phạm tính song ánh (hai ký tự nguồn khác nhau phải ánh xạ tới hai ký tự đích khác nhau).</p>
+  <h3>Hai map giải quyết</h3>
+  <p>Map ngược <code>t2s</code> kiểm tra: nếu 'a' đã ánh xạ ngược về 'a', thì 'b' không thể cũng ánh xạ vào 'a'.</p>
+  <div class="key-point">
+    <div class="key-point-label">Bài học key design:</div>
+    Khi đề yêu cầu mapping 1-1 (bijection), luôn cần kiểm tra hai chiều. Pattern này gặp lại ở
+    Word Pattern (3.6), Find and Replace Pattern, và một số bài graph isomorphism.
+  </div>
+</div>
+
+<!-- ===== SLIDE 3.6 ===== -->
+<div class="slide">
+  <div class="slide-number">3.6</div>
+  <h2>3.6 Worked Example 7 — Word Pattern</h2>
+  <p><strong>Đề (LeetCode #290):</strong> Pattern dạng "abba". String "dog cat cat dog". Trả True nếu
+  pattern khớp với chuỗi từ qua một bijection.</p>
+  <p>Đây chính là Isomorphic Strings <em>nâng lên cấp từ</em> thay vì cấp ký tự.</p>
+  <pre><code>def wordPattern(pattern, s):
+    words = s.split()
+    if len(pattern) != len(words): return False
+    p2w, w2p = {}, {}
+    for p, w in zip(pattern, words):
+        if p in p2w and p2w[p] != w: return False
+        if w in w2p and w2p[w] != p: return False
+        p2w[p] = w
+        w2p[w] = p
+    return True</code></pre>
+  <h3>Trace</h3>
+  <pre><code>pattern = "abba", s = "dog cat cat dog"
+('a','dog') → p2w={'a':'dog'}, w2p={'dog':'a'}
+('b','cat') → p2w={'a':'dog','b':'cat'}, w2p={'dog':'a','cat':'b'}
+('b','cat') → p2w['b'] == 'cat' ✓, w2p['cat'] == 'b' ✓
+('a','dog') → khớp ✓
+→ True</code></pre>
+  <div class="example">
+    <div class="example-label">Tổng quát hoá:</div>
+    Cùng một pattern code cho hai bài khác nhau — minh chứng giá trị của việc học pattern thay vì học bài.
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 2 ===== -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Lookup Pattern</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Contains Duplicate II, vì sao luôn ghi đè index cũ trong <code>seen[x] = i</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì index cũ không có giá trị</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để các so sánh sau dùng khoảng cách <em>nhỏ nhất có thể</em></button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì hash map không cho phép giá trị trùng</button>
+    <div class="quiz-explanation">Khi gặp x lần nữa, ta muốn kiểm tra với index gần nhất để có cơ hội cao thoả |i-j| ≤ k. Giữ index cũ nhất sẽ bỏ lỡ cặp gần hơn.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Bài Isomorphic Strings cần hai map vì lý do gì?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Để tăng tốc</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Để kiểm tra <strong>tính song ánh</strong> — không cho hai ký tự nguồn khác nhau ánh xạ vào cùng đích</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Để xử lý unicode</button>
+    <div class="quiz-explanation">Một map chỉ kiểm tra "nhất quán theo chiều s→t". Cần map ngược để kiểm tra "khác nguồn → khác đích". Test "ab" ↔ "aa" sai nếu chỉ 1 map.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q3: Pattern Lookup biến O(n²) → O(n) bằng cơ chế nào?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Dùng đệ quy thay vòng lặp</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Dùng O(n) bộ nhớ phụ để lưu trạng thái đã thấy, mỗi lần tra cứu O(1)</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Dùng sort để giảm vòng lặp</button>
+    <div class="quiz-explanation">Đây chính là mantra "đổi space lấy time". Brute force duyệt cặp (i, j) → O(n²); thay vào đó duyệt 1 lần và tra hash map → O(n) thời gian, O(n) bộ nhớ phụ.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 4. Set as O(1) Membership</h1>
+  <div class="subtitle">Khi không cần value — chỉ cần biết "có hay không"</div>
+</div>
+
+<!-- ===== SLIDE 4.1 ===== -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Pattern Set Membership</h2>
+  <p><code>set</code> nhẹ hơn <code>dict</code> — không cần value. Dùng khi chỉ quan tâm "phần tử này có
+  trong tập đã thấy không?".</p>
+  <h3>Tín hiệu</h3>
+  <ul>
+    <li>Phát hiện chu kỳ (cycle): "đã từng thăm chưa?".</li>
+    <li>Tìm phần tử thoả điều kiện so với tập gốc (Longest Consecutive Sequence).</li>
+    <li>Loại bỏ duplicate trong set operations (giao, hợp, hiệu).</li>
+  </ul>
+  <h3>Operations cốt lõi</h3>
+  <pre><code>s = set()
+s.add(x)          # O(1)
+x in s            # O(1)
+s.remove(x)       # O(1) — lỗi nếu x không có
+s.discard(x)      # O(1) — không lỗi
+a &amp; b             # giao (intersection)
+a | b             # hợp (union)
+a - b             # hiệu</code></pre>
+</div>
+
+<!-- ===== SLIDE 4.2 ===== -->
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 Worked Example 8 — Longest Consecutive Sequence</h2>
+  <p><strong>Đề (LeetCode #128):</strong> Mảng <code>nums</code> chưa sort. Tìm độ dài chuỗi liên tiếp dài nhất.</p>
+  <p><strong>Ví dụ:</strong> <code>[100,4,200,1,3,2]</code> → 4 (chuỗi 1,2,3,4). <strong>Yêu cầu O(n).</strong></p>
+  <h3>Approach ngây thơ — Sort</h3>
+  <p>Sort rồi duyệt → O(n log n). Vi phạm yêu cầu.</p>
+  <h3>Approach Set + Trick "chỉ start ở đầu chuỗi"</h3>
+  <pre><code>def longestConsecutive(nums):
+    s = set(nums)
+    longest = 0
+    for x in s:
+        if x - 1 not in s:               # x là đầu chuỗi
+            length = 1
+            while x + length in s:
+                length += 1
+            longest = max(longest, length)
+    return longest</code></pre>
+  <p>Time <strong>O(n)</strong>, Space <strong>O(n)</strong>.</p>
+</div>
+
+<!-- ===== SLIDE 4.3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 LCS — Vì sao trick "chỉ start ở đầu chuỗi" đảm bảo O(n)?</h2>
+  <p>Lo lắng tự nhiên: vòng <code>while x + length in s</code> có thể chạy lâu — sao tổng thời gian là O(n)?</p>
+  <h3>Lập luận amortised</h3>
+  <p>Vòng <code>while</code> chỉ chạy khi <code>x</code> là đầu chuỗi (<code>x - 1 not in s</code>).</p>
+  <p>Khi đó, vòng đếm chính xác độ dài của chuỗi mà <code>x</code> mở đầu — gọi là L. Vòng tốn O(L).</p>
+  <p>Mỗi phần tử của <code>nums</code> thuộc <em>đúng một</em> chuỗi liên tiếp duy nhất, nên tổng L
+  qua tất cả các "đầu chuỗi" = n.</p>
+  $$ \text{Tổng thời gian} = \sum_{\text{đầu chuỗi}} O(L) = O(n) $$
+  <h3>Trace với <code>[100, 4, 200, 1, 3, 2]</code></h3>
+  <ul>
+    <li>x = 100: 99 ∉ s → start. While: 101 ∉ s → length = 1.</li>
+    <li>x = 4: 3 ∈ s → skip (không phải đầu chuỗi).</li>
+    <li>x = 200: 199 ∉ s → start. length = 1.</li>
+    <li>x = 1: 0 ∉ s → start. While: 2,3,4 ∈ s; 5 ∉ s → length = 4.</li>
+    <li>x = 3: 2 ∈ s → skip.</li>
+    <li>x = 2: 1 ∈ s → skip.</li>
+  </ul>
+  <p>Kết quả: 4.</p>
+</div>
+
+<!-- ===== SLIDE 4.4 ===== -->
+<div class="slide">
+  <div class="slide-number">4.4</div>
+  <h2>4.4 Worked Example 9 — Happy Number (Set Cycle Detection)</h2>
+  <p><strong>Đề (LeetCode #202):</strong> Số n là "happy" nếu lặp lại quá trình "thay n bằng tổng bình
+  phương các chữ số" cuối cùng cho ra 1. Nếu chu kỳ vô hạn không chứa 1 → False.</p>
+  <p><strong>Ví dụ:</strong> 19 → 1²+9² = 82 → 8²+2² = 68 → 6²+8² = 100 → 1²+0²+0² = 1 → True.</p>
+  <h3>Pattern: Set lưu các số đã gặp để detect cycle</h3>
+  <pre><code>def isHappy(n):
+    def step(x):
+        s = 0
+        while x:
+            x, d = divmod(x, 10)
+            s += d * d
+        return s
+
+    seen = set()
+    while n != 1 and n not in seen:
+        seen.add(n)
+        n = step(n)
+    return n == 1</code></pre>
+  <p>Time và space phụ thuộc vào số chu kỳ — chứng minh được là <strong>O(log n)</strong> dựa trên
+  phân tích các giá trị đạt được.</p>
+  <div class="example">
+    <div class="example-label">Pattern detect cycle:</div>
+    Pattern này có biến thể tối ưu space dùng <strong>Floyd's Tortoise and Hare</strong> (fast &amp; slow)
+    — sẽ học ở Tuần 5 (Linked List).
+  </div>
+</div>
+
+<!-- ===== KNOWLEDGE CHECK 3 ===== -->
+<div class="slide">
+  <div class="slide-number">4.Q</div>
+  <h2>Knowledge Check — Set Membership</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">Q1: Trong Longest Consecutive Sequence, vì sao trick "chỉ start ở đầu chuỗi" cho O(n) tổng thể?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Vì set đảm bảo không trùng</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Vì mỗi phần tử thuộc đúng 1 chuỗi, nên tổng số bước while qua mọi đầu chuỗi = n</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Vì while loop bị giới hạn bởi log n</button>
+    <div class="quiz-explanation">Đây là phân tích amortised. Không phải <em>mỗi</em> vòng while chạy O(n), mà <em>tổng</em> qua tất cả vòng while = n. Pattern phân tích này xuất hiện lại ở many sliding window problems.</div>
+  </div>
+
+  <div class="quiz">
+    <div class="quiz-question">Q2: Khi nào dùng <code>set</code> tốt hơn <code>dict</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) Khi chỉ cần kiểm tra "có hay không", không cần lưu thông tin phụ</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Khi mảng đã sort</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Khi tốc độ quan trọng</button>
+    <div class="quiz-explanation">Cả set và dict đều O(1) cho kiểm tra membership. Set nhẹ hơn (không lưu value), dùng khi không cần thông tin gắn với key. Two Sum cần index nên dùng dict; Contains Duplicate I chỉ cần "đã thấy chưa" nên dùng set.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5 DIVIDER ===== -->
+<div class="slide section-divider">
+  <h1>Phần 5. Combo Patterns &amp; Cầu nối Tuần 4</h1>
+  <div class="subtitle">Hash kết hợp với Prefix Sum (đã học) và Sliding Window (sắp học)</div>
+</div>
+
+<!-- ===== SLIDE 5.1 ===== -->
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 Combo: Hash + Prefix Sum (review #560)</h2>
+  <p>Đã làm chi tiết ở Tuần 2. Ôn lại nhanh tinh thần kết hợp:</p>
+  <pre><code>def subarraySum(nums, k):
+    count, prefix = 0, 0
+    seen = defaultdict(int)
+    seen[0] = 1
+    for x in nums:
+        prefix += x
+        count += seen[prefix - k]
+        seen[prefix] += 1
+    return count</code></pre>
+  <ul>
+    <li><strong>Prefix sum</strong> biến điều kiện về subarray thành hiệu hai prefix.</li>
+    <li><strong>Hash</strong> tra cứu nhanh prefix cần tìm.</li>
+    <li>Kết quả: O(n) thay vì O(n²) brute force.</li>
+  </ul>
+  <div class="key-point">
+    <div class="key-point-label">Triết lý:</div>
+    Pattern không phải đứng riêng. Bài thực sự khó thường là <em>kết hợp</em> 2-3 pattern.
+    Nhận diện được từng thành phần là bước đầu để giải.
+  </div>
+</div>
+
+<!-- ===== SLIDE 5.2 ===== -->
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>5.2 Worked Example 10 — Longest Substring Without Repeating Characters</h2>
+  <p><strong>Đề (LeetCode #3):</strong> String <code>s</code>. Tìm độ dài substring dài nhất không có ký tự lặp.</p>
+  <p>Đây là cầu nối hoàn hảo từ Hash sang Sliding Window (Tuần 4).</p>
+  <pre><code>def lengthOfLongestSubstring(s):
+    last_seen = {}                       # ký tự → index gần nhất
+    longest = 0
+    left = 0
+    for right, ch in enumerate(s):
+        if ch in last_seen and last_seen[ch] &gt;= left:
+            left = last_seen[ch] + 1     # đẩy left qua ký tự lặp
+        last_seen[ch] = right
+        longest = max(longest, right - left + 1)
+    return longest</code></pre>
+  <h3>Trace với <code>"abcabcbb"</code></h3>
+  <table class="trace-table">
+    <tr><th>right</th><th>ch</th><th>left</th><th>last_seen sau</th><th>length</th></tr>
+    <tr><td>0</td><td>a</td><td>0</td><td>{a:0}</td><td>1</td></tr>
+    <tr><td>1</td><td>b</td><td>0</td><td>{a:0,b:1}</td><td>2</td></tr>
+    <tr><td>2</td><td>c</td><td>0</td><td>{a:0,b:1,c:2}</td><td>3</td></tr>
+    <tr><td>3</td><td>a</td><td>1</td><td>{a:3,b:1,c:2}</td><td>3</td></tr>
+    <tr><td>4</td><td>b</td><td>2</td><td>{a:3,b:4,c:2}</td><td>3</td></tr>
+    <tr><td>5</td><td>c</td><td>3</td><td>{a:3,b:4,c:5}</td><td>3</td></tr>
+    <tr><td>6</td><td>b</td><td>5</td><td>{a:3,b:6,c:5}</td><td>2</td></tr>
+    <tr><td>7</td><td>b</td><td>7</td><td>{a:3,b:7,c:5}</td><td>1</td></tr>
+  </table>
+</div>
+
+<!-- ===== SLIDE 5.3 ===== -->
+<div class="slide">
+  <div class="slide-number">5.3</div>
+  <h2>5.3 Decision Tree mở rộng — Hashing trong bức tranh lớn</h2>
+  <table>
+    <tr><th>Câu hỏi của đề</th><th>Pattern phù hợp</th><th>Cấu trúc</th></tr>
+    <tr><td>Tìm cặp/bộ thoả tổng/hiệu</td><td>Lookup</td><td><code>dict</code> value→index</td></tr>
+    <tr><td>Đếm tần suất, top K</td><td>Frequency</td><td><code>Counter</code></td></tr>
+    <tr><td>Nhóm theo đặc trưng</td><td>Key Design</td><td><code>defaultdict(list)</code></td></tr>
+    <tr><td>Phát hiện trùng / cycle</td><td>Set Membership</td><td><code>set</code></td></tr>
+    <tr><td>Mapping 1-1 (bijection)</td><td>Two-way Lookup</td><td>2 <code>dict</code></td></tr>
+    <tr><td>Subarray có tổng = K</td><td>Hash + Prefix</td><td><code>dict</code> prefix→count</td></tr>
+    <tr><td>Substring không lặp / ≤ K loại</td><td>Hash + Sliding Window (Tuần 4)</td><td><code>dict</code> + 2 pointer</td></tr>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Quy tắc 3 câu hỏi:</div>
+    Khi nghi ngờ dùng hash, tự hỏi:
+    (1) <em>Key của hash là gì?</em>
+    (2) <em>Value lưu cái gì?</em>
+    (3) <em>Cập nhật khi nào?</em>
+    Trả lời được cả 3 là code chạy được.
+  </div>
+</div>
+
+<!-- ===== TỔNG KẾT ===== -->
+<div class="slide">
+  <div class="slide-number">6.0</div>
+  <h2>Tổng kết Tuần 3</h2>
+  <h3>Đã học</h3>
+  <ul>
+    <li><strong>Cơ chế hash</strong>: O(1) trung bình, O(n) worst case; load factor; collision.</li>
+    <li><strong>Ba cấu trúc</strong>: <code>dict</code>, <code>set</code>, <code>Counter</code> — và operations multiset của Counter.</li>
+    <li><strong>Key Design</strong>: tuple đếm, sorted string, frozenset — chọn key biểu diễn duy nhất đặc trưng cần so sánh.</li>
+    <li><strong>Frequency Pattern</strong>: đếm trước, xử lý sau (2-pass), bucket sort.</li>
+    <li><strong>Lookup Pattern</strong>: O(n²) → O(n); two-way lookup cho bijection.</li>
+    <li><strong>Set Membership</strong>: cycle detection, smart "đầu chuỗi" trick.</li>
+    <li><strong>Combo</strong>: Hash + Prefix, Hash + Sliding Window (mở đường Tuần 4).</li>
+  </ul>
+  <h3>Bài về nhà (12 bài)</h3>
+  <ol>
+    <li>LeetCode #49 — Group Anagrams</li>
+    <li>LeetCode #347 — Top K Frequent Elements (cả 3 approach)</li>
+    <li>LeetCode #387 — First Unique Character in a String</li>
+    <li>LeetCode #1002 — Find Common Characters</li>
+    <li>LeetCode #219 — Contains Duplicate II</li>
+    <li>LeetCode #205 — Isomorphic Strings</li>
+    <li>LeetCode #290 — Word Pattern</li>
+    <li>LeetCode #128 — Longest Consecutive Sequence</li>
+    <li>LeetCode #202 — Happy Number</li>
+    <li>LeetCode #3 — Longest Substring Without Repeating Characters</li>
+    <li>LeetCode #383 — Ransom Note (Counter subtraction)</li>
+    <li>LeetCode #1 — Two Sum (code lại lần 2 — kiểm tra retention)</li>
+  </ol>
+</div>
+
+<!-- ===== KẾT THÚC ===== -->
+<div class="slide cover">
+  <h1 style="border: none;">Tuần 4 sẽ học gì?</h1>
+  <p style="font-size: 1.2rem; color: #444; margin-top: 20px; max-width: 720px;">
+    <strong>Sliding Window — Fixed Window và Variable Window</strong>
+  </p>
+  <p style="font-size: 1rem; color: #666; margin-top: 16px; max-width: 720px;">
+    Pattern chuyên dụng cho subarray/substring liên tiếp với điều kiện. Sẽ học cách thiết kế "shrink condition",
+    template chuẩn cho variable window, và 8 worked examples từ Maximum Average Subarray, Minimum Size Subarray Sum,
+    đến Longest Substring with At Most K Distinct Characters. Hash của tuần này sẽ tiếp tục được dùng làm
+    cấu trúc theo dõi cửa sổ.
+  </p>
+  <div class="meta" style="margin-top: 40px;">Hết Tuần 3 — Cảm ơn các em.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → để chuyển slide · T để mở mục lục</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Mục lục</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Nhấn T hoặc Esc để đóng</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, slides.length - 1));
+  slides[current].classList.add('active');
+  document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+}
+function buildTOC() {
+  const list = document.getElementById('tocList');
+  slides.forEach((s, i) => {
+    const h = s.querySelector('h1, h2');
+    if (h) {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+      div.textContent = h.textContent;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    }
+  });
+}
+function toggleTOC() {
+  document.getElementById('tocOverlay').classList.toggle('active');
+}
+function checkAnswer(btn, isCorrect) {
+  const quiz = btn.closest('.quiz');
+  if (quiz.classList.contains('answered')) return;
+  quiz.classList.add('answered');
+  const options = quiz.querySelectorAll('.quiz-option');
+  options.forEach(o => {
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else if (o === btn && !isCorrect) o.classList.add('incorrect');
+    else o.classList.add('dimmed');
+  });
+  quiz.querySelector('.quiz-explanation').classList.add('visible');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+  else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+  else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+});
+showSlide(0);
+buildTOC();
+renderMathInElement(document.body, {
+  delimiters: [
+    {left: "$$", right: "$$", display: true},
+    {left: "\\(", right: "\\)", display: false}
+  ]
+});
+</script>
+</body>
+</html>
