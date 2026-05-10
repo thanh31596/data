@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 9 — Facelets PDL &amp; JF Components</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 4px;
+      background: #c0392b; transition: width 0.3s ease; z-index: 100;
+    }
+
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 52px 90px 68px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+    }
+    .slide.active { display: flex; }
+
+    .slide-number {
+      position: absolute; top: 18px; right: 30px;
+      font-size: 0.8rem; color: #aaa; font-family: 'Courier New', monospace;
+    }
+
+    /* Title slide */
+    .slide.title-slide {
+      justify-content: center; align-items: flex-start;
+      border-left: 8px solid #c0392b;
+    }
+    .slide.title-slide .week-label {
+      font-size: 0.95rem; color: #c0392b; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .slide.title-slide h1 { font-size: 2.8rem; line-height: 1.2; margin-bottom: 20px; max-width: 700px; }
+    .slide.title-slide .subtitle { font-size: 1.15rem; color: #555; max-width: 600px; line-height: 1.6; }
+    .slide.title-slide .course-tag {
+      margin-top: 40px; font-size: 0.85rem; color: #999;
+      border-top: 1px solid #eee; padding-top: 16px;
+    }
+
+    /* Section dividers */
+    .slide.section-divider {
+      justify-content: center; align-items: flex-start;
+      background: #1a1a1a; color: #fff;
+    }
+    .slide.section-divider .section-num {
+      font-size: 0.85rem; color: #c0392b; letter-spacing: 0.15em;
+      text-transform: uppercase; margin-bottom: 14px; font-weight: 600;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; color: #fff; line-height: 1.25; max-width: 700px;
+      border-bottom: 3px solid #c0392b; padding-bottom: 18px; margin-bottom: 20px;
+    }
+    .slide.section-divider .section-desc { font-size: 1.05rem; color: #ccc; max-width: 620px; line-height: 1.7; }
+
+    h2 { font-size: 1.62rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e8e8e8; padding-bottom: 10px; }
+    h2 .slide-tag {
+      font-size: 0.75rem; color: #c0392b; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 4px;
+    }
+    h3 { font-size: 1.12rem; color: #333; margin: 16px 0 8px; font-weight: 700; }
+    p, li { font-size: 1.0rem; line-height: 1.75; margin-bottom: 8px; }
+    ul, ol { padding-left: 26px; }
+    li { margin-bottom: 5px; }
+
+    .definition { background: #f0f4ff; border-left: 4px solid #3b5998; padding: 14px 18px; margin: 12px 0; border-radius: 4px; }
+    .example { background: #f8f9fa; border-left: 4px solid #4a7c59; padding: 14px 18px; margin: 12px 0; border-radius: 4px; }
+    .key-point { background: #fff5f5; border-left: 4px solid #c0392b; padding: 14px 18px; margin: 12px 0; border-radius: 4px; }
+    .def-label, .example-label, .key-label {
+      font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;
+    }
+    .def-label { color: #3b5998; }
+    .example-label { color: #4a7c59; }
+    .key-label { color: #c0392b; }
+
+    table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.94rem; }
+    th, td { border: 1px solid #ddd; padding: 9px 13px; text-align: left; }
+    th { background: #f5f5f5; font-weight: 700; }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    pre {
+      background: #1e1e1e; color: #d4d4d4; padding: 16px 18px;
+      border-radius: 6px; font-size: 0.85rem; margin: 12px 0;
+      overflow-x: auto; line-height: 1.6;
+    }
+    code { font-family: 'Courier New', monospace; font-size: 0.92em; }
+    .kw { color: #569cd6; }
+    .attr { color: #9cdcfe; }
+    .val { color: #ce9178; }
+    .cm { color: #6a9955; }
+    .tag { color: #4ec9b0; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 4px; }
+    .two-col-6-4 { display: grid; grid-template-columns: 6fr 4fr; gap: 26px; margin-top: 4px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 8px; }
+
+    .illustration { display: flex; flex-direction: column; align-items: center; margin: 14px 0; }
+    .caption { text-align: center; font-size: 0.86rem; color: #777; margin-top: 6px; font-style: italic; }
+
+    /* Technology card */
+    .tech-card {
+      border: 1.5px solid #e0e0e0; border-radius: 8px;
+      padding: 16px 18px; position: relative;
+    }
+    .tech-card .tc-label {
+      font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; color: #1a1a1a;
+    }
+    .tech-card .tc-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 10px; margin-left: 8px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .badge-green { background: #e8f5e9; color: #2e7d32; }
+    .badge-amber { background: #fff8e1; color: #f57f17; }
+    .badge-red { background: #fff5f5; color: #c0392b; }
+
+    /* Component tag pills */
+    .tag-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    .comp-tag {
+      border: 1.5px solid #c0392b; color: #c0392b; border-radius: 5px;
+      padding: 5px 12px; font-size: 0.88rem; font-family: 'Courier New', monospace;
+      background: #fff5f5;
+    }
+    .comp-tag.blue { border-color: #3b5998; color: #3b5998; background: #f0f4ff; }
+    .comp-tag.green { border-color: #4a7c59; color: #4a7c59; background: #f0fff4; }
+
+    /* Namespace strip */
+    .ns-strip {
+      background: #f5f5f5; border-radius: 6px; padding: 12px 16px;
+      font-family: 'Courier New', monospace; font-size: 0.88rem;
+      margin: 10px 0; border-left: 3px solid #c0392b;
+    }
+    .ns-strip span { color: #c0392b; font-weight: 700; }
+
+    /* Quiz */
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 700; margin-bottom: 10px; font-size: 1.0rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 15px; margin: 5px 0; cursor: pointer;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 5px; font-size: 0.95rem; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: #c0392b; background: #fff5f5; }
+    .quiz-option.correct { border-color: #4a7c59; background: #f0fff4; color: #2d6a4f; font-weight: 600; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fff5f5; color: #c0392b; }
+    .quiz-option.dimmed { opacity: 0.4; }
+    .quiz-explanation {
+      display: none; margin-top: 9px; padding: 11px 15px;
+      background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;
+      line-height: 1.6; color: #444; border-left: 3px solid #4a7c59;
+    }
+    .quiz-explanation.visible { display: block; }
+
+    .nav-indicator {
+      position: fixed; bottom: 22px; right: 32px;
+      font-size: 0.82rem; color: #bbb; z-index: 100;
+      font-family: 'Courier New', monospace;
+    }
+    .nav-hint { position: fixed; bottom: 22px; left: 32px; font-size: 0.75rem; color: #ccc; z-index: 100; }
+
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh; background: rgba(255,255,255,0.97);
+      z-index: 200; padding: 60px 90px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; font-size: 1.8rem; margin-bottom: 24px; }
+    .toc-item { padding: 8px 0; cursor: pointer; color: #3b5998; font-size: 0.98rem; border-bottom: 1px solid #f0f0f0; }
+    .toc-item:hover { color: #c0392b; }
+    .toc-section { font-weight: 700; color: #1a1a1a; margin-top: 16px; }
+    .toc-close {
+      position: absolute; top: 28px; right: 38px; font-size: 1.8rem;
+      cursor: pointer; color: #999; background: none; border: none; font-family: inherit;
+    }
+    .toc-close:hover { color: #1a1a1a; }
+
+    .obj-list { list-style: none; padding: 0; margin-top: 10px; }
+    .obj-list li {
+      padding: 10px 0 10px 36px; border-bottom: 1px solid #f0f0f0;
+      position: relative; font-size: 1.0rem;
+    }
+    .obj-list li::before {
+      content: attr(data-num); position: absolute; left: 0; top: 10px;
+      width: 26px; height: 26px; background: #c0392b; color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; font-family: 'Courier New', monospace;
+    }
+
+    /* Facelets template visualization */
+    .template-box {
+      border: 2px dashed #c0392b; border-radius: 8px; padding: 14px;
+      position: relative; margin: 8px 0;
+    }
+    .template-box .tb-label {
+      position: absolute; top: -11px; left: 14px;
+      background: #fff; padding: 0 6px;
+      font-size: 0.78rem; color: #c0392b; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .template-slot {
+      border: 1.5px dashed #3b5998; border-radius: 5px;
+      padding: 10px 14px; background: #f0f4ff; margin: 6px 0;
+      font-size: 0.88rem; color: #3b5998; font-family: 'Courier New', monospace;
+    }
+    .template-fixed {
+      background: #f5f5f5; border-radius: 5px;
+      padding: 8px 14px; margin: 4px 0;
+      font-size: 0.88rem; color: #555; font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== SLIDE 1: TITLE ===== -->
+<div class="slide title-slide active" id="slide-1">
+  <div class="slide-number">1 / 20</div>
+  <div class="week-label">COIT20259 — Week 9</div>
+  <h1>Facelets PDL &amp;<br>Jakarta Faces Components</h1>
+  <div class="subtitle">
+    Comparing how the web can be built, then mastering the declarative language
+    and component toolkit that Jakarta Faces gives you.
+  </div>
+  <div class="course-tag">Enterprise Computing &nbsp;·&nbsp; Press → to begin &nbsp;·&nbsp; Press T for contents</div>
+</div>
+
+<!-- ===== SLIDE 2: OBJECTIVES ===== -->
+<div class="slide" id="slide-2">
+  <div class="slide-number">2 / 20</div>
+  <h2><span class="slide-tag">This Week</span>Learning Objectives</h2>
+  <p>By the end of this week you will be able to:</p>
+  <ul class="obj-list">
+    <li data-num="1"><strong>Contrast</strong> different technologies used to create web pages</li>
+    <li data-num="2"><strong>Describe</strong> the Facelets Page Declaration Language (PDL) and how it works</li>
+    <li data-num="3"><strong>Develop</strong> web interfaces using Jakarta Faces components</li>
+  </ul>
+  <div class="key-point" style="margin-top:22px;">
+    <div class="key-label">Building on Week 8</div>
+    Last week we understood <em>what</em> Jakarta Faces is and its architecture. This week we go deeper — learning the exact language Facelets uses and the library of ready-made components at your disposal.
+  </div>
+</div>
+
+<!-- ===== SECTION 1 DIVIDER ===== -->
+<div class="slide section-divider" id="slide-3">
+  <div class="slide-number" style="color:#777;">3 / 20</div>
+  <div class="section-num">Section 1</div>
+  <h1>Web Page Technologies: A Comparison</h1>
+  <div class="section-desc">
+    Before committing to any framework, good engineers ask: <em>"What are my options, and when should I use each?"</em> Let's compare the main approaches to building web pages.
+  </div>
+</div>
+
+<!-- ===== SLIDE 4: The Landscape ===== -->
+<div class="slide" id="slide-4">
+  <div class="slide-number">4 / 20</div>
+  <h2><span class="slide-tag">Section 1.1</span>Three Ways to Build a Web Page</h2>
+  <p>Every web page ultimately reaches the browser as HTML. But <em>how</em> that HTML is produced varies greatly:</p>
+  <div class="three-col" style="margin-top:14px;">
+    <div class="tech-card">
+      <div class="tc-label">Static HTML <span class="tc-badge badge-amber">Simple</span></div>
+      <p style="font-size:0.92rem;">You write the HTML directly. The file is sent to the browser as-is. Data never changes unless you edit the file.</p>
+      <div class="example" style="margin-top:8px; padding:10px 14px;">
+        <div class="example-label" style="font-size:0.75rem;">Use when</div>
+        <span style="font-size:0.88rem;">Marketing pages, documentation, landing pages with no user data.</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <div class="tc-label">Server-Side Rendering <span class="tc-badge badge-green">Enterprise</span></div>
+      <p style="font-size:0.92rem;">The server builds the HTML page dynamically — data from a database is injected before sending to the browser. <strong>This is what Jakarta Faces does.</strong></p>
+      <div class="example" style="margin-top:8px; padding:10px 14px;">
+        <div class="example-label" style="font-size:0.75rem;">Use when</div>
+        <span style="font-size:0.88rem;">Data-driven apps, forms, dashboards, enterprise systems.</span>
+      </div>
+    </div>
+    <div class="tech-card">
+      <div class="tc-label">Client-Side (SPA) <span class="tc-badge badge-amber">Modern</span></div>
+      <p style="font-size:0.92rem;">The browser downloads a JavaScript app that builds the page itself. The server only provides raw data (via APIs). Examples: React, Angular, Vue.</p>
+      <div class="example" style="margin-top:8px; padding:10px 14px;">
+        <div class="example-label" style="font-size:0.75rem;">Use when</div>
+        <span style="font-size:0.88rem;">Highly interactive apps, real-time updates, mobile-first products.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5: Comparison Table ===== -->
+<div class="slide" id="slide-5">
+  <div class="slide-number">5 / 20</div>
+  <h2><span class="slide-tag">Section 1.2</span>Jakarta Faces vs Other Technologies</h2>
+  <table>
+    <tr>
+      <th>Criterion</th>
+      <th>Raw HTML / JSP</th>
+      <th>Jakarta Faces (Facelets)</th>
+      <th>React / Angular (SPA)</th>
+    </tr>
+    <tr>
+      <td><strong>Who builds the page?</strong></td>
+      <td>Developer writes HTML manually</td>
+      <td>JF framework generates HTML from components</td>
+      <td>Browser JavaScript builds it</td>
+    </tr>
+    <tr>
+      <td><strong>Java integration</strong></td>
+      <td>Manual (JSP scriptlets — messy)</td>
+      <td>Native — beans connect directly</td>
+      <td>Via REST API calls</td>
+    </tr>
+    <tr>
+      <td><strong>Reusable components?</strong></td>
+      <td>Limited (manual copy-paste)</td>
+      <td>Yes — rich component library</td>
+      <td>Yes — component ecosystem</td>
+    </tr>
+    <tr>
+      <td><strong>Templating / layouts?</strong></td>
+      <td>No standard approach</td>
+      <td>Built-in with Facelets templates</td>
+      <td>Component composition</td>
+    </tr>
+    <tr>
+      <td><strong>Best suited for</strong></td>
+      <td>Simple, small sites</td>
+      <td>Enterprise Java applications</td>
+      <td>Highly interactive modern UIs</td>
+    </tr>
+  </table>
+  <div class="key-point" style="margin-top:10px;">
+    <div class="key-label">Bottom Line</div>
+    Jakarta Faces is the right choice when you are already in the Java ecosystem and need a full-stack framework with minimal configuration. It trades some UI flexibility for deep Java integration.
+  </div>
+</div>
+
+<!-- ===== SLIDE 6: Why Facelets over JSP ===== -->
+<div class="slide" id="slide-6">
+  <div class="slide-number">6 / 20</div>
+  <h2><span class="slide-tag">Section 1.3</span>Why Facelets Replaced JSP</h2>
+  <p>The older approach to Java web pages was <strong>JSP (JavaServer Pages)</strong>. Facelets replaced it as the standard view technology for Jakarta Faces.</p>
+  <div class="two-col">
+    <div>
+      <h3>Problems with JSP</h3>
+      <ul>
+        <li>Mixed Java code and HTML — hard to read and maintain</li>
+        <li>No proper templating — every page repeated the header/footer</li>
+        <li>Compilation step required — slower development cycle</li>
+        <li>Browser couldn't display raw JSP pages for design review</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Facelets improvements</h3>
+      <ul>
+        <li>Pure XML/HTML — no Java code in the page file</li>
+        <li>Built-in templating system — define once, reuse everywhere</li>
+        <li>No compilation — interpreted at runtime, faster iteration</li>
+        <li>Valid XHTML — designers can open pages in any browser</li>
+        <li>Better error messages — points to the exact line</li>
+      </ul>
+    </div>
+  </div>
+  <div class="example">
+    <div class="example-label">Analogy</div>
+    JSP was like writing instructions on the back of the finished painting. Facelets separates the blueprint (template) from the content — like a proper architect's drawing with labelled slots to fill in.
+  </div>
+</div>
+
+<!-- ===== SECTION 2 DIVIDER ===== -->
+<div class="slide section-divider" id="slide-7">
+  <div class="slide-number" style="color:#777;">7 / 20</div>
+  <div class="section-num">Section 2</div>
+  <h1>Facelets Page Declaration Language</h1>
+  <div class="section-desc">
+    PDL is the formal name for the rules and syntax Facelets uses. Understanding PDL means understanding how to read and write any Facelets page correctly.
+  </div>
+</div>
+
+<!-- ===== SLIDE 8: What is PDL ===== -->
+<div class="slide" id="slide-8">
+  <div class="slide-number">8 / 20</div>
+  <h2><span class="slide-tag">Section 2.1</span>What Is a Page Declaration Language?</h2>
+  <div class="definition">
+    <div class="def-label">Definition</div>
+    A <strong>Page Declaration Language (PDL)</strong> is a set of rules for declaring UI components in a page file. Facelets PDL extends standard HTML using XML namespaces to add Jakarta Faces-specific tags.
+  </div>
+  <p>Think of it like this: HTML gives you a set of building blocks (<code>&lt;input&gt;</code>, <code>&lt;button&gt;</code>). Facelets PDL <strong>extends that vocabulary</strong> with smarter, Java-aware versions:</p>
+  <table style="margin-top:14px;">
+    <tr><th>Plain HTML</th><th>Facelets PDL equivalent</th><th>What makes it smarter</th></tr>
+    <tr>
+      <td><code>&lt;input type="text"&gt;</code></td>
+      <td><code>&lt;h:inputText value="#{bean.name}"/&gt;</code></td>
+      <td>Automatically binds to a Java property; handles validation</td>
+    </tr>
+    <tr>
+      <td><code>&lt;button&gt;Submit&lt;/button&gt;</code></td>
+      <td><code>&lt;h:commandButton action="#{bean.save}"/&gt;</code></td>
+      <td>Calls a Java method; manages navigation outcome</td>
+    </tr>
+    <tr>
+      <td><code>&lt;table&gt;...&lt;/table&gt;</code></td>
+      <td><code>&lt;h:dataTable value="#{bean.items}"/&gt;</code></td>
+      <td>Iterates a Java list automatically; generates rows</td>
+    </tr>
+    <tr>
+      <td><code>&lt;span&gt;text&lt;/span&gt;</code></td>
+      <td><code>&lt;h:outputText value="#{bean.total}"/&gt;</code></td>
+      <td>Reads a Java value; supports formatters</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ===== SLIDE 9: Namespaces ===== -->
+<div class="slide" id="slide-9">
+  <div class="slide-number">9 / 20</div>
+  <h2><span class="slide-tag">Section 2.2</span>XML Namespaces — The Key to PDL</h2>
+  <p>Facelets pages are valid XML files. To use JF tags, you declare <strong>namespaces</strong> in the opening <code>&lt;html&gt;</code> tag — these tell the server which tags come from which library.</p>
+  <pre><code><span class="kw">&lt;html</span>
+  <span class="attr">xmlns</span>=<span class="val">"http://www.w3.org/1999/xhtml"</span>
+  <span class="attr">xmlns:h</span>=<span class="val">"jakarta.faces.html"</span>          <span class="cm">← HTML components (inputs, forms, tables)</span>
+  <span class="attr">xmlns:f</span>=<span class="val">"jakarta.faces.core"</span>          <span class="cm">← Core tags (validators, converters, events)</span>
+  <span class="attr">xmlns:ui</span>=<span class="val">"jakarta.faces.facelets"</span>      <span class="cm">← Templating (define, insert, include)</span>
+  <span class="attr">xmlns:c</span>=<span class="val">"jakarta.tags.core"</span>           <span class="cm">← JSTL core (if/forEach logic)</span>
+<span class="kw">&gt;</span></code></pre>
+  <div class="two-col" style="margin-top:4px;">
+    <div>
+      <h3>How namespaces work</h3>
+      <p>The prefix (<code>h:</code>, <code>f:</code>, <code>ui:</code>) is like a first name that tells JF which library owns the tag:</p>
+      <div class="ns-strip"><span>h:</span>inputText → HTML input component</div>
+      <div class="ns-strip"><span>f:</span>validateLength → Core validator</div>
+      <div class="ns-strip"><span>ui:</span>insert → Template slot to fill</div>
+    </div>
+    <div class="key-point" style="margin-top:16px;">
+      <div class="key-label">Important: Jakarta vs Java EE</div>
+      Old code used <code>http://xmlns.jcp.org/jsf/html</code>. Modern Jakarta EE uses the short form <code>jakarta.faces.html</code>. Using the wrong one is a common student error — always use the <strong>jakarta.</strong> prefix.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10: Facelets Templating ===== -->
+<div class="slide" id="slide-10">
+  <div class="slide-number">10 / 20</div>
+  <h2><span class="slide-tag">Section 2.3</span>Facelets Templating — Write Once, Reuse Everywhere</h2>
+  <p>The most powerful feature of Facelets PDL is its <strong>templating system</strong>. Define a master layout once; every page just fills in the slots.</p>
+  <div class="two-col">
+    <div>
+      <h3>Template file (<code>layout.xhtml</code>)</h3>
+      <div class="template-box">
+        <div class="tb-label">Master Template</div>
+        <div class="template-fixed">&lt;h:head&gt; — always the same &lt;/h:head&gt;</div>
+        <div class="template-fixed">Navigation bar — fixed across all pages</div>
+        <div class="template-slot">&lt;ui:insert name="content"&gt;<br>&nbsp;&nbsp;Default content (optional)<br>&lt;/ui:insert&gt;</div>
+        <div class="template-fixed">Footer — fixed across all pages</div>
+      </div>
+      <p style="font-size:0.88rem; color:#555; margin-top:6px;">The <code>ui:insert</code> is the <em>slot</em> — a named hole that child pages fill in.</p>
+    </div>
+    <div>
+      <h3>Child page (<code>home.xhtml</code>)</h3>
+      <pre style="font-size:0.82rem;"><code><span class="kw">&lt;ui:composition</span>
+  <span class="attr">template</span>=<span class="val">"/layout.xhtml"</span><span class="kw">&gt;</span>
+
+  <span class="kw">&lt;ui:define</span> <span class="attr">name</span>=<span class="val">"content"</span><span class="kw">&gt;</span>
+    <span class="cm">&lt;!-- This fills the slot --&gt;</span>
+    <span class="kw">&lt;h2&gt;</span>Welcome Home!<span class="kw">&lt;/h2&gt;</span>
+    <span class="kw">&lt;p&gt;</span>Today's date is
+      <span class="kw">&lt;h:outputText</span>
+        <span class="attr">value</span>=<span class="val">"#{bean.today}"</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;/ui:define&gt;</span>
+
+<span class="kw">&lt;/ui:composition&gt;</span></code></pre>
+      <p style="font-size:0.88rem; color:#555; margin-top:6px;"><code>ui:define</code> provides the content for the named slot.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11: QUIZ SECTION 2 ===== -->
+<div class="slide" id="slide-11">
+  <div class="slide-number">11 / 20</div>
+  <h2><span class="slide-tag">Knowledge Check</span>Section 2 — Facelets PDL</h2>
+
+  <div class="quiz" id="q1">
+    <div class="quiz-question">Q1: Your web application has 50 pages, all sharing the same navigation bar and footer. What is the most maintainable approach in Facelets?</div>
+    <button class="quiz-option" onclick="qa(this,'q1',false)">A) Copy and paste the nav bar HTML into all 50 pages</button>
+    <button class="quiz-option" onclick="qa(this,'q1',true)" data-correct="true">B) Create one template file with <code>ui:insert</code> slots; all pages use <code>ui:composition</code></button>
+    <button class="quiz-option" onclick="qa(this,'q1',false)">C) Use JavaScript to dynamically inject the nav bar after page load</button>
+    <div class="quiz-explanation">Facelets templating is designed exactly for this. One template file defines the shared layout; each of the 50 pages only declares its unique content using ui:define. When you need to change the nav bar, you change it in exactly one place.</div>
+  </div>
+
+  <div class="quiz" id="q2" style="margin-top:16px;">
+    <div class="quiz-question">Q2: A student writes <code>xmlns:h="http://xmlns.jcp.org/jsf/html"</code> in their Facelets page. What is the likely problem?</div>
+    <button class="quiz-option" onclick="qa(this,'q2',false)">A) Nothing — this is the correct Jakarta EE 10 namespace</button>
+    <button class="quiz-option" onclick="qa(this,'q2',true)" data-correct="true">B) This is the old Java EE namespace; the correct Jakarta EE form is <code>jakarta.faces.html</code></button>
+    <button class="quiz-option" onclick="qa(this,'q2',false)">C) The prefix <code>h:</code> is reserved and cannot be used</button>
+    <div class="quiz-explanation">Jakarta EE migrated from the javax.* / jcp.org namespaces to jakarta.* namespaces starting with Jakarta EE 9. Using the old URL on a GlassFish 7 / Jakarta EE 10 server will cause components to not be recognised.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 DIVIDER ===== -->
+<div class="slide section-divider" id="slide-12">
+  <div class="slide-number" style="color:#777;">12 / 20</div>
+  <div class="section-num">Section 3</div>
+  <h1>Developing with JF Components</h1>
+  <div class="section-desc">
+    Jakarta Faces ships with a rich library of ready-made components. Let's tour the four main component groups and see how to use them effectively.
+  </div>
+</div>
+
+<!-- ===== SLIDE 13: Component Library Overview ===== -->
+<div class="slide" id="slide-13">
+  <div class="slide-number">13 / 20</div>
+  <h2><span class="slide-tag">Section 3.1</span>The Four Component Groups</h2>
+  <p>Jakarta Faces components are grouped by the namespace prefix that identifies them:</p>
+  <table>
+    <tr><th>Prefix</th><th>Library</th><th>Purpose</th><th>Examples</th></tr>
+    <tr>
+      <td><code>h:</code></td>
+      <td>HTML Components</td>
+      <td>Standard UI widgets rendered as HTML</td>
+      <td>Forms, inputs, buttons, tables, links</td>
+    </tr>
+    <tr>
+      <td><code>f:</code></td>
+      <td>Core Components</td>
+      <td>Non-visual: validators, converters, events</td>
+      <td>Validate email, format dates, AJAX</td>
+    </tr>
+    <tr>
+      <td><code>ui:</code></td>
+      <td>Facelets Tags</td>
+      <td>Templating and composition</td>
+      <td>Templates, fragments, includes, repeat</td>
+    </tr>
+    <tr>
+      <td><code>c:</code></td>
+      <td>JSTL Core</td>
+      <td>Flow control logic in the page</td>
+      <td>if-else conditions, forEach loops</td>
+    </tr>
+  </table>
+  <div class="key-point" style="margin-top:12px;">
+    <div class="key-label">Mental Model</div>
+    Think of <code>h:</code> as your <strong>visible furniture</strong> (what users interact with), <code>f:</code> as the <strong>wiring behind the walls</strong> (invisible rules and behaviour), and <code>ui:</code> as the <strong>architectural blueprint</strong> (page structure).
+  </div>
+</div>
+
+<!-- ===== SLIDE 14: h: HTML Components ===== -->
+<div class="slide" id="slide-14">
+  <div class="slide-number">14 / 20</div>
+  <h2><span class="slide-tag">Section 3.2</span>HTML Components — The <code>h:</code> Library</h2>
+  <div class="two-col">
+    <div>
+      <h3>Most-used <code>h:</code> components</h3>
+      <div class="tag-grid">
+        <span class="comp-tag">h:form</span>
+        <span class="comp-tag">h:inputText</span>
+        <span class="comp-tag">h:inputSecret</span>
+        <span class="comp-tag">h:commandButton</span>
+        <span class="comp-tag">h:outputText</span>
+        <span class="comp-tag">h:outputLabel</span>
+        <span class="comp-tag">h:selectOneMenu</span>
+        <span class="comp-tag">h:selectManyCheckbox</span>
+        <span class="comp-tag">h:dataTable</span>
+        <span class="comp-tag">h:column</span>
+        <span class="comp-tag">h:messages</span>
+        <span class="comp-tag">h:link</span>
+      </div>
+      <div class="key-point" style="margin-top:12px;">
+        <div class="key-label">Rule: Always wrap inputs in h:form</div>
+        JF components that submit data <strong>must</strong> be inside an <code>&lt;h:form&gt;</code>, never a plain HTML <code>&lt;form&gt;</code>. The JF form adds state-tracking data that makes the framework work.
+      </div>
+    </div>
+    <div>
+      <pre><code><span class="cm">&lt;!-- A complete login form --&gt;</span>
+<span class="kw">&lt;h:form&gt;</span>
+
+  <span class="kw">&lt;h:outputLabel</span>
+    <span class="attr">for</span>=<span class="val">"email"</span>
+    <span class="attr">value</span>=<span class="val">"Email:"</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;h:inputText</span>
+    <span class="attr">id</span>=<span class="val">"email"</span>
+    <span class="attr">value</span>=<span class="val">"#{loginBean.email}"</span><span class="kw">/&gt;</span>
+
+  <span class="kw">&lt;h:outputLabel</span>
+    <span class="attr">for</span>=<span class="val">"pw"</span>
+    <span class="attr">value</span>=<span class="val">"Password:"</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;h:inputSecret</span>
+    <span class="attr">id</span>=<span class="val">"pw"</span>
+    <span class="attr">value</span>=<span class="val">"#{loginBean.password}"</span><span class="kw">/&gt;</span>
+
+  <span class="kw">&lt;h:commandButton</span>
+    <span class="attr">value</span>=<span class="val">"Login"</span>
+    <span class="attr">action</span>=<span class="val">"#{loginBean.login}"</span><span class="kw">/&gt;</span>
+
+  <span class="kw">&lt;h:messages</span> <span class="attr">globalOnly</span>=<span class="val">"true"</span><span class="kw">/&gt;</span>
+
+<span class="kw">&lt;/h:form&gt;</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 15: f: Core Components ===== -->
+<div class="slide" id="slide-15">
+  <div class="slide-number">15 / 20</div>
+  <h2><span class="slide-tag">Section 3.3</span>Core Components — The <code>f:</code> Library</h2>
+  <p>Core components are <strong>non-visual</strong> — they attach behaviour to other components. They are always nested <em>inside</em> an <code>h:</code> component.</p>
+  <div class="two-col">
+    <div>
+      <h3>Validators</h3>
+      <p>Automatically check user input before it reaches your Java code:</p>
+      <pre><code><span class="kw">&lt;h:inputText</span>
+  <span class="attr">value</span>=<span class="val">"#{bean.age}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;f:validateLongRange</span>
+    <span class="attr">minimum</span>=<span class="val">"18"</span>
+    <span class="attr">maximum</span>=<span class="val">"120"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:inputText&gt;</span>
+
+<span class="kw">&lt;h:inputText</span>
+  <span class="attr">value</span>=<span class="val">"#{bean.code}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;f:validateLength</span>
+    <span class="attr">minimum</span>=<span class="val">"6"</span>
+    <span class="attr">maximum</span>=<span class="val">"10"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:inputText&gt;</span></code></pre>
+    </div>
+    <div>
+      <h3>Converters</h3>
+      <p>Transform data between the String the browser sends and the Java type your bean expects:</p>
+      <pre><code><span class="kw">&lt;h:inputText</span>
+  <span class="attr">value</span>=<span class="val">"#{bean.salary}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;f:convertNumber</span>
+    <span class="attr">minFractionDigits</span>=<span class="val">"2"</span>
+    <span class="attr">maxFractionDigits</span>=<span class="val">"2"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:inputText&gt;</span>
+
+<span class="kw">&lt;h:outputText</span>
+  <span class="attr">value</span>=<span class="val">"#{bean.birthDate}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;f:convertDateTime</span>
+    <span class="attr">pattern</span>=<span class="val">"dd/MM/yyyy"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:outputText&gt;</span></code></pre>
+      <div class="example" style="margin-top:8px; padding:10px 14px;">
+        <div class="example-label" style="font-size:0.75rem;">Why this matters</div>
+        <span style="font-size:0.88rem;">Without a converter, "12.5" (String) can't be assigned to a <code>double</code> field — JF would throw a conversion error.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 16: Data Table ===== -->
+<div class="slide" id="slide-16">
+  <div class="slide-number">16 / 20</div>
+  <h2><span class="slide-tag">Section 3.4</span>Displaying Lists — The <code>h:dataTable</code></h2>
+  <p><code>h:dataTable</code> is one of the most powerful JF components — it automatically generates an HTML table from a Java List.</p>
+  <div class="two-col">
+    <div>
+      <h3>How it works</h3>
+      <ul>
+        <li><code>value</code> — points to your Java list (<code>#{bean.products}</code>)</li>
+        <li><code>var</code> — names the variable for each row item (<code>p</code>)</li>
+        <li>Each <code>h:column</code> is one table column</li>
+        <li>JF loops through the list automatically — you just describe one row</li>
+      </ul>
+      <div class="example">
+        <div class="example-label">Analogy</div>
+        Like a mail-merge in Word — you write the row template once, and Word (JF) repeats it for every record in the data source.
+      </div>
+    </div>
+    <div>
+      <pre><code><span class="cm">&lt;!-- In the Facelet page --&gt;</span>
+<span class="kw">&lt;h:dataTable</span>
+  <span class="attr">value</span>=<span class="val">"#{productBean.products}"</span>
+  <span class="attr">var</span>=<span class="val">"p"</span>
+  <span class="attr">border</span>=<span class="val">"1"</span><span class="kw">&gt;</span>
+
+  <span class="kw">&lt;h:column&gt;</span>
+    <span class="kw">&lt;f:facet</span> <span class="attr">name</span>=<span class="val">"header"</span><span class="kw">&gt;</span>Name<span class="kw">&lt;/f:facet&gt;</span>
+    <span class="kw">&lt;h:outputText</span>
+      <span class="attr">value</span>=<span class="val">"#{p.name}"</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;/h:column&gt;</span>
+
+  <span class="kw">&lt;h:column&gt;</span>
+    <span class="kw">&lt;f:facet</span> <span class="attr">name</span>=<span class="val">"header"</span><span class="kw">&gt;</span>Price<span class="kw">&lt;/f:facet&gt;</span>
+    <span class="kw">&lt;h:outputText</span>
+      <span class="attr">value</span>=<span class="val">"#{p.price}"</span><span class="kw">&gt;</span>
+      <span class="kw">&lt;f:convertNumber</span>
+        <span class="attr">type</span>=<span class="val">"currency"</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;/h:outputText&gt;</span>
+  <span class="kw">&lt;/h:column&gt;</span>
+
+<span class="kw">&lt;/h:dataTable&gt;</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 17: Conditional Rendering ===== -->
+<div class="slide" id="slide-17">
+  <div class="slide-number">17 / 20</div>
+  <h2><span class="slide-tag">Section 3.5</span>Conditional Rendering &amp; Iteration</h2>
+  <p>Sometimes you want to <strong>show or hide</strong> parts of a page, or <strong>repeat</strong> a block. JF gives you two approaches:</p>
+  <div class="two-col">
+    <div>
+      <h3>Using the <code>rendered</code> attribute</h3>
+      <p>Every JF component has a <code>rendered</code> attribute. Set it to a boolean EL expression — the component only appears in the HTML when it evaluates to <code>true</code>.</p>
+      <pre><code><span class="cm">&lt;!-- Only show if logged in --&gt;</span>
+<span class="kw">&lt;h:panelGroup</span>
+  <span class="attr">rendered</span>=<span class="val">"#{userBean.loggedIn}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;h:outputText</span>
+    <span class="attr">value</span>=<span class="val">"Welcome back!"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:panelGroup&gt;</span>
+
+<span class="cm">&lt;!-- Show error only if present --&gt;</span>
+<span class="kw">&lt;h:outputText</span>
+  <span class="attr">value</span>=<span class="val">"#{bean.error}"</span>
+  <span class="attr">rendered</span>=<span class="val">"#{not empty bean.error}"</span>
+  <span class="attr">style</span>=<span class="val">"color:red"</span><span class="kw">/&gt;</span></code></pre>
+    </div>
+    <div>
+      <h3>Using <code>ui:repeat</code></h3>
+      <p>For repeating a block that isn't a table, <code>ui:repeat</code> is the Facelets way:</p>
+      <pre><code><span class="cm">&lt;!-- List of messages --&gt;</span>
+<span class="kw">&lt;ul&gt;</span>
+  <span class="kw">&lt;ui:repeat</span>
+    <span class="attr">value</span>=<span class="val">"#{inbox.messages}"</span>
+    <span class="attr">var</span>=<span class="val">"msg"</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;li&gt;</span>
+      <span class="kw">&lt;h:outputText</span>
+        <span class="attr">value</span>=<span class="val">"#{msg.subject}"</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;/li&gt;</span>
+  <span class="kw">&lt;/ui:repeat&gt;</span>
+<span class="kw">&lt;/ul&gt;</span></code></pre>
+      <div class="key-point" style="margin-top:10px; padding:10px 14px;">
+        <div class="key-label">h:dataTable vs ui:repeat</div>
+        <span style="font-size:0.9rem;">Use <code>h:dataTable</code> when you want an HTML <code>&lt;table&gt;</code>. Use <code>ui:repeat</code> when you want to repeat any arbitrary block of HTML.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 18: Messages and Validation Flow ===== -->
+<div class="slide" id="slide-18">
+  <div class="slide-number">18 / 20</div>
+  <h2><span class="slide-tag">Section 3.6</span>Showing Validation Messages to Users</h2>
+  <p>When validation fails, JF generates <strong>FacesMessages</strong>. You must add a component to the page to display them — they don't appear automatically.</p>
+  <div class="two-col-6-4">
+    <div>
+      <table style="font-size:0.92rem;">
+        <tr><th>Component</th><th>What it displays</th></tr>
+        <tr>
+          <td><code>&lt;h:message for="fieldId"/&gt;</code></td>
+          <td>Error message for one specific input field</td>
+        </tr>
+        <tr>
+          <td><code>&lt;h:messages/&gt;</code></td>
+          <td>All messages on the page in a list</td>
+        </tr>
+        <tr>
+          <td><code>&lt;h:messages globalOnly="true"/&gt;</code></td>
+          <td>Only messages not tied to a specific field (e.g., "Login failed")</td>
+        </tr>
+      </table>
+      <pre style="margin-top:12px;"><code><span class="kw">&lt;h:inputText</span>
+  <span class="attr">id</span>=<span class="val">"age"</span>
+  <span class="attr">value</span>=<span class="val">"#{bean.age}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;f:validateLongRange</span>
+    <span class="attr">minimum</span>=<span class="val">"18"</span> <span class="attr">maximum</span>=<span class="val">"99"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:inputText&gt;</span>
+<span class="cm">&lt;!-- Shows error just for this field --&gt;</span>
+<span class="kw">&lt;h:message</span> <span class="attr">for</span>=<span class="val">"age"</span> <span class="attr">style</span>=<span class="val">"color:red"</span><span class="kw">/&gt;</span></code></pre>
+    </div>
+    <div>
+      <div class="illustration">
+        <svg viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg" style="max-height:220px;">
+          <rect x="10" y="10" width="200" height="260" rx="8" fill="#f8f9fa" stroke="#ddd" stroke-width="1.5"/>
+          <text x="110" y="36" text-anchor="middle" font-size="12" fill="#333" font-weight="bold">Form Output</text>
+
+          <rect x="26" y="48" width="168" height="24" rx="4" fill="#fff" stroke="#ddd" stroke-width="1"/>
+          <text x="34" y="65" font-size="11" fill="#555">Age: [  150  ]</text>
+
+          <rect x="26" y="78" width="168" height="22" rx="4" fill="#fff5f5" stroke="#c0392b" stroke-width="1.2"/>
+          <text x="34" y="93" font-size="10" fill="#c0392b">✗ Value must be between 18 and 99</text>
+
+          <line x1="110" y1="106" x2="110" y2="126" stroke="#999" stroke-width="1.2" marker-end="url(#amsg)"/>
+          <text x="110" y="120" text-anchor="middle" font-size="9" fill="#999">h:message fires</text>
+
+          <rect x="26" y="130" width="168" height="32" rx="4" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.2"/>
+          <text x="110" y="148" text-anchor="middle" font-size="10" fill="#3b5998">JF skips phases 4 &amp; 5</text>
+          <text x="110" y="162" text-anchor="middle" font-size="10" fill="#3b5998">→ Render Response</text>
+
+          <rect x="26" y="172" width="168" height="32" rx="4" fill="#f0fff4" stroke="#4a7c59" stroke-width="1.2"/>
+          <text x="110" y="188" text-anchor="middle" font-size="10" fill="#4a7c59">Form re-rendered with</text>
+          <text x="110" y="202" text-anchor="middle" font-size="10" fill="#4a7c59">error message visible</text>
+
+          <defs>
+            <marker id="amsg" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L7,3 z" fill="#999"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+      <div class="caption">Validation failure flow: error shown, business logic never called.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 19: QUIZ SECTION 3 ===== -->
+<div class="slide" id="slide-19">
+  <div class="slide-number">19 / 20</div>
+  <h2><span class="slide-tag">Knowledge Check</span>Section 3 — JF Components</h2>
+
+  <div class="quiz" id="q3">
+    <div class="quiz-question">Q1: You need to display a list of 100 orders in a table with columns for Order ID, Date, and Total. Which component combination is correct?</div>
+    <button class="quiz-option" onclick="qa(this,'q3',false)">A) <code>ui:repeat</code> with a nested <code>h:dataTable</code> inside each row</button>
+    <button class="quiz-option" onclick="qa(this,'q3',true)" data-correct="true">B) <code>h:dataTable</code> with one <code>h:column</code> per column, bound to <code>#{bean.orders}</code></button>
+    <button class="quiz-option" onclick="qa(this,'q3',false)">C) Write a raw HTML <code>&lt;table&gt;</code> and use JavaScript to populate it</button>
+    <div class="quiz-explanation">h:dataTable is specifically designed to iterate over a Java List and generate an HTML table. You define the structure for one row; JF repeats it for all 100 orders. Raw HTML tables can't bind to Java data, and ui:repeat is for non-table blocks.</div>
+  </div>
+
+  <div class="quiz" id="q4" style="margin-top:16px;">
+    <div class="quiz-question">Q2: A user enters "abc" in a field expecting an integer. What happens in the JF lifecycle?</div>
+    <button class="quiz-option" onclick="qa(this,'q4',false)">A) JF calls the action method, which throws a NumberFormatException</button>
+    <button class="quiz-option" onclick="qa(this,'q4',true)" data-correct="true">B) JF fails at Phase 3 (Process Validations/Conversion), adds an error message, and skips the action method entirely</button>
+    <button class="quiz-option" onclick="qa(this,'q4',false)">C) JF silently sets the bean property to 0 and continues</button>
+    <div class="quiz-explanation">Type conversion happens during Phase 2-3. If "abc" can't be converted to an integer, JF creates a conversion error FacesMessage, skips Update Model (Phase 4) and Invoke Application (Phase 5), and goes straight to Render Response to show the error. Your business logic is never touched.</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 20: SUMMARY ===== -->
+<div class="slide" id="slide-20">
+  <div class="slide-number">20 / 20</div>
+  <h2><span class="slide-tag">Week 9 Summary</span>What We Covered</h2>
+  <div class="three-col">
+    <div class="tech-card">
+      <div class="tc-label">Section 1 — Web Technologies</div>
+      <ul style="font-size:0.9rem; padding-left:18px; margin-top:8px;">
+        <li>Static HTML, Server-Side, and SPA approaches</li>
+        <li>Why Jakarta Faces suits enterprise Java</li>
+        <li>Why Facelets replaced JSP</li>
+      </ul>
+    </div>
+    <div class="tech-card">
+      <div class="tc-label">Section 2 — Facelets PDL</div>
+      <ul style="font-size:0.9rem; padding-left:18px; margin-top:8px;">
+        <li>XML namespaces: <code>h:</code>, <code>f:</code>, <code>ui:</code></li>
+        <li>Jakarta EE 10 namespace URLs</li>
+        <li>Template + composition pattern (<code>ui:insert</code> / <code>ui:define</code>)</li>
+      </ul>
+    </div>
+    <div class="tech-card">
+      <div class="tc-label">Section 3 — JF Components</div>
+      <ul style="font-size:0.9rem; padding-left:18px; margin-top:8px;">
+        <li>HTML components: forms, inputs, buttons</li>
+        <li>Core: validators &amp; converters</li>
+        <li>Data tables, conditional rendering, messages</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-point" style="margin-top:18px;">
+    <div class="key-label">Coming Up — Week 10</div>
+    We will move from individual components into building <strong>complete, integrated Jakarta Faces applications</strong> — connecting JF pages to EJB session beans and JPA-managed data from the database.
+  </div>
+  <div class="definition" style="margin-top:12px;">
+    <div class="def-label">Lab Task This Week</div>
+    Build a web interface using Facelets that displays a list of entities from the database using <code>h:dataTable</code>, includes a form to add new entries, and validates all inputs before saving.
+  </div>
+</div>
+
+<!-- ===== TOC OVERLAY ===== -->
+<div class="toc-overlay" id="tocOverlay">
+  <button class="toc-close" onclick="document.getElementById('tocOverlay').classList.remove('active')">✕</button>
+  <h2>Table of Contents</h2>
+  <div id="tocContent"></div>
+</div>
+
+<div class="nav-indicator" id="navIndicator">1 / 20</div>
+<div class="nav-hint">← → Navigate &nbsp;·&nbsp; T = Contents</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  const tocData = [
+    { label: 'Title Slide', slide: 1 },
+    { label: 'Learning Objectives', slide: 2 },
+    { label: 'Section 1 — Web Page Technologies', slide: 3, section: true },
+    { label: '1.1 Three Ways to Build a Web Page', slide: 4 },
+    { label: '1.2 Jakarta Faces vs Other Technologies', slide: 5 },
+    { label: '1.3 Why Facelets Replaced JSP', slide: 6 },
+    { label: 'Section 2 — Facelets Page Declaration Language', slide: 7, section: true },
+    { label: '2.1 What Is a Page Declaration Language?', slide: 8 },
+    { label: '2.2 XML Namespaces', slide: 9 },
+    { label: '2.3 Facelets Templating', slide: 10 },
+    { label: 'Knowledge Check — Section 2', slide: 11 },
+    { label: 'Section 3 — Developing with JF Components', slide: 12, section: true },
+    { label: '3.1 The Four Component Groups', slide: 13 },
+    { label: '3.2 HTML Components (h:)', slide: 14 },
+    { label: '3.3 Core Components — Validators & Converters (f:)', slide: 15 },
+    { label: '3.4 Displaying Lists — h:dataTable', slide: 16 },
+    { label: '3.5 Conditional Rendering & Iteration', slide: 17 },
+    { label: '3.6 Showing Validation Messages', slide: 18 },
+    { label: 'Knowledge Check — Section 3', slide: 19 },
+    { label: 'Week 9 Summary', slide: 20 },
+  ];
+
+  function buildTOC() {
+    const toc = document.getElementById('tocContent');
+    tocData.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (item.section ? ' toc-section' : '');
+      div.textContent = item.label;
+      div.onclick = () => {
+        showSlide(item.slide - 1);
+        document.getElementById('tocOverlay').classList.remove('active');
+      };
+      toc.appendChild(div);
+    });
+  }
+
+  function toggleTOC() { document.getElementById('tocOverlay').classList.toggle('active'); }
+
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('tocOverlay').classList.contains('active')) {
+      if (e.key === 'Escape') document.getElementById('tocOverlay').classList.remove('active');
+      return;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') showSlide(current + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') showSlide(current - 1);
+    else if (e.key === 't' || e.key === 'T') toggleTOC();
+  });
+
+  function qa(btn, qid, isCorrect) {
+    const quiz = document.getElementById(qid);
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+      o.disabled = true;
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+
+  showSlide(0);
+  buildTOC();
+</script>
+</body>
+</html>

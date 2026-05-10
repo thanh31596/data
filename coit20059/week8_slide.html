@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 8 — Jakarta Faces: Building Web Interfaces</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 4px;
+      background: #c0392b; transition: width 0.3s ease; z-index: 100;
+    }
+
+    /* Slides */
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 55px 90px 70px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+    }
+    .slide.active { display: flex; }
+
+    .slide-number {
+      position: absolute; top: 18px; right: 30px;
+      font-size: 0.8rem; color: #aaa; font-family: 'Courier New', monospace;
+    }
+
+    /* Title slide */
+    .slide.title-slide {
+      justify-content: center; align-items: flex-start;
+      background: #fff; border-left: 8px solid #c0392b; padding-left: 80px;
+    }
+    .slide.title-slide .week-label {
+      font-size: 0.95rem; color: #c0392b; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .slide.title-slide h1 {
+      font-size: 2.8rem; line-height: 1.2; color: #1a1a1a;
+      margin-bottom: 20px; max-width: 700px;
+    }
+    .slide.title-slide .subtitle {
+      font-size: 1.15rem; color: #555; max-width: 600px; line-height: 1.6;
+    }
+    .slide.title-slide .course-tag {
+      margin-top: 40px; font-size: 0.85rem; color: #999;
+      border-top: 1px solid #eee; padding-top: 16px;
+    }
+
+    /* Section dividers */
+    .slide.section-divider {
+      justify-content: center; align-items: flex-start;
+      background: #1a1a1a; color: #fff;
+    }
+    .slide.section-divider .section-num {
+      font-size: 0.85rem; color: #c0392b; letter-spacing: 0.15em;
+      text-transform: uppercase; margin-bottom: 14px; font-weight: 600;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.6rem; color: #fff; line-height: 1.25; max-width: 700px;
+      border-bottom: 3px solid #c0392b; padding-bottom: 18px; margin-bottom: 20px;
+    }
+    .slide.section-divider .section-desc {
+      font-size: 1.05rem; color: #ccc; max-width: 620px; line-height: 1.7;
+    }
+
+    /* Regular slide headings */
+    h2 {
+      font-size: 1.65rem; margin-bottom: 22px; color: #1a1a1a;
+      border-bottom: 2px solid #e8e8e8; padding-bottom: 10px;
+    }
+    h2 .slide-tag {
+      font-size: 0.75rem; color: #c0392b; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      display: block; margin-bottom: 4px;
+    }
+    h3 { font-size: 1.15rem; color: #333; margin: 18px 0 8px; font-weight: 700; }
+    p, li { font-size: 1.02rem; line-height: 1.75; margin-bottom: 10px; }
+    ul, ol { padding-left: 26px; }
+    li { margin-bottom: 6px; }
+
+    /* Content boxes */
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    .example-label, .def-label {
+      font-weight: 700; font-size: 0.85rem; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 8px;
+    }
+    .example-label { color: #4a7c59; }
+    .def-label { color: #3b5998; }
+    .key-point {
+      background: #fff5f5; border-left: 4px solid #c0392b;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    .key-label { font-weight: 700; font-size: 0.85rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #c0392b; margin-bottom: 8px; }
+
+    /* Tables */
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 0.97rem; }
+    th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+    th { background: #f5f5f5; font-weight: 700; color: #1a1a1a; }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    /* Code blocks */
+    pre {
+      background: #1e1e1e; color: #d4d4d4; padding: 18px 20px;
+      border-radius: 6px; font-size: 0.88rem; margin: 14px 0;
+      overflow-x: auto; line-height: 1.6;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .kw { color: #569cd6; }
+    .attr { color: #9cdcfe; }
+    .val { color: #ce9178; }
+    .cm { color: #6a9955; }
+
+    /* Two-column layout */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 4px; }
+    .two-col-3-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 28px; margin-top: 4px; }
+
+    /* Illustration */
+    .illustration { display: flex; flex-direction: column; align-items: center; margin: 18px 0; }
+    .illustration svg { max-width: 100%; height: auto; }
+    .caption { text-align: center; font-size: 0.88rem; color: #777; margin-top: 8px; font-style: italic; }
+
+    /* Lifecycle steps */
+    .lifecycle { display: flex; align-items: center; gap: 6px; margin: 20px 0; flex-wrap: wrap; }
+    .lc-step {
+      background: #f0f4ff; border: 1.5px solid #3b5998;
+      border-radius: 6px; padding: 10px 14px; font-size: 0.85rem;
+      text-align: center; min-width: 90px; line-height: 1.4;
+    }
+    .lc-step .lc-num { font-weight: 700; color: #c0392b; font-size: 0.8rem; }
+    .lc-arrow { color: #999; font-size: 1.2rem; }
+
+    /* Quiz */
+    .quiz { margin: 14px 0; }
+    .quiz-question { font-weight: 700; margin-bottom: 12px; font-size: 1.02rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 11px 16px; margin: 6px 0; cursor: pointer;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 5px; font-size: 0.97rem; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: #c0392b; background: #fff5f5; }
+    .quiz-option.correct { border-color: #4a7c59; background: #f0fff4; color: #2d6a4f; font-weight: 600; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fff5f5; color: #c0392b; }
+    .quiz-option.dimmed { opacity: 0.4; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 12px 16px;
+      background: #f8f9fa; border-radius: 4px; font-size: 0.92rem;
+      line-height: 1.6; color: #444; border-left: 3px solid #4a7c59;
+    }
+    .quiz-explanation.visible { display: block; }
+
+    /* Nav */
+    .nav-indicator {
+      position: fixed; bottom: 22px; right: 32px;
+      font-size: 0.82rem; color: #bbb; z-index: 100;
+      font-family: 'Courier New', monospace;
+    }
+    .nav-hint {
+      position: fixed; bottom: 22px; left: 32px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+
+    /* TOC overlay */
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 60px 90px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; font-size: 1.8rem; margin-bottom: 26px; }
+    .toc-item {
+      padding: 9px 0; cursor: pointer; color: #3b5998;
+      font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #c0392b; }
+    .toc-section { font-weight: 700; color: #1a1a1a; margin-top: 18px; font-size: 1rem; }
+    .toc-close {
+      position: absolute; top: 30px; right: 40px;
+      font-size: 1.8rem; cursor: pointer; color: #999;
+      background: none; border: none; font-family: inherit;
+    }
+    .toc-close:hover { color: #1a1a1a; }
+
+    /* Objectives list */
+    .obj-list { list-style: none; padding: 0; margin-top: 10px; }
+    .obj-list li {
+      padding: 10px 0 10px 36px; border-bottom: 1px solid #f0f0f0;
+      position: relative; font-size: 1.02rem;
+    }
+    .obj-list li::before {
+      content: attr(data-num);
+      position: absolute; left: 0; top: 10px;
+      width: 26px; height: 26px; background: #c0392b; color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ========== SLIDE 1: TITLE ========== -->
+<div class="slide title-slide active" id="slide-1">
+  <div class="slide-number">1 / 20</div>
+  <div class="week-label">COIT20259 — Week 8</div>
+  <h1>Jakarta Faces:<br>Building Web Interfaces</h1>
+  <div class="subtitle">
+    How enterprise Java applications communicate with the people who use them —
+    through screens, buttons, and forms powered by Jakarta Faces.
+  </div>
+  <div class="course-tag">Enterprise Computing &nbsp;·&nbsp; Press → to begin &nbsp;·&nbsp; Press T for contents</div>
+</div>
+
+<!-- ========== SLIDE 2: OBJECTIVES ========== -->
+<div class="slide" id="slide-2">
+  <div class="slide-number">2 / 20</div>
+  <h2><span class="slide-tag">This Week</span>Learning Objectives</h2>
+  <p>By the end of this week you will be able to:</p>
+  <ul class="obj-list">
+    <li data-num="1">Appraise Jakarta Faces as the <strong>presentation layer</strong> of an enterprise application</li>
+    <li data-num="2">Interpret the <strong>JF architecture</strong> and its key components</li>
+    <li data-num="3">Review and apply <strong>web interface specifications</strong> for JF pages</li>
+    <li data-num="4">Develop working <strong>Jakarta Faces web applications</strong></li>
+  </ul>
+  <div class="key-point" style="margin-top:24px;">
+    <div class="key-label">The Big Idea</div>
+    Jakarta Faces lets Java developers build interactive web pages using familiar programming concepts — no deep knowledge of HTML or JavaScript is required to get started.
+  </div>
+</div>
+
+<!-- ========== SECTION 1 DIVIDER ========== -->
+<div class="slide section-divider" id="slide-3">
+  <div class="slide-number" style="color:#777;">3 / 20</div>
+  <div class="section-num">Section 1</div>
+  <h1>What Is Jakarta Faces?</h1>
+  <div class="section-desc">
+    Before we look at code, let's understand <em>why</em> Jakarta Faces exists and what problem it solves for developers building web applications.
+  </div>
+</div>
+
+<!-- ========== SLIDE 4: The Problem ========== -->
+<div class="slide" id="slide-4">
+  <div class="slide-number">4 / 20</div>
+  <h2><span class="slide-tag">Section 1.1</span>The Problem: Connecting Logic to the Screen</h2>
+  <p>Every application has two worlds that need to talk to each other:</p>
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <div class="definition">
+        <div class="def-label">The Back End</div>
+        Where your business logic lives — Java classes, databases, calculations, rules. Users <strong>never see this</strong>.
+      </div>
+      <div class="example">
+        <div class="example-label">Example</div>
+        A method that calculates a bank account balance.
+      </div>
+    </div>
+    <div>
+      <div class="definition">
+        <div class="def-label">The Front End</div>
+        What the user actually sees — buttons, text fields, tables, forms. This is the <strong>presentation layer</strong>.
+      </div>
+      <div class="example">
+        <div class="example-label">Example</div>
+        A web page that displays that bank balance to the customer.
+      </div>
+    </div>
+  </div>
+  <div class="key-point" style="margin-top:8px;">
+    <div class="key-label">The Challenge</div>
+    Bridging these two worlds cleanly — so changes in the back end automatically update what the user sees — is tricky. Jakarta Faces solves this.
+  </div>
+</div>
+
+<!-- ========== SLIDE 5: What is JF ========== -->
+<div class="slide" id="slide-5">
+  <div class="slide-number">5 / 20</div>
+  <h2><span class="slide-tag">Section 1.2</span>Jakarta Faces in Plain English</h2>
+  <div class="definition">
+    <div class="def-label">Definition</div>
+    <strong>Jakarta Faces (JF)</strong> — formerly known as JavaServer Faces (JSF) — is a standard Java framework for building user interfaces for web applications. It is part of the Jakarta EE specification.
+  </div>
+  <p>Think of it as a <strong>set of ready-made building blocks</strong> for web pages:</p>
+  <ul>
+    <li>Instead of writing raw HTML forms from scratch, you use JF <em>components</em> (like a LEGO kit)</li>
+    <li>JF automatically connects those components to your Java code</li>
+    <li>When a user fills out a form, JF takes the data and passes it to the right Java method</li>
+    <li>When Java produces a result, JF puts it on screen for the user</li>
+  </ul>
+  <div class="example">
+    <div class="example-label">Real-World Analogy</div>
+    Think of a restaurant. The <strong>kitchen</strong> is your Java back-end logic. The <strong>menu and waiter</strong> are Jakarta Faces — they take your order (user input) to the kitchen and bring back your food (data/result).
+  </div>
+</div>
+
+<!-- ========== SLIDE 6: Where JF fits ========== -->
+<div class="slide" id="slide-6">
+  <div class="slide-number">6 / 20</div>
+  <h2><span class="slide-tag">Section 1.3</span>Where Jakarta Faces Fits in the Big Picture</h2>
+  <div class="illustration">
+    <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" style="max-height:230px;">
+      <!-- Browser -->
+      <rect x="20" y="100" width="110" height="100" rx="8" fill="#f8f9fa" stroke="#3b5998" stroke-width="1.8"/>
+      <text x="75" y="132" text-anchor="middle" font-size="12" fill="#3b5998" font-weight="bold">Browser</text>
+      <text x="75" y="152" text-anchor="middle" font-size="11" fill="#555">(User's screen)</text>
+      <text x="75" y="170" text-anchor="middle" font-size="11" fill="#555">HTML pages</text>
+
+      <!-- Arrow 1 -->
+      <line x1="130" y1="150" x2="175" y2="150" stroke="#999" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="152" y="143" text-anchor="middle" font-size="10" fill="#999">HTTP</text>
+
+      <!-- Jakarta Faces Box -->
+      <rect x="175" y="60" width="160" height="180" rx="8" fill="#fff5f5" stroke="#c0392b" stroke-width="2"/>
+      <text x="255" y="90" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="bold">Jakarta Faces</text>
+      <text x="255" y="108" text-anchor="middle" font-size="10" fill="#888">(Presentation Layer)</text>
+      <rect x="193" y="118" width="124" height="32" rx="4" fill="#fff" stroke="#c0392b" stroke-width="1.2"/>
+      <text x="255" y="138" text-anchor="middle" font-size="11" fill="#333">Facelets (UI Templates)</text>
+      <rect x="193" y="158" width="124" height="32" rx="4" fill="#fff" stroke="#c0392b" stroke-width="1.2"/>
+      <text x="255" y="178" text-anchor="middle" font-size="11" fill="#333">Managed Beans</text>
+      <rect x="193" y="198" width="124" height="32" rx="4" fill="#fff" stroke="#c0392b" stroke-width="1.2"/>
+      <text x="255" y="218" text-anchor="middle" font-size="11" fill="#333">FacesServlet</text>
+
+      <!-- Arrow 2 -->
+      <line x1="335" y1="150" x2="380" y2="150" stroke="#999" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="357" y="143" text-anchor="middle" font-size="10" fill="#999">calls</text>
+
+      <!-- Business Logic -->
+      <rect x="380" y="100" width="120" height="100" rx="8" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.8"/>
+      <text x="440" y="132" text-anchor="middle" font-size="12" fill="#3b5998" font-weight="bold">Business</text>
+      <text x="440" y="150" text-anchor="middle" font-size="12" fill="#3b5998" font-weight="bold">Logic</text>
+      <text x="440" y="170" text-anchor="middle" font-size="11" fill="#555">(EJBs, Services)</text>
+
+      <!-- Arrow 3 -->
+      <line x1="500" y1="150" x2="545" y2="150" stroke="#999" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="522" y="143" text-anchor="middle" font-size="10" fill="#999">reads</text>
+
+      <!-- Database -->
+      <ellipse cx="597" cy="140" rx="55" ry="24" fill="#f8f9fa" stroke="#4a7c59" stroke-width="1.8"/>
+      <rect x="542" y="140" width="110" height="30" fill="#f8f9fa" stroke="#4a7c59" stroke-width="1.8"/>
+      <ellipse cx="597" cy="170" rx="55" ry="24" fill="#f8f9fa" stroke="#4a7c59" stroke-width="1.8"/>
+      <text x="597" y="156" text-anchor="middle" font-size="11" fill="#4a7c59" font-weight="bold">Database</text>
+
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#999"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <div class="caption">Figure 1.3: Jakarta Faces sits between the user's browser and the business logic — it is the presentation layer.</div>
+  <p style="margin-top:8px;">Jakarta Faces handles everything from <strong>receiving user clicks</strong> to <strong>rendering the response page</strong>. It shields your business logic from having to know anything about HTML.</p>
+</div>
+
+<!-- ========== SECTION 2 DIVIDER ========== -->
+<div class="slide section-divider" id="slide-7">
+  <div class="slide-number" style="color:#777;">7 / 20</div>
+  <div class="section-num">Section 2</div>
+  <h1>JF Architecture &amp; Components</h1>
+  <div class="section-desc">
+    Jakarta Faces is made of a handful of key pieces. Understanding each piece's role makes the whole framework much easier to work with.
+  </div>
+</div>
+
+<!-- ========== SLIDE 8: MVC ========== -->
+<div class="slide" id="slide-8">
+  <div class="slide-number">8 / 20</div>
+  <h2><span class="slide-tag">Section 2.1</span>The MVC Pattern — The Foundation</h2>
+  <p>Jakarta Faces is built on a design pattern called <strong>MVC</strong> — Model, View, Controller.</p>
+  <table>
+    <tr>
+      <th>Layer</th><th>What It Is</th><th>In Jakarta Faces</th><th>Real-World Analogy</th>
+    </tr>
+    <tr>
+      <td><strong>Model</strong></td>
+      <td>Your data</td>
+      <td>Java objects / EJBs / database</td>
+      <td>The ingredients in the kitchen</td>
+    </tr>
+    <tr>
+      <td><strong>View</strong></td>
+      <td>What the user sees</td>
+      <td>Facelets pages (.xhtml files)</td>
+      <td>The menu and the plate of food</td>
+    </tr>
+    <tr>
+      <td><strong>Controller</strong></td>
+      <td>Handles requests &amp; decisions</td>
+      <td>FacesServlet + Managed Beans</td>
+      <td>The waiter who takes orders</td>
+    </tr>
+  </table>
+  <div class="key-point">
+    <div class="key-label">Why MVC Matters</div>
+    Separating these three concerns means you can <strong>change the look of your web page</strong> without touching the business logic — and vice versa. Your team can work in parallel.
+  </div>
+</div>
+
+<!-- ========== SLIDE 9: FacesServlet ========== -->
+<div class="slide" id="slide-9">
+  <div class="slide-number">9 / 20</div>
+  <h2><span class="slide-tag">Section 2.2</span>The FacesServlet — Traffic Controller</h2>
+  <div class="two-col-3-2">
+    <div>
+      <div class="definition">
+        <div class="def-label">What It Is</div>
+        The <strong>FacesServlet</strong> is the single entry point for all Jakarta Faces requests. Every time a user clicks a button or loads a JF page, this servlet receives the request first.
+      </div>
+      <p>It acts like an <strong>air traffic controller</strong> at an airport:</p>
+      <ul>
+        <li>Every flight (HTTP request) must go through it</li>
+        <li>It directs each flight to the right gate (the right page or action)</li>
+        <li>It manages the sequence of events that must happen</li>
+      </ul>
+      <div class="example">
+        <div class="example-label">In web.xml</div>
+        You register FacesServlet to handle <code>*.xhtml</code> requests — and it takes care of the rest automatically.
+      </div>
+    </div>
+    <div>
+      <div class="illustration" style="margin-top:10px;">
+        <svg viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg">
+          <rect x="60" y="10" width="100" height="38" rx="6" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.5"/>
+          <text x="110" y="34" text-anchor="middle" font-size="12" fill="#3b5998" font-weight="bold">HTTP Request</text>
+          <line x1="110" y1="48" x2="110" y2="78" stroke="#999" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <rect x="40" y="78" width="140" height="44" rx="6" fill="#fff5f5" stroke="#c0392b" stroke-width="2"/>
+          <text x="110" y="98" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="bold">FacesServlet</text>
+          <text x="110" y="114" text-anchor="middle" font-size="10" fill="#888">Single Entry Point</text>
+          <line x1="110" y1="122" x2="110" y2="152" stroke="#999" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <rect x="40" y="152" width="140" height="38" rx="6" fill="#f8f9fa" stroke="#555" stroke-width="1.5"/>
+          <text x="110" y="176" text-anchor="middle" font-size="12" fill="#333">JF Lifecycle</text>
+          <line x1="110" y1="190" x2="110" y2="218" stroke="#999" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <rect x="40" y="218" width="140" height="18" rx="4" fill="#f0fff4" stroke="#4a7c59" stroke-width="1.5"/>
+          <text x="110" y="231" text-anchor="middle" font-size="11" fill="#4a7c59">Response rendered</text>
+          <defs>
+            <marker id="arr2" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L7,3 z" fill="#999"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 10: Facelets ========== -->
+<div class="slide" id="slide-10">
+  <div class="slide-number">10 / 20</div>
+  <h2><span class="slide-tag">Section 2.3</span>Facelets — The View Layer</h2>
+  <p><strong>Facelets</strong> are the templating system for Jakarta Faces. They are <code>.xhtml</code> files that define what the user sees.</p>
+  <div class="two-col">
+    <div>
+      <h3>What makes Facelets special?</h3>
+      <ul>
+        <li>They look like HTML — so designers can open them in a browser</li>
+        <li>They use special JF tags (prefixed <code>h:</code> or <code>f:</code>) for components</li>
+        <li>They support <strong>templates</strong> — write your header/footer once, reuse everywhere</li>
+        <li>They bind directly to Java objects using <strong>Expression Language</strong></li>
+      </ul>
+      <div class="example">
+        <div class="example-label">Analogy</div>
+        Facelets are like a <strong>Word mail-merge template</strong> — the page has placeholders (<code>#{customer.name}</code>) that JF fills with real data at runtime.
+      </div>
+    </div>
+    <div>
+      <pre><code><span class="cm">&lt;!-- A simple Facelet page --&gt;</span>
+<span class="kw">&lt;html</span> <span class="attr">xmlns:h</span>=<span class="val">"jakarta.faces.html"</span>
+      <span class="attr">xmlns:f</span>=<span class="val">"jakarta.faces.core"</span><span class="kw">&gt;</span>
+<span class="kw">&lt;h:head&gt;</span>
+  <span class="kw">&lt;title&gt;</span>My Page<span class="kw">&lt;/title&gt;</span>
+<span class="kw">&lt;/h:head&gt;</span>
+<span class="kw">&lt;h:body&gt;</span>
+  <span class="kw">&lt;h:outputText</span>
+    <span class="attr">value</span>=<span class="val">"#{customer.name}"</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;h:commandButton</span>
+    <span class="attr">value</span>=<span class="val">"Save"</span>
+    <span class="attr">action</span>=<span class="val">"#{bean.save}"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:body&gt;</span>
+<span class="kw">&lt;/html&gt;</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 11: Managed Beans ========== -->
+<div class="slide" id="slide-11">
+  <div class="slide-number">11 / 20</div>
+  <h2><span class="slide-tag">Section 2.4</span>Managed Beans — The Glue</h2>
+  <div class="definition">
+    <div class="def-label">Definition</div>
+    A <strong>Managed Bean</strong> is a Java class that acts as the bridge between your Facelet page (View) and your business logic (Model). Jakarta EE manages its creation and lifecycle automatically.
+  </div>
+  <div class="two-col">
+    <div>
+      <p>A Managed Bean typically:</p>
+      <ul>
+        <li>Holds data entered by the user (properties)</li>
+        <li>Contains action methods called when buttons are clicked</li>
+        <li>Returns navigation outcomes (which page to go to next)</li>
+        <li>Is annotated with <code>@Named</code> and a scope annotation</li>
+      </ul>
+    </div>
+    <div>
+      <pre><code><span class="kw">@Named</span>
+<span class="kw">@RequestScoped</span>
+<span class="kw">public class</span> HelloBean {
+
+  <span class="kw">private</span> String name;
+
+  <span class="kw">public</span> String getName() {
+    <span class="kw">return</span> name;
+  }
+
+  <span class="kw">public void</span> setName(String n){
+    <span class="kw">this</span>.name = n;
+  }
+
+  <span class="kw">public</span> String greet() {
+    <span class="kw">return</span> <span class="val">"success"</span>;
+  }
+}</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 12: Bean Scopes ========== -->
+<div class="slide" id="slide-12">
+  <div class="slide-number">12 / 20</div>
+  <h2><span class="slide-tag">Section 2.5</span>Bean Scopes — How Long Does Data Live?</h2>
+  <p>Every Managed Bean has a <strong>scope</strong> — it determines how long the bean (and its data) stays alive.</p>
+  <table>
+    <tr>
+      <th>Scope</th><th>Annotation</th><th>Lives for…</th><th>Best For</th>
+    </tr>
+    <tr>
+      <td><strong>Request</strong></td>
+      <td><code>@RequestScoped</code></td>
+      <td>One single page request</td>
+      <td>Simple form submissions</td>
+    </tr>
+    <tr>
+      <td><strong>View</strong></td>
+      <td><code>@ViewScoped</code></td>
+      <td>While user is on the same page</td>
+      <td>Pages with AJAX interactions</td>
+    </tr>
+    <tr>
+      <td><strong>Session</strong></td>
+      <td><code>@SessionScoped</code></td>
+      <td>The user's entire browser session</td>
+      <td>Login info, shopping cart</td>
+    </tr>
+    <tr>
+      <td><strong>Application</strong></td>
+      <td><code>@ApplicationScoped</code></td>
+      <td>While the app is running</td>
+      <td>Shared reference data (countries list)</td>
+    </tr>
+  </table>
+  <div class="key-point">
+    <div class="key-label">Common Mistake</div>
+    Using <code>@SessionScoped</code> when <code>@RequestScoped</code> would do — this causes data from one user to linger and potentially interfere with future requests.
+  </div>
+</div>
+
+<!-- ========== SLIDE 13: QUIZ SECTION 2 ========== -->
+<div class="slide" id="slide-13">
+  <div class="slide-number">13 / 20</div>
+  <h2><span class="slide-tag">Knowledge Check</span>Section 2 — Architecture &amp; Components</h2>
+
+  <div class="quiz" id="q1">
+    <div class="quiz-question">Q1: A user logs in. Their username should remain available across multiple pages during their browsing session. Which scope should the Managed Bean use?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) @RequestScoped — it resets each page load</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) @SessionScoped — it persists for the user's session</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) @ApplicationScoped — shared with all users of the app</button>
+    <div class="quiz-explanation">Request scope dies after each HTTP request, so the username would be lost. Application scope is shared across all users — a privacy problem. Session scope is correct here: data persists for this user's browser session only.</div>
+  </div>
+
+  <div class="quiz" id="q2" style="margin-top:18px;">
+    <div class="quiz-question">Q2: In the MVC pattern used by Jakarta Faces, what role do Facelets play?</div>
+    <button class="quiz-option" onclick="checkAnswer2(this, false)">A) Model — they store the data</button>
+    <button class="quiz-option" onclick="checkAnswer2(this, false)">B) Controller — they handle user actions</button>
+    <button class="quiz-option" onclick="checkAnswer2(this, true)" data-correct="true">C) View — they define what the user sees</button>
+    <div class="quiz-explanation">Facelets are .xhtml template files that define the user interface (View). The Controller role belongs to FacesServlet and Managed Beans; the Model is your Java data objects and database.</div>
+  </div>
+</div>
+
+<!-- ========== SECTION 3 DIVIDER ========== -->
+<div class="slide section-divider" id="slide-14">
+  <div class="slide-number" style="color:#777;">14 / 20</div>
+  <div class="section-num">Section 3</div>
+  <h1>Web Interface Specifications</h1>
+  <div class="section-desc">
+    How does Jakarta Faces process each request step-by-step? And how do you connect UI components to your Java data? This section covers the JF request lifecycle and Expression Language.
+  </div>
+</div>
+
+<!-- ========== SLIDE 15: Lifecycle ========== -->
+<div class="slide" id="slide-15">
+  <div class="slide-number">15 / 20</div>
+  <h2><span class="slide-tag">Section 3.1</span>The Jakarta Faces Request Lifecycle</h2>
+  <p>Every user interaction (e.g. clicking "Submit") triggers a <strong>fixed sequence of 6 phases</strong>. JF handles most of this automatically.</p>
+  <div class="lifecycle">
+    <div class="lc-step"><div class="lc-num">1</div>Restore View</div>
+    <div class="lc-arrow">→</div>
+    <div class="lc-step"><div class="lc-num">2</div>Apply Request Values</div>
+    <div class="lc-arrow">→</div>
+    <div class="lc-step"><div class="lc-num">3</div>Process Validations</div>
+    <div class="lc-arrow">→</div>
+    <div class="lc-step"><div class="lc-num">4</div>Update Model Values</div>
+    <div class="lc-arrow">→</div>
+    <div class="lc-step"><div class="lc-num">5</div>Invoke Application</div>
+    <div class="lc-arrow">→</div>
+    <div class="lc-step"><div class="lc-num">6</div>Render Response</div>
+  </div>
+  <table style="margin-top:10px; font-size:0.93rem;">
+    <tr><th>Phase</th><th>What happens (plain English)</th></tr>
+    <tr><td><strong>1. Restore View</strong></td><td>JF finds or recreates the page structure (the component tree)</td></tr>
+    <tr><td><strong>2. Apply Request Values</strong></td><td>The data the user submitted is captured from the HTTP request</td></tr>
+    <tr><td><strong>3. Process Validations</strong></td><td>Input is checked — is the email valid? Is the number in range?</td></tr>
+    <tr><td><strong>4. Update Model</strong></td><td>Validated data is written into the Managed Bean's properties</td></tr>
+    <tr><td><strong>5. Invoke Application</strong></td><td>Your action method (e.g., <code>save()</code>) is called</td></tr>
+    <tr><td><strong>6. Render Response</strong></td><td>The result page is generated and sent to the browser</td></tr>
+  </table>
+</div>
+
+<!-- ========== SLIDE 16: Expression Language ========== -->
+<div class="slide" id="slide-16">
+  <div class="slide-number">16 / 20</div>
+  <h2><span class="slide-tag">Section 3.2</span>Expression Language — Connecting UI to Data</h2>
+  <div class="definition">
+    <div class="def-label">Expression Language (EL)</div>
+    EL is the syntax used inside Facelets to reference Java objects and methods. It uses the format <strong><code>#{beanName.property}</code></strong>.
+  </div>
+  <div class="two-col">
+    <div>
+      <h3>What you can do with EL</h3>
+      <ul>
+        <li><strong>Display data:</strong> <code>#{customer.fullName}</code></li>
+        <li><strong>Bind inputs:</strong> <code>value="#{bean.email}"</code></li>
+        <li><strong>Call methods:</strong> <code>action="#{bean.submit}"</code></li>
+        <li><strong>Conditionals:</strong> <code>rendered="#{user.loggedIn}"</code></li>
+        <li><strong>Loops:</strong> iterate over a list of items</li>
+      </ul>
+      <div class="key-point" style="margin-top:14px;">
+        <div class="key-label">Key Point</div>
+        EL is <strong>evaluated at runtime</strong> — the server substitutes real values before sending HTML to the browser. The browser never sees <code>#{}</code>.
+      </div>
+    </div>
+    <div>
+      <pre><code><span class="cm">&lt;!-- Reading a property --&gt;</span>
+<span class="kw">&lt;h:outputText</span>
+  <span class="attr">value</span>=<span class="val">"#{helloBean.name}"</span><span class="kw">/&gt;</span>
+
+<span class="cm">&lt;!-- Binding an input field --&gt;</span>
+<span class="kw">&lt;h:inputText</span>
+  <span class="attr">value</span>=<span class="val">"#{helloBean.name}"</span><span class="kw">/&gt;</span>
+
+<span class="cm">&lt;!-- Calling an action --&gt;</span>
+<span class="kw">&lt;h:commandButton</span>
+  <span class="attr">value</span>=<span class="val">"Say Hello"</span>
+  <span class="attr">action</span>=<span class="val">"#{helloBean.greet}"</span><span class="kw">/&gt;</span>
+
+<span class="cm">&lt;!-- Conditional rendering --&gt;</span>
+<span class="kw">&lt;h:panelGroup</span>
+  <span class="attr">rendered</span>=<span class="val">"#{not empty helloBean.name}"</span><span class="kw">&gt;</span>
+  Hello, <span class="kw">&lt;h:outputText</span>
+    <span class="attr">value</span>=<span class="val">"#{helloBean.name}"</span><span class="kw">/&gt;</span>!
+<span class="kw">&lt;/h:panelGroup&gt;</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 17: Navigation ========== -->
+<div class="slide" id="slide-17">
+  <div class="slide-number">17 / 20</div>
+  <h2><span class="slide-tag">Section 3.3</span>Navigation — Controlling Page Flow</h2>
+  <p>After a user action, Jakarta Faces needs to know <strong>which page to show next</strong>. This is handled through navigation outcomes.</p>
+  <div class="two-col">
+    <div>
+      <h3>How it works</h3>
+      <ul>
+        <li>Your action method returns a <strong>String outcome</strong> (e.g., <code>"success"</code>, <code>"error"</code>)</li>
+        <li>JF maps that string to the next page</li>
+        <li>Modern JF uses <strong>implicit navigation</strong> — return the filename of the next page (without extension)</li>
+      </ul>
+      <div class="example">
+        <div class="example-label">Example</div>
+        <code>return "dashboard";</code><br>
+        → JF navigates to <code>dashboard.xhtml</code>
+      </div>
+      <div class="key-point" style="margin-top:12px;">
+        <div class="key-label">Redirect vs Forward</div>
+        Append <code>?faces-redirect=true</code> to the outcome to redirect the browser (updates the URL bar). Without it, JF does a server-side forward (URL stays the same).
+      </div>
+    </div>
+    <div>
+      <pre><code><span class="cm">// In your Managed Bean</span>
+<span class="kw">public</span> String login() {
+  <span class="kw">if</span> (authService.check(
+        user, pass)) {
+    <span class="kw">return</span>
+      <span class="val">"dashboard?faces-redirect=true"</span>;
+  } <span class="kw">else</span> {
+    <span class="cm">// Add error message</span>
+    FacesContext.getCurrentInstance()
+      .addMessage(<span class="kw">null</span>,
+        <span class="kw">new</span> FacesMessage(
+          <span class="val">"Invalid credentials"</span>));
+    <span class="kw">return</span> <span class="kw">null</span>; <span class="cm">// Stay on page</span>
+  }
+}</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SECTION 4 DIVIDER ========== -->
+<div class="slide section-divider" id="slide-18">
+  <div class="slide-number" style="color:#777;">18 / 20</div>
+  <div class="section-num">Section 4</div>
+  <h1>Developing JF Web Applications</h1>
+  <div class="section-desc">
+    Let's put it all together — the typical project structure, a complete minimal example, and the key files you need to know.
+  </div>
+</div>
+
+<!-- ========== SLIDE 19: Project Structure + Full Example ========== -->
+<div class="slide" id="slide-19">
+  <div class="slide-number">19 / 20</div>
+  <h2><span class="slide-tag">Section 4.1</span>A Complete Jakarta Faces Application</h2>
+  <div class="two-col">
+    <div>
+      <h3>Project structure (Maven)</h3>
+      <pre><code>src/
+  main/
+    java/
+      com/example/
+        HelloBean.java    <span class="cm">← Managed Bean</span>
+    webapp/
+      WEB-INF/
+        web.xml           <span class="cm">← Registers FacesServlet</span>
+        beans.xml         <span class="cm">← Enables CDI</span>
+      index.xhtml         <span class="cm">← Facelet page</span>
+      result.xhtml        <span class="cm">← Result page</span>
+pom.xml                   <span class="cm">← Jakarta EE 10 dep</span></code></pre>
+      <h3 style="margin-top:14px;">The three files you must have</h3>
+      <ul>
+        <li><strong>web.xml</strong> — maps <code>*.xhtml</code> to FacesServlet</li>
+        <li><strong>beans.xml</strong> — tells the server to enable CDI (dependency injection)</li>
+        <li><strong>At least one .xhtml</strong> — your first page</li>
+      </ul>
+    </div>
+    <div>
+      <pre style="font-size:0.8rem;"><code><span class="cm">&lt;!-- web.xml (key part) --&gt;</span>
+<span class="kw">&lt;servlet&gt;</span>
+  <span class="kw">&lt;servlet-name&gt;</span>Faces<span class="kw">&lt;/servlet-name&gt;</span>
+  <span class="kw">&lt;servlet-class&gt;</span>
+    jakarta.faces.webapp.FacesServlet
+  <span class="kw">&lt;/servlet-class&gt;</span>
+<span class="kw">&lt;/servlet&gt;</span>
+<span class="kw">&lt;servlet-mapping&gt;</span>
+  <span class="kw">&lt;servlet-name&gt;</span>Faces<span class="kw">&lt;/servlet-name&gt;</span>
+  <span class="kw">&lt;url-pattern&gt;</span>*.xhtml<span class="kw">&lt;/url-pattern&gt;</span>
+<span class="kw">&lt;/servlet-mapping&gt;</span>
+
+<span class="cm">&lt;!-- index.xhtml --&gt;</span>
+<span class="kw">&lt;h:form&gt;</span>
+  <span class="kw">&lt;h:inputText</span>
+    <span class="attr">value</span>=<span class="val">"#{helloBean.name}"</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;h:commandButton</span>
+    <span class="attr">value</span>=<span class="val">"Greet"</span>
+    <span class="attr">action</span>=<span class="val">"#{helloBean.greet}"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:form&gt;</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 20: FINAL QUIZ ========== -->
+<div class="slide" id="slide-20">
+  <div class="slide-number">20 / 20</div>
+  <h2><span class="slide-tag">Knowledge Check — Final</span>Putting It All Together</h2>
+
+  <div class="quiz" id="q3">
+    <div class="quiz-question">Q1: A user submits a registration form. JF validates the email format, rejects it, and shows an error message — without calling your <code>register()</code> method. Which lifecycle phase stopped the process?</div>
+    <button class="quiz-option" onclick="checkAnswer3(this, false)">A) Apply Request Values — data wasn't captured</button>
+    <button class="quiz-option" onclick="checkAnswer3(this, true)" data-correct="true">B) Process Validations — validation failed, so later phases were skipped</button>
+    <button class="quiz-option" onclick="checkAnswer3(this, false)">C) Invoke Application — the method was called but threw an exception</button>
+    <div class="quiz-explanation">When validation fails in Phase 3, JF skips Phases 4 and 5 entirely and jumps straight to Phase 6 (Render Response) to redisplay the form with error messages. Your business logic is never touched.</div>
+  </div>
+
+  <div class="quiz" id="q4" style="margin-top:16px;">
+    <div class="quiz-question">Q2: Which of the following best describes the role of Expression Language (EL) in Jakarta Faces?</div>
+    <button class="quiz-option" onclick="checkAnswer4(this, false)">A) It is a database query language like SQL</button>
+    <button class="quiz-option" onclick="checkAnswer4(this, false)">B) It defines the visual layout of a page using CSS-style rules</button>
+    <button class="quiz-option" onclick="checkAnswer4(this, true)" data-correct="true">C) It connects UI components in Facelets to Java properties and methods</button>
+    <div class="quiz-explanation">Expression Language (EL) uses #{} syntax to bind Facelet UI components to Managed Bean properties (for reading/writing data) and action methods (for responding to user actions). It is evaluated server-side before the page is sent to the browser.</div>
+  </div>
+</div>
+
+<!-- ========== TOC OVERLAY ========== -->
+<div class="toc-overlay" id="tocOverlay">
+  <button class="toc-close" onclick="document.getElementById('tocOverlay').classList.remove('active')">✕</button>
+  <h2>Table of Contents</h2>
+  <div id="tocContent"></div>
+</div>
+
+<div class="nav-indicator" id="navIndicator">1 / 20</div>
+<div class="nav-hint">← → Navigate &nbsp;·&nbsp; T = Contents</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('progressBar').style.width =
+      ((current + 1) / slides.length * 100) + '%';
+    document.getElementById('navIndicator').textContent =
+      (current + 1) + ' / ' + slides.length;
+  }
+
+  function buildTOC() {
+    const toc = document.getElementById('tocContent');
+    const titles = [
+      { label: 'Title & Learning Objectives', slides: [1, 2], section: true },
+      { label: 'Section 1 — What Is Jakarta Faces?', slides: [3], section: true },
+      { label: '1.1 The Problem: Connecting Logic to Screen', slides: [4] },
+      { label: '1.2 Jakarta Faces in Plain English', slides: [5] },
+      { label: '1.3 Where JF Fits in the Big Picture', slides: [6] },
+      { label: 'Section 2 — Architecture & Components', slides: [7], section: true },
+      { label: '2.1 The MVC Pattern', slides: [8] },
+      { label: '2.2 The FacesServlet', slides: [9] },
+      { label: '2.3 Facelets — The View Layer', slides: [10] },
+      { label: '2.4 Managed Beans — The Glue', slides: [11] },
+      { label: '2.5 Bean Scopes', slides: [12] },
+      { label: 'Knowledge Check — Section 2', slides: [13] },
+      { label: 'Section 3 — Web Interface Specifications', slides: [14], section: true },
+      { label: '3.1 The JF Request Lifecycle', slides: [15] },
+      { label: '3.2 Expression Language', slides: [16] },
+      { label: '3.3 Navigation', slides: [17] },
+      { label: 'Section 4 — Developing JF Applications', slides: [18], section: true },
+      { label: '4.1 A Complete JF Application', slides: [19] },
+      { label: 'Knowledge Check — Final', slides: [20] },
+    ];
+    titles.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (item.section ? ' toc-section' : '');
+      div.textContent = item.label;
+      div.onclick = () => {
+        showSlide(item.slides[0] - 1);
+        document.getElementById('tocOverlay').classList.remove('active');
+      };
+      toc.appendChild(div);
+    });
+  }
+
+  function toggleTOC() {
+    document.getElementById('tocOverlay').classList.toggle('active');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('tocOverlay').classList.contains('active')) {
+      if (e.key === 'Escape') document.getElementById('tocOverlay').classList.remove('active');
+      return;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') showSlide(current + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') showSlide(current - 1);
+    else if (e.key === 't' || e.key === 'T') toggleTOC();
+  });
+
+  function checkAnswer(btn, isCorrect) {
+    const quiz = document.getElementById('q1');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+      o.disabled = true;
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+  function checkAnswer2(btn, isCorrect) {
+    const quiz = document.getElementById('q2');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+      o.disabled = true;
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+  function checkAnswer3(btn, isCorrect) {
+    const quiz = document.getElementById('q3');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+      o.disabled = true;
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+  function checkAnswer4(btn, isCorrect) {
+    const quiz = document.getElementById('q4');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+      o.disabled = true;
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+
+  showSlide(0);
+  buildTOC();
+</script>
+</body>
+</html>
