@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anchor Cards — SQL cho Interview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #f5f5f5; color: #1a1a1a;
+      min-height: 100vh; padding: 30px 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 1.8rem; margin-bottom: 6px; }
+    header p { color: #666; font-size: 0.95rem; }
+
+    .week-selector {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      justify-content: center; margin-bottom: 20px;
+    }
+    .week-btn {
+      padding: 8px 14px; background: #fff; border: 1.5px solid #d0d0d0;
+      border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+      font-family: inherit; transition: all 0.2s;
+    }
+    .week-btn:hover { border-color: #3b5998; }
+    .week-btn.active { background: #3b5998; color: #fff; border-color: #3b5998; }
+    .week-btn .progress {
+      font-size: 0.75rem; color: #666; margin-left: 6px;
+    }
+    .week-btn.active .progress { color: #d0d0e0; }
+
+    .card-area {
+      perspective: 1200px;
+      margin: 30px 0;
+    }
+    .card {
+      position: relative; width: 100%; min-height: 360px;
+      cursor: pointer;
+      transition: transform 0.6s; transform-style: preserve-3d;
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute; width: 100%; height: 100%;
+      min-height: 360px;
+      backface-visibility: hidden;
+      background: #fff; border-radius: 12px;
+      padding: 40px 50px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column;
+      justify-content: center;
+    }
+    .card-face.back {
+      transform: rotateY(180deg);
+      background: #fafffd;
+      border-left: 6px solid #4a7c59;
+    }
+    .card-face.front {
+      border-left: 6px solid #3b5998;
+    }
+    .card-label {
+      font-size: 0.8rem; color: #999; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .card-content {
+      font-size: 1.25rem; line-height: 1.6;
+    }
+    .card-content p { margin-bottom: 10px; }
+    .card-hint {
+      position: absolute; bottom: 14px; right: 20px;
+      font-size: 0.78rem; color: #aaa;
+    }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 8px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95em;
+    }
+    code { font-family: 'Courier New', monospace; }
+    pre {
+      background: #f5f5f5; padding: 10px 14px; border-radius: 6px;
+      font-size: 0.92rem; margin: 8px 0; overflow-x: auto;
+    }
+
+    .controls {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 20px;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .nav-buttons { display: flex; gap: 10px; }
+    .btn {
+      padding: 10px 18px; border: 1.5px solid #d0d0d0;
+      background: #fff; border-radius: 6px; cursor: pointer;
+      font-family: inherit; font-size: 0.92rem;
+      transition: all 0.2s;
+    }
+    .btn:hover { border-color: #3b5998; }
+    .btn-primary {
+      background: #3b5998; color: #fff; border-color: #3b5998;
+    }
+    .btn-primary:hover { background: #2c4276; }
+    .btn-learned {
+      background: #4a7c59; color: #fff; border-color: #4a7c59;
+    }
+    .btn-learned.active::before { content: "✓ "; }
+    .btn-shuffle.active {
+      background: #f9a825; color: #fff; border-color: #f9a825;
+    }
+    .counter {
+      font-size: 0.95rem; color: #555;
+    }
+    .counter strong { color: #1a1a1a; }
+
+    .topic-badge {
+      display: inline-block; padding: 3px 10px;
+      background: #f0f4ff; color: #3b5998;
+      border-radius: 4px; font-size: 0.78rem;
+      margin-bottom: 12px;
+    }
+
+    .summary {
+      margin-top: 30px; padding: 20px;
+      background: #fff; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .summary h3 { font-size: 1.1rem; margin-bottom: 12px; }
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .summary-item {
+      padding: 8px 10px; background: #f8f9fa; border-radius: 4px;
+      font-size: 0.85rem; display: flex; justify-content: space-between;
+    }
+    .summary-item .pct { font-weight: bold; color: #4a7c59; }
+    .reset-btn {
+      margin-top: 14px; font-size: 0.85rem;
+      color: #c0392b; background: none; border: none;
+      cursor: pointer; text-decoration: underline;
+    }
+
+    .instructions {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; border-radius: 4px; margin-bottom: 20px;
+      font-size: 0.92rem; line-height: 1.6;
+    }
+    .instructions strong { color: #b8810a; }
+
+    @media (max-width: 600px) {
+      .card-face { padding: 30px 25px; }
+      .card-content { font-size: 1.1rem; }
+      .controls { flex-direction: column; align-items: stretch; }
+      .nav-buttons { justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Anchor Cards</h1>
+      <p>SQL cho Interview — 10 tuần, ~95 facts cần thuộc verbatim</p>
+    </header>
+
+    <div class="instructions">
+      <strong>Cách dùng:</strong> Click card (hoặc <kbd>Space</kbd>) để lật. Trả lời mentally trước, sau đó lật xem đáp án. Nếu đúng → bấm <strong>"Đã thuộc"</strong> (hoặc <kbd>L</kbd>). Card đã thuộc bị bỏ qua trong shuffle mode. Phím <kbd>←</kbd> <kbd>→</kbd> chuyển card. Tiến độ tự lưu trong browser.
+    </div>
+
+    <div class="week-selector" id="weekSelector"></div>
+
+    <div class="card-area">
+      <div class="card" id="card" onclick="flipCard()">
+        <div class="card-face front">
+          <span class="card-label">Câu hỏi</span>
+          <div class="card-content" id="frontContent"></div>
+          <span class="card-hint">click hoặc Space để lật</span>
+        </div>
+        <div class="card-face back">
+          <span class="card-label">Đáp án</span>
+          <div class="card-content" id="backContent"></div>
+          <span class="card-hint">click để lật lại</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="counter">
+        Card <strong id="cardIndex">1</strong> / <strong id="cardTotal">1</strong>
+        &middot; Đã thuộc tuần này: <strong id="weekProgress">0</strong>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn btn-shuffle" id="shuffleBtn" onclick="toggleShuffle()">Shuffle</button>
+        <button class="btn" onclick="prevCard()">← Prev</button>
+        <button class="btn btn-learned" id="learnedBtn" onclick="toggleLearned()">Đã thuộc</button>
+        <button class="btn btn-primary" onclick="nextCard()">Next →</button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <h3>Tiến độ tổng — đã thuộc / tổng số card</h3>
+      <div class="summary-grid" id="summaryGrid"></div>
+      <button class="reset-btn" onclick="resetProgress()">↻ Reset toàn bộ tiến độ</button>
+    </div>
+  </div>
+
+<script>
+const DATA = [
+  {
+    week: 1,
+    title: "Mô hình quan hệ và nền tảng",
+    cards: [
+      { f: "Hai ràng buộc bắt buộc của PRIMARY KEY?",
+        b: "<strong>Unique</strong> + <strong>NOT NULL</strong>. PK định danh duy nhất mỗi dòng và không bao giờ rỗng." },
+      { f: "Ba phép cơ bản của đại số quan hệ và SQL tương đương?",
+        b: "<strong>σ</strong> (Selection — lọc dòng) ≡ <span class='inline-code'>WHERE</span><br><strong>π</strong> (Projection — chọn cột) ≡ <span class='inline-code'>SELECT cột</span><br><strong>⋈</strong> (Join — ghép theo predicate) ≡ <span class='inline-code'>JOIN ... ON</span>" },
+      { f: "Thứ tự thực thi LOGIC của SELECT (khác thứ tự viết)?",
+        b: "<strong>FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</strong><br>Hệ quả: WHERE không thấy aggregator. SELECT alias không dùng được trong WHERE/GROUP BY/HAVING (trong hầu hết dialect)." },
+      { f: "SQL có tự loại trùng dòng không?",
+        b: "<strong>Không.</strong> SQL giữ dòng trùng theo mặc định (khác đại số quan hệ thuần). Phải <span class='inline-code'>DISTINCT</span> explicit nếu cần loại trùng." },
+      { f: "Cú pháp test NULL?",
+        b: "<span class='inline-code'>IS NULL</span> / <span class='inline-code'>IS NOT NULL</span>.<br><strong>KHÔNG BAO GIỜ</strong> dùng <span class='inline-code'>= NULL</span> hoặc <span class='inline-code'>&lt;&gt; NULL</span> — luôn trả UNKNOWN, không filter được." },
+      { f: "Cú pháp LIMIT trên MySQL/PostgreSQL vs SQL Server?",
+        b: "MySQL/PG/SQLite: <span class='inline-code'>LIMIT n OFFSET m</span><br>SQL Server (truyền thống): <span class='inline-code'>TOP n</span><br>SQL Server 2012+ / Oracle 12c+ (ANSI): <span class='inline-code'>OFFSET m ROWS FETCH NEXT n ROWS ONLY</span>" },
+      { f: "Cardinality giữa hai bảng — 3 loại?",
+        b: "<strong>1-1</strong> (vd user — profile)<br><strong>1-N</strong> (vd customer — orders, phổ biến nhất)<br><strong>N-N</strong> (vd order — product, cần junction table)" },
+      { f: "Quy tắc làm việc với SQL — 3 reflex cần xây?",
+        b: "(1) <strong>Đọc schema</strong> trước khi gõ phím — biết PK, FK, NULL.<br>(2) <strong>Vẽ phép biến đổi</strong> trên giấy — σ, π, ⋈ trước.<br>(3) <strong>Test edge case</strong> — NULL, empty, ties." }
+    ]
+  },
+  {
+    week: 2,
+    title: "Lọc nâng cao và NULL",
+    cards: [
+      { f: "Kết quả của biểu thức <span class='inline-code'>5 = NULL</span>?",
+        b: "<strong>UNKNOWN</strong> (không phải TRUE, không phải FALSE). Logic SQL là ba giá trị (3VL). WHERE chỉ giữ TRUE; UNKNOWN bị loại." },
+      { f: "<span class='inline-code'>WHERE col &lt;&gt; 5</span> bỏ sót dòng nào?",
+        b: "Dòng có <span class='inline-code'>col IS NULL</span>. Vì <span class='inline-code'>NULL &lt;&gt; 5 = UNKNOWN</span> → WHERE loại.<br>Fix: <span class='inline-code'>col &lt;&gt; 5 OR col IS NULL</span>." },
+      { f: "<span class='inline-code'>NOT IN</span> với subquery có NULL → kết quả gì?",
+        b: "<strong>TẬP RỖNG.</strong> <span class='inline-code'>x NOT IN (1, 2, NULL) = x &lt;&gt; 1 AND x &lt;&gt; 2 AND x &lt;&gt; NULL</span>. Vế cuối luôn UNKNOWN → AND chain luôn UNKNOWN/FALSE → không dòng nào pass." },
+      { f: "Default replacement cho NOT IN tránh bug NULL?",
+        b: "<strong>NOT EXISTS</strong>. Boolean thuần, không bị bug 3VL. Optimizer hiện đại thường chuyển thành anti-join algorithm hiệu quả." },
+      { f: "<span class='inline-code'>COALESCE(a, b, c)</span> trả về gì?",
+        b: "Giá trị <strong>non-NULL đầu tiên</strong>. Nếu tất cả NULL → trả NULL. Nhận n đối số (n ≥ 2)." },
+      { f: "COALESCE vs IFNULL vs ISNULL vs NVL — chọn cái nào?",
+        b: "<strong>COALESCE</strong> — chuẩn ANSI, chạy mọi dialect, nhận nhiều đối số.<br>IFNULL: MySQL/SQLite (2 đối số)<br>ISNULL: SQL Server (KHÁC <span class='inline-code'>IS NULL</span>!)<br>NVL: Oracle" },
+      { f: "<span class='inline-code'>CHAR_LENGTH</span> vs <span class='inline-code'>LENGTH</span> với Unicode (tiếng Việt)?",
+        b: "<strong>CHAR_LENGTH</strong> đếm ký tự (an toàn Unicode).<br><strong>LENGTH</strong> MySQL đếm <em>byte</em> — sai với tiếng Việt và emoji. Luôn dùng CHAR_LENGTH." },
+      { f: "Safe date range cho cột TIMESTAMP?",
+        b: "<strong>Nửa-mở:</strong> <span class='inline-code'>d &gt;= 'start' AND d &lt; 'next_start'</span><br>Tránh <span class='inline-code'>BETWEEN</span> với TIMESTAMP — bỏ sót dòng cuối ngày." },
+      { f: "<span class='inline-code'>NULLIF(a, b)</span> trả gì? Use case chính?",
+        b: "NULL nếu <span class='inline-code'>a = b</span>, ngược lại trả a.<br>Use case: <strong>phòng divide by zero</strong> — <span class='inline-code'>x / NULLIF(y, 0)</span>. Chia cho NULL trả NULL thay vì lỗi." },
+      { f: "Hai dạng CASE — khác biệt?",
+        b: "<strong>Simple CASE</strong>: <span class='inline-code'>CASE col WHEN val THEN ... END</span> — so khớp giá trị.<br><strong>Searched CASE</strong>: <span class='inline-code'>CASE WHEN predicate THEN ... END</span> — predicate tự do, mạnh hơn, dùng phổ biến hơn." }
+    ]
+  },
+  {
+    week: 3,
+    title: "Aggregation và GROUP BY",
+    cards: [
+      { f: "COUNT(*) vs COUNT(col) vs COUNT(DISTINCT col) — khác biệt?",
+        b: "<strong>COUNT(*)</strong>: tổng số dòng (kể cả dòng toàn NULL).<br><strong>COUNT(col)</strong>: số dòng có col không NULL.<br><strong>COUNT(DISTINCT col)</strong>: số giá trị unique của col (bỏ NULL)." },
+      { f: "AVG xử lý NULL thế nào?",
+        b: "<strong>Bỏ NULL</strong> trước khi tính. AVG = SUM(non-null) / COUNT(non-null).<br>Muốn coi NULL = 0: <span class='inline-code'>AVG(COALESCE(col, 0))</span> hoặc <span class='inline-code'>SUM(col) / COUNT(*)</span>." },
+      { f: "SUM trên tập rỗng (hoặc toàn NULL) trả gì?",
+        b: "<strong>NULL</strong> (không phải 0!). COUNT trên tập rỗng mới trả 0." },
+      { f: "WHERE vs HAVING — chạy lúc nào?",
+        b: "<strong>WHERE</strong>: trước GROUP BY, lọc dòng. Không dùng được aggregator.<br><strong>HAVING</strong>: sau GROUP BY, lọc nhóm. Dùng được aggregator.<br>Đẩy filter xuống WHERE bất cứ khi nào có thể — ít dòng vào aggregation = nhanh hơn." },
+      { f: "GROUP BY và NULL — bao nhiêu nhóm cho các dòng NULL?",
+        b: "<strong>1 nhóm duy nhất</strong>. Đây là ngoại lệ so với 3VL chung — GROUP BY coi NULL như một giá trị thường (để tránh bùng nổ nhóm)." },
+      { f: "Pattern conditional aggregation — viết ngắn nhất?",
+        b: "<span class='inline-code'>COUNT(CASE WHEN cond THEN 1 END)</span><br>Tương đương <span class='inline-code'>SUM(CASE WHEN cond THEN 1 ELSE 0 END)</span> nhưng không cần ELSE — COUNT bỏ qua NULL." },
+      { f: "Integer division trap & fix?",
+        b: "SQL Server: <span class='inline-code'>3/7 = 0</span> (integer division).<br>Fix: nhân 1.0 vào CASE — <span class='inline-code'>SUM(CASE WHEN ... THEN 1.0 ELSE 0 END) / COUNT(*)</span>. Hoặc CAST sang DECIMAL." },
+      { f: "Quy tắc cột trong SELECT khi có GROUP BY?",
+        b: "Mọi cột trong SELECT phải <strong>hoặc</strong> có trong GROUP BY, <strong>hoặc</strong> được bọc trong aggregator. Không có lựa chọn thứ ba. (MySQL old-mode cho phép vi phạm — silent bug, tránh.)" },
+      { f: "ONLY_FULL_GROUP_BY là gì?",
+        b: "Mode mặc định của MySQL 5.7+. Reject query có cột không-aggregate, không trong GROUP BY — chuẩn ANSI behavior. Đảm bảo code chạy cross-dialect." }
+    ]
+  },
+  {
+    week: 4,
+    title: "JOIN sâu",
+    cards: [
+      { f: "Mental model JOIN — phép biến đổi gì?",
+        b: "<strong>Cartesian product + Filter</strong> theo predicate ON.<br>OUTER JOIN thêm bước 3: fill NULL cho dòng không có match ở phía kia." },
+      { f: "Bốn loại JOIN cốt lõi?",
+        b: "<strong>INNER</strong>: chỉ matched.<br><strong>LEFT</strong>: tất cả A + matched/NULL từ B.<br><strong>RIGHT</strong>: tất cả B + matched/NULL từ A.<br><strong>FULL OUTER</strong>: cả hai bên, NULL nếu không match." },
+      { f: "Predicate trên bảng phải trong LEFT JOIN — đặt ở ON hay WHERE?",
+        b: "<strong>Trong ON</strong>. Đặt ở WHERE biến LEFT thành INNER (vì NULL trên cột phải bị WHERE loại).<br>Quy tắc: predicate bảng trái → WHERE; predicate bảng phải → ON; IS NULL bảng phải → WHERE (anti-join pattern)." },
+      { f: "LEFT JOIN — COUNT(*) đếm sai khách 0 đơn?",
+        b: "Đúng — COUNT(*) đếm cả dòng có NULL → trả 1 cho khách 0 đơn (sai).<br>Đúng: <span class='inline-code'>COUNT(o.order_id)</span> — cột bảng phải, NULL không đếm, trả 0." },
+      { f: "Self-join — khi nào dùng?",
+        b: "(1) Bảng tự tham chiếu (employee/manager).<br>(2) So dòng với dòng khác cùng bảng (consecutive, pair, comparison)." },
+      { f: "CROSS JOIN — output kích thước?",
+        b: "<strong>|A| × |B|</strong> — Cartesian product có chủ đích. Use: dense reporting (mọi tổ hợp month × region), sinh chuỗi calendar." },
+      { f: "Ba cách viết anti-join — chọn cái nào default?",
+        b: "<strong>NOT EXISTS</strong> (khuyên). An toàn NULL + performance tốt.<br>LEFT JOIN ... WHERE col IS NULL: dễ đọc khi đã có LEFT JOIN sẵn.<br>NOT IN: <em>nguy hiểm</em> nếu subquery có NULL — bug tập rỗng." },
+      { f: "NATURAL JOIN — nên dùng không?",
+        b: "<strong>KHÔNG.</strong> Join tự động trên mọi cột cùng tên → bug ngầm khi schema đổi (thêm <span class='inline-code'>created_at</span> vào 2 bảng → query đột ngột khác). Luôn ON explicit." },
+      { f: "USING vs ON?",
+        b: "<strong>USING (col)</strong>: rút gọn khi tên cột giống nhau, cột chỉ xuất hiện 1 lần trong kết quả. <span class='inline-code'>JOIN customers USING (customer_id)</span>.<br><strong>ON</strong>: predicate tự do, dùng phổ biến hơn." },
+      { f: "Cartesian explosion — nguyên nhân và phát hiện?",
+        b: "Quên ON hoặc <span class='inline-code'>FROM A, B</span> không có WHERE → |A|×|B| dòng.<br>1M × 10K = 10 tỷ dòng, server treo. Phát hiện: số dòng output bất thường lớn." }
+    ]
+  },
+  {
+    week: 5,
+    title: "Subquery và Set Operations",
+    cards: [
+      { f: "Bốn vị trí có thể đặt subquery?",
+        b: "<strong>SELECT</strong> (scalar 1×1)<br><strong>FROM</strong> (derived table, bắt buộc alias)<br><strong>WHERE</strong> (scalar/IN/EXISTS)<br><strong>HAVING</strong> (scalar)" },
+      { f: "Scalar subquery yêu cầu trả về gì?",
+        b: "<strong>Đúng 1 dòng × 1 cột</strong>. Trả 0 dòng → NULL. Trả &gt;1 dòng → <em>runtime error</em>. Để an toàn: dùng aggregator (MAX/MIN/AVG) hoặc LIMIT 1." },
+      { f: "Correlated vs Non-correlated subquery?",
+        b: "<strong>Non-correlated</strong>: không tham chiếu cột outer, chạy 1 lần.<br><strong>Correlated</strong>: tham chiếu cột outer, chạy lại mỗi dòng outer (O(n²) potential)." },
+      { f: "EXISTS vs IN — khác biệt với NULL?",
+        b: "<strong>EXISTS</strong>: Boolean thuần (TRUE/FALSE), an toàn NULL.<br><strong>IN</strong>: dùng 3VL, có thể trả UNKNOWN — đặc biệt NOT IN với NULL gây tập rỗng." },
+      { f: "Vì sao EXISTS nhanh hơn COUNT(*) &gt; 0?",
+        b: "EXISTS dừng ngay khi tìm 1 dòng match — short-circuit. COUNT phải scan hết để đếm rồi compare. Trong production code, EXISTS là default cho existence check." },
+      { f: "UNION vs UNION ALL — default chọn cái nào?",
+        b: "<strong>UNION ALL</strong> (nhanh — chỉ ghép, không dedup).<br>UNION phải sort/hash để loại trùng — tốn CPU và memory.<br>Chỉ UNION khi thực sự cần loại trùng explicit." },
+      { f: "INTERSECT, EXCEPT — phương ngữ nào hỗ trợ?",
+        b: "PostgreSQL, SQL Server, SQLite, Oracle (EXCEPT = MINUS): có sẵn.<br>MySQL: 8.0.31+. Trước đó mô phỏng bằng EXISTS/NOT EXISTS." },
+      { f: "Tuple subquery pattern — dùng khi nào?",
+        b: "<span class='inline-code'>WHERE (col1, col2) IN (SELECT col1, MAX(col2) FROM t GROUP BY col1)</span><br>Gọn cho \"max theo nhóm\". MySQL/PostgreSQL hỗ trợ; SQL Server không trực tiếp." },
+      { f: "Quy tắc tương thích schema cho UNION/INTERSECT/EXCEPT?",
+        b: "(1) Cùng số cột<br>(2) Cột tương ứng cùng kiểu (hoặc convertible)<br>(3) Tên cột lấy từ query đầu tiên<br>ORDER BY chỉ ở cuối toàn bộ" }
+    ]
+  },
+  {
+    week: 6,
+    title: "Window Functions",
+    cards: [
+      { f: "Cấu trúc đầy đủ của OVER clause?",
+        b: "<span class='inline-code'>OVER (PARTITION BY ... ORDER BY ... ROWS/RANGE BETWEEN ...)</span><br>Cả 3 thành phần đều tùy chọn. Kết hợp khác nhau cho semantic khác nhau." },
+      { f: "PARTITION BY vs GROUP BY — khác biệt cốt lõi?",
+        b: "<strong>GROUP BY</strong>: collapse 1 dòng/nhóm (n→k dòng output).<br><strong>PARTITION BY</strong>: giữ n dòng, tính chỉ số tham chiếu nhóm.<br>Window không collapse — preserve mọi dòng input." },
+      { f: "ROW_NUMBER vs RANK vs DENSE_RANK với {120, 100, 100, 95}?",
+        b: "<strong>ROW_NUMBER</strong>: 1, 2, 3, 4 (luôn duy nhất, ties random)<br><strong>RANK</strong>: 1, 2, 2, 4 (ties cùng, skip)<br><strong>DENSE_RANK</strong>: 1, 2, 2, 3 (ties cùng, không skip)" },
+      { f: "Top-N per group — signature pattern?",
+        b: "<pre>WITH ranked AS (\n  SELECT *, ROW_NUMBER() OVER (\n    PARTITION BY group_key\n    ORDER BY rank_key DESC, tiebreaker\n  ) AS rk\n  FROM source\n)\nSELECT * FROM ranked WHERE rk &lt;= N;</pre>" },
+      { f: "Frame mặc định khi có ORDER BY?",
+        b: "<strong>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</strong>.<br>Tức là từ đầu partition đến dòng hiện tại — và RANGE coi các dòng cùng giá trị ORDER BY là cùng \"step\"." },
+      { f: "ROWS vs RANGE — bẫy critical?",
+        b: "<strong>ROWS</strong>: số dòng vật lý — phân biệt từng dòng kể cả ties.<br><strong>RANGE</strong>: phạm vi giá trị logic — dòng cùng giá trị ORDER BY <em>được gộp</em>.<br>Running total có ties: RANGE nhảy bậc, ROWS tăng từng dòng. Luôn explicit ROWS." },
+      { f: "Frame chuẩn cho running total?",
+        b: "<span class='inline-code'>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span><br>Explicit ROWS để tránh bug RANGE mặc định với ties." },
+      { f: "Frame cho 7-day moving average?",
+        b: "<span class='inline-code'>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</span><br>6 dòng trước + dòng hiện tại = 7 dòng tổng." },
+      { f: "LAG vs LEAD?",
+        b: "<strong>LAG(col, n, default)</strong>: dòng trước (offset n).<br><strong>LEAD(col, n, default)</strong>: dòng sau.<br>Pattern \"so với dòng trước\": <span class='inline-code'>col - LAG(col) OVER (ORDER BY ...)</span>" },
+      { f: "Filter trực tiếp window function được không?",
+        b: "<strong>KHÔNG.</strong> Window chạy SAU WHERE/GROUP BY/HAVING trong thứ tự thực thi. Phải bao subquery/CTE rồi filter ở tầng ngoài:<br><span class='inline-code'>SELECT * FROM (SELECT ..., ROW_NUMBER()... AS rn FROM t) WHERE rn = 1</span>" },
+      { f: "LAST_VALUE — bẫy frame mặc định?",
+        b: "Default frame chỉ đến CURRENT ROW → LAST_VALUE = current row, không phải last của partition!<br>Fix: explicit <span class='inline-code'>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</span>.<br>Workaround đẹp hơn: <span class='inline-code'>FIRST_VALUE(...) OVER (ORDER BY ... DESC)</span>" },
+      { f: "NTILE(N) làm gì?",
+        b: "Chia partition (theo ORDER BY) thành <strong>N nhóm gần bằng nhau</strong>, gán 1..N cho mỗi dòng.<br>Use: quartile (N=4), decile (N=10), top 10% (NTILE(10) lấy bucket = 1)." }
+    ]
+  },
+  {
+    week: 7,
+    title: "CTE và Recursive Queries",
+    cards: [
+      { f: "Cú pháp CTE cơ bản?",
+        b: "<pre>WITH cte_name AS (\n  SELECT ...\n)\nSELECT * FROM cte_name;</pre>Nhiều CTE: nối bằng dấu phẩy. CTE sau có thể tham chiếu CTE trước." },
+      { f: "CTE vs derived table — 3 ưu điểm chính?",
+        b: "(1) Đặt tên có nghĩa cho bước trung gian.<br>(2) Multi-step rõ ràng, đọc top-down.<br>(3) Tái sử dụng nhiều lần.<br>(4) Hỗ trợ recursive (derived table không có)." },
+      { f: "MySQL hỗ trợ CTE từ phiên bản nào?",
+        b: "<strong>8.0+</strong> (cả thường lẫn recursive). LeetCode chạy MySQL 8+ nên dùng được. PostgreSQL: 8.4+. SQL Server: 2005+. SQLite: 3.8.3+." },
+      { f: "Cấu trúc Recursive CTE?",
+        b: "<pre>WITH RECURSIVE name AS (\n  -- anchor (không tham chiếu CTE)\n  SELECT ...\n  UNION ALL\n  -- recursive (tham chiếu CTE)\n  SELECT ... FROM name JOIN ... WHERE ...\n)\nSELECT * FROM name;</pre>" },
+      { f: "Anchor và recursive nối bằng UNION hay UNION ALL?",
+        b: "<strong>UNION ALL</strong> bắt buộc. UNION dedup mỗi vòng → chậm và sai semantic." },
+      { f: "Engine xử lý recursive CTE thế nào?",
+        b: "(1) Chạy anchor → R0.<br>(2) Recursive với R0 → R1 (dòng mới).<br>(3) Lặp với R1 → R2, v.v.<br>(4) Dừng khi recursive trả 0 dòng.<br>(5) Output = R0 ∪ R1 ∪ R2 ∪ ..." },
+      { f: "Gaps and Islands — trick chính?",
+        b: "<span class='inline-code'>date - ROW_NUMBER() OVER (PARTITION BY g ORDER BY date)</span><br>→ hằng số trên cùng island (date và ROW_NUMBER cùng tăng đều).<br>→ thay đổi khi sang island mới (date nhảy nhưng ROW_NUMBER không).<br>GROUP BY hiệu này tách islands." },
+      { f: "Pattern \"5 ngày login liên tiếp\"?",
+        b: "<pre>WITH islands AS (\n  SELECT user_id,\n    DATE_SUB(login_date,\n      INTERVAL ROW_NUMBER() OVER (\n        PARTITION BY user_id ORDER BY login_date\n      ) DAY) AS island\n  FROM (SELECT DISTINCT user_id, login_date FROM logins) d\n)\nSELECT DISTINCT user_id FROM islands\nGROUP BY user_id, island HAVING COUNT(*) &gt;= 5;</pre>" },
+      { f: "Phòng infinite loop trong recursive CTE?",
+        b: "MySQL: <span class='inline-code'>cte_max_recursion_depth</span> mặc định 1000 (tự stop).<br>PostgreSQL: không tự stop — phải tự thêm <span class='inline-code'>WHERE level &lt; N</span>.<br>An toàn nhất: track visited nodes." }
+    ]
+  },
+  {
+    week: 8,
+    title: "Pattern Interview",
+    cards: [
+      { f: "7 pattern interview chính?",
+        b: "(1) Top-N per group<br>(2) Median / Percentile<br>(3) Gaps and Islands<br>(4) Consecutive Sequences<br>(5) Pivot / Unpivot<br>(6) Cumulative & Cohort<br>(7) Date arithmetic" },
+      { f: "Tín hiệu nhận diện Top-N per group + tool?",
+        b: "Tín hiệu: \"top X / cao nhất / mới nhất ... mỗi (group)\".<br>Tool: ROW_NUMBER / RANK / DENSE_RANK với <span class='inline-code'>PARTITION BY group_key</span>." },
+      { f: "Tín hiệu nhận diện Gaps and Islands + tool?",
+        b: "Tín hiệu: \"consecutive / liên tiếp / streak / uninterrupted period\".<br>Tool: <span class='inline-code'>date - ROW_NUMBER()</span> trick để tạo island ID." },
+      { f: "Median trick universal (chạy MySQL)?",
+        b: "<pre>WITH ranked AS (\n  SELECT salary,\n    ROW_NUMBER() OVER (ORDER BY salary ASC)  AS rn_asc,\n    ROW_NUMBER() OVER (ORDER BY salary DESC) AS rn_desc\n  FROM t\n)\nSELECT AVG(salary) AS median FROM ranked\nWHERE rn_asc IN (rn_desc, rn_desc-1, rn_desc+1);</pre>" },
+      { f: "Pivot pattern (long → wide) universal?",
+        b: "Conditional aggregation:<br><span class='inline-code'>SUM(CASE WHEN col = 'val1' THEN amount ELSE 0 END) AS val1</span> per column needed.<br>GROUP BY group_key. Bỏ ELSE để có NULL cho tổ hợp không có data." },
+      { f: "Unpivot pattern (wide → long) universal?",
+        b: "<strong>UNION ALL</strong> nhiều SELECT, mỗi SELECT cho 1 cột nguồn với hardcoded label:<br><span class='inline-code'>SELECT id, 'store1' AS store, store1 AS val FROM t WHERE store1 IS NOT NULL UNION ALL ...</span>" },
+      { f: "Cohort retention framework?",
+        b: "<pre>WITH\n  first_action AS (SELECT user, MIN(date) d0 FROM e GROUP BY user),\n  metrics AS (\n    SELECT f.d0 AS cohort,\n      COUNT(DISTINCT f.user) AS size,\n      COUNT(DISTINCT CASE WHEN DATEDIFF(a.date,f.d0)=N\n                          THEN a.user END) AS returned\n    FROM first_action f LEFT JOIN events a ON a.user=f.user\n    GROUP BY f.d0\n  )\nSELECT cohort, 100.0*returned/size AS retention FROM metrics;</pre>" },
+      { f: "Quy trình \"30 giây nhận pattern\"?",
+        b: "(1) Đọc từ khóa: \"top\", \"median\", \"consecutive\", \"running\".<br>(2) Output unit: 1 dòng/nhóm vs 1 dòng/dòng gốc.<br>(3) Có thứ tự (date/score)? → window function.<br>(4) Match cheatsheet.<br>(5) Viết khung CTE đặt tên các bước." },
+      { f: "\"Top 3 mức lương khác nhau / phòng\" — function?",
+        b: "<strong>DENSE_RANK</strong>. ROW_NUMBER bỏ sót dòng cùng salary. RANK skip → có thể trả ít hơn 3 mức. DENSE_RANK đúng \"top 3 mức phân biệt\"." },
+      { f: "\"Top 3 nhân viên cao lương nhất / phòng\" — function?",
+        b: "<strong>ROW_NUMBER với tie-breaker</strong> (đúng 3 dòng) hoặc <strong>RANK</strong> (có thể &gt;3 dòng nếu ties).<br>Tùy yêu cầu — đọc đề kỹ. Trong mock interview, hỏi clarification về ties." }
+    ]
+  },
+  {
+    week: 9,
+    title: "Performance và Phương ngữ",
+    cards: [
+      { f: "Quy tắc nắm tay — khi nào index hữu ích?",
+        b: "Query trả về <strong>&lt; 5-10% bảng</strong>. Trên đó, optimizer thường chọn seq scan vì đọc tuần tự nhanh hơn random reads qua index." },
+      { f: "B-tree index hỗ trợ tốt cho?",
+        b: "<strong>Equality</strong> (=)<br><strong>Range</strong> (&gt;, &lt;, BETWEEN)<br><strong>Prefix LIKE</strong> ('A%')<br><strong>ORDER BY</strong> theo cột index<br>KHÔNG: <span class='inline-code'>LIKE '%X'</span>, function trên cột." },
+      { f: "Leftmost prefix rule cho composite index (A, B, C)?",
+        b: "Dùng được: WHERE A | A+B | A+B+C | A+C (partial).<br>KHÔNG dùng được: WHERE B | WHERE C | WHERE B+C.<br>Cột đầu tiên phải có trong predicate." },
+      { f: "Composite index — sắp thứ tự cột thế nào?",
+        b: "<strong>Equality predicate trước, range/sort cuối.</strong><br>Vd query: <span class='inline-code'>WHERE country='VN' AND date &gt; '...' ORDER BY date</span><br>→ index <span class='inline-code'>(country, date)</span> — country equality trước, date range/sort sau." },
+      { f: "Function trên cột → vì sao mất index?",
+        b: "<span class='inline-code'>WHERE YEAR(date) = 2024</span> — engine không match function với index pattern.<br>Fix 1: nửa-mở range <span class='inline-code'>date &gt;= '2024-01-01' AND date &lt; '2025-01-01'</span><br>Fix 2: functional index <span class='inline-code'>CREATE INDEX ON t(YEAR(date))</span> (MySQL 8+/PostgreSQL)." },
+      { f: "Ba join algorithms — khi nào optimizer chọn cái nào?",
+        b: "<strong>Nested Loop</strong>: A nhỏ + B có index trên join key. OLTP.<br><strong>Hash Join</strong>: cả hai vừa, không index. OLAP.<br><strong>Merge Join</strong>: cả hai đã sorted theo join key." },
+      { f: "EXPLAIN ANALYZE — đặc điểm và bẫy?",
+        b: "<strong>Chạy thật</strong>, so actual với estimated.<br>Với DELETE/UPDATE/INSERT: query CHẠY và sửa data. Phải bao <span class='inline-code'>BEGIN; EXPLAIN ANALYZE ...; ROLLBACK;</span>" },
+      { f: "Keyset pagination vs OFFSET — vì sao chọn keyset?",
+        b: "OFFSET 1M scan và bỏ 1M dòng — chậm trên trang xa.<br>Keyset: <span class='inline-code'>WHERE id &gt; last_seen ORDER BY id LIMIT N</span> — luôn nhanh, không phụ thuộc trang." },
+      { f: "5 anti-pattern phổ biến + fix?",
+        b: "(1) Function trên cột → range nửa-mở<br>(2) SELECT * → cột cụ thể<br>(3) OR trên 2 cột index → UNION ALL<br>(4) DISTINCT che bug join → fix JOIN cardinality<br>(5) OFFSET pagination → keyset pagination" },
+      { f: "LIMIT cú pháp các dialect chính?",
+        b: "MySQL/PG/SQLite: <span class='inline-code'>LIMIT n OFFSET m</span><br>SQL Server (cũ): <span class='inline-code'>TOP n</span><br>SQL Server 2012+/Oracle 12c+ (ANSI): <span class='inline-code'>OFFSET m ROWS FETCH NEXT n ROWS ONLY</span>" }
+    ]
+  },
+  {
+    week: 10,
+    title: "Mock Interview Process",
+    cards: [
+      { f: "Bốn phase mock interview 45 phút — chia thời gian?",
+        b: "<strong>Phase 1</strong> (0-5'): Read &amp; Clarify<br><strong>Phase 2</strong> (5-15'): Plan &amp; Stub<br><strong>Phase 3</strong> (15-35'): Code &amp; Iterate<br><strong>Phase 4</strong> (35-45'): Test, Edge cases, Optimize" },
+      { f: "Câu hỏi clarifying tối thiểu Phase 1?",
+        b: "(1) Cột nào có thể NULL?<br>(2) Có thể có dòng trùng?<br>(3) Tie-breaker output thế nào?<br>(4) Sort theo cột nào?<br>(5) Nếu cột TIMESTAMP — timezone gì?" },
+      { f: "NULL checklist Phase 4 — 7 câu hỏi tự đặt?",
+        b: "(1) Cột nào nullable?<br>(2) &lt;&gt;/!=/NOT IN có loại NULL không?<br>(3) JOIN trên cột nullable?<br>(4) COUNT(*) vs COUNT(col)?<br>(5) SUM/AVG bỏ NULL — đúng intent?<br>(6) CONCAT NULL → NULL (MySQL)?<br>(7) ORDER BY NULLS FIRST/LAST?" },
+      { f: "Ties checklist?",
+        b: "(1) ROW_NUMBER có tie-breaker để deterministic?<br>(2) RANK vs DENSE_RANK theo yêu cầu?<br>(3) \"Top N\" — có thể &gt;N dòng (RANK) hay đúng N (ROW_NUMBER)?<br>(4) Median với số dòng chẵn — AVG hai dòng giữa?" },
+      { f: "Bốn chiều đánh giá mock interview?",
+        b: "<strong>Correctness</strong> (code đúng?)<br><strong>Code Quality</strong> (CTE rõ ràng, không anti-pattern?)<br><strong>Communication</strong> (think aloud, clarify, edge case discussion?)<br><strong>Time Management</strong> (4 phase đầy đủ trong 45')<br>Tất cả 4 quyết định pass/fail." },
+      { f: "Lịch luyện 4 tuần trước phỏng vấn thật?",
+        b: "<strong>T-4</strong>: Volume — 10 LeetCode/ngày Easy 70% + Medium 30%.<br><strong>T-3</strong>: Pattern depth — 5/ngày, 1 pattern/ngày.<br><strong>T-2</strong>: 3 mock interview/tuần với peer.<br><strong>T-1</strong>: Taper + review. Nghỉ 1 ngày trước." },
+      { f: "Ba thứ quan trọng nhất mang theo từ khóa 10 tuần?",
+        b: "(1) <strong>Tư duy tập hợp</strong> (set thinking) — không phải loop<br>(2) <strong>Pattern recognition reflex</strong> — 7 pattern thuộc lòng<br>(3) <strong>Communication có cấu trúc</strong> — 4 phase + think aloud + edge case checklist<br>Không tra docs được — phải luyện." }
+    ]
+  }
+];
+
+let state = {
+  currentWeek: 1,
+  currentIdx: 0,
+  shuffleMode: false,
+  shuffleOrder: [],
+  learned: loadLearned(),
+  flipped: false
+};
+
+function loadLearned() {
+  try {
+    return JSON.parse(localStorage.getItem('sql_anchor_learned') || '{}');
+  } catch { return {}; }
+}
+
+function saveLearned() {
+  try {
+    localStorage.setItem('sql_anchor_learned', JSON.stringify(state.learned));
+  } catch {}
+}
+
+function cardKey(week, idx) {
+  return `w${week}_c${idx}`;
+}
+
+function isLearned(week, idx) {
+  return !!state.learned[cardKey(week, idx)];
+}
+
+function getWeekData() {
+  return DATA.find(d => d.week === state.currentWeek);
+}
+
+function getActiveCards() {
+  const wd = getWeekData();
+  if (!wd) return [];
+  if (state.shuffleMode) {
+    return state.shuffleOrder
+      .map(i => ({ ...wd.cards[i], origIdx: i }))
+      .filter(c => !isLearned(state.currentWeek, c.origIdx));
+  }
+  return wd.cards.map((c, i) => ({ ...c, origIdx: i }));
+}
+
+function buildWeekSelector() {
+  const sel = document.getElementById('weekSelector');
+  sel.innerHTML = '';
+  DATA.forEach(wd => {
+    const btn = document.createElement('button');
+    btn.className = 'week-btn' + (wd.week === state.currentWeek ? ' active' : '');
+    const learned = wd.cards.filter((_, i) => isLearned(wd.week, i)).length;
+    btn.innerHTML = `Tuần ${wd.week}<span class="progress">${learned}/${wd.cards.length}</span>`;
+    btn.onclick = () => selectWeek(wd.week);
+    sel.appendChild(btn);
+  });
+}
+
+function selectWeek(w) {
+  state.currentWeek = w;
+  state.currentIdx = 0;
+  state.flipped = false;
+  if (state.shuffleMode) {
+    const len = getWeekData().cards.length;
+    state.shuffleOrder = shuffleArray([...Array(len).keys()]);
+  }
+  buildWeekSelector();
+  renderCard();
+  renderSummary();
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function toggleShuffle() {
+  state.shuffleMode = !state.shuffleMode;
+  document.getElementById('shuffleBtn').classList.toggle('active', state.shuffleMode);
+  if (state.shuffleMode) {
+    const len = getWeekData().cards.length;
+    state.shuffleOrder = shuffleArray([...Array(len).keys()]);
+  }
+  state.currentIdx = 0;
+  state.flipped = false;
+  renderCard();
+}
+
+function renderCard() {
+  const cards = getActiveCards();
+  if (cards.length === 0) {
+    document.getElementById('frontContent').innerHTML = '<em style="color:#666;">Đã thuộc hết card tuần này! Tắt Shuffle để xem lại, hoặc chọn tuần khác.</em>';
+    document.getElementById('backContent').innerHTML = '🎉';
+    document.getElementById('cardIndex').textContent = '–';
+    document.getElementById('cardTotal').textContent = '0';
+    updateWeekProgress();
+    return;
+  }
+  if (state.currentIdx >= cards.length) state.currentIdx = 0;
+  const card = cards[state.currentIdx];
+  document.getElementById('frontContent').innerHTML =
+    `<span class="topic-badge">Tuần ${state.currentWeek} &middot; ${getWeekData().title}</span><br>${card.f}`;
+  document.getElementById('backContent').innerHTML = card.b;
+  document.getElementById('cardIndex').textContent = state.currentIdx + 1;
+  document.getElementById('cardTotal').textContent = cards.length;
+  document.getElementById('card').classList.toggle('flipped', state.flipped);
+  const learnedBtn = document.getElementById('learnedBtn');
+  learnedBtn.classList.toggle('active', isLearned(state.currentWeek, card.origIdx));
+  learnedBtn.textContent = isLearned(state.currentWeek, card.origIdx) ? '✓ Đã thuộc' : 'Đã thuộc';
+  updateWeekProgress();
+}
+
+function updateWeekProgress() {
+  const wd = getWeekData();
+  const learned = wd.cards.filter((_, i) => isLearned(wd.week, i)).length;
+  document.getElementById('weekProgress').textContent = `${learned}/${wd.cards.length}`;
+}
+
+function flipCard() {
+  state.flipped = !state.flipped;
+  document.getElementById('card').classList.toggle('flipped', state.flipped);
+}
+
+function nextCard() {
+  const cards = getActiveCards();
+  if (cards.length === 0) return;
+  state.currentIdx = (state.currentIdx + 1) % cards.length;
+  state.flipped = false;
+  renderCard();
+}
+
+function prevCard() {
+  const cards = getActiveCards();
+  if (cards.length === 0) return;
+  state.currentIdx = (state.currentIdx - 1 + cards.length) % cards.length;
+  state.flipped = false;
+  renderCard();
+}
+
+function toggleLearned() {
+  const cards = getActiveCards();
+  if (cards.length === 0) return;
+  const card = cards[state.currentIdx];
+  const key = cardKey(state.currentWeek, card.origIdx);
+  if (state.learned[key]) delete state.learned[key];
+  else state.learned[key] = Date.now();
+  saveLearned();
+  buildWeekSelector();
+  renderSummary();
+  renderCard();
+}
+
+function renderSummary() {
+  const grid = document.getElementById('summaryGrid');
+  grid.innerHTML = '';
+  DATA.forEach(wd => {
+    const learned = wd.cards.filter((_, i) => isLearned(wd.week, i)).length;
+    const pct = Math.round(100 * learned / wd.cards.length);
+    const item = document.createElement('div');
+    item.className = 'summary-item';
+    item.innerHTML = `<span>Tuần ${wd.week}</span><span class="pct">${learned}/${wd.cards.length}</span>`;
+    if (pct === 100) item.style.background = '#eaf5ea';
+    grid.appendChild(item);
+  });
+  const totalLearned = Object.keys(state.learned).length;
+  const totalCards = DATA.reduce((s, w) => s + w.cards.length, 0);
+  const item = document.createElement('div');
+  item.className = 'summary-item';
+  item.style.background = '#f0f4ff';
+  item.innerHTML = `<span><strong>Tổng</strong></span><span class="pct">${totalLearned}/${totalCards}</span>`;
+  grid.appendChild(item);
+}
+
+function resetProgress() {
+  if (!confirm('Xóa toàn bộ tiến độ đã thuộc? Hành động này không thể hoàn tác.')) return;
+  state.learned = {};
+  saveLearned();
+  buildWeekSelector();
+  renderCard();
+  renderSummary();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); nextCard(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); prevCard(); }
+  else if (e.key === ' ') { e.preventDefault(); flipCard(); }
+  else if (e.key === 'l' || e.key === 'L') { toggleLearned(); }
+  else if (e.key === 's' || e.key === 'S') { toggleShuffle(); }
+});
+
+buildWeekSelector();
+renderCard();
+renderSummary();
+</script>
+</body>
+</html>
