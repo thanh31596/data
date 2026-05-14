@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder's Check — Can You Build From Scratch? | COIT20271</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Code+Pro:wght@400;600&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #FAFAF7;
+  --panel:       #FFFFFF;
+  --slate:       #1E1B4B;
+  --indigo:      #4338CA;
+  --indigo-l:    #6366F1;
+  --amber:       #F59E0B;
+  --amber-d:     #D97706;
+  --easy:        #16A34A;
+  --medium:      #D97706;
+  --hard:        #DC2626;
+  --text:        #1F2937;
+  --muted:       #6B7280;
+  --border:      #E5E7EB;
+  --code-bg:     #1E1E2E;
+  --code-text:   #CDD6F4;
+  --code-kw:     #CBA6F7;
+  --code-str:    #A6E3A1;
+  --code-cmt:    #6C7086;
+  --code-type:   #89DCEB;
+  --sidebar-w:   320px;
+  --radius:      10px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--slate);
+  position: fixed;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+#sidebar-header {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+#sidebar-header .logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+#sidebar-header .logo span { color: var(--amber); }
+#sidebar-header .subtitle {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+#progress-wrap {
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+#progress-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+}
+#progress-bar-bg {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+#progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--indigo-l), var(--amber));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+#problem-list {
+  flex: 1;
+  padding: 12px 0;
+}
+
+.problem-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+.problem-item:hover { background: rgba(255,255,255,0.05); }
+.problem-item.active {
+  background: rgba(245,158,11,0.1);
+  border-left-color: var(--amber);
+}
+
+.problem-status {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+}
+.problem-item.done .problem-status {
+  background: var(--easy);
+  border-color: var(--easy);
+  color: white;
+}
+.problem-item.missed .problem-status {
+  background: var(--hard);
+  border-color: var(--hard);
+  color: white;
+}
+
+.problem-text { flex: 1; }
+.problem-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 2px;
+}
+.problem-meta {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+}
+
+#sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.reset-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+.reset-btn:hover {
+  background: rgba(220,38,38,0.1);
+  border-color: rgba(220,38,38,0.3);
+  color: #FCA5A5;
+}
+
+/* ─── Main ─────────────────────────────────────────── */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: 100vh;
+}
+
+.problem-panel {
+  padding: 50px 60px 60px;
+  max-width: 980px;
+  margin: 0 auto;
+  display: none;
+}
+.problem-panel.active { display: block; }
+
+/* Welcome */
+#welcome-panel {
+  padding: 70px 60px;
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
+}
+#welcome-panel.hidden { display: none; }
+#welcome-panel .welcome-icon { font-size: 64px; margin-bottom: 16px; }
+#welcome-panel h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 44px;
+  color: var(--slate);
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+#welcome-panel .lede {
+  font-size: 17px;
+  color: var(--muted);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+.welcome-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin: 0 auto 36px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text);
+  max-width: 540px;
+}
+.welcome-card strong {
+  display: block;
+  color: var(--amber-d);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  font-weight: 800;
+}
+
+.welcome-cta {
+  display: inline-block;
+  background: var(--indigo);
+  color: white;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: none;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+}
+.welcome-cta:hover { background: var(--indigo-l); }
+
+/* ─── Problem Header ─────────────────────────────── */
+.problem-header {
+  margin-bottom: 24px;
+}
+.problem-number {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  color: var(--muted);
+}
+.problem-main-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 30px;
+  color: var(--slate);
+  line-height: 1.25;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+.problem-skill {
+  display: inline-block;
+  background: rgba(67,56,202,0.08);
+  color: var(--indigo);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 3px 11px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+/* ─── Problem Body ─────────────────────────────── */
+.problem-body {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 22px;
+}
+.problem-body p {
+  margin-bottom: 10px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.problem-body p:last-child { margin-bottom: 0; }
+
+code {
+  font-family: 'Source Code Pro', monospace;
+  background: rgba(67,56,202,0.08);
+  color: var(--indigo);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* ─── Answer Area ─────────────────────────────── */
+.answer-area {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  margin-bottom: 22px;
+}
+.answer-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--indigo);
+  margin-bottom: 14px;
+}
+
+.mc-options { list-style: none; }
+.mc-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--panel);
+}
+.mc-option:hover {
+  border-color: var(--indigo-l);
+  background: rgba(99,102,241,0.04);
+}
+.mc-option.selected {
+  border-color: var(--indigo);
+  background: rgba(99,102,241,0.08);
+}
+.mc-option.correct {
+  border-color: var(--easy);
+  background: rgba(22,163,74,0.08);
+}
+.mc-option.incorrect {
+  border-color: var(--hard);
+  background: rgba(220,38,38,0.06);
+}
+.mc-option input[type="radio"] {
+  margin-top: 4px;
+  accent-color: var(--indigo);
+  flex-shrink: 0;
+  cursor: pointer;
+  transform: scale(1.2);
+}
+.mc-content { flex: 1; font-size: 14.5px; line-height: 1.6; }
+.mc-letter {
+  font-weight: 800;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.mc-content code { font-size: 13px; }
+
+/* ─── Buttons ─────────────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 11px 22px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.btn-primary {
+  background: var(--indigo);
+  color: white;
+}
+.btn-primary:hover { background: var(--indigo-l); }
+.btn-secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+/* ─── Feedback ─────────────────────────────── */
+.feedback {
+  margin-top: 18px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: none;
+}
+.feedback.show { display: block; }
+.feedback.correct {
+  background: rgba(22,163,74,0.08);
+  border-left: 4px solid var(--easy);
+  color: #15803D;
+}
+.feedback.incorrect {
+  background: rgba(220,38,38,0.06);
+  border-left: 4px solid var(--hard);
+  color: #B91C1C;
+}
+.feedback strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+
+/* ─── Explanation ─────────────────────────────── */
+.explanation {
+  margin-top: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  display: none;
+}
+.explanation.show { display: block; }
+.explanation h3 {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--amber-d);
+  margin-bottom: 12px;
+}
+.explanation h3:not(:first-child) { margin-top: 18px; }
+.explanation p { margin-bottom: 10px; font-size: 14px; line-height: 1.65; }
+.explanation p:last-child { margin-bottom: 0; }
+.explanation .principle {
+  background: #FFF7ED;
+  border-left: 4px solid var(--amber);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 14px 0 4px;
+  font-size: 13.5px;
+}
+.explanation .principle strong {
+  display: block;
+  color: #9A3412;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+
+/* ─── Problem Nav ─────────────────────────────── */
+.problem-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-btn:hover:not(:disabled) {
+  color: var(--indigo);
+  border-color: var(--indigo);
+}
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ─── Completion ─────────────────────────────── */
+#complete-panel {
+  padding: 70px 60px;
+  max-width: 760px;
+  margin: 0 auto;
+  display: none;
+}
+#complete-panel.show { display: block; }
+#complete-panel .trophy { font-size: 70px; text-align: center; margin-bottom: 16px; }
+#complete-panel h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 40px;
+  color: var(--slate);
+  line-height: 1.1;
+  margin-bottom: 14px;
+  text-align: center;
+}
+#complete-panel .score-block {
+  text-align: center;
+  margin: 20px 0 32px;
+}
+#complete-panel .score-pill {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-l));
+  color: white;
+  padding: 8px 26px;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: 800;
+}
+#complete-panel .verdict {
+  margin-top: 12px;
+  font-size: 15px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.review-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  margin-bottom: 18px;
+}
+.review-section h3 {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--indigo);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+.review-list { list-style: none; }
+.review-list li {
+  padding: 8px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-bottom: 1px dashed var(--border);
+}
+.review-list li:last-child { border-bottom: none; }
+.review-list li::before { content: '→'; color: var(--amber); font-weight: 800; flex-shrink: 0; }
+.review-list li strong { font-weight: 800; color: var(--slate); }
+
+/* ─── Scrollbar ─────────────────────────────── */
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-track { background: transparent; }
+#sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ──────────────────────────────────────────────────────────── -->
+<!-- SIDEBAR                                                     -->
+<!-- ──────────────────────────────────────────────────────────── -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <div class="logo">🧭 Builder's<br><span>Check</span></div>
+    <div class="subtitle">COIT20271 · From-Scratch Test</div>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label">
+      <span>Answered</span>
+      <span id="progress-count">0 / 8</span>
+    </div>
+    <div id="progress-bar-bg">
+      <div id="progress-bar-fill"></div>
+    </div>
+  </div>
+
+  <div id="problem-list"></div>
+
+  <div id="sidebar-footer">
+    <button class="reset-btn" onclick="resetProgress()">↻  Reset Progress</button>
+  </div>
+</aside>
+
+<!-- ──────────────────────────────────────────────────────────── -->
+<!-- MAIN                                                        -->
+<!-- ──────────────────────────────────────────────────────────── -->
+<main id="main">
+
+  <!-- ─── Welcome ──────────────────────────────────── -->
+  <div id="welcome-panel">
+    <div class="welcome-icon">🧭</div>
+    <h1>Can You Build From Scratch?</h1>
+    <p class="lede">Eight scenarios that don't have a tutorial. Each one tests how you'd actually <em>think</em> about a real problem — planning, decomposing, debugging, deciding what to cut. Following step-by-step instructions all term doesn't train these skills. This quiz finds out which ones you've still got gaps in.</p>
+
+    <div class="welcome-card">
+      <strong>How to use this honestly</strong>
+      No tutorial would help you with these. Don't look anything up. Pick the answer you'd actually choose on a Monday morning with a blank Unity scene in front of you and no AI assistant. The point is to find your weak spots so you know what to practise — not to score 8/8.
+    </div>
+
+    <button class="welcome-cta" onclick="startQuiz()">Start the Check →</button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q1                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="1">
+    <div class="problem-header">
+      <span class="problem-number">Question 1 of 8</span>
+      <h2 class="problem-main-title">Your first hour on a new project</h2>
+      <span class="problem-skill">Skill: Planning</span>
+    </div>
+
+    <div class="problem-body">
+      <p>You've been assigned to build a simple top-down shooter as a 2-week solo project. You open Unity to a blank scene. <strong>What's your best first step?</strong></p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Pick the option you'd actually do</div>
+      <ul class="mc-options" data-correct="b">
+        <li class="mc-option" data-value="a"><input type="radio" name="q1" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>Search the Asset Store for a shooter template that matches the brief, then customise it to fit.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q1" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>Write down the smallest version that would still count as "a top-down shooter" — and build only that today.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q1" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>Set up the project's folder structure, import a character asset, configure the camera, then create a tilemap for the floor and walls before any coding begins.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q1" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span>Open last week's tutorial project and modify it into the new game.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(1)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-1"></div>
+
+      <div class="explanation" id="explanation-1">
+        <h3>The Reasoning</h3>
+        <p><strong>B is correct.</strong> The single biggest predictor of finishing a solo project is whether you defined "the smallest playable version" before opening Unity. A top-down shooter at its minimum is: a thing you control that moves, an enemy that exists, and a way to make the enemy go away. That's it. Build that today.</p>
+        <p>C is the trap most students fall into — it <em>feels</em> productive because you're configuring lots of things, but you've spent the day on infrastructure for a game that doesn't exist yet. By the time you start the gameplay code, you've burned 30% of your budget on a folder structure.</p>
+        <p>A delays the problem; you'll spend the next week fighting someone else's architecture. D guarantees your new game looks like your old one.</p>
+        <div class="principle"><strong>Principle</strong>Scope before structure. Always.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(0)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(2)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q2                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="2">
+    <div class="problem-header">
+      <span class="problem-number">Question 2 of 8</span>
+      <h2 class="problem-main-title">Breaking down a behaviour</h2>
+      <span class="problem-skill">Skill: Decomposition</span>
+    </div>
+
+    <div class="problem-body">
+      <p>You need an enemy that <strong>wanders</strong>, <strong>spots the player</strong> from a distance, then <strong>chases</strong> until in melee range. You've never built this exact thing before. Where do you start coding?</p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Where would you actually start?</div>
+      <ul class="mc-options" data-correct="d">
+        <li class="mc-option" data-value="a"><input type="radio" name="q2" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>Use a state machine pattern with three states from the start — you'll need it anyway.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q2" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>Find a free enemy AI script on the Asset Store and adapt it by reading through its existing methods and removing what doesn't apply to your game.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q2" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>Write the full Enemy class with all three behaviours, then test the whole thing once it compiles.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q2" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span>Build wander first. Get it working in the scene before adding anything else.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(2)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-2"></div>
+
+      <div class="explanation" id="explanation-2">
+        <h3>The Reasoning</h3>
+        <p><strong>D is correct.</strong> The three behaviours are independent. Build them one at a time, and you always have a working enemy. Build them all at once (C), and the first thing you discover is a bug — but it could be in any of the three systems, in their interactions, or in your assumptions about Unity. You can't isolate it.</p>
+        <p>A is the "sounds professional" trap. State machines are useful, but committing to one before you understand the problem locks in a structure that often doesn't fit. Build the behaviours first; if they end up looking like states, <em>then</em> refactor into a state machine.</p>
+        <p>B trades one unknown (your enemy code) for two (your enemy code + someone else's enemy code, which you also have to understand).</p>
+        <div class="principle"><strong>Principle</strong>One behaviour at a time, always with a visible working result before adding the next.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(1)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(3)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q3                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="3">
+    <div class="problem-header">
+      <span class="problem-number">Question 3 of 8</span>
+      <h2 class="problem-main-title">Reading an error</h2>
+      <span class="problem-skill">Skill: Diagnosis</span>
+    </div>
+
+    <div class="problem-body">
+      <p>The Console shows: <code>NullReferenceException</code> on the line <code>health.TakeDamage(10);</code>. The script compiled fine. <strong>What's the most likely cause?</strong></p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">First place to look</div>
+      <ul class="mc-options" data-correct="a">
+        <li class="mc-option" data-value="a"><input type="radio" name="q3" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>The <code>health</code> reference is null — most likely an Inspector field is unassigned, or a <code>GetComponent</code> call returned null.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q3" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>The <code>TakeDamage</code> method has an internal bug that throws when health drops below zero.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q3" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>A race condition where two scripts call <code>TakeDamage</code> on the same frame.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q3" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span>Unity's physics system raised the exception because the collision happened before <code>FixedUpdate</code> ran.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(3)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-3"></div>
+
+      <div class="explanation" id="explanation-3">
+        <h3>The Reasoning</h3>
+        <p><strong>A is correct.</strong> The error literally says "Null Reference" — something on the left of the dot is null. Either <code>health</code> itself, or whatever's behind it. The fix is to figure out which, not to invent new theories.</p>
+        <p>Beginners reach for sophisticated explanations (B, C, D) because nullref feels too simple. But 95% of the time it really is just "I forgot to drag this into the Inspector slot" or "GetComponent didn't find what I assumed was there." Always check the simple cause first.</p>
+        <div class="principle"><strong>Principle</strong>Read the error literally before inventing theories. The error usually means exactly what it says.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(2)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(4)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q4                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="4">
+    <div class="problem-header">
+      <span class="problem-number">Question 4 of 8</span>
+      <h2 class="problem-main-title">45 minutes on the same bug</h2>
+      <span class="problem-skill">Skill: When to step back</span>
+    </div>
+
+    <div class="problem-body">
+      <p>You've been trying to fix the same bug for 45 minutes. You've reread the code three times. You're tired and frustrated. <strong>What's the best next move?</strong></p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Pick what you'd actually do</div>
+      <ul class="mc-options" data-correct="c">
+        <li class="mc-option" data-value="a"><input type="radio" name="q4" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>Add Debug.Log statements throughout the function to trace which lines execute and what every variable contains at each step before drawing any conclusions about where the bug is.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q4" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>Push through — you're close, giving up now wastes your investment.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q4" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>Take a break, then explain the problem out loud step by step.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q4" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span>Rewrite the section from scratch without looking at the existing code.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(4)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-4"></div>
+
+      <div class="explanation" id="explanation-4">
+        <h3>The Reasoning</h3>
+        <p><strong>C is correct.</strong> Once you've reread code three times without finding the bug, more rereading won't help — you're seeing what you expect to see, not what's there. Two things break this:</p>
+        <p><strong>Distance.</strong> A 15-minute break genuinely changes how your brain processes the problem. People solve bugs walking to lunch surprisingly often.</p>
+        <p><strong>Articulation.</strong> Explaining the problem out loud — to a person, a rubber duck, or even a piece of paper — forces you to verbalise assumptions you've been holding silently. The bug is almost always in one of those silent assumptions.</p>
+        <p>A (more logging) is what you do when you have a fresh hypothesis to test, not when you're stuck. B (push through) is sunk-cost thinking — past time spent doesn't make the next hour more productive. D (rewrite) sometimes works but is overkill at 45 minutes.</p>
+        <div class="principle"><strong>Principle</strong>If you're stuck, the next debugging move isn't more code — it's more distance or more articulation.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(3)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(5)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q5                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="5">
+    <div class="problem-header">
+      <span class="problem-number">Question 5 of 8</span>
+      <h2 class="problem-main-title">Halfway through the lab</h2>
+      <span class="problem-skill">Skill: Scope management</span>
+    </div>
+
+    <div class="problem-body">
+      <p>You have a 4-hour lab session to prototype a feature. After 90 minutes, you realise your approach is more complex than expected — finishing means working through lunch and probably staying late. <strong>What do you do?</strong></p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Your move</div>
+      <ul class="mc-options" data-correct="c">
+        <li class="mc-option" data-value="a"><input type="radio" name="q5" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>Skip lunch and push through to finish what you started.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q5" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>Refactor your current approach into something cleaner before continuing — clean code is faster code, and you'll move quicker after the cleanup.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q5" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>Cut scope. Pick the simplest version of the feature that demonstrates the idea and ship that.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q5" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span>Switch to an asset-store solution to save time.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(5)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-5"></div>
+
+      <div class="explanation" id="explanation-5">
+        <h3>The Reasoning</h3>
+        <p><strong>C is correct.</strong> Once you discover your approach is more complex than expected, the budget you originally set is wrong — every estimate after this point is wrong by the same factor. The professional move is to reduce what you're delivering, not to extend the time you're spending. A shipped 60% feature beats an unshipped 100% one every time.</p>
+        <p>B is the "sophisticated-sounding wrong answer." Yes, clean code is sometimes faster — but mid-project, with a deadline, refactoring is premature optimisation. The right time to refactor is <em>after</em> the prototype works, not during.</p>
+        <p>A (push through) gets you a half-finished feature and a tired developer. D (asset store) trades a problem you partially understand for a system you don't understand at all.</p>
+        <div class="principle"><strong>Principle</strong>When the estimate is wrong, shrink the work, not the schedule.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(4)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(6)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q6                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="6">
+    <div class="problem-header">
+      <span class="problem-number">Question 6 of 8</span>
+      <h2 class="problem-main-title">A 200-line PlayerController</h2>
+      <span class="problem-skill">Skill: Architectural judgement</span>
+    </div>
+
+    <div class="problem-body">
+      <p>You've written a 200-line MonoBehaviour called <code>PlayerController</code> that handles movement, shooting, inventory, and health. You need to add abilities next. <strong>What signals you should split it up?</strong></p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Your read</div>
+      <ul class="mc-options" data-correct="a">
+        <li class="mc-option" data-value="a"><input type="radio" name="q6" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>The four mixed responsibilities — split now, not based on line count.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q6" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>Wait until line count crosses 300 lines — a common industry guideline.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q6" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>Keep everything in <code>PlayerController</code> until a concrete refactoring need arises. Premature splitting creates classes that don't match the problem's real shape, which is harder to fix later than monolithic code that grew naturally.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q6" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span>Add abilities first and see if <code>PlayerController</code> becomes hard to test. If it does, split based on what's awkward.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(6)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-6"></div>
+
+      <div class="explanation" id="explanation-6">
+        <h3>The Reasoning</h3>
+        <p><strong>A is correct.</strong> The signal is mixed responsibilities, not line count. Movement, shooting, inventory, and health are four different concerns — they change at different times, are tested differently, and are likely worked on by different people in real teams. A 50-line script with two unrelated responsibilities is already worse than a 400-line script doing one thing well.</p>
+        <p>B treats line count as the symptom, but a 300-line script doing one focused thing (like a complex pathfinding system) might be perfectly fine.</p>
+        <p>C is the "sounds-sophisticated" wrong answer. The "don't refactor too early" idea is real for code with one focused purpose. But here, you already <em>have</em> the four responsibilities staring at you — they're not hypothetical future ones. The argument for delaying doesn't apply.</p>
+        <p>D defers the split unnecessarily. By the time tests are awkward, you've written abilities <em>into</em> a tangled class and now have to unscramble even more code.</p>
+        <div class="principle"><strong>Principle</strong>Split by responsibility, not by line count. If you can name the responsibilities and they're different, that's the split.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(5)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(7)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q7                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="7">
+    <div class="problem-header">
+      <span class="problem-number">Question 7 of 8</span>
+      <h2 class="problem-main-title">"I could never build this"</h2>
+      <span class="problem-skill">Skill: Realistic mindset</span>
+    </div>
+
+    <div class="problem-body">
+      <p>A junior teammate looks at a finished, polished Unity game and says <em>"There's no way I could have built this."</em> <strong>What's the most accurate response?</strong></p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Pick what's actually true</div>
+      <ul class="mc-options" data-correct="d">
+        <li class="mc-option" data-value="a"><input type="radio" name="q7" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>They probably had a strong design vision before starting — that's the skill you need to develop.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q7" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>Mid-size games require teams of people — solo developers genuinely cannot reach this scope alone.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q7" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>Most of the complexity comes from asset packs and tutorials the developer had access to. You have the same resources and could replicate this through similar combinations over a few months of focused work.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q7" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span>The finished version hides dozens of broken iterations and abandoned features.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(7)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-7"></div>
+
+      <div class="explanation" id="explanation-7">
+        <h3>The Reasoning</h3>
+        <p><strong>D is correct.</strong> What students see is the polished final product. What they don't see: the version where the camera wouldn't follow correctly, the entire weapon system that got scrapped, the three days lost to a physics bug, the original "Roll-A-Ball-but-bigger" prototype the whole thing grew out of. Every shipped game has a graveyard of failed versions inside its git history.</p>
+        <p>A is partly true (planning helps) but overstates how much "vision" matters compared to iteration. Designers rarely know upfront what's fun.</p>
+        <p>B is just false — many polished games are made solo, given enough time and scope discipline.</p>
+        <p>C is the cynical wrong answer. Asset packs help with art, not architecture. The hard parts of any game are still the developer's — and they didn't come pre-built.</p>
+        <div class="principle"><strong>Principle</strong>You're comparing your messy draft to someone else's final version. Of course it feels impossible. Their messy draft looked exactly like yours.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(6)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(8)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Q8                                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="problem-panel" data-pid="8">
+    <div class="problem-header">
+      <span class="problem-number">Question 8 of 8</span>
+      <h2 class="problem-main-title">MissingReferenceException at runtime</h2>
+      <span class="problem-skill">Skill: Unity-specific diagnosis</span>
+    </div>
+
+    <div class="problem-body">
+      <p>The Console shows: <code>MissingReferenceException: The object of type 'GameObject' has been destroyed but you are still trying to access it.</code> Your script accesses an enemy reference. <strong>What's the most likely cause-and-fix?</strong></p>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Best diagnosis</div>
+      <ul class="mc-options" data-correct="b">
+        <li class="mc-option" data-value="a"><input type="radio" name="q8" value="a">
+          <div class="mc-content"><span class="mc-letter">A.</span>The reference is being set to null somewhere — check for <code>enemy = null</code> assignments and remove them.</div></li>
+        <li class="mc-option" data-value="b"><input type="radio" name="q8" value="b">
+          <div class="mc-content"><span class="mc-letter">B.</span>Your script holds a reference to an enemy that was <code>Destroy()</code>-ed elsewhere. Check <code>enemy != null</code> before using it.</div></li>
+        <li class="mc-option" data-value="c"><input type="radio" name="q8" value="c">
+          <div class="mc-content"><span class="mc-letter">C.</span>The error is non-fatal and can usually be ignored — Unity logs it as a warning even when the code works correctly.</div></li>
+        <li class="mc-option" data-value="d"><input type="radio" name="q8" value="d">
+          <div class="mc-content"><span class="mc-letter">D.</span><code>Update()</code> is running before <code>Awake()</code> finishes initialising the reference. Move the access into <code>Start()</code>.</div></li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(8)">Submit</button>
+      </div>
+
+      <div class="feedback" id="feedback-8"></div>
+
+      <div class="explanation" id="explanation-8">
+        <h3>The Reasoning</h3>
+        <p><strong>B is correct.</strong> The error message itself tells you exactly what happened: an object was <em>destroyed</em> and your script still has a reference to it. This is distinct from null — in Unity, destroyed GameObjects evaluate as null via Unity's overloaded comparison but the underlying C# reference isn't actually null. Always check <code>enemy != null</code> before using a reference that another part of the game might have destroyed.</p>
+        <p>A confuses null assignment with object destruction. They produce different errors (NullReferenceException vs MissingReferenceException). Reading errors carefully matters.</p>
+        <p>C is false and dangerous advice — MissingReferenceException means your code is doing the wrong thing and only sometimes happens to not break gameplay.</p>
+        <p>D describes a different problem (initialisation order) that produces a NullReferenceException, not MissingReferenceException.</p>
+        <div class="principle"><strong>Principle</strong>Read the exact error name. <code>NullReferenceException</code> ≠ <code>MissingReferenceException</code> ≠ <code>UnassignedReferenceException</code>. Each points to a different problem.</div>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(7)">← Back</button>
+      <button class="nav-btn" onclick="goToComplete()">Finish →</button>
+    </div>
+  </div>
+
+  <!-- ─── Completion ──────────────────────────────────── -->
+  <div id="complete-panel">
+    <div class="trophy">🧭</div>
+    <h1>Check Complete</h1>
+
+    <div class="score-block">
+      <div class="score-pill" id="final-score">Loading...</div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+
+    <div class="review-section">
+      <h3>What this tells you</h3>
+      <ul class="review-list" id="review-list"></ul>
+    </div>
+
+    <div class="review-section">
+      <h3>How to practise what you missed</h3>
+      <ul class="review-list">
+        <li><strong>Build something tiny weekly.</strong> A 30-minute prototype with no tutorial — even just "make a cube that follows the mouse." Reps matter more than scope.</li>
+        <li><strong>Read other people's code.</strong> Open up the Starter Assets or any Asset Store script and try to predict what each method does before reading it.</li>
+        <li><strong>Time-box debugging.</strong> When stuck for 20 minutes, force yourself to step back, articulate, or take a break — not power through.</li>
+        <li><strong>Modify before making.</strong> Take a previous tutorial project and change <em>one</em> thing. Then another. Building muscle for original work doesn't start from zero.</li>
+      </ul>
+    </div>
+
+    <div class="btn-row" style="justify-content:center;margin-top:24px;">
+      <button class="btn btn-secondary" onclick="resetProgress()">Try Again</button>
+      <button class="btn btn-primary" onclick="goToProblem(1)">Review Answers</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PROBLEM DATA
+// ═══════════════════════════════════════════════════════════════
+const problems = [
+  { id: 1, title: "Your first hour",      skill: "Planning",        correct: "b", lesson: "Define the smallest playable version before building anything." },
+  { id: 2, title: "Breaking down an enemy", skill: "Decomposition", correct: "d", lesson: "Build one behaviour at a time. Each working before the next." },
+  { id: 3, title: "Reading an error",     skill: "Diagnosis",       correct: "a", lesson: "Read errors literally — they usually mean exactly what they say." },
+  { id: 4, title: "45 min on a bug",      skill: "Step back",       correct: "c", lesson: "When stuck, the move is distance + articulation, not more code." },
+  { id: 5, title: "Halfway through lab",  skill: "Scope",           correct: "c", lesson: "When the estimate is wrong, shrink the work, not the schedule." },
+  { id: 6, title: "200-line script",      skill: "Architecture",    correct: "a", lesson: "Split by responsibility, not by line count." },
+  { id: 7, title: "Polished games",       skill: "Mindset",         correct: "d", lesson: "Finished games hide their failed drafts. You're comparing differently." },
+  { id: 8, title: "MissingReference",     skill: "Unity errors",    correct: "b", lesson: "Different exception types point to different problems. Read the name." }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'builders_check_v1';
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { answers: {} };  // { 1: 'b', 2: 'd', ... }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function isCorrect(id) {
+  const p = problems.find(x => x.id === id);
+  return state.answers[id] === p.correct;
+}
+
+function isAnswered(id) {
+  return state.answers[id] !== undefined;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════════════
+function renderSidebar() {
+  const list = document.getElementById('problem-list');
+  list.innerHTML = '';
+  problems.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'problem-item';
+    if (isAnswered(p.id)) {
+      item.classList.add(isCorrect(p.id) ? 'done' : 'missed');
+    }
+    const icon = !isAnswered(p.id) ? (i + 1) : (isCorrect(p.id) ? '✓' : '✗');
+    item.innerHTML = `
+      <div class="problem-status">${icon}</div>
+      <div class="problem-text">
+        <div class="problem-title">Q${p.id}. ${p.title}</div>
+        <div class="problem-meta">${p.skill}</div>
+      </div>
+    `;
+    item.onclick = () => goToProblem(p.id);
+    list.appendChild(item);
+  });
+
+  const answered = Object.keys(state.answers).length;
+  document.getElementById('progress-count').textContent = `${answered} / 8`;
+  document.getElementById('progress-bar-fill').style.width = `${(answered / 8) * 100}%`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function startQuiz() {
+  document.getElementById('welcome-panel').classList.add('hidden');
+  goToProblem(1);
+}
+
+function goToProblem(id) {
+  if (id === 0) {
+    document.querySelectorAll('.problem-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('complete-panel').classList.remove('show');
+    document.getElementById('welcome-panel').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('welcome-panel').classList.add('hidden');
+  document.getElementById('complete-panel').classList.remove('show');
+  document.querySelectorAll('.problem-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.querySelector(`.problem-panel[data-pid="${id}"]`);
+  if (panel) {
+    panel.classList.add('active');
+    if (isAnswered(id)) restoreAnsweredView(id);
+    document.querySelectorAll('.problem-item').forEach((el, i) => {
+      el.classList.toggle('active', (i + 1) === id);
+    });
+    window.scrollTo(0, 0);
+  }
+}
+
+function goToComplete() {
+  document.querySelectorAll('.problem-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('welcome-panel').classList.add('hidden');
+  document.getElementById('complete-panel').classList.add('show');
+
+  // Score
+  const correctCount = problems.filter(p => isCorrect(p.id)).length;
+  const answeredCount = Object.keys(state.answers).length;
+  document.getElementById('final-score').textContent = `Score: ${correctCount} / 8`;
+
+  // Verdict
+  let verdict;
+  if (answeredCount < 8) {
+    verdict = `You skipped ${8 - answeredCount} questions. The skipped ones are usually the most telling.`;
+  } else if (correctCount === 8) {
+    verdict = "Solid across the board. The next step is doing — pick a tiny original project and ship it.";
+  } else if (correctCount >= 6) {
+    verdict = "Strong foundation. Look at the two or three you missed — that's exactly where your gaps are.";
+  } else if (correctCount >= 4) {
+    verdict = "Mixed. The pattern of misses below tells you what to focus on.";
+  } else {
+    verdict = "You're still in tutorial-following mode. That's not a failure — it just means you haven't done the practice yet. The review below is your map.";
+  }
+  document.getElementById('verdict').textContent = verdict;
+
+  // Review list
+  const reviewList = document.getElementById('review-list');
+  reviewList.innerHTML = '';
+  const missed = problems.filter(p => isAnswered(p.id) && !isCorrect(p.id));
+  const skipped = problems.filter(p => !isAnswered(p.id));
+
+  if (missed.length === 0 && skipped.length === 0) {
+    const li = document.createElement('li');
+    li.innerHTML = `<strong>Nothing to review here.</strong> Every question you answered correctly. Now the harder work: do this without a checklist next time. Open Unity, set a 30-minute timer, and build something with no instructions.`;
+    reviewList.appendChild(li);
+  } else {
+    missed.forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>Q${p.id} — ${p.skill}:</strong> ${p.lesson}`;
+      reviewList.appendChild(li);
+    });
+    skipped.forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>Q${p.id} — ${p.skill} (skipped):</strong> ${p.lesson}`;
+      reviewList.appendChild(li);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPTION SELECTION
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('.mc-options').forEach(list => {
+  list.querySelectorAll('.mc-option').forEach(opt => {
+    opt.onclick = (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const radio = opt.querySelector('input[type="radio"]');
+      radio.checked = true;
+      list.querySelectorAll('.mc-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+    };
+    const radio = opt.querySelector('input[type="radio"]');
+    radio.onchange = () => {
+      list.querySelectorAll('.mc-option').forEach(o => o.classList.remove('selected'));
+      if (radio.checked) opt.classList.add('selected');
+    };
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUBMIT
+// ═══════════════════════════════════════════════════════════════
+function submitAnswer(id) {
+  const problem = problems.find(p => p.id === id);
+  const panel = document.querySelector(`.problem-panel[data-pid="${id}"]`);
+  const feedback = document.getElementById(`feedback-${id}`);
+  const explanation = document.getElementById(`explanation-${id}`);
+
+  const selected = panel.querySelector(`input[name="q${id}"]:checked`);
+  if (!selected) {
+    showFeedback(feedback, false, "Please select an option first.");
+    return;
+  }
+  const userAnswer = selected.value;
+  const correct = userAnswer === problem.correct;
+
+  // Lock state
+  state.answers[id] = userAnswer;
+  saveState();
+
+  // Visual: colour the options
+  const opts = panel.querySelectorAll('.mc-option');
+  opts.forEach(o => {
+    o.classList.remove('correct', 'incorrect');
+    const val = o.getAttribute('data-value');
+    if (val === problem.correct) o.classList.add('correct');
+    else if (val === userAnswer && !correct) o.classList.add('incorrect');
+  });
+
+  // Disable further changes
+  opts.forEach(o => {
+    o.style.pointerEvents = 'none';
+    const r = o.querySelector('input'); if (r) r.disabled = true;
+  });
+  panel.querySelector('.btn-primary').style.display = 'none';
+
+  showFeedback(feedback, correct,
+    correct ? "Your reasoning matched the answer. Explanation below."
+            : "Not the strongest pick. The reasoning below shows why."
+  );
+  explanation.classList.add('show');
+  renderSidebar();
+}
+
+function showFeedback(el, correct, msg) {
+  el.classList.remove('correct', 'incorrect');
+  el.classList.add(correct ? 'correct' : 'incorrect');
+  el.classList.add('show');
+  el.innerHTML = `<strong>${correct ? '✓ Correct' : '✗ Incorrect'}</strong>${msg}`;
+}
+
+function restoreAnsweredView(id) {
+  const problem = problems.find(p => p.id === id);
+  const panel = document.querySelector(`.problem-panel[data-pid="${id}"]`);
+  const userAnswer = state.answers[id];
+  const correct = userAnswer === problem.correct;
+
+  const opts = panel.querySelectorAll('.mc-option');
+  opts.forEach(o => {
+    const val = o.getAttribute('data-value');
+    o.classList.remove('correct', 'incorrect', 'selected');
+    if (val === problem.correct) o.classList.add('correct');
+    else if (val === userAnswer && !correct) o.classList.add('incorrect');
+    if (val === userAnswer) {
+      o.querySelector('input').checked = true;
+    }
+    o.style.pointerEvents = 'none';
+    const r = o.querySelector('input'); if (r) r.disabled = true;
+  });
+  panel.querySelector('.btn-primary').style.display = 'none';
+  showFeedback(
+    document.getElementById(`feedback-${id}`),
+    correct,
+    correct ? "Your reasoning matched the answer. Explanation below."
+            : "Not the strongest pick. The reasoning below shows why."
+  );
+  document.getElementById(`explanation-${id}`).classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+function resetProgress() {
+  if (!confirm("Reset all answers and start over?")) return;
+  state = { answers: {} };
+  saveState();
+  document.querySelectorAll('.mc-option').forEach(o => {
+    o.classList.remove('correct', 'incorrect', 'selected');
+    o.style.pointerEvents = '';
+    const r = o.querySelector('input'); if (r) { r.checked = false; r.disabled = false; }
+  });
+  document.querySelectorAll('.feedback').forEach(f => {
+    f.classList.remove('show', 'correct', 'incorrect');
+    f.innerHTML = '';
+  });
+  document.querySelectorAll('.explanation').forEach(e => e.classList.remove('show'));
+  document.querySelectorAll('.btn-primary').forEach(b => b.style.display = '');
+  renderSidebar();
+  goToProblem(0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+renderSidebar();
+
+const answered = Object.keys(state.answers).length;
+if (answered > 0 && answered < 8) {
+  const next = problems.find(p => !isAnswered(p.id));
+  if (next) {
+    document.getElementById('welcome-panel').classList.add('hidden');
+    goToProblem(next.id);
+  }
+} else if (answered === 8) {
+  document.getElementById('welcome-panel').classList.add('hidden');
+  goToComplete();
+}
+</script>
+</body>
+</html>
