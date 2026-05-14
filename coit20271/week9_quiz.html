@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeBench — Unity Game Programming Quiz | COIT20271</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Code+Pro:wght@400;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #F7FAFC;
+  --panel:       #FFFFFF;
+  --slate:       #0F172A;
+  --teal:        #0F766E;
+  --teal-light:  #14B8A6;
+  --gold:        #F4A261;
+  --easy:        #16A34A;
+  --medium:      #D97706;
+  --hard:        #DC2626;
+  --text:        #1E293B;
+  --muted:       #64748B;
+  --border:      #E2E8F0;
+  --code-bg:     #1E1E2E;
+  --code-text:   #CDD6F4;
+  --code-kw:     #CBA6F7;
+  --code-str:    #A6E3A1;
+  --code-cmt:    #6C7086;
+  --code-type:   #89DCEB;
+  --code-blank:  #F9E2AF;
+  --sidebar-w:   320px;
+  --radius:      10px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--slate);
+  position: fixed;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+#sidebar-header {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+#sidebar-header .logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+#sidebar-header .logo span { color: var(--teal-light); }
+#sidebar-header .subtitle {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+#progress-wrap {
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+#progress-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+}
+#progress-bar-bg {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+#progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal-light), var(--gold));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+#problem-list {
+  flex: 1;
+  padding: 12px 0;
+}
+
+.problem-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+
+.problem-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.problem-item.active {
+  background: rgba(20,184,166,0.12);
+  border-left-color: var(--teal-light);
+}
+
+.problem-status {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+}
+
+.problem-item.done .problem-status {
+  background: var(--easy);
+  border-color: var(--easy);
+  color: white;
+}
+
+.problem-item.attempted .problem-status {
+  border-color: var(--medium);
+  color: var(--medium);
+}
+
+.problem-text { flex: 1; }
+.problem-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 2px;
+}
+.problem-meta {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diff-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.diff-badge.easy   { background: rgba(22,163,74,0.2);  color: #4ADE80; }
+.diff-badge.medium { background: rgba(217,119,6,0.2);  color: #FBBF24; }
+.diff-badge.hard   { background: rgba(220,38,38,0.2);  color: #FCA5A5; }
+
+#sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.reset-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+.reset-btn:hover {
+  background: rgba(220,38,38,0.1);
+  border-color: rgba(220,38,38,0.3);
+  color: #FCA5A5;
+}
+
+/* ─── Main ─────────────────────────────────────────── */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: 100vh;
+}
+
+.problem-panel {
+  padding: 50px 60px 60px;
+  max-width: 1000px;
+  margin: 0 auto;
+  display: none;
+}
+.problem-panel.active { display: block; }
+
+/* Welcome screen */
+#welcome-panel {
+  padding: 80px 60px;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto;
+}
+#welcome-panel.hidden { display: none; }
+#welcome-panel .welcome-icon { font-size: 64px; margin-bottom: 16px; }
+#welcome-panel h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 44px;
+  color: var(--slate);
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+#welcome-panel .lede {
+  font-size: 17px;
+  color: var(--muted);
+  margin-bottom: 36px;
+  line-height: 1.6;
+}
+.welcome-cta {
+  display: inline-block;
+  background: var(--teal);
+  color: white;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: none;
+  font-family: inherit;
+}
+.welcome-cta:hover { background: var(--teal-light); }
+.welcome-stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 30px 0;
+}
+.stat-box {
+  text-align: left;
+}
+.stat-number {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--teal);
+}
+.stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ─── Problem Header ─────────────────────────────── */
+.problem-header {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.problem-number {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+}
+
+.problem-main-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  color: var(--slate);
+  line-height: 1.2;
+  flex: 1 1 100%;
+  margin-top: 4px;
+}
+
+.problem-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.problem-tag {
+  background: rgba(15,118,110,0.08);
+  border: 1px solid rgba(15,118,110,0.2);
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+/* ─── Problem Body ─────────────────────────────── */
+.problem-body {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+}
+
+.problem-body h3 {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--teal);
+  margin: 20px 0 8px;
+}
+.problem-body h3:first-child { margin-top: 0; }
+.problem-body p { margin-bottom: 12px; color: var(--text); }
+.problem-body p:last-child { margin-bottom: 0; }
+
+/* ─── Code Block ─────────────────────────────── */
+.code-block {
+  background: var(--code-bg);
+  border-radius: var(--radius);
+  margin: 14px 0;
+  overflow: hidden;
+}
+.code-header {
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.04);
+  font-family: 'Source Code Pro', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.code-scroll { overflow-x: auto; }
+pre {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 13.5px;
+  line-height: 1.7;
+  padding: 18px 22px;
+  color: var(--code-text);
+  white-space: pre;
+  tab-size: 4;
+}
+.kw { color: var(--code-kw); font-weight: 600; }
+.tp { color: var(--code-type); }
+.st { color: var(--code-str); }
+.cm { color: var(--code-cmt); font-style: italic; }
+.nm { color: #F2CDCD; }
+.nb { color: #89B4FA; }
+.blank {
+  background: rgba(249,226,175,0.15);
+  border-bottom: 2px dashed var(--code-blank);
+  color: var(--code-blank);
+  padding: 0 8px;
+}
+
+code {
+  font-family: 'Source Code Pro', monospace;
+  background: rgba(15,118,110,0.08);
+  color: var(--teal);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* ─── Answer Area ─────────────────────────────── */
+.answer-area {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+
+.answer-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--teal);
+  margin-bottom: 14px;
+}
+
+/* Multiple choice */
+.mc-options { list-style: none; }
+.mc-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--panel);
+}
+.mc-option:hover {
+  border-color: var(--teal-light);
+  background: rgba(20,184,166,0.03);
+}
+.mc-option.selected {
+  border-color: var(--teal);
+  background: rgba(20,184,166,0.08);
+}
+.mc-option.correct {
+  border-color: var(--easy);
+  background: rgba(22,163,74,0.08);
+}
+.mc-option.incorrect {
+  border-color: var(--hard);
+  background: rgba(220,38,38,0.06);
+}
+
+.mc-option input[type="radio"] {
+  margin-top: 4px;
+  accent-color: var(--teal);
+  flex-shrink: 0;
+  cursor: pointer;
+  transform: scale(1.2);
+}
+
+.mc-content { flex: 1; font-size: 14px; }
+.mc-content code {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 2px 8px;
+  font-size: 12.5px;
+}
+.mc-content pre {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* Text input */
+.text-answer {
+  width: 100%;
+  font-family: 'Source Code Pro', monospace;
+  font-size: 14px;
+  padding: 14px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code-text);
+  transition: border-color 0.15s;
+  resize: vertical;
+  min-height: 50px;
+}
+.text-answer:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+.text-answer.correct { border-color: var(--easy); }
+.text-answer.incorrect { border-color: var(--hard); }
+
+.input-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* ─── Button Row ─────────────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 11px 22px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+
+.btn-primary {
+  background: var(--teal);
+  color: white;
+}
+.btn-primary:hover { background: var(--teal-light); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--teal);
+  border: 1px solid rgba(15,118,110,0.3);
+}
+.btn-ghost:hover {
+  background: rgba(15,118,110,0.05);
+  border-color: var(--teal);
+}
+
+/* ─── Feedback ─────────────────────────────── */
+.feedback {
+  margin-top: 20px;
+  padding: 18px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: none;
+}
+.feedback.show { display: block; }
+.feedback.correct {
+  background: rgba(22,163,74,0.08);
+  border-left: 4px solid var(--easy);
+  color: #15803D;
+}
+.feedback.incorrect {
+  background: rgba(220,38,38,0.06);
+  border-left: 4px solid var(--hard);
+  color: #B91C1C;
+}
+.feedback strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+/* ─── Hint Box ─────────────────────────────── */
+.hint-box {
+  margin-top: 14px;
+  padding: 14px 18px;
+  background: #FFF7ED;
+  border-left: 4px solid var(--gold);
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: #7C2D12;
+  display: none;
+}
+.hint-box.show { display: block; }
+.hint-box strong {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 4px;
+  color: #9A3412;
+}
+
+/* ─── Explanation Box ─────────────────────────────── */
+.explanation {
+  margin-top: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  display: none;
+}
+.explanation.show { display: block; }
+.explanation h3 {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--teal);
+  margin-bottom: 10px;
+}
+.explanation p { margin-bottom: 10px; font-size: 14px; }
+.explanation p:last-child { margin-bottom: 0; }
+.explanation pre {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 10px 0;
+  font-size: 12.5px;
+}
+
+/* ─── Navigation buttons ─────────────────────────────── */
+.problem-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-btn:hover:not(:disabled) {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Completion Screen ─────────────────────────────── */
+#complete-panel {
+  padding: 80px 60px;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto;
+  display: none;
+}
+#complete-panel.show { display: block; }
+#complete-panel .trophy { font-size: 80px; margin-bottom: 16px; }
+#complete-panel h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 44px;
+  color: var(--slate);
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+#complete-panel .score-pill {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: white;
+  padding: 6px 22px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 16px 0 24px;
+}
+#complete-panel .next-steps {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-top: 24px;
+  text-align: left;
+}
+#complete-panel .next-steps h3 {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+#complete-panel .next-steps ul {
+  list-style: none;
+}
+#complete-panel .next-steps li {
+  padding: 6px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+#complete-panel .next-steps li::before {
+  content: '→';
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* ─── Scrollbar ─────────────────────────────── */
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-track { background: transparent; }
+#sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ──────────────────────────────────────────────────────────── -->
+<!-- SIDEBAR                                                     -->
+<!-- ──────────────────────────────────────────────────────────── -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <div class="logo">⚡ Code<span>Bench</span></div>
+    <div class="subtitle">COIT20271 · Self-Assessment</div>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label">
+      <span>Solved</span>
+      <span id="progress-count">0 / 5</span>
+    </div>
+    <div id="progress-bar-bg">
+      <div id="progress-bar-fill"></div>
+    </div>
+  </div>
+
+  <div id="problem-list">
+    <!-- populated by JS -->
+  </div>
+
+  <div id="sidebar-footer">
+    <button class="reset-btn" onclick="resetProgress()">↻  Reset Progress</button>
+  </div>
+</aside>
+
+<!-- ──────────────────────────────────────────────────────────── -->
+<!-- MAIN                                                        -->
+<!-- ──────────────────────────────────────────────────────────── -->
+<main id="main">
+
+  <!-- ─── Welcome Screen ──────────────────────────────────── -->
+  <div id="welcome-panel">
+    <div class="welcome-icon">⚡</div>
+    <h1>Welcome to CodeBench</h1>
+    <p class="lede">Five short coding problems to test what you really know about Unity game programming. The questions get progressively harder and target the specific concepts that separate beginners from intermediate game developers. Take your time — wrong answers come with explanations.</p>
+
+    <div class="welcome-stats">
+      <div class="stat-box">
+        <div class="stat-number">5</div>
+        <div class="stat-label">Problems</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">~15</div>
+        <div class="stat-label">Minutes</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">⭐→⭐⭐⭐⭐</div>
+        <div class="stat-label">Difficulty</div>
+      </div>
+    </div>
+
+    <button class="welcome-cta" onclick="startQuiz()">Start Quiz →</button>
+  </div>
+
+  <!-- ─── Problem 1 ──────────────────────────────────── -->
+  <div class="problem-panel" data-pid="1">
+    <div class="problem-header">
+      <span class="problem-number">Problem 1 of 5</span>
+      <span class="diff-badge easy">⭐ Easy</span>
+      <h2 class="problem-main-title">Frame-Rate Independent Movement</h2>
+      <div class="problem-tags">
+        <span class="problem-tag">Update()</span>
+        <span class="problem-tag">Time.deltaTime</span>
+        <span class="problem-tag">Movement</span>
+      </div>
+    </div>
+
+    <div class="problem-body">
+      <h3>Problem</h3>
+      <p>You're writing a script to move an enemy forward at exactly <strong>5 units per second</strong>, regardless of whether the game runs at 30 FPS or 144 FPS. Which expression correctly fills the blank?</p>
+
+      <div class="code-block">
+        <div class="code-header">EnemyMove.cs</div>
+        <div class="code-scroll">
+<pre><span class="kw">void</span> <span class="nm">Update</span>()
+{
+    <span class="cm">// Fill in the blank to move 5 units/sec forward</span>
+    transform.position += <span class="blank">________________</span>;
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Choose the correct expression</div>
+      <ul class="mc-options" data-type="mc" data-correct="b">
+        <li class="mc-option" data-value="a">
+          <input type="radio" name="q1" value="a">
+          <div class="mc-content"><code>Vector3.forward * 5</code></div>
+        </li>
+        <li class="mc-option" data-value="b">
+          <input type="radio" name="q1" value="b">
+          <div class="mc-content"><code>Vector3.forward * 5 * Time.deltaTime</code></div>
+        </li>
+        <li class="mc-option" data-value="c">
+          <input type="radio" name="q1" value="c">
+          <div class="mc-content"><code>Vector3.forward * Time.deltaTime</code></div>
+        </li>
+        <li class="mc-option" data-value="d">
+          <input type="radio" name="q1" value="d">
+          <div class="mc-content"><code>Vector3.forward * 5 / Time.deltaTime</code></div>
+        </li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(1)">Submit</button>
+        <button class="btn btn-ghost" onclick="showHint(1)">💡 Show Hint</button>
+      </div>
+
+      <div class="hint-box" id="hint-1">
+        <strong>Hint</strong>
+        Update() runs once per frame. <code>Time.deltaTime</code> is the number of seconds since the last frame — multiplying by it converts "per frame" into "per second."
+      </div>
+
+      <div class="feedback" id="feedback-1"></div>
+
+      <div class="explanation" id="explanation-1">
+        <h3>Why this matters</h3>
+        <p><strong>Without <code>Time.deltaTime</code></strong>, your enemy moves the same distance every frame. If the game runs at 60 FPS, that's 5 × 60 = 300 units per second. At 30 FPS, it's 150 units per second. The same script behaves completely differently depending on hardware.</p>
+        <p><strong>Multiplying by <code>Time.deltaTime</code></strong> means "5 units × (seconds per frame)" — which works out to exactly 5 units per second regardless of frame rate. This is the most common beginner bug in Unity.</p>
+        <p>The exception: when you're using <code>Rigidbody.MovePosition()</code> in <code>FixedUpdate()</code>, the physics engine already handles fixed timing — you don't need <code>Time.deltaTime</code> in that case.</p>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(0)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(2)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ─── Problem 2 ──────────────────────────────────── -->
+  <div class="problem-panel" data-pid="2">
+    <div class="problem-header">
+      <span class="problem-number">Problem 2 of 5</span>
+      <span class="diff-badge easy">⭐ Easy</span>
+      <h2 class="problem-main-title">MonoBehaviour Lifecycle Order</h2>
+      <div class="problem-tags">
+        <span class="problem-tag">Awake</span>
+        <span class="problem-tag">OnEnable</span>
+        <span class="problem-tag">Start</span>
+        <span class="problem-tag">Update</span>
+      </div>
+    </div>
+
+    <div class="problem-body">
+      <h3>Problem</h3>
+      <p>The script below is attached to an active GameObject and the script is enabled. What is the order of the first letters printed to the Console? Type your answer as <strong>four letters with no spaces or punctuation</strong> (e.g., <code>ASUE</code>).</p>
+
+      <div class="code-block">
+        <div class="code-header">LifecycleDemo.cs</div>
+        <div class="code-scroll">
+<pre><span class="kw">void</span> <span class="nm">Awake</span>()     { <span class="tp">Debug</span>.<span class="nm">Log</span>(<span class="st">"A"</span>); }
+<span class="kw">void</span> <span class="nm">Start</span>()     { <span class="tp">Debug</span>.<span class="nm">Log</span>(<span class="st">"S"</span>); }
+<span class="kw">void</span> <span class="nm">Update</span>()    { <span class="tp">Debug</span>.<span class="nm">Log</span>(<span class="st">"U"</span>); }
+<span class="kw">void</span> <span class="nm">OnEnable</span>()  { <span class="tp">Debug</span>.<span class="nm">Log</span>(<span class="st">"E"</span>); }</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Your Answer</div>
+      <input type="text" class="text-answer" id="answer-2" placeholder="e.g. AESU" maxlength="20" autocomplete="off" spellcheck="false">
+      <div class="input-hint">Just the four letters in order — case doesn't matter, spaces and commas are ignored.</div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(2)">Submit</button>
+        <button class="btn btn-ghost" onclick="showHint(2)">💡 Show Hint</button>
+      </div>
+
+      <div class="hint-box" id="hint-2">
+        <strong>Hint</strong>
+        Awake runs first when the script loads. OnEnable runs whenever the script becomes enabled (including right after Awake). Start runs once before the first frame. Update runs every frame after that.
+      </div>
+
+      <div class="feedback" id="feedback-2"></div>
+
+      <div class="explanation" id="explanation-2">
+        <h3>Why this matters</h3>
+        <p>The correct order is <strong>AESU</strong>: <code>Awake</code> → <code>OnEnable</code> → <code>Start</code> → <code>Update</code>.</p>
+        <p>Knowing this order tells you <em>where</em> to put your setup code:</p>
+        <ul style="padding-left:20px;margin:10px 0;">
+          <li style="margin:4px 0;"><strong>Awake</strong> — cache your own components (<code>GetComponent</code> on yourself). Safe even when the GameObject is inactive.</li>
+          <li style="margin:4px 0;"><strong>OnEnable</strong> — subscribe to events. Pairs with <code>OnDisable</code> for cleanup.</li>
+          <li style="margin:4px 0;"><strong>Start</strong> — access OTHER objects. All other Awakes have already run, so their references are ready.</li>
+          <li style="margin:4px 0;"><strong>Update</strong> — runs every frame thereafter.</li>
+        </ul>
+        <p>Putting <code>GameManager.Instance.AddScore(...)</code> in <code>Awake</code> can fail because the GameManager's Awake may not have run yet — but the same call in <code>Start</code> is safe.</p>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(1)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(3)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ─── Problem 3 ──────────────────────────────────── -->
+  <div class="problem-panel" data-pid="3">
+    <div class="problem-header">
+      <span class="problem-number">Problem 3 of 5</span>
+      <span class="diff-badge medium">⭐⭐ Medium</span>
+      <h2 class="problem-main-title">Complete the Coroutine</h2>
+      <div class="problem-tags">
+        <span class="problem-tag">Coroutine</span>
+        <span class="problem-tag">WaitForSeconds</span>
+        <span class="problem-tag">yield return</span>
+      </div>
+    </div>
+
+    <div class="problem-body">
+      <h3>Problem</h3>
+      <p>Complete the coroutine so the GameObject is destroyed exactly <strong>3 seconds</strong> after the coroutine starts. Type only the missing line of code (the one that goes where the dashes are).</p>
+
+      <div class="code-block">
+        <div class="code-header">DelayedDestroy.cs</div>
+        <div class="code-scroll">
+<pre><span class="tp">IEnumerator</span> <span class="nm">DestroyAfterDelay</span>()
+{
+    <span class="blank">________________________________</span>
+    <span class="tp">Destroy</span>(gameObject);
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Your Code</div>
+      <textarea class="text-answer" id="answer-3" placeholder="yield return new WaitForSeconds(3);" rows="2" autocomplete="off" spellcheck="false"></textarea>
+      <div class="input-hint">Whitespace and semicolons are flexible. Both <code>3</code>, <code>3f</code>, and <code>3.0f</code> are acceptable.</div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(3)">Submit</button>
+        <button class="btn btn-ghost" onclick="showHint(3)">💡 Show Hint</button>
+      </div>
+
+      <div class="hint-box" id="hint-3">
+        <strong>Hint</strong>
+        Coroutines pause at a <code>yield return</code> statement. Unity provides a special object that, when yielded, pauses the coroutine for a number of seconds. Its name describes exactly what it does.
+      </div>
+
+      <div class="feedback" id="feedback-3"></div>
+
+      <div class="explanation" id="explanation-3">
+        <h3>Why this matters</h3>
+        <p>The answer is <code>yield return new WaitForSeconds(3);</code></p>
+        <p>Coroutines are Unity's way of writing time-based logic without blocking the main thread or creating new threads. When the coroutine hits <code>yield return new WaitForSeconds(3)</code>, it:</p>
+        <ul style="padding-left:20px;margin:10px 0;">
+          <li style="margin:4px 0;">Pauses the coroutine right at that line</li>
+          <li style="margin:4px 0;">Lets <code>Update()</code> and every other script keep running normally</li>
+          <li style="margin:4px 0;">Resumes 3 in-game seconds later, on the next available frame</li>
+        </ul>
+        <p><strong>Important distinction:</strong> <code>WaitForSeconds</code> respects <code>Time.timeScale</code> — pausing the game with <code>Time.timeScale = 0</code> also pauses the coroutine. Use <code>WaitForSecondsRealtime</code> when you need real wall-clock time (e.g., timers in a pause menu).</p>
+        <p>To actually run the coroutine, you need <code>StartCoroutine(DestroyAfterDelay())</code> somewhere in your code — typically in <code>Start()</code> or in response to an event.</p>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(2)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(4)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ─── Problem 4 ──────────────────────────────────── -->
+  <div class="problem-panel" data-pid="4">
+    <div class="problem-header">
+      <span class="problem-number">Problem 4 of 5</span>
+      <span class="diff-badge hard">⭐⭐⭐ Hard</span>
+      <h2 class="problem-main-title">The Phantom Death Bug</h2>
+      <div class="problem-tags">
+        <span class="problem-tag">Destroy()</span>
+        <span class="problem-tag">Update()</span>
+        <span class="problem-tag">State flags</span>
+      </div>
+    </div>
+
+    <div class="problem-body">
+      <h3>Problem</h3>
+      <p>The enemy script below should run its death sequence <strong>once</strong> when health reaches zero. But your QA team reports that the death sound plays multiple times per kill and the score sometimes increments by 30 or 40 instead of 10. The script compiles without errors. <strong>Why?</strong></p>
+
+      <div class="code-block">
+        <div class="code-header">Enemy.cs</div>
+        <div class="code-scroll">
+<pre><span class="kw">public class</span> <span class="tp">Enemy</span> : <span class="tp">MonoBehaviour</span>
+{
+    <span class="kw">public float</span> health = <span class="nb">100</span>;
+    [<span class="tp">SerializeField</span>] <span class="kw">private</span> <span class="tp">AudioClip</span> deathSound;
+
+    <span class="kw">void</span> <span class="nm">Update</span>()
+    {
+        <span class="kw">if</span> (health &lt;= <span class="nb">0</span>)
+        {
+            <span class="tp">AudioSource</span>.<span class="nm">PlayClipAtPoint</span>(deathSound, transform.position);
+            <span class="tp">GameManager</span>.Instance.<span class="nm">AddScore</span>(<span class="nb">10</span>);
+            <span class="tp">Destroy</span>(gameObject);
+        }
+    }
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">What's the cause?</div>
+      <ul class="mc-options" data-type="mc" data-correct="b">
+        <li class="mc-option" data-value="a">
+          <input type="radio" name="q4" value="a">
+          <div class="mc-content"><strong>A.</strong> <code>Destroy(gameObject)</code> throws a silent MissingReferenceException because the GameObject is still being referenced by the script.</div>
+        </li>
+        <li class="mc-option" data-value="b">
+          <input type="radio" name="q4" value="b">
+          <div class="mc-content"><strong>B.</strong> <code>Destroy()</code> is deferred — it doesn't remove the GameObject immediately. Update() runs again on subsequent frames before destruction completes, executing the if-block multiple times.</div>
+        </li>
+        <li class="mc-option" data-value="c">
+          <input type="radio" name="q4" value="c">
+          <div class="mc-content"><strong>C.</strong> <code>AudioSource.PlayClipAtPoint</code> is asynchronous and creates a race condition with <code>Destroy()</code>.</div>
+        </li>
+        <li class="mc-option" data-value="d">
+          <input type="radio" name="q4" value="d">
+          <div class="mc-content"><strong>D.</strong> The <code>health</code> field is public, which lets other scripts decrement it multiple times in the same frame.</div>
+        </li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(4)">Submit</button>
+        <button class="btn btn-ghost" onclick="showHint(4)">💡 Show Hint</button>
+      </div>
+
+      <div class="hint-box" id="hint-4">
+        <strong>Hint</strong>
+        Read the Unity docs for <code>Destroy()</code>. The keyword you're looking for is "deferred" — when exactly does the object actually disappear?
+      </div>
+
+      <div class="feedback" id="feedback-4"></div>
+
+      <div class="explanation" id="explanation-4">
+        <h3>Why this matters</h3>
+        <p><code>Destroy(gameObject)</code> doesn't remove the GameObject immediately. Unity schedules it for the <strong>end of the current frame</strong> (after all <code>Update()</code> calls finish on every script). Until then, the GameObject is still alive — and so is its <code>Update()</code>.</p>
+        <p>If <code>health</code> is at 0 when the if-block runs, it's <em>still</em> 0 the next time <code>Update()</code> runs on the same frame's late updates, and on the start of the next frame before the actual removal. The whole block fires multiple times.</p>
+        <p><strong>The fix — a guard flag:</strong></p>
+        <div class="code-block">
+          <div class="code-header">Enemy.cs — fixed</div>
+          <div class="code-scroll">
+<pre><span class="kw">private bool</span> isDying = <span class="kw">false</span>;
+
+<span class="kw">void</span> <span class="nm">Update</span>()
+{
+    <span class="kw">if</span> (health &lt;= <span class="nb">0</span> &amp;&amp; !isDying)
+    {
+        isDying = <span class="kw">true</span>;
+        <span class="tp">AudioSource</span>.<span class="nm">PlayClipAtPoint</span>(deathSound, transform.position);
+        <span class="tp">GameManager</span>.Instance.<span class="nm">AddScore</span>(<span class="nb">10</span>);
+        <span class="tp">Destroy</span>(gameObject);
+    }
+}</pre>
+          </div>
+        </div>
+        <p>This same pattern (a <code>bool</code> guard) solves a huge class of "executed too many times" bugs — projectiles hitting multiple targets in one frame, triggers firing repeatedly, coroutines stacking on themselves. Recognising it is a hallmark of an intermediate game programmer.</p>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(3)">← Back</button>
+      <button class="nav-btn" onclick="goToProblem(5)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ─── Problem 5 ──────────────────────────────────── -->
+  <div class="problem-panel" data-pid="5">
+    <div class="problem-header">
+      <span class="problem-number">Problem 5 of 5</span>
+      <span class="diff-badge hard">⭐⭐⭐⭐ Hard</span>
+      <h2 class="problem-main-title">Enemy Vision Cone</h2>
+      <div class="problem-tags">
+        <span class="problem-tag">Vector3</span>
+        <span class="problem-tag">Distance</span>
+        <span class="problem-tag">Angle</span>
+        <span class="problem-tag">AI</span>
+      </div>
+    </div>
+
+    <div class="problem-body">
+      <h3>Problem</h3>
+      <p>You're writing the AI for a stealth game. A guard can see the player if <strong>both</strong>:</p>
+      <ul style="padding-left:20px;margin:8px 0;">
+        <li style="margin:3px 0;">The player is within <code>viewRange</code> units of the guard, <strong>AND</strong></li>
+        <li style="margin:3px 0;">The player is within <code>fieldOfView</code> degrees of the guard's <code>forward</code> direction (where a 90° FOV means 45° to each side).</li>
+      </ul>
+      <p>Which implementation is correct?</p>
+
+      <div class="code-block">
+        <div class="code-header">GuardAI.cs</div>
+        <div class="code-scroll">
+<pre><span class="kw">public bool</span> <span class="nm">CanSeePlayer</span>(<span class="tp">Transform</span> guard, <span class="tp">Vector3</span> playerPos,
+                         <span class="kw">float</span> viewRange, <span class="kw">float</span> fieldOfView)
+{
+    <span class="tp">Vector3</span> toPlayer = playerPos - guard.position;
+    <span class="cm">// Which return statement is correct?</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-area">
+      <div class="answer-label">Pick the correct implementation</div>
+      <ul class="mc-options" data-type="mc" data-correct="a">
+        <li class="mc-option" data-value="a">
+          <input type="radio" name="q5" value="a">
+          <div class="mc-content">
+            <strong>A.</strong>
+<pre><span class="kw">return</span> toPlayer.magnitude &lt;= viewRange &amp;&amp;
+       <span class="tp">Vector3</span>.<span class="nm">Angle</span>(guard.forward, toPlayer) &lt;= fieldOfView / <span class="nb">2</span>;</pre>
+          </div>
+        </li>
+        <li class="mc-option" data-value="b">
+          <input type="radio" name="q5" value="b">
+          <div class="mc-content">
+            <strong>B.</strong>
+<pre><span class="kw">return</span> <span class="tp">Vector3</span>.<span class="nm">Distance</span>(guard.position, playerPos) &lt;= viewRange ||
+       <span class="tp">Vector3</span>.<span class="nm">Angle</span>(guard.forward, toPlayer) &lt;= fieldOfView;</pre>
+          </div>
+        </li>
+        <li class="mc-option" data-value="c">
+          <input type="radio" name="q5" value="c">
+          <div class="mc-content">
+            <strong>C.</strong>
+<pre><span class="kw">return</span> toPlayer.magnitude &lt;= viewRange &amp;&amp;
+       <span class="tp">Vector3</span>.<span class="nm">Dot</span>(guard.forward, toPlayer) &gt; <span class="nb">0</span>;</pre>
+          </div>
+        </li>
+        <li class="mc-option" data-value="d">
+          <input type="radio" name="q5" value="d">
+          <div class="mc-content">
+            <strong>D.</strong>
+<pre><span class="kw">return</span> <span class="tp">Vector3</span>.<span class="nm">Distance</span>(guard.position, playerPos) &lt;= viewRange &amp;&amp;
+       guard.forward.x == toPlayer.x;</pre>
+          </div>
+        </li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitAnswer(5)">Submit</button>
+        <button class="btn btn-ghost" onclick="showHint(5)">💡 Show Hint</button>
+      </div>
+
+      <div class="hint-box" id="hint-5">
+        <strong>Hint</strong>
+        Both conditions must hold — that means you need AND, not OR. <code>Vector3.Angle()</code> returns the unsigned angle (0–180°). Think about: if my FOV is 90°, the player can be at most 45° to either side of forward. So the angle from forward must be at most...?
+      </div>
+
+      <div class="feedback" id="feedback-5"></div>
+
+      <div class="explanation" id="explanation-5">
+        <h3>Why this matters</h3>
+        <p><strong>The correct answer is A.</strong> Let's see why the others fail:</p>
+        <ul style="padding-left:20px;margin:10px 0;">
+          <li style="margin:6px 0;"><strong>B</strong> uses <code>||</code> (OR). The player would be "seen" if EITHER condition holds — so a player 1000 units away but directly in front would be "seen." The angle test also forgets to halve the FOV.</li>
+          <li style="margin:6px 0;"><strong>C</strong> uses <code>Dot &gt; 0</code> which only checks if the player is in front of the guard at all — even at 89.9° to the side. It ignores the FOV constraint entirely.</li>
+          <li style="margin:6px 0;"><strong>D</strong> compares an arbitrary X coordinate (<code>guard.forward.x == toPlayer.x</code>) — meaningless geometrically. Floating-point equality also rarely holds.</li>
+        </ul>
+        <p><strong>Why A works:</strong></p>
+        <ul style="padding-left:20px;margin:10px 0;">
+          <li style="margin:4px 0;"><code>magnitude</code> gives the length of <code>toPlayer</code> — which is the distance from guard to player.</li>
+          <li style="margin:4px 0;"><code>Vector3.Angle(a, b)</code> returns the unsigned angle (0–180°) between two vectors, regardless of direction.</li>
+          <li style="margin:4px 0;">Dividing the FOV by 2 is essential. A "90° vision cone" means 45° to the left AND 45° to the right of forward. The angle from forward to player must be ≤ half the FOV.</li>
+          <li style="margin:4px 0;"><code>&amp;&amp;</code> (AND) requires both conditions to be true — exactly the spec.</li>
+        </ul>
+        <p><strong>Real-world upgrade:</strong> A complete AI also raycasts from guard to player and rejects the sighting if a wall is in the way. The vision cone is the cheap broad-phase check; the raycast is the expensive narrow-phase check. Doing them in that order saves performance.</p>
+      </div>
+    </div>
+
+    <div class="problem-nav">
+      <button class="nav-btn" onclick="goToProblem(4)">← Back</button>
+      <button class="nav-btn" onclick="goToComplete()">Finish →</button>
+    </div>
+  </div>
+
+  <!-- ─── Completion Screen ──────────────────────────────────── -->
+  <div id="complete-panel">
+    <div class="trophy">🏆</div>
+    <h1>Bench Complete</h1>
+    <p class="lede">You've worked through the full set. Whatever your score, every problem here is the kind of thing you'll hit in real Unity projects — getting them wrong now means you get them right when they matter.</p>
+    <div class="score-pill" id="final-score">Loading...</div>
+
+    <div class="next-steps">
+      <h3>Where to go from here</h3>
+      <ul id="next-steps-list">
+        <!-- populated by JS based on which problems were missed -->
+      </ul>
+    </div>
+
+    <div class="btn-row" style="justify-content:center;margin-top:30px;">
+      <button class="btn btn-secondary" onclick="resetProgress()">Try Again</button>
+      <button class="btn btn-primary" onclick="goToProblem(1)">Review Problems</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PROBLEM DATA
+// ═══════════════════════════════════════════════════════════════
+const problems = [
+  {
+    id: 1,
+    title: "Frame-Rate Independent Movement",
+    difficulty: "easy",
+    diffLabel: "⭐ Easy",
+    type: "mc",
+    correct: "b",
+    topic: "Time.deltaTime — without it, movement speed depends on FPS."
+  },
+  {
+    id: 2,
+    title: "Lifecycle Order",
+    difficulty: "easy",
+    diffLabel: "⭐ Easy",
+    type: "text",
+    // Accept AESU in any case, with optional separators
+    validator: (input) => {
+      const cleaned = input.toUpperCase().replace(/[^A-Z]/g, '');
+      return cleaned === 'AESU';
+    },
+    topic: "MonoBehaviour lifecycle: Awake → OnEnable → Start → Update."
+  },
+  {
+    id: 3,
+    title: "Complete the Coroutine",
+    difficulty: "medium",
+    diffLabel: "⭐⭐ Medium",
+    type: "text",
+    // Accept variations like:
+    // yield return new WaitForSeconds(3)
+    // yield return new WaitForSeconds(3.0f);
+    // yield return new WaitForSeconds( 3f );
+    validator: (input) => {
+      const cleaned = input.replace(/\s+/g, ' ').trim();
+      const pattern = /^yield\s+return\s+new\s+WaitForSeconds\s*\(\s*3(\.0)?f?\s*\)\s*;?\s*$/i;
+      return pattern.test(cleaned);
+    },
+    topic: "Coroutines — yield return new WaitForSeconds(t) to pause."
+  },
+  {
+    id: 4,
+    title: "The Phantom Death Bug",
+    difficulty: "hard",
+    diffLabel: "⭐⭐⭐ Hard",
+    type: "mc",
+    correct: "b",
+    topic: "Destroy() is deferred — guard with a bool flag to prevent re-entry."
+  },
+  {
+    id: 5,
+    title: "Enemy Vision Cone",
+    difficulty: "hard",
+    diffLabel: "⭐⭐⭐⭐ Hard",
+    type: "mc",
+    correct: "a",
+    topic: "Vector math — magnitude for distance, Vector3.Angle for FOV (halved)."
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'codebench_progress_v1';
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { solved: {}, attempted: {} };
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR RENDERING
+// ═══════════════════════════════════════════════════════════════
+function renderSidebar() {
+  const list = document.getElementById('problem-list');
+  list.innerHTML = '';
+  problems.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'problem-item';
+    if (state.solved[p.id])  item.classList.add('done');
+    else if (state.attempted[p.id]) item.classList.add('attempted');
+
+    const statusIcon = state.solved[p.id] ? '✓' : (state.attempted[p.id] ? '!' : (i + 1));
+
+    item.innerHTML = `
+      <div class="problem-status">${statusIcon}</div>
+      <div class="problem-text">
+        <div class="problem-title">${p.title}</div>
+        <div class="problem-meta">
+          <span class="diff-badge ${p.difficulty}">${p.diffLabel}</span>
+        </div>
+      </div>
+    `;
+    item.onclick = () => goToProblem(p.id);
+    list.appendChild(item);
+  });
+
+  // Progress count
+  const solvedCount = Object.keys(state.solved).length;
+  document.getElementById('progress-count').textContent = `${solvedCount} / 5`;
+  document.getElementById('progress-bar-fill').style.width = `${(solvedCount / 5) * 100}%`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function startQuiz() {
+  document.getElementById('welcome-panel').classList.add('hidden');
+  goToProblem(1);
+}
+
+function goToProblem(id) {
+  // 0 means back to welcome
+  if (id === 0) {
+    document.querySelectorAll('.problem-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('complete-panel').classList.remove('show');
+    document.getElementById('welcome-panel').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('welcome-panel').classList.add('hidden');
+  document.getElementById('complete-panel').classList.remove('show');
+  document.querySelectorAll('.problem-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.querySelector(`.problem-panel[data-pid="${id}"]`);
+  if (panel) {
+    panel.classList.add('active');
+    // Restore state if already solved
+    if (state.solved[id]) restoreSolvedView(id);
+    // Update active sidebar
+    document.querySelectorAll('.problem-item').forEach((el, i) => {
+      el.classList.toggle('active', (i + 1) === id);
+    });
+    window.scrollTo(0, 0);
+  }
+}
+
+function goToComplete() {
+  document.querySelectorAll('.problem-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('welcome-panel').classList.add('hidden');
+  document.getElementById('complete-panel').classList.add('show');
+
+  const solved = Object.keys(state.solved).length;
+  document.getElementById('final-score').textContent = `Score: ${solved} / 5`;
+
+  // Generate per-problem next steps for what they missed
+  const list = document.getElementById('next-steps-list');
+  list.innerHTML = '';
+  const missed = problems.filter(p => !state.solved[p.id]);
+  if (missed.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = "Perfect score — you've got the fundamentals locked in. Move on to advanced topics: object pooling, scriptable objects, and async/await in Unity.";
+    list.appendChild(li);
+  } else {
+    missed.forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${p.title}:</strong> ${p.topic}`;
+      list.appendChild(li);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MULTIPLE CHOICE SELECTION
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('.mc-options').forEach(list => {
+  list.querySelectorAll('.mc-option').forEach(opt => {
+    opt.onclick = (e) => {
+      if (e.target.tagName === 'INPUT') return;  // let radio handle it
+      const radio = opt.querySelector('input[type="radio"]');
+      radio.checked = true;
+      list.querySelectorAll('.mc-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+    };
+    const radio = opt.querySelector('input[type="radio"]');
+    radio.onchange = () => {
+      list.querySelectorAll('.mc-option').forEach(o => o.classList.remove('selected'));
+      if (radio.checked) opt.classList.add('selected');
+    };
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUBMIT / VALIDATE
+// ═══════════════════════════════════════════════════════════════
+function submitAnswer(id) {
+  const problem = problems.find(p => p.id === id);
+  const panel = document.querySelector(`.problem-panel[data-pid="${id}"]`);
+  const feedback = document.getElementById(`feedback-${id}`);
+  const explanation = document.getElementById(`explanation-${id}`);
+
+  let isCorrect = false;
+  let userAnswer = '';
+
+  if (problem.type === 'mc') {
+    const selected = panel.querySelector(`input[name="q${id}"]:checked`);
+    if (!selected) {
+      showFeedback(feedback, false, "Please select an option first.");
+      return;
+    }
+    userAnswer = selected.value;
+    isCorrect = userAnswer === problem.correct;
+    // Color the options
+    const opts = panel.querySelectorAll('.mc-option');
+    opts.forEach(o => {
+      o.classList.remove('correct', 'incorrect');
+      const val = o.getAttribute('data-value');
+      if (val === problem.correct) o.classList.add('correct');
+      else if (val === userAnswer && !isCorrect) o.classList.add('incorrect');
+    });
+  }
+  else if (problem.type === 'text') {
+    const input = document.getElementById(`answer-${id}`);
+    userAnswer = input.value;
+    if (!userAnswer.trim()) {
+      showFeedback(feedback, false, "Please type an answer first.");
+      return;
+    }
+    isCorrect = problem.validator(userAnswer);
+    input.classList.remove('correct', 'incorrect');
+    input.classList.add(isCorrect ? 'correct' : 'incorrect');
+  }
+
+  // Record state
+  state.attempted[id] = true;
+  if (isCorrect) state.solved[id] = true;
+  saveState();
+
+  if (isCorrect) {
+    showFeedback(feedback, true, "Correct! Explanation expanded below.");
+    explanation.classList.add('show');
+  } else {
+    showFeedback(feedback, false, "Not quite right. Try again, or peek at the hint above. Revealing the explanation will end your attempt for this question.");
+    // Add reveal-explanation button if not present
+    addRevealButton(panel, id);
+  }
+
+  renderSidebar();
+}
+
+function showFeedback(el, correct, msg) {
+  el.classList.remove('correct', 'incorrect');
+  el.classList.add(correct ? 'correct' : 'incorrect');
+  el.classList.add('show');
+  el.innerHTML = `<strong>${correct ? '✓ Correct' : '✗ Incorrect'}</strong>${msg}`;
+}
+
+function addRevealButton(panel, id) {
+  // Only add once
+  if (panel.querySelector('.reveal-btn')) return;
+  const btnRow = panel.querySelector('.btn-row');
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-secondary reveal-btn';
+  btn.textContent = '👀 Reveal Explanation';
+  btn.onclick = () => {
+    document.getElementById(`explanation-${id}`).classList.add('show');
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+  };
+  btnRow.appendChild(btn);
+}
+
+function showHint(id) {
+  document.getElementById(`hint-${id}`).classList.add('show');
+}
+
+function restoreSolvedView(id) {
+  const problem = problems.find(p => p.id === id);
+  const panel = document.querySelector(`.problem-panel[data-pid="${id}"]`);
+  const feedback = document.getElementById(`feedback-${id}`);
+  const explanation = document.getElementById(`explanation-${id}`);
+
+  if (problem.type === 'mc') {
+    const opts = panel.querySelectorAll('.mc-option');
+    opts.forEach(o => {
+      const val = o.getAttribute('data-value');
+      if (val === problem.correct) {
+        o.classList.add('correct', 'selected');
+        o.querySelector('input').checked = true;
+      }
+    });
+  }
+  showFeedback(feedback, true, "You've already solved this one. Review below.");
+  explanation.classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+function resetProgress() {
+  if (!confirm("Reset all progress and start over?")) return;
+  state = { solved: {}, attempted: {} };
+  saveState();
+  // Clear visual state
+  document.querySelectorAll('.mc-option').forEach(o => {
+    o.classList.remove('correct', 'incorrect', 'selected');
+    const r = o.querySelector('input'); if (r) r.checked = false;
+  });
+  document.querySelectorAll('.text-answer').forEach(t => {
+    t.value = '';
+    t.classList.remove('correct', 'incorrect');
+  });
+  document.querySelectorAll('.feedback').forEach(f => {
+    f.classList.remove('show', 'correct', 'incorrect');
+    f.innerHTML = '';
+  });
+  document.querySelectorAll('.explanation').forEach(e => e.classList.remove('show'));
+  document.querySelectorAll('.hint-box').forEach(h => h.classList.remove('show'));
+  document.querySelectorAll('.reveal-btn').forEach(b => b.remove());
+  renderSidebar();
+  goToProblem(0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+renderSidebar();
+
+// If user has solved problems, jump to the first unsolved one
+const firstUnsolved = problems.find(p => !state.solved[p.id]);
+if (firstUnsolved && Object.keys(state.attempted).length > 0) {
+  document.getElementById('welcome-panel').classList.add('hidden');
+  goToProblem(firstUnsolved.id);
+} else if (Object.keys(state.solved).length === 5) {
+  // All solved on a fresh visit — show completion
+  document.getElementById('welcome-panel').classList.add('hidden');
+  goToComplete();
+}
+</script>
+</body>
+</html>
