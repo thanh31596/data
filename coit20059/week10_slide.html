@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 10 — MVC, FacesServlet, Navigation, Converters &amp; Security</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a; overflow: hidden; height: 100vh;
+    }
+
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 4px;
+      background: #c0392b; transition: width 0.3s ease; z-index: 100;
+    }
+
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 52px 90px 68px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+    }
+    .slide.active { display: flex; }
+
+    .slide-number {
+      position: absolute; top: 18px; right: 30px;
+      font-size: 0.8rem; color: #aaa; font-family: 'Courier New', monospace;
+    }
+
+    /* Title */
+    .slide.title-slide { justify-content: center; align-items: flex-start; border-left: 8px solid #c0392b; }
+    .slide.title-slide .week-label { font-size: 0.95rem; color: #c0392b; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px; }
+    .slide.title-slide h1 { font-size: 2.7rem; line-height: 1.2; margin-bottom: 20px; max-width: 740px; }
+    .slide.title-slide .subtitle { font-size: 1.12rem; color: #555; max-width: 620px; line-height: 1.6; }
+    .slide.title-slide .course-tag { margin-top: 40px; font-size: 0.85rem; color: #999; border-top: 1px solid #eee; padding-top: 16px; }
+
+    /* Section dividers */
+    .slide.section-divider { justify-content: center; align-items: flex-start; background: #1a1a1a; color: #fff; }
+    .slide.section-divider .section-num { font-size: 0.85rem; color: #c0392b; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 14px; font-weight: 600; }
+    .slide.section-divider h1 { font-size: 2.5rem; color: #fff; line-height: 1.25; max-width: 700px; border-bottom: 3px solid #c0392b; padding-bottom: 18px; margin-bottom: 20px; }
+    .slide.section-divider .section-desc { font-size: 1.05rem; color: #ccc; max-width: 620px; line-height: 1.7; }
+
+    h2 { font-size: 1.6rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e8e8e8; padding-bottom: 10px; }
+    h2 .slide-tag { font-size: 0.75rem; color: #c0392b; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+    h3 { font-size: 1.1rem; color: #333; margin: 16px 0 8px; font-weight: 700; }
+    p, li { font-size: 0.99rem; line-height: 1.75; margin-bottom: 8px; }
+    ul, ol { padding-left: 24px; }
+    li { margin-bottom: 5px; }
+
+    .definition { background: #f0f4ff; border-left: 4px solid #3b5998; padding: 14px 18px; margin: 12px 0; border-radius: 4px; }
+    .example { background: #f8f9fa; border-left: 4px solid #4a7c59; padding: 14px 18px; margin: 12px 0; border-radius: 4px; }
+    .key-point { background: #fff5f5; border-left: 4px solid #c0392b; padding: 14px 18px; margin: 12px 0; border-radius: 4px; }
+    .def-label, .example-label, .key-label { font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; }
+    .def-label { color: #3b5998; }
+    .example-label { color: #4a7c59; }
+    .key-label { color: #c0392b; }
+
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #ddd; padding: 9px 13px; text-align: left; }
+    th { background: #f5f5f5; font-weight: 700; }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 15px 18px; border-radius: 6px; font-size: 0.84rem; margin: 10px 0; overflow-x: auto; line-height: 1.6; font-family: 'Courier New', monospace; }
+    code { font-family: 'Courier New', monospace; font-size: 0.88em; }
+    .kw { color: #569cd6; } .attr { color: #9cdcfe; } .val { color: #ce9178; }
+    .cm { color: #6a9955; } .ann { color: #dcdcaa; } .typ { color: #4ec9b0; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 4px; }
+    .two-col-6-4 { display: grid; grid-template-columns: 6fr 4fr; gap: 24px; margin-top: 4px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 10px; }
+
+    /* MVC boxes */
+    .mvc-row { display: flex; align-items: stretch; gap: 0; margin: 20px 0; }
+    .mvc-box { flex: 1; padding: 18px 20px; border: 2px solid; border-radius: 0; }
+    .mvc-box:first-child { border-radius: 8px 0 0 8px; }
+    .mvc-box:last-child { border-radius: 0 8px 8px 0; }
+    .mvc-box .mvc-label { font-weight: 700; font-size: 1.05rem; margin-bottom: 6px; }
+    .mvc-box .mvc-sub { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .mvc-m { background: #f0f4ff; border-color: #3b5998; }
+    .mvc-m .mvc-label, .mvc-m .mvc-sub { color: #3b5998; }
+    .mvc-v { background: #f0fff4; border-color: #4a7c59; }
+    .mvc-v .mvc-label, .mvc-v .mvc-sub { color: #4a7c59; }
+    .mvc-c { background: #fff5f5; border-color: #c0392b; }
+    .mvc-c .mvc-label, .mvc-c .mvc-sub { color: #c0392b; }
+    .mvc-arrow { display: flex; align-items: center; padding: 0 6px; color: #999; font-size: 1.4rem; }
+
+    /* Phase strip */
+    .phase-strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
+    .phase-box { background: #f0f4ff; border: 1.5px solid #3b5998; border-radius: 5px; padding: 8px 12px; font-size: 0.83rem; text-align: center; min-width: 88px; }
+    .phase-box .ph-num { font-weight: 700; color: #c0392b; font-size: 0.78rem; margin-bottom: 2px; }
+    .phase-box.active-phase { background: #fff5f5; border-color: #c0392b; }
+    .phase-arrow { color: #bbb; font-size: 1.1rem; display: flex; align-items: center; }
+
+    /* Nav flow */
+    .nav-flow { display: flex; align-items: center; gap: 10px; margin: 14px 0; flex-wrap: wrap; }
+    .nf-box { background: #f8f9fa; border: 1.5px solid #ddd; border-radius: 6px; padding: 10px 14px; font-size: 0.88rem; text-align: center; }
+    .nf-box.highlight { background: #fff5f5; border-color: #c0392b; color: #c0392b; font-weight: 700; }
+    .nf-arrow { color: #bbb; font-size: 1.2rem; }
+
+    /* Security layers */
+    .sec-layer { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+    .sec-layer .sl-label { width: 130px; text-align: right; font-size: 0.88rem; font-weight: 700; color: #555; flex-shrink: 0; }
+    .sl-bar { flex: 1; padding: 10px 16px; border-radius: 5px; font-size: 0.9rem; }
+    .sl-1 { background: #fff5f5; border-left: 4px solid #c0392b; }
+    .sl-2 { background: #fff8e1; border-left: 4px solid #f59e0b; }
+    .sl-3 { background: #f0f4ff; border-left: 4px solid #3b5998; }
+    .sl-4 { background: #f0fff4; border-left: 4px solid #4a7c59; }
+
+    /* Quiz */
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 700; margin-bottom: 10px; font-size: 1.0rem; }
+    .quiz-option { display: block; width: 100%; text-align: left; padding: 10px 15px; margin: 5px 0; cursor: pointer; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 0.95rem; font-family: inherit; transition: border-color 0.15s; }
+    .quiz-option:hover:not(:disabled) { border-color: #c0392b; background: #fff5f5; }
+    .quiz-option.correct { border-color: #4a7c59; background: #f0fff4; color: #2d6a4f; font-weight: 600; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fff5f5; color: #c0392b; }
+    .quiz-option.dimmed { opacity: 0.4; }
+    .quiz-explanation { display: none; margin-top: 9px; padding: 11px 15px; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem; line-height: 1.6; color: #444; border-left: 3px solid #4a7c59; }
+    .quiz-explanation.visible { display: block; }
+
+    .obj-list { list-style: none; padding: 0; margin-top: 10px; }
+    .obj-list li { padding: 10px 0 10px 36px; border-bottom: 1px solid #f0f0f0; position: relative; font-size: 1.0rem; }
+    .obj-list li::before { content: attr(data-num); position: absolute; left: 0; top: 10px; width: 26px; height: 26px; background: #c0392b; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; font-family: 'Courier New', monospace; }
+
+    /* Converter/Validator pill grid */
+    .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .pill { border: 1.5px solid #c0392b; color: #c0392b; border-radius: 5px; padding: 5px 12px; font-size: 0.86rem; font-family: 'Courier New', monospace; background: #fff5f5; }
+    .pill.blue { border-color: #3b5998; color: #3b5998; background: #f0f4ff; }
+    .pill.green { border-color: #4a7c59; color: #4a7c59; background: #f0fff4; }
+
+    .nav-indicator { position: fixed; bottom: 22px; right: 32px; font-size: 0.82rem; color: #bbb; z-index: 100; font-family: 'Courier New', monospace; }
+    .nav-hint { position: fixed; bottom: 22px; left: 32px; font-size: 0.75rem; color: #ccc; z-index: 100; }
+
+    .toc-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255,255,255,0.97); z-index: 200; padding: 60px 90px; overflow-y: auto; }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; font-size: 1.8rem; margin-bottom: 24px; }
+    .toc-item { padding: 8px 0; cursor: pointer; color: #3b5998; font-size: 0.98rem; border-bottom: 1px solid #f0f0f0; }
+    .toc-item:hover { color: #c0392b; }
+    .toc-section { font-weight: 700; color: #1a1a1a; margin-top: 16px; }
+    .toc-close { position: absolute; top: 28px; right: 38px; font-size: 1.8rem; cursor: pointer; color: #999; background: none; border: none; font-family: inherit; }
+    .toc-close:hover { color: #1a1a1a; }
+  </style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ======================================================= SLIDE 1 -->
+<div class="slide title-slide active" id="slide-1">
+  <div class="slide-number">1 / 20</div>
+  <div class="week-label">COIT20259 — Week 10</div>
+  <h1>MVC, FacesServlet,<br>Navigation, Converters<br>&amp; Web Security</h1>
+  <div class="subtitle">
+    How Jakarta Faces controls the entire request lifecycle — and how to guard your application from unauthorised access.
+  </div>
+  <div class="course-tag">Enterprise Computing &nbsp;·&nbsp; Press → to begin &nbsp;·&nbsp; Press T for contents</div>
+</div>
+
+<!-- ======================================================= SLIDE 2 -->
+<div class="slide" id="slide-2">
+  <div class="slide-number">2 / 20</div>
+  <h2><span class="slide-tag">This Week</span>Learning Objectives</h2>
+  <p>By the end of this week you will be able to:</p>
+  <ul class="obj-list">
+    <li data-num="1"><strong>Explain</strong> the MVC design pattern for web applications</li>
+    <li data-num="2"><strong>Describe</strong> the FacesServlet controller and its role</li>
+    <li data-num="3"><strong>Interpret</strong> the various technologies of page navigation in JF</li>
+    <li data-num="4"><strong>Develop</strong> custom converters and validators</li>
+    <li data-num="5"><strong>Implement</strong> web security using HTTP filters</li>
+  </ul>
+  <div class="key-point" style="margin-top:18px;">
+    <div class="key-label">Building on Weeks 8 &amp; 9</div>
+    You can now build pages and forms. This week we go deeper — understanding exactly <em>how</em> JF orchestrates every request, how to enforce data rules in Java, and how to stop unauthorised users from reaching pages they shouldn't see.
+  </div>
+</div>
+
+<!-- ======================================================= SECTION 1 DIVIDER -->
+<div class="slide section-divider" id="slide-3">
+  <div class="slide-number" style="color:#666;">3 / 20</div>
+  <div class="section-num">Section 1</div>
+  <h1>The MVC Design Pattern</h1>
+  <div class="section-desc">
+    MVC is the architectural blueprint behind Jakarta Faces. Understanding it explains <em>why</em> the framework is designed the way it is — and why this separation of concerns makes applications far easier to maintain.
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 4 -->
+<div class="slide" id="slide-4">
+  <div class="slide-number">4 / 20</div>
+  <h2><span class="slide-tag">Section 1.1</span>What Problem Does MVC Solve?</h2>
+  <p>Early web applications mixed everything together — database calls, business rules, and HTML all in the same file. The result was code nobody could maintain.</p>
+  <div class="two-col">
+    <div>
+      <div class="key-point">
+        <div class="key-label">The "Spaghetti" Problem</div>
+        Imagine a recipe written as: "While cutting onions, also pre-heat the oven, and by the way here is how to plate the dish." Nobody can follow that — and if the oven changes, you have to rewrite the whole recipe.
+      </div>
+      <p>MVC fixes this by giving every concern its own place:</p>
+      <ul>
+        <li>Data lives in the <strong>Model</strong> — and nowhere else</li>
+        <li>Display lives in the <strong>View</strong> — and nowhere else</li>
+        <li>Logic lives in the <strong>Controller</strong> — and nowhere else</li>
+      </ul>
+    </div>
+    <div>
+      <div class="definition">
+        <div class="def-label">MVC stands for</div>
+        <strong>M</strong>odel — View — Controller<br><br>
+        A software design pattern that separates an application into three distinct responsibilities so each can be built, tested, and changed independently.
+      </div>
+      <div class="example">
+        <div class="example-label">Real-World Analogy</div>
+        A TV news broadcast:<br>
+        <strong>Model</strong> = the news research &amp; facts<br>
+        <strong>View</strong> = the teleprompter &amp; camera<br>
+        <strong>Controller</strong> = the director cueing each segment
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 5 -->
+<div class="slide" id="slide-5">
+  <div class="slide-number">5 / 20</div>
+  <h2><span class="slide-tag">Section 1.2</span>MVC Mapped to Jakarta Faces</h2>
+  <div class="mvc-row">
+    <div class="mvc-box mvc-m">
+      <div class="mvc-sub">Model</div>
+      <div class="mvc-label">Your Data &amp; Business Logic</div>
+      <ul style="font-size:0.88rem; padding-left:18px; margin-top:6px;">
+        <li>Java entity classes (e.g. <code>Product.java</code>)</li>
+        <li>EJB session beans</li>
+        <li>JPA — database access layer</li>
+      </ul>
+      <div style="margin-top:10px; font-size:0.85rem; color:#3b5998;"><strong>Knows nothing about the View</strong></div>
+    </div>
+    <div class="mvc-arrow">↔</div>
+    <div class="mvc-box mvc-c">
+      <div class="mvc-sub">Controller</div>
+      <div class="mvc-label">Request Orchestrator</div>
+      <ul style="font-size:0.88rem; padding-left:18px; margin-top:6px;">
+        <li><strong>FacesServlet</strong> — single entry point</li>
+        <li>Managed Beans — action methods</li>
+        <li>Manages the 6-phase lifecycle</li>
+      </ul>
+      <div style="margin-top:10px; font-size:0.85rem; color:#c0392b;"><strong>The "traffic controller"</strong></div>
+    </div>
+    <div class="mvc-arrow">↔</div>
+    <div class="mvc-box mvc-v">
+      <div class="mvc-sub">View</div>
+      <div class="mvc-label">What the User Sees</div>
+      <ul style="font-size:0.88rem; padding-left:18px; margin-top:6px;">
+        <li>Facelets pages (<code>.xhtml</code>)</li>
+        <li>JF components (<code>h:</code>, <code>f:</code>, <code>ui:</code>)</li>
+        <li>Facelets templates (shared layout)</li>
+      </ul>
+      <div style="margin-top:10px; font-size:0.85rem; color:#4a7c59;"><strong>Knows nothing about the Model</strong></div>
+    </div>
+  </div>
+  <div class="key-point" style="margin-top:8px;">
+    <div class="key-label">The Golden Rule of MVC</div>
+    The Model and View are <strong>never allowed to talk directly</strong>. All communication passes through the Controller. This is why your Facelets page never contains a SQL query, and your entity class never contains HTML.
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 6 -->
+<div class="slide" id="slide-6">
+  <div class="slide-number">6 / 20</div>
+  <h2><span class="slide-tag">Section 1.3</span>Why MVC Matters in Practice</h2>
+  <table>
+    <tr><th>Without MVC</th><th>With MVC (Jakarta Faces)</th></tr>
+    <tr>
+      <td>Changing the page design requires editing Java code</td>
+      <td>A designer edits only the <code>.xhtml</code> View — no Java needed</td>
+    </tr>
+    <tr>
+      <td>Adding a new field means touching HTML, Java, and SQL in one file</td>
+      <td>Add the field to the Model, expose it in the Bean, reference it in the View — cleanly separated</td>
+    </tr>
+    <tr>
+      <td>Unit testing the business logic requires a running browser</td>
+      <td>The Model and Managed Beans are plain Java — testable without a browser</td>
+    </tr>
+    <tr>
+      <td>Two developers editing the same file creates conflicts</td>
+      <td>Front-end and back-end developers work in separate files simultaneously</td>
+    </tr>
+    <tr>
+      <td>Moving from web to mobile requires rewriting everything</td>
+      <td>Replace just the View layer — the Model and Controller stay the same</td>
+    </tr>
+  </table>
+  <div class="example" style="margin-top:10px;">
+    <div class="example-label">Analogy</div>
+    A car has three separate systems: the engine (Model), the dashboard instruments (View), and the steering/pedals (Controller). You can redesign the dashboard without rebuilding the engine.
+  </div>
+</div>
+
+<!-- ======================================================= SECTION 2 DIVIDER -->
+<div class="slide section-divider" id="slide-7">
+  <div class="slide-number" style="color:#666;">7 / 20</div>
+  <div class="section-num">Section 2</div>
+  <h1>The FacesServlet Controller</h1>
+  <div class="section-desc">
+    FacesServlet is the heartbeat of every Jakarta Faces application. Every single user interaction passes through it. Understanding its 6-phase lifecycle explains every behaviour you will ever see in a JF app.
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 8 -->
+<div class="slide" id="slide-8">
+  <div class="slide-number">8 / 20</div>
+  <h2><span class="slide-tag">Section 2.1</span>FacesServlet — The Central Controller</h2>
+  <div class="two-col-6-4">
+    <div>
+      <div class="definition">
+        <div class="def-label">What FacesServlet is</div>
+        <code>jakarta.faces.webapp.FacesServlet</code> is a standard Java servlet registered in <code>web.xml</code>. It intercepts every <code>*.xhtml</code> HTTP request and takes full control of processing it.
+      </div>
+      <p>It acts as the single <strong>front controller</strong> — one entry point for all requests. Rather than having separate servlets for every page, you have one intelligent servlet that manages everything.</p>
+      <h3>What FacesServlet does for every request:</h3>
+      <ol>
+        <li>Receives the raw HTTP request from the browser</li>
+        <li>Creates a <strong>FacesContext</strong> — a central object holding everything about the current request</li>
+        <li>Runs the request through the 6-phase JSF lifecycle</li>
+        <li>Writes the HTML response back to the browser</li>
+        <li>Disposes the FacesContext when done</li>
+      </ol>
+    </div>
+    <div>
+      <div class="illustration" style="margin-top:6px;">
+        <svg viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg" style="max-height:270px; width:100%;">
+          <rect x="30" y="10" width="140" height="32" rx="5" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.5"/>
+          <text x="100" y="31" text-anchor="middle" font-size="11" fill="#3b5998" font-weight="bold">Browser Request</text>
+          <line x1="100" y1="42" x2="100" y2="62" stroke="#999" stroke-width="1.3" marker-end="url(#a1)"/>
+          <rect x="20" y="62" width="160" height="44" rx="6" fill="#fff5f5" stroke="#c0392b" stroke-width="2"/>
+          <text x="100" y="82" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="bold">FacesServlet</text>
+          <text x="100" y="98" text-anchor="middle" font-size="10" fill="#888">Front Controller</text>
+          <line x1="100" y1="106" x2="100" y2="126" stroke="#999" stroke-width="1.3" marker-end="url(#a1)"/>
+          <rect x="30" y="126" width="140" height="32" rx="5" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.5"/>
+          <text x="100" y="147" text-anchor="middle" font-size="11" fill="#3b5998" font-weight="bold">FacesContext</text>
+          <line x1="100" y1="158" x2="100" y2="178" stroke="#999" stroke-width="1.3" marker-end="url(#a1)"/>
+          <rect x="20" y="178" width="160" height="32" rx="5" fill="#f8f9fa" stroke="#555" stroke-width="1.3"/>
+          <text x="100" y="198" text-anchor="middle" font-size="11" fill="#333">6-Phase Lifecycle</text>
+          <line x1="100" y1="210" x2="100" y2="230" stroke="#999" stroke-width="1.3" marker-end="url(#a1)"/>
+          <rect x="30" y="230" width="140" height="32" rx="5" fill="#f0fff4" stroke="#4a7c59" stroke-width="1.5"/>
+          <text x="100" y="251" text-anchor="middle" font-size="11" fill="#4a7c59" font-weight="bold">HTML Response</text>
+          <defs><marker id="a1" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#999"/></marker></defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 9 -->
+<div class="slide" id="slide-9">
+  <div class="slide-number">9 / 20</div>
+  <h2><span class="slide-tag">Section 2.2</span>The 6-Phase Lifecycle — In Depth</h2>
+  <div class="phase-strip">
+    <div class="phase-box"><div class="ph-num">1</div>Restore View</div>
+    <div class="phase-arrow">→</div>
+    <div class="phase-box"><div class="ph-num">2</div>Apply Request Values</div>
+    <div class="phase-arrow">→</div>
+    <div class="phase-box"><div class="ph-num">3</div>Process Validations</div>
+    <div class="phase-arrow">→</div>
+    <div class="phase-box"><div class="ph-num">4</div>Update Model</div>
+    <div class="phase-arrow">→</div>
+    <div class="phase-box"><div class="ph-num">5</div>Invoke Application</div>
+    <div class="phase-arrow">→</div>
+    <div class="phase-box active-phase"><div class="ph-num">6</div>Render Response</div>
+  </div>
+  <table style="margin-top:8px; font-size:0.9rem;">
+    <tr><th>Phase</th><th>Plain English</th><th>Who does the work</th><th>Short-circuits if…</th></tr>
+    <tr><td><strong>1. Restore View</strong></td><td>Rebuild the page's component tree from state</td><td>FacesServlet</td><td>— (always runs)</td></tr>
+    <tr><td><strong>2. Apply Request Values</strong></td><td>Capture submitted form data from the HTTP request</td><td>Components store raw values</td><td>Immediate=true flag set</td></tr>
+    <tr><td><strong>3. Process Validations</strong></td><td>Run all validators and converters on the captured data</td><td>f: validators + converters</td><td>Any validation fails → jump to Phase 6</td></tr>
+    <tr><td><strong>4. Update Model</strong></td><td>Write validated data into the Managed Bean properties</td><td>EL bindings (<code>#{bean.x}</code>)</td><td>Only if Phase 3 passed</td></tr>
+    <tr><td><strong>5. Invoke Application</strong></td><td>Call your action method (e.g., <code>save()</code>)</td><td>Your Java method</td><td>Only if Phase 4 succeeded</td></tr>
+    <tr><td><strong>6. Render Response</strong></td><td>Generate and send the HTML page back to the browser</td><td>Facelets renderer</td><td>— (always runs)</td></tr>
+  </table>
+  <div class="key-point" style="margin-top:8px; padding:10px 16px;">
+    <div class="key-label">Critical insight</div>
+    Your <code>save()</code> method is called in Phase 5 — <strong>only if Phases 2, 3, and 4 all succeeded</strong>. This is why invalid form data can never reach your business logic.
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 10: QUIZ ============ -->
+<div class="slide" id="slide-10">
+  <div class="slide-number">10 / 20</div>
+  <h2><span class="slide-tag">Knowledge Check</span>Sections 1 &amp; 2 — MVC &amp; FacesServlet</h2>
+
+  <div class="quiz" id="q1">
+    <div class="quiz-question">Q1: A junior developer puts a database query directly inside a Facelets .xhtml page. Which MVC principle does this violate?</div>
+    <button class="quiz-option" onclick="qa(this,'q1',false)">A) The View does not have access to the internet, so database calls will fail</button>
+    <button class="quiz-option" onclick="qa(this,'q1',true)" data-correct="true">B) The View should only display data — database logic belongs in the Model or Controller layer</button>
+    <button class="quiz-option" onclick="qa(this,'q1',false)">C) Facelets pages cannot contain any Java code at all</button>
+    <div class="quiz-explanation">MVC's core rule is separation of concerns. The View (Facelets) should only display data it receives via EL expressions. Database logic belongs in the Model (JPA entities, EJBs). Mixing them creates unmaintainable "spaghetti" code.</div>
+  </div>
+
+  <div class="quiz" id="q2" style="margin-top:16px;">
+    <div class="quiz-question">Q2: A user submits a form. The FacesServlet processes Phase 3 and finds that a required field is empty. What happens to Phases 4 and 5?</div>
+    <button class="quiz-option" onclick="qa(this,'q2',false)">A) They run anyway — the action method decides what to do with the empty value</button>
+    <button class="quiz-option" onclick="qa(this,'q2',true)" data-correct="true">B) They are skipped — FacesServlet jumps directly from Phase 3 to Phase 6 (Render Response)</button>
+    <button class="quiz-option" onclick="qa(this,'q2',false)">C) FacesServlet throws an exception and the application crashes</button>
+    <div class="quiz-explanation">When Phase 3 (Process Validations) fails, FacesServlet short-circuits the lifecycle. It skips Update Model (Phase 4) and Invoke Application (Phase 5) entirely and goes straight to Render Response (Phase 6) to redisplay the form with error messages. Your business logic is never touched.</div>
+  </div>
+</div>
+
+<!-- ======================================================= SECTION 3 DIVIDER -->
+<div class="slide section-divider" id="slide-11">
+  <div class="slide-number" style="color:#666;">11 / 20</div>
+  <div class="section-num">Section 3</div>
+  <h1>Page Navigation Technologies</h1>
+  <div class="section-desc">
+    After an action completes, Jakarta Faces must decide which page to show next. There are several ways to control this — from fully automatic to precisely hand-crafted.
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 12 -->
+<div class="slide" id="slide-12">
+  <div class="slide-number">12 / 20</div>
+  <h2><span class="slide-tag">Section 3.1</span>Three Navigation Approaches</h2>
+  <table>
+    <tr><th>Approach</th><th>How it works</th><th>When to use it</th></tr>
+    <tr>
+      <td><strong>Implicit Navigation</strong></td>
+      <td>Return the filename of the target page (without <code>.xhtml</code>) from the action method. JF finds the file automatically.</td>
+      <td>Simple apps, most cases — no extra config needed</td>
+    </tr>
+    <tr>
+      <td><strong>Explicit Navigation (faces-config.xml)</strong></td>
+      <td>Define navigation rules in <code>faces-config.xml</code> — map outcomes like <code>"success"</code> and <code>"failure"</code> to specific pages.</td>
+      <td>Complex apps with many conditional routes, or when you want navigation logic separate from Java code</td>
+    </tr>
+    <tr>
+      <td><strong>h:link / h:button</strong></td>
+      <td>Non-submitting navigation. Renders as an HTML anchor tag. No form submission, no lifecycle phases.</td>
+      <td>Navigation-only links (menus, cancel buttons, breadcrumbs)</td>
+    </tr>
+  </table>
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <h3>Implicit — return a filename</h3>
+      <pre><code><span class="cm">// Returns to "dashboard.xhtml"</span>
+<span class="kw">public</span> String save() {
+    productService.persist(product);
+    <span class="kw">return</span> <span class="val">"dashboard"</span>;
+}
+
+<span class="cm">// Returns to "error.xhtml"</span>
+<span class="kw">public</span> String save() {
+    <span class="kw">return</span> <span class="val">"error"</span>;
+}</code></pre>
+    </div>
+    <div>
+      <h3>Explicit — faces-config.xml</h3>
+      <pre><code><span class="kw">&lt;navigation-rule&gt;</span>
+  <span class="kw">&lt;from-view-id&gt;</span>/login.xhtml<span class="kw">&lt;/from-view-id&gt;</span>
+  <span class="kw">&lt;navigation-case&gt;</span>
+    <span class="kw">&lt;from-outcome&gt;</span>success<span class="kw">&lt;/from-outcome&gt;</span>
+    <span class="kw">&lt;to-view-id&gt;</span>/home.xhtml<span class="kw">&lt;/to-view-id&gt;</span>
+  <span class="kw">&lt;/navigation-case&gt;</span>
+  <span class="kw">&lt;navigation-case&gt;</span>
+    <span class="kw">&lt;from-outcome&gt;</span>failure<span class="kw">&lt;/from-outcome&gt;</span>
+    <span class="kw">&lt;to-view-id&gt;</span>/login.xhtml<span class="kw">&lt;/to-view-id&gt;</span>
+  <span class="kw">&lt;/navigation-case&gt;</span>
+<span class="kw">&lt;/navigation-rule&gt;</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 13 -->
+<div class="slide" id="slide-13">
+  <div class="slide-number">13 / 20</div>
+  <h2><span class="slide-tag">Section 3.2</span>Forward vs Redirect — A Critical Distinction</h2>
+  <div class="two-col">
+    <div>
+      <h3>Server-Side Forward (default)</h3>
+      <div class="nav-flow" style="flex-direction:column; align-items:flex-start; gap:6px;">
+        <div class="nf-box">Browser requests <code>/addProduct.xhtml</code></div>
+        <div style="color:#bbb; padding-left:20px;">↓</div>
+        <div class="nf-box highlight">Action runs, forward to <code>/products.xhtml</code></div>
+        <div style="color:#bbb; padding-left:20px;">↓ (server-side only)</div>
+        <div class="nf-box">Browser displays products page…</div>
+        <div class="nf-box" style="border-color:#c0392b; background:#fff5f5;">…but URL bar still shows <code>/addProduct.xhtml</code> ⚠</div>
+      </div>
+      <p style="margin-top:8px; font-size:0.88rem;">If the user presses Refresh, the form is re-submitted. This can create duplicate records.</p>
+    </div>
+    <div>
+      <h3>Redirect (best practice for POST actions)</h3>
+      <div class="nav-flow" style="flex-direction:column; align-items:flex-start; gap:6px;">
+        <div class="nf-box">Browser requests <code>/addProduct.xhtml</code></div>
+        <div style="color:#bbb; padding-left:20px;">↓</div>
+        <div class="nf-box highlight">Action runs → sends HTTP 302 response</div>
+        <div style="color:#bbb; padding-left:20px;">↓</div>
+        <div class="nf-box">Browser makes a NEW request to <code>/products.xhtml</code></div>
+        <div class="nf-box" style="border-color:#4a7c59; background:#f0fff4;">URL bar correctly shows <code>/products.xhtml</code> ✓</div>
+      </div>
+      <pre style="margin-top:8px;"><code><span class="cm">// Add ?faces-redirect=true to trigger redirect</span>
+<span class="kw">return</span> <span class="val">"products?faces-redirect=true"</span>;</code></pre>
+    </div>
+  </div>
+  <div class="key-point" style="margin-top:8px;">
+    <div class="key-label">Post-Redirect-Get Pattern</div>
+    After any form submission that modifies data (save, delete, update), <strong>always</strong> append <code>?faces-redirect=true</code>. This prevents duplicate submissions when the user hits the browser's Back or Refresh button.
+  </div>
+</div>
+
+<!-- ======================================================= SECTION 4 DIVIDER -->
+<div class="slide section-divider" id="slide-14">
+  <div class="slide-number" style="color:#666;">14 / 20</div>
+  <div class="section-num">Section 4</div>
+  <h1>Converters &amp; Validators</h1>
+  <div class="section-desc">
+    Built-in converters and validators handle common cases. But every application has unique business rules — and Jakarta Faces lets you write your own in pure Java.
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 15 -->
+<div class="slide" id="slide-15">
+  <div class="slide-number">15 / 20</div>
+  <h2><span class="slide-tag">Section 4.1</span>Built-in vs Custom — When Do You Need Each?</h2>
+  <div class="two-col">
+    <div>
+      <h3>Built-in converters (<code>f:</code>)</h3>
+      <p>Handle common data type conversions automatically:</p>
+      <div class="pill-grid">
+        <span class="pill blue">f:convertNumber</span>
+        <span class="pill blue">f:convertDateTime</span>
+      </div>
+      <h3 style="margin-top:14px;">Built-in validators (<code>f:</code>)</h3>
+      <p>Enforce common range and length rules:</p>
+      <div class="pill-grid">
+        <span class="pill">f:validateLength</span>
+        <span class="pill">f:validateLongRange</span>
+        <span class="pill">f:validateDoubleRange</span>
+        <span class="pill">f:validateRequired</span>
+        <span class="pill">f:validateRegex</span>
+      </div>
+    </div>
+    <div>
+      <h3>When you need a custom solution</h3>
+      <ul>
+        <li><strong>Custom Converter:</strong> when the data type is unique — e.g., your application has a special "ProductCode" format (<code>PRD-####</code>)</li>
+        <li><strong>Custom Validator:</strong> when the rule cannot be expressed as a range — e.g., "the username must not already exist in the database"</li>
+      </ul>
+      <div class="example" style="margin-top:10px;">
+        <div class="example-label">Analogy</div>
+        Built-in validators are like standard plug sockets — they handle 90% of cases. A custom validator is an adaptor you build yourself for the special appliance nothing else fits.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 16 -->
+<div class="slide" id="slide-16">
+  <div class="slide-number">16 / 20</div>
+  <h2><span class="slide-tag">Section 4.2</span>Building a Custom Converter</h2>
+  <div class="definition">
+    <div class="def-label">What a Converter does</div>
+    A <strong>Converter</strong> translates a raw String (from the browser) into a Java object your code understands — and vice versa. You implement the <code>jakarta.faces.convert.Converter</code> interface.
+  </div>
+  <div class="two-col" style="margin-top:8px;">
+    <div>
+      <pre style="font-size:0.81rem;"><code><span class="ann">@FacesConverter</span>(<span class="val">"productCodeConverter"</span>)
+<span class="kw">public class</span> <span class="typ">ProductCodeConverter</span>
+         <span class="kw">implements</span> <span class="typ">Converter</span>&lt;String&gt; {
+
+  <span class="cm">/**
+   * Called during Phase 2-3:
+   * Browser sends "prd-0042" →
+   * we return clean "PRD-0042"
+   */</span>
+  <span class="ann">@Override</span>
+  <span class="kw">public</span> String getAsObject(
+        FacesContext ctx,
+        UIComponent comp,
+        String value) {
+
+    <span class="kw">if</span> (value == <span class="kw">null</span> || value.isEmpty())
+      <span class="kw">return</span> <span class="kw">null</span>;
+
+    <span class="cm">// Uppercase and validate format</span>
+    String upper = value.toUpperCase().trim();
+    <span class="kw">if</span> (!upper.matches(<span class="val">"PRD-\\d{4}"</span>)) {
+      <span class="kw">throw new</span> ConverterException(
+        <span class="kw">new</span> FacesMessage(
+          <span class="val">"Format must be PRD-####"</span>));
+    }
+    <span class="kw">return</span> upper;
+  }
+
+  <span class="cm">/**
+   * Called during Phase 6:
+   * Java → display string for browser
+   */</span>
+  <span class="ann">@Override</span>
+  <span class="kw">public</span> String getAsString(
+        FacesContext ctx,
+        UIComponent comp,
+        String value) {
+    <span class="kw">return</span> (value != <span class="kw">null</span>) ? value : <span class="val">""</span>;
+  }
+}</code></pre>
+    </div>
+    <div>
+      <h3>Use it in your Facelet</h3>
+      <pre style="font-size:0.83rem;"><code><span class="kw">&lt;h:inputText</span>
+  <span class="attr">value</span>=<span class="val">"#{bean.productCode}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;f:converter</span>
+    <span class="attr">converterId</span>=<span class="val">"productCodeConverter"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:inputText&gt;</span>
+<span class="kw">&lt;h:message</span> <span class="attr">for</span>=<span class="val">"code"</span><span class="kw">/&gt;</span></code></pre>
+      <div class="key-point" style="margin-top:12px;">
+        <div class="key-label">Two Methods — Two Directions</div>
+        <strong>getAsObject:</strong> String → Java (happens during form submission, Phase 2–3)<br><br>
+        <strong>getAsString:</strong> Java → String (happens when rendering the page, Phase 6)<br><br>
+        Both directions must be implemented even if one just returns the value unchanged.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 17 -->
+<div class="slide" id="slide-17">
+  <div class="slide-number">17 / 20</div>
+  <h2><span class="slide-tag">Section 4.3</span>Building a Custom Validator</h2>
+  <div class="two-col">
+    <div>
+      <div class="definition">
+        <div class="def-label">What a Validator does</div>
+        A <strong>Validator</strong> checks a converted value against a business rule. It runs in Phase 3. If the rule fails, it throws a <code>ValidatorException</code> with a user-friendly message. Your bean method is never called.
+      </div>
+      <pre style="font-size:0.82rem;"><code><span class="ann">@FacesValidator</span>(<span class="val">"uniqueUsernameValidator"</span>)
+<span class="kw">public class</span> <span class="typ">UniqueUsernameValidator</span>
+       <span class="kw">implements</span> <span class="typ">Validator</span>&lt;String&gt; {
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> validate(
+        FacesContext context,
+        UIComponent component,
+        String username) {
+
+    <span class="cm">// Simulate checking the database</span>
+    <span class="kw">if</span> (usernameAlreadyExists(username)) {
+      FacesMessage msg = <span class="kw">new</span> FacesMessage(
+        FacesMessage.SEVERITY_ERROR,
+        <span class="val">"Username already taken."</span>,
+        <span class="val">"Please choose another."</span>);
+      <span class="kw">throw new</span> ValidatorException(msg);
+    }
+  }
+
+  <span class="kw">private boolean</span> usernameAlreadyExists(
+        String u) {
+    <span class="cm">// Check against UserService / DB</span>
+    <span class="kw">return</span> List.of(<span class="val">"admin"</span>,<span class="val">"root"</span>)
+               .contains(u);
+  }
+}</code></pre>
+    </div>
+    <div>
+      <h3>Use it in your Facelet</h3>
+      <pre style="font-size:0.83rem;"><code><span class="kw">&lt;h:inputText</span> <span class="attr">id</span>=<span class="val">"uname"</span>
+  <span class="attr">value</span>=<span class="val">"#{regBean.username}"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;f:validator</span>
+    <span class="attr">validatorId</span>=<span class="val">"uniqueUsernameValidator"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:inputText&gt;</span>
+<span class="kw">&lt;h:message</span> <span class="attr">for</span>=<span class="val">"uname"</span>
+            <span class="attr">styleClass</span>=<span class="val">"error"</span><span class="kw">/&gt;</span></code></pre>
+
+      <table style="margin-top:14px; font-size:0.88rem;">
+        <tr><th>Converter vs Validator</th><th></th></tr>
+        <tr><td><strong>Converter</strong></td><td>Transforms the data type ("prd-0042" → "PRD-0042")</td></tr>
+        <tr><td><strong>Validator</strong></td><td>Checks a rule; does not change the value</td></tr>
+        <tr><td><strong>Order</strong></td><td>Conversion happens first, then validation</td></tr>
+        <tr><td><strong>Failure</strong></td><td>Both throw a <code>FacesMessage</code> to display to the user</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= SECTION 5 DIVIDER -->
+<div class="slide section-divider" id="slide-18">
+  <div class="slide-number" style="color:#666;">18 / 20</div>
+  <div class="section-num">Section 5</div>
+  <h1>Web Security Using HTTP Filters</h1>
+  <div class="section-desc">
+    Validation protects your data. Security protects your application. HTTP Filters are the Jakarta EE mechanism for intercepting every request and enforcing access rules before any page or servlet can run.
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 19 -->
+<div class="slide" id="slide-19">
+  <div class="slide-number">19 / 20</div>
+  <h2><span class="slide-tag">Section 5.1</span>HTTP Filters — The Security Gatekeeper</h2>
+  <div class="two-col-6-4">
+    <div>
+      <div class="definition">
+        <div class="def-label">What an HTTP Filter is</div>
+        A Jakarta EE <strong>Filter</strong> is a class annotated with <code>@WebFilter</code> that intercepts HTTP requests <em>before</em> they reach FacesServlet. It can inspect, modify, allow, or reject each request.
+      </div>
+      <p>Think of it as a <strong>security checkpoint at the airport</strong>. Before you can board (reach the page), you must pass through the gate (the filter). The filter can:</p>
+      <ul>
+        <li>Check whether the user is logged in (session check)</li>
+        <li>Redirect unauthenticated users to the login page</li>
+        <li>Log all incoming requests for auditing</li>
+        <li>Block access to admin pages for non-admin users</li>
+      </ul>
+      <div class="key-point" style="margin-top:10px;">
+        <div class="key-label">Why not put security logic in every Managed Bean?</div>
+        If you check login status in 20 different beans, you have to maintain the check in 20 places. A filter is one class that guards all pages automatically — or all pages matching a pattern like <code>/admin/*</code>.
+      </div>
+    </div>
+    <div>
+      <div class="sec-layer">
+        <div class="sl-label">Request arrives</div>
+        <div class="sl-bar sl-1">Browser: GET /admin/users.xhtml</div>
+      </div>
+      <div class="sec-layer">
+        <div class="sl-label">Filter runs</div>
+        <div class="sl-bar sl-2">AuthFilter: Is user logged in?</div>
+      </div>
+      <div class="sec-layer">
+        <div class="sl-label">If NO</div>
+        <div class="sl-bar sl-1">→ Redirect to login.xhtml</div>
+      </div>
+      <div class="sec-layer">
+        <div class="sl-label">If YES</div>
+        <div class="sl-bar sl-4">→ chain.doFilter() — allow request through</div>
+      </div>
+      <div class="sec-layer">
+        <div class="sl-label">FacesServlet</div>
+        <div class="sl-bar sl-3">Processes the request normally</div>
+      </div>
+      <div class="sec-layer">
+        <div class="sl-label">Page rendered</div>
+        <div class="sl-bar sl-4">Response returned to browser ✓</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= SLIDE 20: FINAL QUIZ -->
+<div class="slide" id="slide-20">
+  <div class="slide-number">20 / 20</div>
+  <h2><span class="slide-tag">Knowledge Check — Final</span>Sections 3, 4 &amp; 5</h2>
+
+  <div class="quiz" id="q3">
+    <div class="quiz-question">Q1: After a user successfully submits an "Add Order" form, your action method returns <code>"orders"</code> (without <code>?faces-redirect=true</code>). The user presses the browser's Refresh button. What is the risk?</div>
+    <button class="quiz-option" onclick="qa(this,'q3',false)">A) No risk — JF detects the refresh and ignores duplicate submissions</button>
+    <button class="quiz-option" onclick="qa(this,'q3',true)" data-correct="true">B) The form is re-submitted, potentially creating a duplicate order in the database</button>
+    <button class="quiz-option" onclick="qa(this,'q3',false)">C) The session expires and the user is logged out</button>
+    <div class="quiz-explanation">Without a redirect, the browser's current URL still points to the POST action. Pressing Refresh re-submits the same POST request, calling your action method again and potentially adding a duplicate record. Always use ?faces-redirect=true after any data-modifying action (the Post-Redirect-Get pattern).</div>
+  </div>
+
+  <div class="quiz" id="q4" style="margin-top:14px;">
+    <div class="quiz-question">Q2: You want to prevent any unauthenticated user from accessing any page under <code>/dashboard/</code>. Where is the most maintainable place to implement this check?</div>
+    <button class="quiz-option" onclick="qa(this,'q4',false)">A) Add a session check at the top of every Managed Bean action method under /dashboard/</button>
+    <button class="quiz-option" onclick="qa(this,'q4',false)">B) Add JavaScript to every page under /dashboard/ that checks a cookie</button>
+    <button class="quiz-option" onclick="qa(this,'q4',true)" data-correct="true">C) Create one HTTP Filter annotated with @WebFilter("/dashboard/*") that checks the session</button>
+    <div class="quiz-explanation">A single HTTP Filter with the URL pattern "/dashboard/*" intercepts all requests matching that path before they reach any FacesServlet or bean. If the session check fails, the filter redirects to the login page. One class, one responsibility — far more maintainable than repeating the check in every bean.</div>
+  </div>
+</div>
+
+<!-- ===== TOC ===== -->
+<div class="toc-overlay" id="tocOverlay">
+  <button class="toc-close" onclick="document.getElementById('tocOverlay').classList.remove('active')">✕</button>
+  <h2>Table of Contents</h2>
+  <div id="tocContent"></div>
+</div>
+
+<div class="nav-indicator" id="navIndicator">1 / 20</div>
+<div class="nav-hint">← → Navigate &nbsp;·&nbsp; T = Contents</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  const tocData = [
+    { label: 'Title Slide', slide: 1 },
+    { label: 'Learning Objectives', slide: 2 },
+    { label: 'Section 1 — The MVC Design Pattern', slide: 3, section: true },
+    { label: '1.1  What Problem Does MVC Solve?', slide: 4 },
+    { label: '1.2  MVC Mapped to Jakarta Faces', slide: 5 },
+    { label: '1.3  Why MVC Matters in Practice', slide: 6 },
+    { label: 'Section 2 — The FacesServlet Controller', slide: 7, section: true },
+    { label: '2.1  FacesServlet — The Central Controller', slide: 8 },
+    { label: '2.2  The 6-Phase Lifecycle — In Depth', slide: 9 },
+    { label: 'Knowledge Check — Sections 1 & 2', slide: 10 },
+    { label: 'Section 3 — Page Navigation Technologies', slide: 11, section: true },
+    { label: '3.1  Three Navigation Approaches', slide: 12 },
+    { label: '3.2  Forward vs Redirect', slide: 13 },
+    { label: 'Section 4 — Converters & Validators', slide: 14, section: true },
+    { label: '4.1  Built-in vs Custom', slide: 15 },
+    { label: '4.2  Building a Custom Converter', slide: 16 },
+    { label: '4.3  Building a Custom Validator', slide: 17 },
+    { label: 'Section 5 — Web Security with HTTP Filters', slide: 18, section: true },
+    { label: '5.1  HTTP Filters — The Security Gatekeeper', slide: 19 },
+    { label: 'Knowledge Check — Final', slide: 20 },
+  ];
+
+  function buildTOC() {
+    const toc = document.getElementById('tocContent');
+    tocData.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'toc-item' + (item.section ? ' toc-section' : '');
+      div.textContent = item.label;
+      div.onclick = () => { showSlide(item.slide - 1); document.getElementById('tocOverlay').classList.remove('active'); };
+      toc.appendChild(div);
+    });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('tocOverlay').classList.contains('active')) {
+      if (e.key === 'Escape') document.getElementById('tocOverlay').classList.remove('active');
+      return;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') showSlide(current + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') showSlide(current - 1);
+    else if (e.key === 't' || e.key === 'T') document.getElementById('tocOverlay').classList.toggle('active');
+  });
+
+  function qa(btn, qid, isCorrect) {
+    const quiz = document.getElementById(qid);
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+      o.disabled = true;
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+
+  showSlide(0);
+  buildTOC();
+</script>
+</body>
+</html>

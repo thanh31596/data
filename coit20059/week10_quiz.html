@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COIT20259 — Jakarta Faces Quiz: Weeks 8–10</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --red:#c0392b; --red-d:#a93226; --red-pale:#fff5f5;
+  --ink:#18181b; --ink2:#3f3f46; --muted:#71717a;
+  --border:#e4e4e7; --bg:#fafafa;
+  --w8:#2563eb; --w9:#7c3aed; --w10:#c0392b;
+  --green:#16a34a; --green-pale:#f0fdf4;
+  --amber:#d97706; --amber-pale:#fffbeb;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;}
+
+/* ── SCREEN MANAGER ── */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+
+/* ════════════════════ WELCOME SCREEN ════════════════════ */
+#welcome{background:var(--ink);color:#fff;align-items:center;justify-content:center;padding:40px 20px;position:relative;overflow:hidden;}
+#welcome::before{content:'';position:absolute;top:-120px;right:-100px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(192,57,43,.25) 0%,transparent 70%);pointer-events:none;}
+#welcome::after{content:'';position:absolute;bottom:-80px;left:-60px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.15) 0%,transparent 70%);pointer-events:none;}
+.wc-inner{max-width:680px;width:100%;text-align:center;position:relative;z-index:1;}
+.wc-badge{display:inline-block;background:rgba(192,57,43,.9);color:#fff;font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:22px;}
+.wc-inner h1{font-family:'DM Serif Display',serif;font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.15;margin-bottom:14px;color:#fff;}
+.wc-inner h1 em{color:var(--red);font-style:normal;}
+.wc-inner p{color:#a1a1aa;font-size:1rem;line-height:1.7;max-width:500px;margin:0 auto 36px;}
+.mode-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:32px;}
+.mode-card{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:18px 20px;cursor:pointer;transition:all .2s;text-align:left;}
+.mode-card:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.25);transform:translateY(-2px);}
+.mode-card .mc-label{font-weight:600;font-size:.95rem;margin-bottom:4px;color:#fff;}
+.mode-card .mc-count{font-size:.8rem;color:#71717a;font-family:'DM Mono',monospace;}
+.mc-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;}
+.mc-dot.all{background:var(--red);}
+.mc-dot.w8{background:var(--w8);}
+.mc-dot.w9{background:var(--w9);}
+.mc-dot.w10{background:var(--w10);}
+.wc-meta{font-size:.8rem;color:#52525b;display:flex;justify-content:center;gap:20px;flex-wrap:wrap;}
+.wc-meta span{display:flex;align-items:center;gap:5px;}
+
+/* ════════════════════ QUIZ SCREEN ════════════════════ */
+#quiz{background:var(--bg);}
+.quiz-topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50;}
+.qtb-brand{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--muted);white-space:nowrap;}
+.qtb-progress{flex:1;height:5px;background:#e4e4e7;border-radius:3px;overflow:hidden;}
+.qtb-bar{height:100%;background:var(--red);border-radius:3px;transition:width .4s ease;}
+.qtb-counter{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--muted);white-space:nowrap;}
+.qtb-score-live{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--green);white-space:nowrap;}
+
+.quiz-body{flex:1;display:flex;justify-content:center;align-items:flex-start;padding:32px 20px 60px;}
+.q-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:36px 40px;max-width:760px;width:100%;box-shadow:0 2px 16px rgba(0,0,0,.05);animation:slideIn .28s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+.q-meta{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.q-week-badge{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:12px;font-family:'DM Mono',monospace;}
+.wb-8{background:#eff6ff;color:var(--w8);}
+.wb-9{background:#f5f3ff;color:var(--w9);}
+.wb-10{background:var(--red-pale);color:var(--red);}
+.q-type-badge{font-size:.7rem;color:var(--muted);background:#f4f4f5;border-radius:12px;padding:3px 10px;font-family:'DM Mono',monospace;}
+.q-topic{font-size:.78rem;color:var(--muted);}
+
+.q-text{font-size:1.05rem;line-height:1.7;margin-bottom:20px;color:var(--ink);}
+.q-text strong{color:var(--red);}
+
+.q-code{background:#1e1e1e;border-radius:8px;padding:18px 20px;margin-bottom:20px;overflow-x:auto;}
+.q-code pre{font-family:'DM Mono',monospace;font-size:.82rem;line-height:1.7;color:#d4d4d4;white-space:pre;}
+.kw{color:#569cd6;} .attr{color:#9cdcfe;} .val{color:#ce9178;}
+.cm{color:#6a9955;} .ann{color:#dcdcaa;} .typ{color:#4ec9b0;} .num{color:#b5cea8;}
+.blank{background:rgba(192,57,43,.3);border-bottom:2px solid #c0392b;padding:0 8px;border-radius:2px;color:#fca5a5;}
+
+/* Options */
+.options{display:flex;flex-direction:column;gap:9px;margin-bottom:22px;}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s,background .15s;background:#fff;font-size:.95rem;line-height:1.5;text-align:left;width:100%;}
+.opt:hover:not(.disabled){border-color:#94a3b8;background:#f8fafc;}
+.opt.disabled{cursor:default;}
+.opt-key{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:600;min-width:22px;height:22px;border-radius:4px;background:#f4f4f5;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.opt-text{flex:1;font-size:.93rem;}
+.opt-text code{font-family:'DM Mono',monospace;font-size:.85em;background:#f4f4f5;padding:1px 5px;border-radius:3px;}
+.opt.selected{border-color:var(--red);background:var(--red-pale);}
+.opt.selected .opt-key{background:var(--red);color:#fff;}
+.opt.correct-ans{border-color:var(--green)!important;background:var(--green-pale)!important;}
+.opt.correct-ans .opt-key{background:var(--green)!important;color:#fff!important;}
+.opt.wrong-ans{border-color:var(--red)!important;background:var(--red-pale)!important;}
+
+/* Explanation */
+.explanation{background:#f8f9fa;border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:14px 18px;font-size:.9rem;line-height:1.65;color:#374151;display:none;}
+.explanation.visible{display:block;}
+.explanation strong{color:var(--green);}
+.explanation.wrong-expl{border-left-color:var(--red);}
+.explanation.wrong-expl strong{color:var(--red);}
+
+/* ORDER question */
+.order-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+.order-item{border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;background:#fff;transition:all .15s;display:flex;align-items:center;gap:10px;}
+.order-item:hover:not(.disabled-ord){border-color:#94a3b8;background:#f8fafc;}
+.order-item.disabled-ord{cursor:default;}
+.order-num{width:28px;height:28px;border-radius:6px;background:#f4f4f5;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:.85rem;font-weight:700;flex-shrink:0;transition:all .15s;}
+.order-item.placed .order-num{background:var(--red);border-color:var(--red);color:#fff;}
+.order-item.ord-correct .order-num{background:var(--green);border-color:var(--green);color:#fff;}
+.order-item.ord-wrong .order-num{background:var(--red);border-color:var(--red);color:#fff;}
+.order-label{font-size:.9rem;line-height:1.4;}
+.order-controls{display:flex;gap:10px;margin-bottom:14px;}
+.btn-reset{padding:8px 16px;background:#f4f4f5;border:1px solid var(--border);border-radius:6px;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-reset:hover{background:#e4e4e7;}
+.btn-check-order{padding:8px 20px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-check-order:hover{background:var(--red-d);}
+.btn-check-order:disabled{background:#d1d5db;cursor:default;}
+
+/* Actions */
+.q-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;}
+.btn-next{padding:10px 26px;background:var(--red);color:#fff;border:none;border-radius:7px;font-size:.92rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;}
+.btn-next:hover{background:var(--red-d);}
+.btn-next:disabled{background:#d1d5db;cursor:default;color:#9ca3af;}
+.btn-skip{padding:10px 20px;background:#fff;color:var(--muted);border:1.5px solid var(--border);border-radius:7px;font-size:.92rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-skip:hover{color:var(--ink);border-color:#94a3b8;}
+
+/* ════════════════════ RESULTS SCREEN ════════════════════ */
+#results{background:var(--bg);align-items:center;padding:48px 20px 80px;}
+.res-inner{max-width:720px;width:100%;}
+.res-hero{text-align:center;margin-bottom:44px;}
+.res-hero .score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;flex-direction:column;border:5px solid var(--red);}
+.score-ring.excellent{border-color:var(--green);}
+.score-ring.good{border-color:var(--amber);}
+.score-ring .sc-num{font-family:'DM Serif Display',serif;font-size:2.2rem;line-height:1;color:var(--ink);}
+.score-ring .sc-denom{font-size:.78rem;color:var(--muted);font-family:'DM Mono',monospace;}
+.res-hero h2{font-family:'DM Serif Display',serif;font-size:1.9rem;margin-bottom:8px;}
+.res-hero p{color:var(--muted);font-size:.95rem;}
+
+.res-weeks{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px;}
+.rw-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px 20px;text-align:center;}
+.rw-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;}
+.rw-label.l8{color:var(--w8);} .rw-label.l9{color:var(--w9);} .rw-label.l10{color:var(--red);}
+.rw-bar-wrap{height:6px;background:#f4f4f5;border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.rw-bar{height:100%;border-radius:3px;transition:width 1s ease;}
+.rw-bar.b8{background:var(--w8);} .rw-bar.b9{background:var(--w9);} .rw-bar.b10{background:var(--red);}
+.rw-score{font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:500;}
+
+/* Review list */
+.res-section-title{font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;font-family:'DM Mono',monospace;}
+.review-list{display:flex;flex-direction:column;gap:8px;margin-bottom:28px;}
+.rv-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:#fff;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .12s;}
+.rv-item:hover{background:#f9fafb;}
+.rv-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+.rv-q{font-size:.88rem;flex:1;line-height:1.4;color:var(--ink2);}
+.rv-w{font-size:.72rem;font-family:'DM Mono',monospace;color:var(--muted);flex-shrink:0;margin-top:2px;}
+.rv-item.rv-skipped .rv-icon::after{content:'—';}
+
+.res-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn-retry{padding:12px 28px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-retry:hover{background:var(--red-d);}
+.btn-home{padding:12px 28px;background:#fff;color:var(--ink);border:1.5px solid var(--border);border-radius:8px;font-size:.95rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-home:hover{border-color:#94a3b8;}
+
+/* MODAL review */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:14px;max-width:660px;width:100%;max-height:85vh;overflow-y:auto;padding:32px 36px;position:relative;}
+.modal-close{position:absolute;top:16px;right:20px;font-size:1.4rem;cursor:pointer;color:var(--muted);background:none;border:none;line-height:1;}
+.modal-close:hover{color:var(--ink);}
+.modal h3{font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:16px;padding-right:30px;}
+.modal .expl-box{background:var(--green-pale);border-left:3px solid var(--green);padding:12px 16px;border-radius:0 6px 6px 0;font-size:.9rem;line-height:1.6;margin-top:12px;}
+.modal .expl-box.wrong{background:var(--red-pale);border-left-color:var(--red);}
+.modal .correct-answer{font-size:.88rem;color:var(--green);font-weight:600;margin-top:10px;}
+
+@media(max-width:600px){
+  .q-card{padding:24px 20px;}
+  .order-grid{grid-template-columns:1fr;}
+  .mode-grid{grid-template-columns:1fr;}
+  .res-weeks{grid-template-columns:1fr;}
+  .quiz-topbar{padding:0 16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ WELCOME ═══════════════════ -->
+<div class="screen active" id="welcome">
+  <div class="wc-inner">
+    <div class="wc-badge">COIT20259 — Enterprise Computing</div>
+    <h1>Jakarta Faces<br><em>Knowledge Quiz</em></h1>
+    <p>Test your understanding of Weeks 8–10: presentations layers, Facelets PDL, JF components, MVC, navigation, converters, validators, and HTTP security filters.</p>
+    <div class="mode-grid">
+      <div class="mode-card" onclick="startQuiz('all')">
+        <div class="mc-label"><span class="mc-dot all"></span>Full Quiz — All Weeks</div>
+        <div class="mc-count">30 questions &nbsp;·&nbsp; ~25 min</div>
+      </div>
+      <div class="mode-card" onclick="startQuiz(8)">
+        <div class="mc-label"><span class="mc-dot w8"></span>Week 8 Only</div>
+        <div class="mc-count">10 questions &nbsp;·&nbsp; ~8 min</div>
+      </div>
+      <div class="mode-card" onclick="startQuiz(9)">
+        <div class="mc-label"><span class="mc-dot w9"></span>Week 9 Only</div>
+        <div class="mc-count">10 questions &nbsp;·&nbsp; ~8 min</div>
+      </div>
+      <div class="mode-card" onclick="startQuiz(10)">
+        <div class="mc-label"><span class="mc-dot w10"></span>Week 10 Only</div>
+        <div class="mc-count">10 questions &nbsp;·&nbsp; ~8 min</div>
+      </div>
+    </div>
+    <div class="wc-meta">
+      <span>📝 Multiple choice</span>
+      <span>🔧 Code completion</span>
+      <span>🐛 Spot the bug</span>
+      <span>🔀 Ordering</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ QUIZ ═══════════════════ -->
+<div class="screen" id="quiz">
+  <div class="quiz-topbar">
+    <div class="qtb-brand">COIT20259 Quiz</div>
+    <div class="qtb-progress"><div class="qtb-bar" id="progressBar"></div></div>
+    <div class="qtb-counter" id="qCounter">1 / 30</div>
+    <div class="qtb-score-live" id="scoreLive">✓ 0</div>
+  </div>
+  <div class="quiz-body">
+    <div class="q-card" id="qCard"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ RESULTS ═══════════════════ -->
+<div class="screen" id="results">
+  <div class="res-inner">
+    <div class="res-hero">
+      <div class="score-ring" id="scoreRing">
+        <span class="sc-num" id="scoreNum">0</span>
+        <span class="sc-denom" id="scoreDenom">/ 30</span>
+      </div>
+      <h2 id="scoreHeadline">Well done!</h2>
+      <p id="scoreSubline">Here's your breakdown by week.</p>
+    </div>
+    <div class="res-weeks" id="weekBreakdown"></div>
+    <div class="res-section-title">Question Review</div>
+    <div class="review-list" id="reviewList"></div>
+    <div class="res-actions">
+      <button class="btn-retry" onclick="retryQuiz()">Retry Same Set</button>
+      <button class="btn-home" onclick="goHome()">← Change Mode</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ REVIEW MODAL ═══════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   QUESTION DATA
+══════════════════════════════════════════════════════════ */
+const Q = [
+/* ─── WEEK 8 ─── */
+{id:1,week:8,topic:"Presentation Layer",type:"mcq",
+q:"What is the primary role of the <strong>presentation layer</strong> in an enterprise web application?",
+opts:["It stores and retrieves data from the database","It handles user display and interaction — the pages users see and click","It contains business rules, calculations, and service logic","It manages HTTP connections and server configuration"],
+ans:1,
+expl:"The presentation layer renders the UI and captures user input. In Jakarta Faces, Facelets pages and JF components (<code>h:</code>, <code>f:</code>) form this layer. It deliberately knows nothing about the database or business rules — that's MVC."},
+
+{id:2,week:8,topic:"Managed Beans",type:"mcq",
+q:"Which annotation makes a Java class accessible in a Facelets page as <code>#{productBean.name}</code>?",
+opts:["@Managed","@Component","@Named","@Bean"],
+ans:2,
+expl:"<code>@Named</code> (from Jakarta CDI) registers the bean under a name derived from the class name with the first letter lowercased. <code>ProductBean</code> → <code>productBean</code>. Without this annotation, the EL expression resolves to nothing."},
+
+{id:3,week:8,topic:"Managed Beans",type:"spot_bug",
+q:"What is wrong with this Managed Bean — why will <code>#{cartBean.cart}</code> silently return nothing in the page?",
+code:`<span class="ann">@SessionScoped</span>
+<span class="kw">public class</span> <span class="typ">CartBean</span> <span class="kw">implements</span> Serializable {
+    <span class="kw">private</span> List&lt;Item&gt; cart = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">public</span> List&lt;Item&gt; getCart() { <span class="kw">return</span> cart; }
+}`,
+opts:["The class should extend HttpSessionBean","@Named annotation is missing — CDI cannot register this bean","SessionScoped beans must not implement Serializable","The getter must be named items(), not cart()"],
+ans:1,
+expl:"Without <code>@Named</code>, CDI does not register the bean under any EL name. The expression <code>#{cartBean.cart}</code> produces an empty result with no error — one of the most confusing silent failures in Jakarta Faces."},
+
+{id:4,week:8,topic:"Bean Scopes",type:"mcq",
+q:"A user logs in. Their username needs to remain available as they navigate across multiple pages. Which scope is correct?",
+opts:["@RequestScoped — resets after every HTTP request","@ViewScoped — resets when navigating to a different page","@SessionScoped — persists for the user's browser session","@ApplicationScoped — one instance shared with all users of the app"],
+ans:2,
+expl:"<code>@SessionScoped</code> keeps the bean alive for the life of one user's HTTP session. <strong>@ApplicationScoped is wrong</strong> — it would share login data across all users, a security flaw. @RequestScoped and @ViewScoped are too short-lived."},
+
+{id:5,week:8,topic:"Expression Language",type:"code_complete",
+q:"Complete the Facelets code to display the <code>name</code> property from <code>productBean</code>:",
+code:`<span class="kw">&lt;h:outputText</span> <span class="attr">value</span>=<span class="val">"<span class="blank">________</span>"</span> <span class="kw">/&gt;</span>`,
+opts:["{productBean.name}","$[productBean.name]","#{productBean.name}","@{productBean.name}"],
+ans:2,
+expl:"EL (Expression Language) uses <code>#{}</code> syntax. The expression calls <code>getProductBean().getName()</code> automatically — you don't write <code>getName()</code> explicitly. The <code>#{}</code> delimiter is evaluated server-side; the browser never sees it."},
+
+{id:6,week:8,topic:"FacesServlet",type:"mcq",
+q:"FacesServlet creates a <strong>___________</strong> object at the start of every request to hold all request-specific information.",
+opts:["HttpSession","FacesContext","ViewRoot","UIComponentTree"],
+ans:1,
+expl:"<code>FacesContext</code> is the hub for each JF request — it holds the component tree, messages, the current user, navigation handlers, and the external context (HTTP request/response). It is created at the start of Phase 1 and disposed after Phase 6."},
+
+{id:7,week:8,topic:"Namespaces",type:"spot_bug",
+q:"A student writing for GlassFish 7 / Jakarta EE 10 declares this namespace. What is the problem?",
+code:`<span class="kw">&lt;html</span> <span class="attr">xmlns:h</span>=<span class="val">"http://xmlns.jcp.org/jsf/html"</span><span class="kw">&gt;</span>`,
+opts:["The prefix h: is reserved by the XHTML standard and cannot be overridden","This URL belongs to the old Java EE specification; Jakarta EE 10 uses \"jakarta.faces.html\"","Namespace URLs must use https, not http","There is no problem — this is valid for all Jakarta EE versions"],
+ans:1,
+expl:"Jakarta EE migrated all namespaces from <code>javax.*</code> / <code>jcp.org</code> to <code>jakarta.*</code> starting from Jakarta EE 9. On GlassFish 7, using the old URL causes <code>h:</code> components to be silently treated as plain HTML — one of the most common setup errors."},
+
+{id:8,week:8,topic:"Facelets vs JSP",type:"mcq",
+q:"What is the primary advantage of Facelets over the older JSP (JavaServer Pages) technology?",
+opts:["Facelets pages are compiled to bytecode, making them faster than JSP","Facelets supports more HTML elements than JSP does","Facelets provides a built-in templating system and clean XHTML syntax without embedded Java code","Facelets pages can be opened directly in a browser without a server"],
+ans:2,
+expl:"JSP mixed Java scriptlets inside HTML — creating unmaintainable 'spaghetti'. Facelets uses clean XML/XHTML with a powerful built-in templating system (<code>ui:composition</code>, <code>ui:insert</code>, <code>ui:define</code>). Pages are also valid XHTML so designers can preview them without a server."},
+
+{id:9,week:8,topic:"Bean Scopes",type:"mcq",
+q:"A list of countries for a dropdown is the same for every user and never changes. Which scope loads it once for the entire application?",
+opts:["@RequestScoped","@SessionScoped","@ViewScoped","@ApplicationScoped"],
+ans:3,
+expl:"<code>@ApplicationScoped</code> creates exactly ONE bean instance shared by all users for the entire server lifetime. Ideal for read-only reference data. If you used <code>@SessionScoped</code>, every user would get their own copy — wasteful for data that never changes."},
+
+{id:10,week:8,topic:"Expression Language",type:"code_complete",
+q:"A student wants to call the bean's <code>save()</code> method when a button is clicked. Complete the button tag:",
+code:`<span class="kw">&lt;h:commandButton</span> <span class="attr">value</span>=<span class="val">"Save"</span>
+    <span class="blank">________</span>=<span class="val">"#{orderBean.save}"</span> <span class="kw">/&gt;</span>`,
+opts:["method","onclick","action","call"],
+ans:2,
+expl:"The <code>action</code> attribute on <code>h:commandButton</code> holds an EL method expression. JF invokes it during Phase 5 (Invoke Application). <code>onclick</code> would add a JavaScript handler — not the same as invoking a Java method through the JF lifecycle."},
+
+/* ─── WEEK 9 ─── */
+{id:11,week:9,topic:"Facelets Templating",type:"mcq",
+q:"What does <code>&lt;ui:composition template=\"/templates/layout.xhtml\"&gt;</code> tell Jakarta Faces?",
+opts:["It defines the master template file itself","This page uses the named template as its layout; everything outside this tag is ignored","It embeds a reusable component fragment inline","It creates a new XML namespace scope for the page"],
+ans:1,
+expl:"<code>ui:composition template=\"...\"</code> wraps child-page content. JF ignores everything outside this tag (stray DOCTYPE declarations, html tags the IDE may add). Only content inside <code>ui:define</code> blocks is rendered into the template's named slots."},
+
+{id:12,week:9,topic:"Facelets Templating",type:"code_complete",
+q:"Complete the child page so it fills the template's <strong>\"content\"</strong> slot:",
+code:`<span class="kw">&lt;ui:composition</span> <span class="attr">template</span>=<span class="val">"/templates/layout.xhtml"</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;ui:define</span> <span class="blank">________</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;h2&gt;</span>Dashboard<span class="kw">&lt;/h2&gt;</span>
+    <span class="kw">&lt;/ui:define&gt;</span>
+<span class="kw">&lt;/ui:composition&gt;</span>`,
+opts:['slot="content"','id="content"','name="content"','for="content"'],
+ans:2,
+expl:"The <code>name</code> attribute on <code>ui:define</code> must match exactly (case-sensitive) the <code>name</code> on the template's <code>ui:insert</code>. If it doesn't match, the slot shows the template's default content instead — with no error message to tell you why."},
+
+{id:13,week:9,topic:"JF Components",type:"spot_bug",
+q:"What is wrong with this form structure?",
+code:`<span class="kw">&lt;h:form&gt;</span>
+    <span class="kw">&lt;h:inputText</span> <span class="attr">value</span>=<span class="val">"#{bean.name}"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:form&gt;</span>
+<span class="kw">&lt;h:commandButton</span> <span class="attr">value</span>=<span class="val">"Save"</span>
+    <span class="attr">action</span>=<span class="val">"#{bean.save}"</span><span class="kw">/&gt;</span>`,
+opts:["h:inputText must have a required='true' attribute","h:commandButton must be inside h:form to submit the form data","h:form can only contain h:panelGroup children","There is no bug — placing commandButton outside the form is valid"],
+ans:1,
+expl:"<code>h:commandButton</code> submits the enclosing <code>h:form</code>. If it lives outside the form, it renders as a button that fires without sending any form data. The action method is called but the bean properties remain empty — a silent data-loss bug."},
+
+{id:14,week:9,topic:"h:dataTable",type:"code_complete",
+q:"Complete the <code>h:dataTable</code> to iterate over a list of orders, referring to each row as <code>o</code>:",
+code:`<span class="kw">&lt;h:dataTable</span> <span class="blank">________</span> <span class="attr">var</span>=<span class="val">"o"</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;h:column&gt;</span>
+        <span class="kw">&lt;h:outputText</span> <span class="attr">value</span>=<span class="val">"#{o.orderId}"</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;/h:column&gt;</span>
+<span class="kw">&lt;/h:dataTable&gt;</span>`,
+opts:['list="#{orderBean.orders}"','value="#{orderBean.orders}"','items="#{orderBean.orders}"','data="orderBean.orders"'],
+ans:1,
+expl:"<code>h:dataTable</code> requires the <code>value</code> attribute (the Java List via EL) and <code>var</code> (the alias for each row object). With <code>var=\"o\"</code>, you write <code>#{o.orderId}</code>, <code>#{o.total}</code> etc. for each row's properties. None of the other attribute names are valid."},
+
+{id:15,week:9,topic:"Validation",type:"mcq",
+q:"A user enters <code>0</code> in a Quantity field with <code>&lt;f:validateLongRange minimum=\"1\" maximum=\"100\"/&gt;</code>. What happens?",
+opts:["JF silently adjusts quantity to 1 (the minimum)","The action method is called and receives 0 as the value","Phase 3 (Process Validations) fails; Phases 4 and 5 are skipped; an error is shown","Phase 3 fails but the action method still runs with the error flagged"],
+ans:2,
+expl:"Validation failure in Phase 3 short-circuits the lifecycle. Phases 4 (Update Model) and 5 (Invoke Application) are skipped entirely — your bean's <code>save()</code> method never sees the value 0. Phase 6 always runs to re-render the form with the error message."},
+
+{id:16,week:9,topic:"h:dataTable",type:"mcq",
+q:"In <code>&lt;h:dataTable value=\"#{bean.products}\" var=\"p\"&gt;</code>, what does <code>var=\"p\"</code> define?",
+opts:["The CSS class applied to each table row","A local alias — inside the table, p refers to the current row's product object","A parameter automatically passed to every action method in the table","The variable that counts how many rows have been rendered"],
+ans:1,
+expl:"<code>var=\"p\"</code> creates a local alias visible only inside the <code>h:dataTable</code> block. For each row, <code>p</code> refers to the current element in the list. You then write <code>#{p.name}</code>, <code>#{p.price}</code> etc. to access each product's properties."},
+
+{id:17,week:9,topic:"Conditional Rendering",type:"mcq",
+q:"When <code>#{bean.errorMessage}</code> is an empty string, what does the following component produce in the HTML?",
+code:`<span class="kw">&lt;h:panelGroup</span>
+    <span class="attr">rendered</span>=<span class="val">"#{not empty bean.errorMessage}"</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;h:outputText</span> <span class="attr">value</span>=<span class="val">"#{bean.errorMessage}"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:panelGroup&gt;</span>`,
+opts:["A hidden div with display:none CSS","An empty div with no content inside","No HTML at all — the element is not included in the page source","A div with an empty string, visible with a blank space"],
+ans:2,
+expl:"The <code>rendered</code> attribute is evaluated server-side. When <code>false</code>, JF writes no HTML for that component whatsoever — it does not exist in the DOM. This differs from CSS visibility which hides but still renders. It is also more secure: sensitive content that shouldn't be seen is not even sent to the browser."},
+
+{id:18,week:9,topic:"Converters",type:"spot_bug",
+q:"A product's price is a Java <code>double</code>. The table shows <code>1299.9900000001</code>. What is missing?",
+code:`<span class="kw">&lt;h:column&gt;</span>
+    <span class="kw">&lt;f:facet</span> <span class="attr">name</span>=<span class="val">"header"</span><span class="kw">&gt;</span>Price<span class="kw">&lt;/f:facet&gt;</span>
+    <span class="kw">&lt;h:outputText</span> <span class="attr">value</span>=<span class="val">"#{p.price}"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/h:column&gt;</span>`,
+opts:["The price field should be String, not double","A f:convertNumber converter to format the floating-point number","The h:outputText id attribute is required for number display","The column needs a CSS class attribute to format numbers"],
+ans:1,
+expl:"Without a converter, JF renders the raw Java <code>double</code> as a string, exposing floating-point precision artifacts. Fix: nest <code>&lt;f:convertNumber minFractionDigits=\"2\" maxFractionDigits=\"2\"/&gt;</code> inside the <code>h:outputText</code>. For currency, use <code>type=\"currency\" currencySymbol=\"$\"</code>."},
+
+{id:19,week:9,topic:"JF Components",type:"mcq",
+q:"What is the key difference between <code>h:commandButton</code> and <code>h:button</code>?",
+opts:["h:commandButton submits the form and invokes the action method; h:button navigates without any form submission","h:button creates a styled button; h:commandButton creates a plain browser button","h:commandButton requires JavaScript to be enabled; h:button works without it","h:button can only be used outside h:form; h:commandButton can only be inside h:form"],
+ans:0,
+expl:"<code>h:commandButton</code> triggers the full 6-phase JF lifecycle: it submits the form, runs validation, updates the model, and calls your action method. <code>h:button</code> renders as a hyperlink-styled button that performs only navigation (like a GET request) — perfect for Cancel buttons and nav links that must not submit form data."},
+
+{id:20,week:9,topic:"Namespaces",type:"mcq",
+q:"Which namespace prefix contains validators (<code>validateLength</code>), converters (<code>convertNumber</code>), and column facets (<code>f:facet</code>)?",
+opts:["h: (jakarta.faces.html) — HTML components","ui: (jakarta.faces.facelets) — templating tags","f: (jakarta.faces.core) — core / non-visual components","c: (jakarta.tags.core) — JSTL logic tags"],
+ans:2,
+expl:"The <code>f:</code> (core) namespace contains non-visual components that attach behaviour: <code>f:validateLength</code>, <code>f:validateLongRange</code>, <code>f:convertNumber</code>, <code>f:convertDateTime</code>, <code>f:selectItem</code>, and <code>f:facet</code>. They are always nested <em>inside</em> an <code>h:</code> component, never standalone."},
+
+/* ─── WEEK 10 ─── */
+{id:21,week:10,topic:"MVC Pattern",type:"mcq",
+q:"According to the MVC golden rule, how do the <strong>Model</strong> and the <strong>View</strong> communicate?",
+opts:["The View calls methods directly on the Model's service classes","The Model fires events that the View subscribes to","They never communicate directly — all interaction passes through the Controller","They share a common DAO (Data Access Object) that both import"],
+ans:2,
+expl:"MVC's core rule: Model and View are completely decoupled — they have no direct references to each other. The Controller (FacesServlet + Managed Beans) receives input from the View, interacts with the Model, and pushes results back to the View. This is why you can replace the entire web UI with a mobile app without touching the Model."},
+
+{id:22,week:10,topic:"JF Lifecycle",type:"order",
+q:"Arrange the 6 Jakarta Faces lifecycle phases in the correct order (click each phase to number it 1 → 6):",
+items:["Render Response","Restore View","Invoke Application","Process Validations","Apply Request Values","Update Model Values"],
+correctOrder:[1,4,3,2,5,0],
+expl:"The correct order is: 1. Restore View → 2. Apply Request Values → 3. Process Validations → 4. Update Model Values → 5. Invoke Application → 6. Render Response. Validation failure in Phase 3 skips Phases 4 and 5, jumping directly to Phase 6 to display errors."},
+
+{id:23,week:10,topic:"JF Lifecycle",type:"mcq",
+q:"A validation error occurs in Phase 3. Which phases are <strong>skipped</strong> as a result?",
+opts:["Only Phase 6 (Render Response) is skipped","Phases 4 and 5 are skipped; the lifecycle jumps to Phase 6","All remaining phases including Phase 6 are skipped","Nothing is skipped — all 6 phases always complete"],
+ans:1,
+expl:"JF short-circuits on validation failure: Phases 4 (Update Model) and 5 (Invoke Application) are skipped entirely. Phase 6 always runs — it re-renders the form with error messages. This is exactly why invalid data can <em>never</em> reach your bean's action method."},
+
+{id:24,week:10,topic:"Navigation",type:"code_complete",
+q:"What XML element must be added to issue an HTTP redirect (instead of a server-side forward) in <code>faces-config.xml</code>?",
+code:`<span class="kw">&lt;navigation-case&gt;</span>
+    <span class="kw">&lt;from-outcome&gt;</span>success<span class="kw">&lt;/from-outcome&gt;</span>
+    <span class="kw">&lt;to-view-id&gt;</span>/products.xhtml<span class="kw">&lt;/to-view-id&gt;</span>
+    <span class="blank">________</span>
+<span class="kw">&lt;/navigation-case&gt;</span>`,
+opts:["&lt;forward/&gt;","&lt;http-redirect/&gt;","&lt;redirect/&gt;","&lt;location&gt;redirect&lt;/location&gt;"],
+ans:2,
+expl:"Adding <code>&lt;redirect/&gt;</code> inside a navigation case tells JF to send HTTP 302 to the browser, causing a fresh GET request for the target page. Without it, JF performs a server-side forward — the URL bar doesn't update and pressing Refresh re-submits the form, potentially duplicating data."},
+
+{id:25,week:10,topic:"Converters",type:"mcq",
+q:"In a custom Converter, when is <code>getAsObject()</code> called vs <code>getAsString()</code>?",
+opts:["getAsObject() renders the page; getAsString() processes form submission","getAsObject() converts the browser's String to a Java object (Phase 2–3); getAsString() converts the Java object to a display String (Phase 6)","Both methods run during Phase 5 (Invoke Application)","getAsString() is only called when the user hovers over the component"],
+ans:1,
+expl:"Two directions: <strong>getAsObject</strong> runs on form submission (Phase 2→3) — it converts the raw browser String (e.g. <code>'prd-0042'</code>) into the Java value your bean expects. <strong>getAsString</strong> runs during page rendering (Phase 6) — it converts the Java value back to a display String for the browser. Both must be implemented."},
+
+{id:26,week:10,topic:"Validators",type:"spot_bug",
+q:"This validator always throws <code>NullPointerException</code> at runtime when accessing <code>productService</code>. What is the bug?",
+code:`<span class="ann">@FacesValidator</span>(<span class="val">"uniqueNameValidator"</span>)
+<span class="kw">public class</span> <span class="typ">UniqueNameValidator</span>
+       <span class="kw">implements</span> <span class="typ">Validator</span>&lt;String&gt; {
+
+    <span class="ann">@Inject</span>
+    <span class="kw">private</span> <span class="typ">ProductService</span> productService;
+
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> validate(..., String value) {
+        <span class="kw">if</span> (productService.nameExists(value)) { ... }
+    }
+}`,
+opts:["The validate() method signature is incorrect — it must return boolean","ProductService must be declared as a static field for injection to work","managed=true is missing from @FacesValidator — @Inject is ignored and productService is null","@Inject cannot be used inside a class that implements Validator"],
+ans:2,
+expl:"By default, <code>@FacesValidator</code> creates validators outside the CDI container, so <code>@Inject</code> has no effect. Fix: <code>@FacesValidator(value=\"uniqueNameValidator\", managed=true)</code>. The <code>managed=true</code> flag tells CDI to manage the validator instance, enabling dependency injection."},
+
+{id:27,week:10,topic:"HTTP Filters",type:"mcq",
+q:"An <code>AuthFilter</code> is annotated with <code>@WebFilter(urlPatterns=\"/dashboard/*\")</code>. When does it run relative to FacesServlet?",
+opts:["It runs after FacesServlet renders the response page","It runs before FacesServlet — intercepting the request first","It runs in parallel with FacesServlet on a separate thread","It only runs if FacesServlet explicitly delegates to it"],
+ans:1,
+expl:"HTTP Filters intercept requests <em>before</em> any servlet processes them. The filter's <code>doFilter()</code> runs first — it inspects the request and either calls <code>chain.doFilter()</code> to allow it through to FacesServlet, or sends a redirect to block it. This is the key property that makes filters useful for security."},
+
+{id:28,week:10,topic:"HTTP Filters",type:"code_complete",
+q:"Complete the <code>AuthFilter</code>: when the user <strong>is</strong> logged in, what must the filter do to allow the request to proceed?",
+code:`<span class="kw">public void</span> doFilter(ServletRequest req,
+    ServletResponse res, FilterChain chain)
+    <span class="kw">throws</span> IOException, ServletException {
+
+    HttpSession session =
+        ((HttpServletRequest)req).getSession(<span class="kw">false</span>);
+    <span class="kw">boolean</span> loggedIn = session != <span class="kw">null</span>
+        && session.getAttribute(<span class="val">"user"</span>) != <span class="kw">null</span>;
+
+    <span class="kw">if</span> (loggedIn) {
+        <span class="blank">________</span>
+    } <span class="kw">else</span> {
+        ((HttpServletResponse)res).sendRedirect(loginUrl);
+    }
+}`,
+opts:["return; // do nothing, JF handles the rest","chain.doFilter(req, res);","FacesServlet.processRequest(req, res);","session.setAttribute(\"allowed\", true);"],
+ans:1,
+expl:"<code>chain.doFilter(req, res)</code> passes the request to the next element in the filter chain — ultimately reaching FacesServlet. Without this call, even authenticated users get no response (the request hangs). Think of the chain as a relay race: the filter must pass the baton or the race stops."},
+
+{id:29,week:10,topic:"Navigation",type:"mcq",
+q:"Why should form submission action methods use <code>?faces-redirect=true</code> (or <code>&lt;redirect/&gt;</code> in faces-config.xml)?",
+opts:["It speeds up page load by caching the server response","It switches from HTTP to HTTPS for the result page","Without redirect, pressing the browser's Refresh button re-submits the form — potentially duplicating data","It prevents the session from expiring after a form submission"],
+ans:2,
+expl:"The Post-Redirect-Get pattern: without a redirect, the browser's URL is still the POST action URL. Pressing Refresh re-sends the POST request, calling your action method again and potentially inserting a duplicate record. With a redirect, the browser navigates to the result page via GET — Refresh simply reloads the GET harmlessly."},
+
+{id:30,week:10,topic:"HTTP Filters",type:"mcq",
+q:"In <code>LoginBean.logout()</code>, what does <code>session.invalidate()</code> do?",
+opts:["Marks the session as expired but leaves its data intact for 30 minutes","Removes only the loggedInUser attribute, leaving other session data intact","Completely destroys the HTTP session and all attributes stored in it","Disconnects the user from the database connection pool"],
+ans:2,
+expl:"<code>session.invalidate()</code> completely destroys the HTTP session object and all data stored in it. This is the correct way to log out — it ensures no session data (cart, user preferences, login status) persists. After this call, any reference to the old session will throw <code>IllegalStateException</code>."}
+];
+
+/* ══════════════════════════════════════════════════════════
+   QUIZ ENGINE
+══════════════════════════════════════════════════════════ */
+let activeQuestions=[], currentIdx=0, answers=[], answered=false, orderState=[];
+let quizMode='all';
+
+function startQuiz(mode){
+  quizMode=mode;
+  activeQuestions = mode==='all' ? [...Q] : Q.filter(q=>q.week===mode);
+  currentIdx=0;
+  answers=new Array(activeQuestions.length).fill(null);
+  show('quiz');
+  renderQuestion();
+}
+
+function retryQuiz(){ startQuiz(quizMode); }
+function goHome(){ show('welcome'); }
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function renderQuestion(){
+  const q=activeQuestions[currentIdx];
+  const total=activeQuestions.length;
+  answered=false;
+  orderState=[];
+
+  // Topbar
+  document.getElementById('progressBar').style.width=((currentIdx)/total*100)+'%';
+  document.getElementById('qCounter').textContent=(currentIdx+1)+' / '+total;
+  const correct=answers.filter(a=>a===true).length;
+  document.getElementById('scoreLive').textContent='✓ '+correct;
+
+  // Week badge colour
+  const wbClass={8:'wb-8',9:'wb-9',10:'wb-10'}[q.week];
+  const typeLabel={mcq:'Multiple Choice',spot_bug:'Spot the Bug',code_complete:'Code Completion',order:'Ordering'}[q.type];
+  const typeIcon={mcq:'📝',spot_bug:'🐛',code_complete:'🔧',order:'🔀'}[q.type];
+
+  let html=`
+  <div class="q-meta">
+    <span class="q-week-badge ${wbClass}">Week ${q.week}</span>
+    <span class="q-type-badge">${typeIcon} ${typeLabel}</span>
+    <span class="q-topic">${q.topic}</span>
+  </div>
+  <div class="q-text">${q.q}</div>`;
+
+  if(q.code){
+    html+=`<div class="q-code"><pre>${q.code}</pre></div>`;
+  }
+
+  if(q.type==='order'){
+    html+=buildOrderHTML(q);
+  } else {
+    html+='<div class="options">';
+    const keys=['A','B','C','D'];
+    q.opts.forEach((opt,i)=>{
+      html+=`<button class="opt" id="opt${i}" onclick="selectOpt(${i})" data-idx="${i}">
+        <span class="opt-key">${keys[i]}</span>
+        <span class="opt-text">${opt}</span>
+      </button>`;
+    });
+    html+='</div>';
+  }
+
+  html+=`<div class="explanation" id="expl"></div>`;
+  html+=`<div class="q-actions">
+    ${currentIdx<activeQuestions.length-1
+      ? `<button class="btn-next" id="btnNext" disabled onclick="nextQ()">Next →</button>`
+      : `<button class="btn-next" id="btnNext" disabled onclick="showResults()">See Results</button>`}
+  </div>`;
+
+  const card=document.getElementById('qCard');
+  card.innerHTML=html;
+  card.style.animation='none';
+  card.offsetHeight; // reflow
+  card.style.animation='slideIn .28s ease';
+}
+
+function buildOrderHTML(q){
+  let html=`<div class="order-grid" id="orderGrid">`;
+  q.items.forEach((item,i)=>{
+    html+=`<div class="order-item" id="ordItem${i}" onclick="clickOrderItem(${i})" data-idx="${i}">
+      <div class="order-num" id="ordNum${i}">?</div>
+      <div class="order-label">${item}</div>
+    </div>`;
+  });
+  html+=`</div>
+  <div class="order-controls">
+    <button class="btn-reset" onclick="resetOrder()">↺ Reset</button>
+    <button class="btn-check-order" id="btnCheckOrder" disabled onclick="checkOrder()">Check Order</button>
+  </div>`;
+  return html;
+}
+
+function clickOrderItem(idx){
+  if(answered) return;
+  const q=activeQuestions[currentIdx];
+  // If already placed, remove it
+  const existing=orderState.indexOf(idx);
+  if(existing!==-1){
+    orderState.splice(existing,1);
+    // renumber remaining
+  } else {
+    if(orderState.length<q.items.length){
+      orderState.push(idx);
+    }
+  }
+  // Re-render numbers
+  q.items.forEach((_,i)=>{
+    const pos=orderState.indexOf(i);
+    const numEl=document.getElementById('ordNum'+i);
+    const itemEl=document.getElementById('ordItem'+i);
+    if(pos!==-1){
+      numEl.textContent=pos+1;
+      itemEl.classList.add('placed');
+    } else {
+      numEl.textContent='?';
+      itemEl.classList.remove('placed');
+    }
+  });
+  const checkBtn=document.getElementById('btnCheckOrder');
+  if(checkBtn) checkBtn.disabled=orderState.length<q.items.length;
+}
+
+function resetOrder(){
+  if(answered) return;
+  orderState=[];
+  activeQuestions[currentIdx].items.forEach((_,i)=>{
+    document.getElementById('ordNum'+i).textContent='?';
+    document.getElementById('ordItem'+i).classList.remove('placed');
+  });
+  const checkBtn=document.getElementById('btnCheckOrder');
+  if(checkBtn) checkBtn.disabled=true;
+}
+
+function checkOrder(){
+  if(answered) return;
+  answered=true;
+  const q=activeQuestions[currentIdx];
+  // orderState is the array of item indices in user's chosen order
+  // correctOrder[i] = the index in q.items that should be at position i
+  let allCorrect=true;
+  orderState.forEach((itemIdx,pos)=>{
+    const isCorrect=(q.correctOrder[pos]===itemIdx);
+    const el=document.getElementById('ordItem'+itemIdx);
+    el.classList.remove('placed');
+    el.classList.add(isCorrect?'ord-correct':'ord-wrong');
+    el.classList.add('disabled-ord');
+    if(!isCorrect) allCorrect=false;
+  });
+  answers[currentIdx]=allCorrect;
+  // Also disable unplaced items
+  q.items.forEach((_,i)=>{
+    document.getElementById('ordItem'+i).classList.add('disabled-ord');
+  });
+  document.getElementById('btnCheckOrder').disabled=true;
+  showExplanation(allCorrect, q.expl);
+  document.getElementById('btnNext').disabled=false;
+  document.getElementById('scoreLive').textContent='✓ '+answers.filter(a=>a===true).length;
+}
+
+function selectOpt(idx){
+  if(answered) return;
+  answered=true;
+  const q=activeQuestions[currentIdx];
+  const isCorrect=(idx===q.ans);
+  answers[currentIdx]=isCorrect;
+
+  document.querySelectorAll('.opt').forEach(o=>{
+    o.classList.add('disabled');
+    o.disabled=true;
+  });
+  document.getElementById('opt'+idx).classList.add(isCorrect?'correct-ans':'wrong-ans');
+  if(!isCorrect) document.getElementById('opt'+q.ans).classList.add('correct-ans');
+  showExplanation(isCorrect, q.expl);
+  document.getElementById('btnNext').disabled=false;
+  document.getElementById('scoreLive').textContent='✓ '+answers.filter(a=>a===true).length;
+}
+
+function showExplanation(correct, text){
+  const el=document.getElementById('expl');
+  el.innerHTML=`<strong>${correct?'✓ Correct!':'✗ Incorrect'}</strong> — ${text}`;
+  el.className='explanation visible'+(correct?'':' wrong-expl');
+}
+
+function nextQ(){
+  if(currentIdx<activeQuestions.length-1){
+    currentIdx++;
+    renderQuestion();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESULTS
+══════════════════════════════════════════════════════════ */
+function showResults(){
+  // Final progress bar
+  document.getElementById('progressBar').style.width='100%';
+
+  const total=activeQuestions.length;
+  const correct=answers.filter(a=>a===true).length;
+  const pct=Math.round(correct/total*100);
+
+  const ring=document.getElementById('scoreRing');
+  ring.className='score-ring'+(pct>=80?' excellent':pct>=60?' good':'');
+  document.getElementById('scoreNum').textContent=correct;
+  document.getElementById('scoreDenom').textContent='/ '+total;
+
+  let headline,subline;
+  if(pct===100){headline='Perfect Score! 🏆';subline='Outstanding — you have mastered all three weeks.';}
+  else if(pct>=80){headline='Excellent Work! 🎉';subline='Strong understanding across all topics.';}
+  else if(pct>=60){headline='Good Effort! 👍';subline='Review the highlighted questions and try again.';}
+  else{headline='Keep Practising';subline='Revisit the lecture slides and lab notes, then retry.';}
+  document.getElementById('scoreHeadline').textContent=headline;
+  document.getElementById('scoreSubline').textContent=subline;
+
+  // Per-week breakdown
+  const weeks=quizMode==='all'?[8,9,10]:[quizMode];
+  const wbEl=document.getElementById('weekBreakdown');
+  wbEl.innerHTML='';
+  weeks.forEach(w=>{
+    const wQs=activeQuestions.map((q,i)=>({q,i})).filter(x=>x.q.week===w);
+    const wCorrect=wQs.filter(x=>answers[x.i]===true).length;
+    const wTotal=wQs.length;
+    const wPct=wTotal?Math.round(wCorrect/wTotal*100):0;
+    const cls={8:'b8',9:'b9',10:'b10'}[w];
+    const lcls={8:'l8',9:'l9',10:'l10'}[w];
+    wbEl.innerHTML+=`<div class="rw-card">
+      <div class="rw-label ${lcls}">Week ${w}</div>
+      <div class="rw-bar-wrap"><div class="rw-bar ${cls}" style="width:0%" data-pct="${wPct}"></div></div>
+      <div class="rw-score">${wCorrect} / ${wTotal}</div>
+    </div>`;
+  });
+  // Animate bars after paint
+  setTimeout(()=>{
+    document.querySelectorAll('.rw-bar').forEach(b=>{
+      b.style.width=b.dataset.pct+'%';
+    });
+  },100);
+
+  // Review list
+  const rvEl=document.getElementById('reviewList');
+  rvEl.innerHTML='';
+  activeQuestions.forEach((q,i)=>{
+    const isCorrect=answers[i]===true;
+    const isSkipped=answers[i]===null;
+    const icon=isSkipped?'⬜':isCorrect?'✅':'❌';
+    const truncQ=q.q.replace(/<[^>]+>/g,'').substring(0,80)+(q.q.length>80?'…':'');
+    rvEl.innerHTML+=`<div class="rv-item ${isSkipped?'rv-skipped':''}" onclick="openReview(${i})">
+      <span class="rv-icon">${icon}</span>
+      <span class="rv-q">${truncQ}</span>
+      <span class="rv-w">W${q.week}</span>
+    </div>`;
+  });
+
+  show('results');
+}
+
+function openReview(idx){
+  const q=activeQuestions[idx];
+  const userAns=answers[idx];
+  const isCorrect=userAns===true;
+  const isSkipped=userAns===null;
+
+  let html=`<h3>Q${idx+1}: ${q.q.replace(/<[^>]+>/g,'')}</h3>`;
+  if(q.code) html+=`<div class="q-code" style="margin-bottom:14px"><pre>${q.code}</pre></div>`;
+
+  if(q.type==='order'){
+    html+=`<div style="font-size:.9rem;margin-bottom:10px;"><strong>Correct order:</strong></div>`;
+    html+=`<ol style="padding-left:22px;font-size:.9rem;line-height:2;">`;
+    q.correctOrder.forEach(itemIdx=>{ html+=`<li>${q.items[itemIdx]}</li>`; });
+    html+=`</ol>`;
+  } else {
+    const keys=['A','B','C','D'];
+    html+=`<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">`;
+    q.opts.forEach((opt,i)=>{
+      let style='padding:9px 13px;border-radius:6px;font-size:.88rem;border:1.5px solid #e4e4e7;';
+      if(i===q.ans) style='padding:9px 13px;border-radius:6px;font-size:.88rem;border:1.5px solid #16a34a;background:#f0fdf4;font-weight:600;';
+      html+=`<div style="${style}"><span style="font-family:DM Mono,monospace;margin-right:8px;font-size:.8rem;">${keys[i]}</span>${opt}</div>`;
+    });
+    html+=`</div>`;
+  }
+
+  const boxClass=isSkipped?'':(isCorrect?'':'wrong');
+  const label=isSkipped?'Not answered':(isCorrect?'✓ Correct':'✗ Incorrect');
+  html+=`<div class="expl-box ${boxClass}"><strong>${label}</strong> — ${q.expl}</div>`;
+
+  document.getElementById('modalBody').innerHTML=html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+document.getElementById('modalOverlay').addEventListener('click',function(e){
+  if(e.target===this) closeModal();
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+</script>
+</body>
+</html>
