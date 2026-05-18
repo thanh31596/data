@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 10 — Chi-Squared Tests</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #fff; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 60px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 30px; color: #C0272D; }
+    h2 { font-size: 1.6rem; margin-bottom: 24px; color: #C0272D; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.2rem; margin: 16px 0 8px; color: #333; }
+    p, li { font-size: 1.05rem; line-height: 1.7; margin-bottom: 10px; }
+    ul, ol { padding-left: 28px; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    table {
+      border-collapse: collapse; width: auto; margin: 16px 0;
+    }
+    th, td {
+      border: 1px solid #ddd; padding: 10px 14px; text-align: center;
+    }
+    th { background: #f5f5f5; font-weight: 600; }
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: #C0272D; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 60px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; color: #1E2139; }
+    .toc-item {
+      padding: 8px 0; cursor: pointer; color: #3b5998;
+      font-size: 1.05rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 16px; color: #1E2139; }
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+      background: #1E2139;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.8rem; color: #ffffff;
+      border-bottom: 3px solid #C0272D; padding-bottom: 16px;
+    }
+    .slide.section-divider p { color: #ccc; font-size: 1.1rem; }
+    .illustration {
+      display: flex; justify-content: center; margin: 20px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.9rem; color: #666;
+      margin-top: 6px; font-style: italic;
+    }
+    .quiz { margin: 16px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 12px; font-size: 1.05rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 12px 16px; margin: 6px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 1rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #999; }
+    .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 12px; padding: 12px 16px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.95rem;
+    }
+    .quiz-explanation.visible { display: block; }
+    .subtitle { font-size: 1.2rem; color: #666; margin-top: -20px; margin-bottom: 30px; }
+    .two-col { display: flex; gap: 40px; }
+    .two-col > div { flex: 1; }
+    .step-table td:first-child { font-weight: 600; white-space: nowrap; text-align: left; }
+    .step-table td { text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ============ SLIDE 1: TITLE ============ -->
+  <div class="slide active" id="slide-1">
+    <div class="slide-number">1 / 20</div>
+    <div style="display:flex; flex-direction:column; justify-content:center; height:100%;">
+      <h1 style="font-size:2.6rem; border:none;">Week 10: Chi-Squared Tests</h1>
+      <p class="subtitle" style="font-size:1.3rem; color:#555; margin-top:10px;">Are the proportions what we expected? Are two variables related?</p>
+      <div style="margin-top: 30px; color: #888; font-size: 1rem;">
+        <p>Introductory Statistics for Accounting</p>
+        <p style="margin-top: 8px;">Three applications of the \(\chi^2\) distribution:</p>
+        <ol style="margin-top:10px; color:#555;">
+          <li>Goodness-of-Fit Test</li>
+          <li>Test of Independence</li>
+          <li>Test of Homogeneity</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 2: SECTION DIVIDER — THE CHI-SQUARED DISTRIBUTION ============ -->
+  <div class="slide section-divider" id="slide-2">
+    <div class="slide-number" style="color:#666;">2 / 20</div>
+    <h1>Section 1</h1>
+    <p>The Chi-Squared Distribution</p>
+  </div>
+
+  <!-- ============ SLIDE 3: 1.1 WHAT IS CHI-SQUARED? ============ -->
+  <div class="slide" id="slide-3">
+    <div class="slide-number">3 / 20</div>
+    <h2>1.1 What is the Chi-Squared Test?</h2>
+    <div class="slide-content">
+      <p>The chi-squared (\(\chi^2\)) test is a <strong>hypothesis test for categorical data</strong>. It compares what we <em>observed</em> in our sample to what we would <em>expect</em> if a particular hypothesis were true.</p>
+
+      <div class="definition">
+        <strong>Core idea:</strong> If the observed frequencies are close to the expected frequencies, the \(\chi^2\) statistic will be small — no evidence against \(H_0\). If they differ substantially, the statistic will be large — evidence against \(H_0\).
+      </div>
+
+      <p>The test statistic is always computed the same way:</p>
+      <p style="text-align:center; font-size:1.2rem; margin: 20px 0;">
+        $$\chi^2 = \sum \frac{(O_i - E_i)^2}{E_i}$$
+      </p>
+      <p>where \(O_i\) = observed frequency in category \(i\), and \(E_i\) = expected frequency in category \(i\).</p>
+
+      <div class="key-point">
+        <strong>Key properties:</strong> The \(\chi^2\) statistic is always non-negative. Larger values mean bigger discrepancies between observed and expected. The test is always <strong>right-tailed</strong> (we only reject in the upper tail).
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 4: 1.2 THE CHI-SQUARED DISTRIBUTION ============ -->
+  <div class="slide" id="slide-4">
+    <div class="slide-number">4 / 20</div>
+    <h2>1.2 The Chi-Squared Distribution</h2>
+    <div class="slide-content">
+      <p>The \(\chi^2\) distribution is a family of curves, each defined by its <strong>degrees of freedom (df)</strong>. As df increases, the distribution shifts right and becomes more symmetric.</p>
+
+      <div class="illustration">
+        <svg viewBox="0 0 520 280" xmlns="http://www.w3.org/2000/svg">
+          <!-- Axes -->
+          <line x1="50" y1="240" x2="500" y2="240" stroke="#1a1a1a" stroke-width="1.5"/>
+          <line x1="50" y1="240" x2="50" y2="20" stroke="#1a1a1a" stroke-width="1.5"/>
+          <text x="270" y="270" font-size="13" text-anchor="middle" fill="#1a1a1a">χ² value</text>
+          <text x="15" y="130" font-size="13" text-anchor="middle" fill="#1a1a1a" transform="rotate(-90,15,130)">Density</text>
+          <!-- Tick marks -->
+          <text x="50" y="258" font-size="11" text-anchor="middle" fill="#666">0</text>
+          <text x="140" y="258" font-size="11" text-anchor="middle" fill="#666">5</text>
+          <text x="230" y="258" font-size="11" text-anchor="middle" fill="#666">10</text>
+          <text x="320" y="258" font-size="11" text-anchor="middle" fill="#666">15</text>
+          <text x="410" y="258" font-size="11" text-anchor="middle" fill="#666">20</text>
+
+          <!-- df=2 (exponential-like, steep decay) -->
+          <polyline fill="none" stroke="#c0392b" stroke-width="2.5"
+            points="52,45 60,65 70,95 85,130 100,158 120,185 150,208 180,222 220,232 270,237 320,239 400,240"/>
+          <text x="95" y="42" font-size="12" fill="#c0392b" font-weight="600">df = 2</text>
+
+          <!-- df=5 (rises then falls) -->
+          <polyline fill="none" stroke="#3b5998" stroke-width="2.5"
+            points="52,230 60,210 70,180 85,145 100,118 115,102 130,96 150,100 170,112 200,138 230,165 270,195 320,218 380,233 440,238"/>
+          <text x="150" y="82" font-size="12" fill="#3b5998" font-weight="600">df = 5</text>
+
+          <!-- df=10 (more symmetric hump) -->
+          <polyline fill="none" stroke="#4a7c59" stroke-width="2.5"
+            points="52,238 70,236 90,230 110,218 130,198 150,172 170,148 190,130 210,122 230,124 250,133 280,152 310,175 340,198 380,218 420,232 460,238"/>
+          <text x="240" y="108" font-size="12" fill="#4a7c59" font-weight="600">df = 10</text>
+        </svg>
+      </div>
+      <div class="illustration-caption">Figure 1.2: Chi-squared distributions for df = 2, 5, and 10.</div>
+
+      <div class="key-point">
+        <strong>Mean = df</strong> and <strong>Variance = 2 &times; df</strong>. As df grows large, the \(\chi^2\) distribution approaches a normal distribution.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 5: 1.3 GENERAL TESTING FRAMEWORK ============ -->
+  <div class="slide" id="slide-5">
+    <div class="slide-number">5 / 20</div>
+    <h2>1.3 General Testing Framework</h2>
+    <div class="slide-content">
+      <p>All three chi-squared tests follow the same five-step hypothesis testing procedure from Week 9:</p>
+
+      <table class="step-table" style="width:100%;">
+        <tr><td style="width:120px;">Step 1</td><td>State the null and alternative hypotheses (\(H_0\) and \(H_1\)).</td></tr>
+        <tr><td>Step 2</td><td>Choose the significance level (\(\alpha\)), usually 0.05.</td></tr>
+        <tr><td>Step 3</td><td>Compute the test statistic: \(\chi^2 = \sum \frac{(O_i - E_i)^2}{E_i}\)</td></tr>
+        <tr><td>Step 4</td><td>Find the critical value from the \(\chi^2\) table using the appropriate df, <em>or</em> compute the p-value.</td></tr>
+        <tr><td>Step 5</td><td>Decision: reject \(H_0\) if \(\chi^2 > \chi^2_{\alpha}\), or if p-value \(< \alpha\).</td></tr>
+      </table>
+
+      <div class="key-point">
+        <strong>Assumption:</strong> All expected frequencies should be at least 5. If any \(E_i < 5\), combine adjacent categories before testing.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 6: KNOWLEDGE CHECK — SECTION 1 ============ -->
+  <div class="slide" id="slide-6">
+    <div class="slide-number">6 / 20</div>
+    <h2>Knowledge Check — Section 1</h2>
+
+    <div class="quiz" id="quiz-1a">
+      <div class="quiz-question">Q1: The chi-squared test statistic can take which values?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Any real number (positive or negative)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Zero or positive only</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) Between 0 and 1</button>
+      <div class="quiz-explanation">Because we square each difference \((O_i - E_i)^2\) and divide by a positive number, the statistic is always \(\geq 0\).</div>
+    </div>
+
+    <div class="quiz" id="quiz-1b">
+      <div class="quiz-question">Q2: We reject \(H_0\) when the \(\chi^2\) statistic is:</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) Very small (close to 0)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Very large (in the right tail)</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) In either tail</button>
+      <div class="quiz-explanation">A large \(\chi^2\) means observed and expected frequencies differ substantially. The test is always right-tailed.</div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 7: SECTION DIVIDER — GOODNESS-OF-FIT ============ -->
+  <div class="slide section-divider" id="slide-7">
+    <div class="slide-number" style="color:#666;">7 / 20</div>
+    <h1>Section 2</h1>
+    <p>The Goodness-of-Fit Test</p>
+  </div>
+
+  <!-- ============ SLIDE 8: 2.1 PURPOSE ============ -->
+  <div class="slide" id="slide-8">
+    <div class="slide-number">8 / 20</div>
+    <h2>2.1 Goodness-of-Fit: Purpose and Hypotheses</h2>
+    <div class="slide-content">
+      <div class="definition">
+        <strong>Purpose:</strong> Test whether the <strong>distribution of a single categorical variable</strong> matches a claimed or expected set of proportions.
+      </div>
+
+      <p>We have one variable with \(k\) categories. We observe frequencies in each category and compare them to what we'd expect under \(H_0\).</p>
+
+      <p><strong>Hypotheses:</strong></p>
+      <p>\(H_0\): The population proportions are \(p_1, p_2, \ldots, p_k\) (as specified).</p>
+      <p>\(H_1\): At least one proportion differs from the specified value.</p>
+
+      <p><strong>Degrees of freedom:</strong> \(\text{df} = k - 1\), where \(k\) = number of categories.</p>
+
+      <div class="example">
+        <div class="example-label">Accounting context:</div>
+        <p>An audit firm claims that invoice errors are equally distributed across four quarters. You sample 200 error reports and count how many fall in each quarter. Does the data support the claim?</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 9: 2.2 WORKED EXAMPLE — SETUP ============ -->
+  <div class="slide" id="slide-9">
+    <div class="slide-number">9 / 20</div>
+    <h2>2.2 Worked Example: Invoice Error Distribution</h2>
+    <div class="slide-content">
+      <p>BrightPath Financial Services audited 200 invoice processing errors over the past year and recorded which quarter each error occurred in.</p>
+
+      <table>
+        <tr><th>Quarter</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Total</th></tr>
+        <tr><td><strong>Observed (\(O_i\))</strong></td><td>62</td><td>48</td><td>40</td><td>50</td><td>200</td></tr>
+        <tr><td><strong>Expected (\(E_i\))</strong></td><td>50</td><td>50</td><td>50</td><td>50</td><td>200</td></tr>
+      </table>
+
+      <p>If errors are equally distributed (\(H_0\): \(p_1 = p_2 = p_3 = p_4 = 0.25\)), we expect \(200 \times 0.25 = 50\) per quarter.</p>
+
+      <p><strong>Step 3 — Compute the test statistic:</strong></p>
+      <p style="text-align:center; margin:16px 0;">
+        $$\chi^2 = \frac{(62-50)^2}{50} + \frac{(48-50)^2}{50} + \frac{(40-50)^2}{50} + \frac{(50-50)^2}{50}$$
+      </p>
+      <p style="text-align:center;">
+        $$= \frac{144}{50} + \frac{4}{50} + \frac{100}{50} + \frac{0}{50} = 2.88 + 0.08 + 2.00 + 0.00 = 4.96$$
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 10: 2.3 DECISION ============ -->
+  <div class="slide" id="slide-10">
+    <div class="slide-number">10 / 20</div>
+    <h2>2.3 Decision and Interpretation</h2>
+    <div class="slide-content">
+      <p><strong>Step 4 — Critical value:</strong> With \(\text{df} = 4 - 1 = 3\) and \(\alpha = 0.05\):</p>
+      <p style="text-align:center; font-size:1.15rem; margin: 16px 0;">\(\chi^2_{\text{critical}} = 7.815\)</p>
+
+      <div class="illustration">
+        <svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- Axis -->
+          <line x1="40" y1="160" x2="450" y2="160" stroke="#1a1a1a" stroke-width="1.5"/>
+          <!-- Curve (df=3 shape) -->
+          <polyline fill="none" stroke="#3b5998" stroke-width="2.5"
+            points="42,155 55,125 70,95 90,72 110,62 130,62 155,72 180,88 210,108 240,125 275,140 310,148 350,153 400,157 445,159"/>
+          <!-- Rejection region shading -->
+          <polygon fill="#c0392b" fill-opacity="0.15" stroke="none"
+            points="340,152 360,150 380,155 400,157 420,158 440,159 445,159 445,160 340,160"/>
+          <!-- Critical value line -->
+          <line x1="340" y1="40" x2="340" y2="160" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5,4"/>
+          <text x="340" y="35" font-size="12" text-anchor="middle" fill="#c0392b" font-weight="600">χ² = 7.815</text>
+          <!-- Test stat marker -->
+          <circle cx="250" cy="132" r="5" fill="#4a7c59"/>
+          <text x="250" y="120" font-size="12" text-anchor="middle" fill="#4a7c59" font-weight="600">4.96</text>
+          <!-- Labels -->
+          <text x="200" y="185" font-size="12" fill="#4a7c59">Do not reject</text>
+          <text x="390" y="185" font-size="12" fill="#c0392b">Reject</text>
+        </svg>
+      </div>
+
+      <p><strong>Step 5 — Decision:</strong> Since \(4.96 < 7.815\), we <strong>do not reject \(H_0\)</strong>.</p>
+
+      <div class="key-point">
+        <strong>Business interpretation:</strong> At the 5% significance level, there is insufficient evidence to conclude that invoice errors are unevenly distributed across quarters. The audit team need not investigate seasonal staffing as a cause of errors.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 11: KNOWLEDGE CHECK — SECTION 2 ============ -->
+  <div class="slide" id="slide-11">
+    <div class="slide-number">11 / 20</div>
+    <h2>Knowledge Check — Section 2</h2>
+
+    <div class="quiz" id="quiz-2a">
+      <div class="quiz-question">Q1: In a goodness-of-fit test with 6 categories, how many degrees of freedom?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) 6</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 5</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) 7</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) It depends on the sample size</button>
+      <div class="quiz-explanation">For goodness-of-fit: df = k − 1 = 6 − 1 = 5. The degrees of freedom depend only on the number of categories, not the sample size.</div>
+    </div>
+
+    <div class="quiz" id="quiz-2b">
+      <div class="quiz-question">Q2: If all observed frequencies exactly equal the expected frequencies, the test statistic is:</div>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">A) 0</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) 1</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) Equal to the critical value</button>
+      <div class="quiz-explanation">When \(O_i = E_i\) for every category, each term \((O_i - E_i)^2 / E_i = 0\), so \(\chi^2 = 0\). Perfect agreement with \(H_0\).</div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 12: SECTION DIVIDER — TEST OF INDEPENDENCE ============ -->
+  <div class="slide section-divider" id="slide-12">
+    <div class="slide-number" style="color:#666;">12 / 20</div>
+    <h1>Section 3</h1>
+    <p>Test of Independence</p>
+  </div>
+
+  <!-- ============ SLIDE 13: 3.1 CONTINGENCY TABLES ============ -->
+  <div class="slide" id="slide-13">
+    <div class="slide-number">13 / 20</div>
+    <h2>3.1 Contingency Tables and Expected Frequencies</h2>
+    <div class="slide-content">
+      <div class="definition">
+        <strong>Purpose:</strong> Test whether <strong>two categorical variables</strong> are statistically independent, using data from <strong>a single sample</strong>.
+      </div>
+
+      <p>Data is arranged in an \(r \times c\) <strong>contingency table</strong> (r rows, c columns). The hypotheses are:</p>
+      <p>\(H_0\): The two variables are independent.</p>
+      <p>\(H_1\): The two variables are not independent (i.e., they are associated).</p>
+
+      <p><strong>Degrees of freedom:</strong> \(\text{df} = (r - 1)(c - 1)\)</p>
+
+      <p>The expected frequency for each cell is:</p>
+      <p style="text-align:center; font-size:1.15rem; margin:16px 0;">
+        $$E_{ij} = \frac{(\text{Row } i \text{ total}) \times (\text{Column } j \text{ total})}{\text{Grand total}}$$
+      </p>
+
+      <div class="key-point">
+        <strong>Why this formula?</strong> Under independence, \(P(A \cap B) = P(A) \times P(B)\). The expected frequency applies this rule to the sample totals.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 14: 3.2 WORKED EXAMPLE — SETUP ============ -->
+  <div class="slide" id="slide-14">
+    <div class="slide-number">14 / 20</div>
+    <h2>3.2 Example: Client Satisfaction vs. Service Type</h2>
+    <div class="slide-content">
+      <p>BrightPath surveyed 300 clients about their satisfaction (Satisfied / Neutral / Dissatisfied) across three service types (Tax, Audit, Advisory). Is satisfaction independent of service type?</p>
+
+      <table>
+        <tr><th></th><th>Tax</th><th>Audit</th><th>Advisory</th><th>Row Total</th></tr>
+        <tr><td><strong>Satisfied</strong></td><td>60</td><td>40</td><td>55</td><td>155</td></tr>
+        <tr><td><strong>Neutral</strong></td><td>30</td><td>35</td><td>20</td><td>85</td></tr>
+        <tr><td><strong>Dissatisfied</strong></td><td>10</td><td>25</td><td>25</td><td>60</td></tr>
+        <tr><td><strong>Col Total</strong></td><td>100</td><td>100</td><td>100</td><td>300</td></tr>
+      </table>
+
+      <p><strong>Computing expected frequencies</strong> (example cells):</p>
+      <p>\(E_{\text{Satisfied, Tax}} = \frac{155 \times 100}{300} = 51.67\) &nbsp;&nbsp; \(E_{\text{Dissatisfied, Audit}} = \frac{60 \times 100}{300} = 20.00\)</p>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 15: 3.3 FULL EXPECTED TABLE & CALCULATION ============ -->
+  <div class="slide" id="slide-15">
+    <div class="slide-number">15 / 20</div>
+    <h2>3.3 Calculation: Expected Frequencies and Test Statistic</h2>
+    <div class="slide-content">
+      <p><strong>Complete expected frequency table:</strong></p>
+      <table>
+        <tr><th></th><th>Tax</th><th>Audit</th><th>Advisory</th></tr>
+        <tr><td><strong>Satisfied</strong></td><td>51.67</td><td>51.67</td><td>51.67</td></tr>
+        <tr><td><strong>Neutral</strong></td><td>28.33</td><td>28.33</td><td>28.33</td></tr>
+        <tr><td><strong>Dissatisfied</strong></td><td>20.00</td><td>20.00</td><td>20.00</td></tr>
+      </table>
+
+      <p>Since all column totals are equal (100), each row's expected values are simply the row total / 3.</p>
+
+      <p><strong>Test statistic:</strong></p>
+      <p style="text-align:center; margin: 10px 0;">
+        $$\chi^2 = \frac{(60-51.67)^2}{51.67} + \frac{(40-51.67)^2}{51.67} + \cdots + \frac{(25-20)^2}{20}$$
+      </p>
+      <p style="text-align:center;">$$= 1.34 + 2.63 + 0.21 + 0.10 + 1.57 + 2.45 + 5.00 + 1.25 + 1.25 = \mathbf{15.80}$$</p>
+
+      <p>\(\text{df} = (3-1)(3-1) = 4\). At \(\alpha = 0.05\): \(\chi^2_{\text{critical}} = 9.488\).</p>
+
+      <div class="key-point">
+        <strong>Decision:</strong> \(15.80 > 9.488\) — <strong>reject \(H_0\)</strong>. Client satisfaction is not independent of service type. The audit and advisory divisions show notably higher dissatisfaction.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 16: 3.4 BUSINESS INTERPRETATION ============ -->
+  <div class="slide" id="slide-16">
+    <div class="slide-number">16 / 20</div>
+    <h2>3.4 What Does This Mean for BrightPath?</h2>
+    <div class="slide-content">
+      <p>We found a statistically significant association between service type and client satisfaction. But the test tells us <em>that</em> a relationship exists, not <em>where</em>. How do we dig deeper?</p>
+
+      <div class="example">
+        <div class="example-label">Reading the residuals:</div>
+        <p>Look at which cells contributed most to the test statistic. The largest contributions came from:</p>
+        <ul>
+          <li><strong>Dissatisfied × Tax</strong> — observed (10) much lower than expected (20). Tax clients are more satisfied than average.</li>
+          <li><strong>Satisfied × Audit</strong> — observed (40) below expected (51.67). Audit clients are less satisfied.</li>
+          <li><strong>Dissatisfied × Audit</strong> — observed (25) above expected (20). Confirms audit dissatisfaction.</li>
+        </ul>
+      </div>
+
+      <div class="key-point">
+        <strong>Management recommendation:</strong> BrightPath should investigate the audit client experience. The data suggests the audit division has a satisfaction problem that tax does not share. This could relate to communication, pricing, or turnaround times — the statistical test identifies <em>where</em> to look, not <em>why</em>.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 17: KNOWLEDGE CHECK — SECTION 3 ============ -->
+  <div class="slide" id="slide-17">
+    <div class="slide-number">17 / 20</div>
+    <h2>Knowledge Check — Section 3</h2>
+
+    <div class="quiz" id="quiz-3a">
+      <div class="quiz-question">Q1: In a 4 × 3 contingency table, how many degrees of freedom for the test of independence?</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) 12</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">B) 7</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) 6</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">D) 11</button>
+      <div class="quiz-explanation">df = (r − 1)(c − 1) = (4 − 1)(3 − 1) = 3 × 2 = 6.</div>
+    </div>
+
+    <div class="quiz" id="quiz-3b">
+      <div class="quiz-question">Q2: Rejecting \(H_0\) in a test of independence tells us:</div>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">A) One variable causes the other</button>
+      <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) The two variables are associated</button>
+      <button class="quiz-option" onclick="checkAnswer(this, false)">C) The proportions are equal</button>
+      <div class="quiz-explanation">The test detects association (dependence), not causation. We need further investigation or experimental design to establish causal relationships.</div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 18: SECTION DIVIDER — TEST OF HOMOGENEITY ============ -->
+  <div class="slide section-divider" id="slide-18">
+    <div class="slide-number" style="color:#666;">18 / 20</div>
+    <h1>Section 4</h1>
+    <p>Test of Homogeneity</p>
+  </div>
+
+  <!-- ============ SLIDE 19: 4.1 HOMOGENEITY vs INDEPENDENCE ============ -->
+  <div class="slide" id="slide-19">
+    <div class="slide-number">19 / 20</div>
+    <h2>4.1 Homogeneity vs. Independence</h2>
+    <div class="slide-content">
+      <div class="definition">
+        <strong>Purpose:</strong> Test whether the <strong>distribution of a categorical variable is the same across two or more populations</strong>. The mechanics (formula, expected frequencies, df) are identical to the test of independence — the difference is in the study design.
+      </div>
+
+      <div class="two-col">
+        <div>
+          <h3>Test of Independence</h3>
+          <ul>
+            <li><strong>One sample</strong> drawn from a single population</li>
+            <li>Both variables are observed on each subject</li>
+            <li>Question: are the two variables related?</li>
+          </ul>
+          <div class="example" style="margin-top:10px;">
+            <div class="example-label">Example:</div>
+            <p>Survey 300 BrightPath clients. Record their service type <em>and</em> satisfaction level. Are they associated?</p>
+          </div>
+        </div>
+        <div>
+          <h3>Test of Homogeneity</h3>
+          <ul>
+            <li><strong>Separate samples</strong> drawn from different populations</li>
+            <li>One variable is the grouping variable (population)</li>
+            <li>Question: is the distribution the same across groups?</li>
+          </ul>
+          <div class="example" style="margin-top:10px;">
+            <div class="example-label">Example:</div>
+            <p>Sample 100 clients from each of three offices (Sydney, Melbourne, Brisbane). Is the distribution of satisfaction the same?</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="key-point">
+        <strong>Same maths, different question.</strong> The formula, df, and decision rule are identical. The distinction matters for how you frame the hypotheses and interpret the result.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLIDE 20: 4.2 EXAMPLE & SUMMARY ============ -->
+  <div class="slide" id="slide-20">
+    <div class="slide-number">20 / 20</div>
+    <h2>4.2 Homogeneity Example and Week Summary</h2>
+    <div class="slide-content">
+      <div class="example">
+        <div class="example-label">Homogeneity example:</div>
+        <p>BrightPath sampled 100 clients from each of its Sydney and Melbourne offices and recorded satisfaction:</p>
+        <table>
+          <tr><th></th><th>Satisfied</th><th>Neutral</th><th>Dissatisfied</th><th>Total</th></tr>
+          <tr><td><strong>Sydney</strong></td><td>55</td><td>30</td><td>15</td><td>100</td></tr>
+          <tr><td><strong>Melbourne</strong></td><td>45</td><td>25</td><td>30</td><td>100</td></tr>
+          <tr><td><strong>Total</strong></td><td>100</td><td>55</td><td>45</td><td>200</td></tr>
+        </table>
+        <p>\(H_0\): The distribution of satisfaction is the same in both offices.</p>
+        <p>\(H_1\): The distributions differ.</p>
+        <p>df = (2 − 1)(3 − 1) = 2. You would compute expected frequencies exactly as before and compare \(\chi^2\) to \(\chi^2_{0.05, 2} = 5.991\).</p>
+      </div>
+
+      <h3 style="margin-top: 24px;">Week 10 Summary — Three Chi-Squared Tests</h3>
+      <table style="width:100%; font-size:0.95rem;">
+        <tr><th>Test</th><th>Question</th><th>Degrees of Freedom</th></tr>
+        <tr><td>Goodness-of-Fit</td><td>Does one variable's distribution match a specified set of proportions?</td><td>\(k - 1\)</td></tr>
+        <tr><td>Independence</td><td>Are two variables associated? (single sample)</td><td>\((r-1)(c-1)\)</td></tr>
+        <tr><td>Homogeneity</td><td>Is the distribution the same across populations? (separate samples)</td><td>\((r-1)(c-1)\)</td></tr>
+      </table>
+
+      <div class="key-point" style="margin-top:16px;">
+        <strong>All three tests use the same formula:</strong> \(\chi^2 = \sum \frac{(O_i - E_i)^2}{E_i}\). They differ in study design, hypotheses, and how expected frequencies are determined.
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-indicator" id="navIndicator"></div>
+  <div class="nav-hint">&larr; &rarr; keys to navigate &middot; T for contents</div>
+
+  <!-- Table of Contents Overlay -->
+  <div class="toc-overlay" id="tocOverlay">
+    <h2>Table of Contents</h2>
+    <div id="tocList"></div>
+    <p style="margin-top: 20px; color: #999; font-size: 0.85rem;">Press T or Escape to close</p>
+  </div>
+
+  <!-- KaTeX JS -->
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let current = 0;
+    function showSlide(n) {
+      slides[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, slides.length - 1));
+      slides[current].classList.add('active');
+      document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+      document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+    }
+    function buildTOC() {
+      const list = document.getElementById('tocList');
+      slides.forEach((s, i) => {
+        const h = s.querySelector('h1, h2');
+        if (h) {
+          const div = document.createElement('div');
+          div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+          div.textContent = h.textContent;
+          div.onclick = () => { showSlide(i); toggleTOC(); };
+          list.appendChild(div);
+        }
+      });
+    }
+    function toggleTOC() {
+      document.getElementById('tocOverlay').classList.toggle('active');
+    }
+    function checkAnswer(btn, isCorrect) {
+      const quiz = btn.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      const options = quiz.querySelectorAll('.quiz-option');
+      options.forEach(o => {
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+        else if (o === btn && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('dimmed');
+      });
+      quiz.querySelector('.quiz-explanation').classList.add('visible');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+      else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+      else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+    });
+    showSlide(0);
+    buildTOC();
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ]
+    });
+  </script>
+</body>
+</html>
