@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 10 — Micro-Tasks | COIT20271</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --primary: #0d9488;
+    --primary-light: #14b8a6;
+    --primary-dark: #0f766e;
+    --primary-bg: #f0fdfa;
+    --primary-bg2: #ccfbf1;
+    --accent: #f59e0b;
+    --accent-light: #fef3c7;
+    --accent-bg: #fffbeb;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --bg: #ffffff;
+    --bg-alt: #f8fafc;
+    --border: #e2e8f0;
+    --code-bg: #1e293b;
+    --code-text: #e2e8f0;
+    --sidebar-w: 280px;
+    --complete: #16a34a;
+    --complete-bg: #f0fdf4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text);
+    background: var(--bg-alt);
+    line-height: 1.6;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: var(--sidebar-w); height: 100vh;
+    background: var(--code-bg);
+    color: #cbd5e1;
+    padding: 24px 20px;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex; flex-direction: column;
+  }
+
+  .sidebar-title {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--primary-light);
+    margin-bottom: 6px;
+  }
+
+  .sidebar-week {
+    font-size: 22px; font-weight: 800;
+    color: #f1f5f9;
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+
+  .sidebar-progress {
+    margin-bottom: 24px;
+  }
+
+  .sidebar-progress-label {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 8px;
+    color: #94a3b8;
+  }
+
+  .progress-bar {
+    height: 8px; background: #334155;
+    border-radius: 4px; overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%; background: var(--primary-light);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-text {
+    font-size: 13px; margin-top: 6px;
+    color: #94a3b8;
+  }
+
+  .sidebar-nav { list-style: none; flex: 1; }
+
+  .sidebar-nav li { margin-bottom: 2px; }
+
+  .sidebar-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    font-size: 13px; font-weight: 500;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .sidebar-nav a:hover { background: #334155; color: #e2e8f0; }
+
+  .nav-check {
+    width: 18px; height: 18px;
+    border: 2px solid #475569;
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    transition: all 0.3s;
+  }
+
+  .nav-check.done {
+    background: var(--complete);
+    border-color: var(--complete);
+    color: white;
+  }
+
+  /* MAIN */
+  .main {
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 40%, #2dd4bf 100%);
+    color: white;
+    padding: 60px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute; top: -40%; right: -8%;
+    width: 350px; height: 350px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+
+  .hero-label {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    opacity: 0.8; margin-bottom: 8px;
+  }
+
+  .hero h1 {
+    font-size: 36px; font-weight: 800;
+    line-height: 1.2; margin-bottom: 12px;
+  }
+
+  .hero p {
+    font-size: 16px; opacity: 0.85;
+    max-width: 640px; line-height: 1.6;
+  }
+
+  .content {
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* INTRO CALLOUT */
+  .callout {
+    padding: 20px 24px;
+    border-radius: 10px;
+    margin-bottom: 36px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .callout-info {
+    background: var(--primary-bg);
+    border-left: 4px solid var(--primary);
+  }
+
+  .callout-warn {
+    background: var(--accent-bg);
+    border-left: 4px solid var(--accent);
+  }
+
+  .callout strong {
+    display: block;
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  /* TASK CARD */
+  .task-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 32px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .task-card.completed {
+    border-color: var(--complete);
+  }
+
+  .task-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-alt);
+  }
+
+  .task-num {
+    width: 44px; height: 44px;
+    background: var(--primary);
+    color: white;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .task-card.completed .task-num {
+    background: var(--complete);
+  }
+
+  .task-title {
+    font-size: 18px; font-weight: 700;
+    color: var(--text);
+  }
+
+  .task-time {
+    font-size: 13px; color: var(--text-light);
+    margin-top: 2px;
+  }
+
+  .task-body {
+    padding: 28px;
+  }
+
+  .task-section {
+    margin-bottom: 24px;
+  }
+
+  .task-section:last-child { margin-bottom: 0; }
+
+  .task-section-title {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--primary-dark);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .task-section-title::before {
+    content: '';
+    width: 4px; height: 16px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  .task-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .task-text p { margin-bottom: 8px; }
+
+  .step-list {
+    list-style: none;
+    counter-reset: steps;
+  }
+
+  .step-list li {
+    counter-increment: steps;
+    padding: 8px 0 8px 36px;
+    position: relative;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .step-list li::before {
+    content: counter(steps);
+    position: absolute; left: 0; top: 8px;
+    width: 24px; height: 24px;
+    background: var(--primary-bg2);
+    color: var(--primary-dark);
+    border-radius: 50%;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* SUCCESS CRITERIA */
+  .criteria-list {
+    list-style: none;
+  }
+
+  .criteria-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+
+  .criteria-check {
+    width: 22px; height: 22px;
+    border: 2px solid var(--border);
+    border-radius: 5px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: all 0.2s;
+    margin-top: 1px;
+  }
+
+  .criteria-check:hover { border-color: var(--primary); }
+
+  .criteria-check.checked {
+    background: var(--complete);
+    border-color: var(--complete);
+    color: white;
+  }
+
+  /* HINTS */
+  .hints-container {
+    margin-top: 8px;
+  }
+
+  .hint-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    background: var(--accent-light);
+    color: #92400e;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+  }
+
+  .hint-toggle:hover { background: #fde68a; }
+
+  .hint-box {
+    display: none;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  .hint-box.show { display: block; }
+
+  .hint-1 {
+    background: #fefce8;
+    border-left: 4px solid #facc15;
+  }
+
+  .hint-2 {
+    background: #fff7ed;
+    border-left: 4px solid #fb923c;
+  }
+
+  .hint-3 {
+    background: #fef2f2;
+    border-left: 4px solid #f87171;
+  }
+
+  .hint-label {
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .hint-1 .hint-label { color: #a16207; }
+  .hint-2 .hint-label { color: #c2410c; }
+  .hint-3 .hint-label { color: #dc2626; }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .code-block code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--code-text);
+    white-space: pre;
+  }
+
+  .code-lang {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: #64748b;
+  }
+
+  .kw { color: #c084fc; }
+  .ty { color: #67e8f9; }
+  .str { color: #86efac; }
+  .num { color: #fbbf24; }
+  .cm { color: #64748b; }
+  .fn { color: #93c5fd; }
+
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px;
+    padding: 4px 10px;
+    background: #334155;
+    color: #94a3b8;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover { background: #475569; color: #e2e8f0; }
+
+  /* MARK COMPLETE */
+  .task-footer {
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .btn-complete {
+    padding: 10px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-complete:hover { background: var(--primary-dark); }
+
+  .btn-complete.done {
+    background: var(--complete);
+    cursor: default;
+  }
+
+  .inline-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .hero { padding: 40px 24px; }
+    .hero h1 { font-size: 28px; }
+    .content { padding: 24px 20px 60px; }
+    .task-body { padding: 20px; }
+    .task-header { padding: 18px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-title">COIT20271</div>
+  <div class="sidebar-week">Week 10<br>Micro-Tasks</div>
+
+  <div class="sidebar-progress">
+    <div class="sidebar-progress-label">Tasks Completed</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">0 / 5 completed</div>
+  </div>
+
+  <ul class="sidebar-nav" id="sidebarNav">
+    <li><a href="#task-1"><span class="nav-check" id="nav-1"></span>Player Movement</a></li>
+    <li><a href="#task-2"><span class="nav-check" id="nav-2"></span>Collectible Pickup</a></li>
+    <li><a href="#task-3"><span class="nav-check" id="nav-3"></span>Enemy Spawner</a></li>
+    <li><a href="#task-4"><span class="nav-check" id="nav-4"></span>UI Score Display</a></li>
+    <li><a href="#task-5"><span class="nav-check" id="nav-5"></span>Countdown Timer</a></li>
+  </ul>
+</aside>
+
+<div class="main">
+  <div class="hero">
+    <div class="hero-label">Week 10 — Pre-Tutorial Activity</div>
+    <h1>Micro-Tasks</h1>
+    <p>Five small, independent challenges that test whether you can build from scratch — not follow instructions. Open Unity, create a new empty scene, and work through each task. Use the graduated hints only if you're stuck.</p>
+  </div>
+
+  <div class="content">
+
+    <div class="callout callout-info">
+      <strong>How This Works</strong>
+      Each task tells you <em>what</em> to build and how to verify it works. It does not tell you <em>how</em> to build it — that's the test. If you get stuck, open the hints one at a time. Hint 1 is a gentle nudge. Hint 2 is more specific. Hint 3 gives you near-complete guidance. Try to use as few hints as possible.
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>Before You Start</strong>
+      Create a new Unity 3D project (or a new empty Scene in an existing project). Use the built-in Render Pipeline. Each task is independent — you can do them in any order, and each can exist in the same scene.
+    </div>
+
+    <!-- ═══════════════ TASK 1 ═══════════════ -->
+    <div class="task-card" id="task-1">
+      <div class="task-header">
+        <div class="task-num">1</div>
+        <div>
+          <div class="task-title">Player Movement</div>
+          <div class="task-time">~10 minutes</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <div class="task-section">
+          <div class="task-section-title">Objective</div>
+          <div class="task-text">
+            <p>Create a player cube that moves on the ground plane using WASD or arrow keys. Movement must be physics-based (not transform-based) so the object interacts correctly with other colliders.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Scene Setup</div>
+          <ol class="step-list">
+            <li>Create a <span class="inline-code">Plane</span> at position (0, 0, 0) to act as the ground.</li>
+            <li>Create a <span class="inline-code">Cube</span> at position (0, 0.5, 0) — this is your player.</li>
+            <li>Give the Cube a distinct colour (create a new Material and assign it) so you can identify it easily.</li>
+          </ol>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Requirements</div>
+          <div class="task-text">
+            <p>Write a C# script called <span class="inline-code">PlayerMovement</span> that reads input every frame and moves the cube via physics. The player should move at a configurable speed that you can adjust in the Inspector.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Success Criteria</div>
+          <ul class="criteria-list">
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="1" data-idx="0" onclick="toggleCriteria(this)"></span>
+              <span>Pressing W/Up moves the cube forward (positive Z direction)</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="1" data-idx="1" onclick="toggleCriteria(this)"></span>
+              <span>Pressing S/Down moves the cube backward (negative Z direction)</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="1" data-idx="2" onclick="toggleCriteria(this)"></span>
+              <span>Pressing A/Left and D/Right moves left and right on the X axis</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="1" data-idx="3" onclick="toggleCriteria(this)"></span>
+              <span>Movement is smooth and frame-rate independent (doesn't jitter or teleport)</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="1" data-idx="4" onclick="toggleCriteria(this)"></span>
+              <span>You can change the speed value in the Inspector without editing code</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Hints (use only if stuck)</div>
+          <div class="hints-container">
+            <button class="hint-toggle" onclick="showHint('t1', 1)">💡 Show Hint 1 — Nudge</button>
+            <div class="hint-box hint-1" id="t1-hint-1">
+              <span class="hint-label">Hint 1 — Nudge</span>
+              Think about what component enables physics-based movement. You'll need to add it to the cube, get a reference to it in your script, and apply velocity or force inside the correct update method (not <span class="inline-code">Update</span>).
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t1', 2)">💡 Show Hint 2 — Direction</button>
+            <div class="hint-box hint-2" id="t1-hint-2">
+              <span class="hint-label">Hint 2 — Direction</span>
+              Add a <span class="inline-code">Rigidbody</span> to the cube. In your script, use <span class="inline-code">Input.GetAxis("Horizontal")</span> and <span class="inline-code">Input.GetAxis("Vertical")</span> to get input values between -1 and 1. Build a <span class="inline-code">Vector3</span> from these and apply it in <span class="inline-code">FixedUpdate</span>.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t1', 3)">💡 Show Hint 3 — Near-Solution</button>
+            <div class="hint-box hint-3" id="t1-hint-3">
+              <span class="hint-label">Hint 3 — Near-Solution</span>
+              Your <span class="inline-code">FixedUpdate</span> should look roughly like this:
+              <div class="code-block"><code><span class="kw">void</span> <span class="fn">FixedUpdate</span>() {
+    <span class="kw">float</span> h = <span class="ty">Input</span>.<span class="fn">GetAxis</span>(<span class="str">"Horizontal"</span>);
+    <span class="kw">float</span> v = <span class="ty">Input</span>.<span class="fn">GetAxis</span>(<span class="str">"Vertical"</span>);
+    <span class="ty">Vector3</span> movement = <span class="kw">new</span> <span class="ty">Vector3</span>(h, <span class="num">0</span>, v);
+    rb.velocity = movement * speed;
+}</code></div>
+              Cache your Rigidbody reference in <span class="inline-code">Start()</span> or <span class="inline-code">Awake()</span> using <span class="inline-code">GetComponent&lt;Rigidbody&gt;()</span>. The <span class="inline-code">speed</span> field should be <span class="inline-code">public</span> or marked with <span class="inline-code">[SerializeField]</span>.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span></span>
+        <button class="btn-complete" data-task="1" onclick="completeTask(1)">Mark Complete ✓</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════ TASK 2 ═══════════════ -->
+    <div class="task-card" id="task-2">
+      <div class="task-header">
+        <div class="task-num">2</div>
+        <div>
+          <div class="task-title">Collectible Pickup</div>
+          <div class="task-time">~10 minutes</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <div class="task-section">
+          <div class="task-section-title">Objective</div>
+          <div class="task-text">
+            <p>Create collectible objects that the player can pick up by moving into them. When the player touches a collectible, it should disappear. You must use triggers (not physical collisions) so the player passes through them smoothly.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Scene Setup</div>
+          <ol class="step-list">
+            <li>Use the player cube from Task 1 (or create a new one if you skipped it).</li>
+            <li>Create 4–5 <span class="inline-code">Sphere</span> objects scattered across the ground plane.</li>
+            <li>Give the spheres a bright colour (e.g., yellow) and scale them down to (0.5, 0.5, 0.5).</li>
+            <li>Add the tag <span class="inline-code">Collectible</span> in the Tag Manager (Edit → Project Settings → Tags and Layers), then assign it to all spheres.</li>
+          </ol>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Requirements</div>
+          <div class="task-text">
+            <p>Write a C# script called <span class="inline-code">PlayerCollector</span> that detects when the player enters a collectible's trigger zone and destroys the collectible. Keep a count of how many have been collected and print it to the Console.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Success Criteria</div>
+          <ul class="criteria-list">
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="2" data-idx="0" onclick="toggleCriteria(this)"></span>
+              <span>Moving the player into a sphere makes the sphere disappear</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="2" data-idx="1" onclick="toggleCriteria(this)"></span>
+              <span>The player does not bounce off or get stopped by the spheres</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="2" data-idx="2" onclick="toggleCriteria(this)"></span>
+              <span>The Console shows an updated count each time a collectible is picked up (e.g., "Collected: 3")</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="2" data-idx="3" onclick="toggleCriteria(this)"></span>
+              <span>Only objects tagged "Collectible" are affected — other objects are ignored</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Hints (use only if stuck)</div>
+          <div class="hints-container">
+            <button class="hint-toggle" onclick="showHint('t2', 1)">💡 Show Hint 1 — Nudge</button>
+            <div class="hint-box hint-1" id="t2-hint-1">
+              <span class="hint-label">Hint 1 — Nudge</span>
+              For the player to pass through the spheres instead of bouncing off, the sphere's Collider needs to be configured as a trigger. There's a checkbox on the Collider component for this. The detection callback has "Trigger" in its method name.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t2', 2)">💡 Show Hint 2 — Direction</button>
+            <div class="hint-box hint-2" id="t2-hint-2">
+              <span class="hint-label">Hint 2 — Direction</span>
+              On each sphere: tick <span class="inline-code">Is Trigger</span> on the Sphere Collider. On your player script, implement <span class="inline-code">OnTriggerEnter(Collider other)</span>. Inside it, check the tag with <span class="inline-code">other.CompareTag("Collectible")</span>. Remember to destroy the <em>entire GameObject</em>, not just the collider.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t2', 3)">💡 Show Hint 3 — Near-Solution</button>
+            <div class="hint-box hint-3" id="t2-hint-3">
+              <span class="hint-label">Hint 3 — Near-Solution</span>
+              <div class="code-block"><code><span class="kw">private int</span> collectCount = <span class="num">0</span>;
+
+<span class="kw">void</span> <span class="fn">OnTriggerEnter</span>(<span class="ty">Collider</span> other) {
+    <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Collectible"</span>)) {
+        collectCount++;
+        <span class="ty">Debug</span>.<span class="fn">Log</span>(<span class="str">"Collected: "</span> + collectCount);
+        <span class="fn">Destroy</span>(other.gameObject);
+    }
+}</code></div>
+              This script goes on the <strong>player</strong>. The critical detail: <span class="inline-code">Destroy(other.gameObject)</span> not <span class="inline-code">Destroy(other)</span> — the latter only removes the Collider component.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span></span>
+        <button class="btn-complete" data-task="2" onclick="completeTask(2)">Mark Complete ✓</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════ TASK 3 ═══════════════ -->
+    <div class="task-card" id="task-3">
+      <div class="task-header">
+        <div class="task-num">3</div>
+        <div>
+          <div class="task-title">Enemy Spawner</div>
+          <div class="task-time">~15 minutes</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <div class="task-section">
+          <div class="task-section-title">Objective</div>
+          <div class="task-text">
+            <p>Create a spawner that automatically creates enemy objects at random positions on the ground every 2 seconds. This requires you to make a Prefab and use a Coroutine.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Scene Setup</div>
+          <ol class="step-list">
+            <li>Create a <span class="inline-code">Capsule</span> in the scene. Give it a red Material. This is your enemy template.</li>
+            <li>Drag the Capsule from the Hierarchy into the Project window (Assets folder) to create a Prefab.</li>
+            <li>Delete the Capsule from the scene — you'll spawn it via script.</li>
+            <li>Create an empty <span class="inline-code">GameObject</span> named "Spawner" and position it at the centre of your ground plane.</li>
+          </ol>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Requirements</div>
+          <div class="task-text">
+            <p>Write a C# script called <span class="inline-code">EnemySpawner</span> and attach it to the Spawner object. It should repeatedly spawn clones of the enemy Prefab at random positions within a 10×10 unit area centred on the spawner, with a 2-second interval between spawns. The Prefab reference must be assignable in the Inspector.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Success Criteria</div>
+          <ul class="criteria-list">
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="3" data-idx="0" onclick="toggleCriteria(this)"></span>
+              <span>Red capsules appear in the scene automatically when you press Play</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="3" data-idx="1" onclick="toggleCriteria(this)"></span>
+              <span>A new enemy spawns roughly every 2 seconds</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="3" data-idx="2" onclick="toggleCriteria(this)"></span>
+              <span>Each enemy appears at a different, random position on the ground plane</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="3" data-idx="3" onclick="toggleCriteria(this)"></span>
+              <span>You can see the clones appearing in the Hierarchy as children or root objects</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="3" data-idx="4" onclick="toggleCriteria(this)"></span>
+              <span>The enemy Prefab field is assigned via drag-and-drop in the Inspector (not hard-coded)</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Hints (use only if stuck)</div>
+          <div class="hints-container">
+            <button class="hint-toggle" onclick="showHint('t3', 1)">💡 Show Hint 1 — Nudge</button>
+            <div class="hint-box hint-1" id="t3-hint-1">
+              <span class="hint-label">Hint 1 — Nudge</span>
+              You need a way to repeatedly do something with a delay. Unity has a built-in mechanism for this that uses <span class="inline-code">IEnumerator</span> and <span class="inline-code">yield return</span>. You also need a way to generate random numbers for the X and Z position.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t3', 2)">💡 Show Hint 2 — Direction</button>
+            <div class="hint-box hint-2" id="t3-hint-2">
+              <span class="hint-label">Hint 2 — Direction</span>
+              Start a coroutine in <span class="inline-code">Start()</span> using <span class="inline-code">StartCoroutine()</span>. Inside the coroutine, use a <span class="inline-code">while(true)</span> loop that calls <span class="inline-code">Instantiate</span> and then <span class="inline-code">yield return new WaitForSeconds(2f)</span>. For random positions, use <span class="inline-code">Random.Range(-5f, 5f)</span> for X and Z, keeping Y fixed at ground level (e.g., 1f for the capsule's half-height).
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t3', 3)">💡 Show Hint 3 — Near-Solution</button>
+            <div class="hint-box hint-3" id="t3-hint-3">
+              <span class="hint-label">Hint 3 — Near-Solution</span>
+              <div class="code-block"><code>[<span class="ty">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> enemyPrefab;
+
+<span class="kw">void</span> <span class="fn">Start</span>() {
+    <span class="fn">StartCoroutine</span>(<span class="fn">SpawnLoop</span>());
+}
+
+<span class="ty">IEnumerator</span> <span class="fn">SpawnLoop</span>() {
+    <span class="kw">while</span> (<span class="kw">true</span>) {
+        <span class="kw">float</span> x = <span class="ty">Random</span>.<span class="fn">Range</span>(<span class="num">-5f</span>, <span class="num">5f</span>);
+        <span class="kw">float</span> z = <span class="ty">Random</span>.<span class="fn">Range</span>(<span class="num">-5f</span>, <span class="num">5f</span>);
+        <span class="ty">Vector3</span> pos = <span class="kw">new</span> <span class="ty">Vector3</span>(x, <span class="num">1f</span>, z);
+        <span class="fn">Instantiate</span>(enemyPrefab, pos,
+                    <span class="ty">Quaternion</span>.identity);
+        <span class="kw">yield return new</span> <span class="ty">WaitForSeconds</span>(<span class="num">2f</span>);
+    }
+}</code></div>
+              Don't forget to drag the enemy Prefab from the Project window onto the <span class="inline-code">enemyPrefab</span> slot in the Inspector.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span></span>
+        <button class="btn-complete" data-task="3" onclick="completeTask(3)">Mark Complete ✓</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════ TASK 4 ═══════════════ -->
+    <div class="task-card" id="task-4">
+      <div class="task-header">
+        <div class="task-num">4</div>
+        <div>
+          <div class="task-title">UI Score Display</div>
+          <div class="task-time">~10 minutes</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <div class="task-section">
+          <div class="task-section-title">Objective</div>
+          <div class="task-text">
+            <p>Display a score on screen using Unity's UI system. The score should increase by 1 every time the player presses the Space key. This task tests whether you can set up a Canvas, create a UI Text element, and update it from a script.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Scene Setup</div>
+          <ol class="step-list">
+            <li>You need a UI text element on screen. You'll create this through the Unity menu system — look under <span class="inline-code">GameObject → UI</span>.</li>
+            <li>Position the text in the top-left corner of the screen.</li>
+            <li>Set the default text to "Score: 0" and make the font large enough to read easily (at least size 32).</li>
+          </ol>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Requirements</div>
+          <div class="task-text">
+            <p>Write a C# script called <span class="inline-code">ScoreManager</span>. It should hold a reference to the UI text element, track the current score as an integer, and update the displayed text every time the player presses Space. Attach the script to any suitable GameObject.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Success Criteria</div>
+          <ul class="criteria-list">
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="4" data-idx="0" onclick="toggleCriteria(this)"></span>
+              <span>"Score: 0" is visible on screen when the game starts</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="4" data-idx="1" onclick="toggleCriteria(this)"></span>
+              <span>Pressing Space increases the displayed number by 1 each press</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="4" data-idx="2" onclick="toggleCriteria(this)"></span>
+              <span>Holding Space does not rapidly increase the score — it only counts distinct presses</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="4" data-idx="3" onclick="toggleCriteria(this)"></span>
+              <span>The text stays anchored to the top-left regardless of screen resolution</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Hints (use only if stuck)</div>
+          <div class="hints-container">
+            <button class="hint-toggle" onclick="showHint('t4', 1)">💡 Show Hint 1 — Nudge</button>
+            <div class="hint-box hint-1" id="t4-hint-1">
+              <span class="hint-label">Hint 1 — Nudge</span>
+              You need to decide whether to use the legacy <span class="inline-code">Text</span> component (requires <span class="inline-code">using UnityEngine.UI;</span>) or <span class="inline-code">TextMeshProUGUI</span> (requires <span class="inline-code">using TMPro;</span>). Either works. To anchor to the top-left, look at the anchor presets in the RectTransform component.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t4', 2)">💡 Show Hint 2 — Direction</button>
+            <div class="hint-box hint-2" id="t4-hint-2">
+              <span class="hint-label">Hint 2 — Direction</span>
+              Create a <span class="inline-code">UI → Text - TextMeshPro</span> (Unity will auto-create a Canvas and EventSystem). Click the anchor presets square in RectTransform and choose top-left. In your script, store a reference to the TMP_Text component and use <span class="inline-code">Input.GetKeyDown(KeyCode.Space)</span> to detect single presses. Update the text with string concatenation or interpolation.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t4', 3)">💡 Show Hint 3 — Near-Solution</button>
+            <div class="hint-box hint-3" id="t4-hint-3">
+              <span class="hint-label">Hint 3 — Near-Solution</span>
+              <div class="code-block"><code><span class="kw">using</span> TMPro;
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">ScoreManager</span> : <span class="ty">MonoBehaviour</span> {
+    [<span class="ty">SerializeField</span>] <span class="kw">private</span> <span class="ty">TMP_Text</span> scoreText;
+    <span class="kw">private int</span> score = <span class="num">0</span>;
+
+    <span class="kw">void</span> <span class="fn">Update</span>() {
+        <span class="kw">if</span> (<span class="ty">Input</span>.<span class="fn">GetKeyDown</span>(<span class="ty">KeyCode</span>.Space)) {
+            score++;
+            scoreText.text = <span class="str">"Score: "</span> + score;
+        }
+    }
+}</code></div>
+              Drag the TextMeshPro object from the Hierarchy into the <span class="inline-code">scoreText</span> field in the Inspector. Use <span class="inline-code">GetKeyDown</span> (not <span class="inline-code">GetKey</span>) to prevent rapid-fire counting.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span></span>
+        <button class="btn-complete" data-task="4" onclick="completeTask(4)">Mark Complete ✓</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════ TASK 5 ═══════════════ -->
+    <div class="task-card" id="task-5">
+      <div class="task-header">
+        <div class="task-num">5</div>
+        <div>
+          <div class="task-title">Countdown Timer + Game Over</div>
+          <div class="task-time">~15 minutes</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <div class="task-section">
+          <div class="task-section-title">Objective</div>
+          <div class="task-text">
+            <p>Display a countdown timer on screen that starts at 30 seconds and counts down to zero. When the timer hits zero, show a "Time's Up!" message in the centre of the screen and stop the game clock. This task combines UI, time tracking, and game state management.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Scene Setup</div>
+          <ol class="step-list">
+            <li>Create a UI Text element (TextMeshPro) in the top-right corner of the screen. This displays the remaining time.</li>
+            <li>Create a second UI Text element centred on the screen. Set its text to "Time's Up!" and make it large (font size 60+). Disable this GameObject — it starts hidden.</li>
+          </ol>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Requirements</div>
+          <div class="task-text">
+            <p>Write a C# script called <span class="inline-code">GameTimer</span>. It should count down from 30 seconds (configurable in Inspector), update the timer display every frame showing whole seconds remaining, and when the timer reaches zero: enable the "Time's Up!" text and set <span class="inline-code">Time.timeScale = 0f</span> to freeze the game.</p>
+          </div>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Success Criteria</div>
+          <ul class="criteria-list">
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="5" data-idx="0" onclick="toggleCriteria(this)"></span>
+              <span>Timer starts at "30" and counts down one number per second</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="5" data-idx="1" onclick="toggleCriteria(this)"></span>
+              <span>Timer shows whole seconds only (no decimals)</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="5" data-idx="2" onclick="toggleCriteria(this)"></span>
+              <span>When the timer reaches 0, "Time's Up!" appears in the centre of the screen</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="5" data-idx="3" onclick="toggleCriteria(this)"></span>
+              <span>After time runs out, all game movement freezes (physics, spawning, everything stops)</span>
+            </li>
+            <li class="criteria-item">
+              <span class="criteria-check" data-task="5" data-idx="4" onclick="toggleCriteria(this)"></span>
+              <span>The starting time can be changed in the Inspector without editing code</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="task-section">
+          <div class="task-section-title">Hints (use only if stuck)</div>
+          <div class="hints-container">
+            <button class="hint-toggle" onclick="showHint('t5', 1)">💡 Show Hint 1 — Nudge</button>
+            <div class="hint-box hint-1" id="t5-hint-1">
+              <span class="hint-label">Hint 1 — Nudge</span>
+              You can track remaining time as a float and subtract <span class="inline-code">Time.deltaTime</span> each frame. To display whole seconds, think about a method that rounds up or truncates to an integer. To freeze the game, Unity has a property that controls the speed of the game clock globally.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t5', 2)">💡 Show Hint 2 — Direction</button>
+            <div class="hint-box hint-2" id="t5-hint-2">
+              <span class="hint-label">Hint 2 — Direction</span>
+              In <span class="inline-code">Update()</span>, subtract <span class="inline-code">Time.deltaTime</span> from your timer float. Use <span class="inline-code">Mathf.CeilToInt()</span> to convert it to a whole number for display. When the value reaches zero, use <span class="inline-code">SetActive(true)</span> on the "Time's Up!" text object and set <span class="inline-code">Time.timeScale = 0f</span>. You'll need two [SerializeField] references: one for each text element.
+            </div>
+
+            <button class="hint-toggle" onclick="showHint('t5', 3)">💡 Show Hint 3 — Near-Solution</button>
+            <div class="hint-box hint-3" id="t5-hint-3">
+              <span class="hint-label">Hint 3 — Near-Solution</span>
+              <div class="code-block"><code>[<span class="ty">SerializeField</span>] <span class="kw">private</span> <span class="ty">TMP_Text</span> timerText;
+[<span class="ty">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> gameOverUI;
+[<span class="ty">SerializeField</span>] <span class="kw">private float</span> startTime = <span class="num">30f</span>;
+
+<span class="kw">private float</span> timeRemaining;
+<span class="kw">private bool</span> isGameOver = <span class="kw">false</span>;
+
+<span class="kw">void</span> <span class="fn">Start</span>() {
+    timeRemaining = startTime;
+    gameOverUI.<span class="fn">SetActive</span>(<span class="kw">false</span>);
+}
+
+<span class="kw">void</span> <span class="fn">Update</span>() {
+    <span class="kw">if</span> (isGameOver) <span class="kw">return</span>;
+
+    timeRemaining -= <span class="ty">Time</span>.deltaTime;
+    <span class="kw">if</span> (timeRemaining &lt;= <span class="num">0f</span>) {
+        timeRemaining = <span class="num">0f</span>;
+        isGameOver = <span class="kw">true</span>;
+        gameOverUI.<span class="fn">SetActive</span>(<span class="kw">true</span>);
+        <span class="ty">Time</span>.timeScale = <span class="num">0f</span>;
+    }
+    timerText.text = <span class="ty">Mathf</span>.<span class="fn">CeilToInt</span>(timeRemaining).<span class="fn">ToString</span>();
+}</code></div>
+              Remember to set <span class="inline-code">Time.timeScale = 1f</span> before entering Play mode if you've previously frozen it — Unity remembers the last value. The "Time's Up!" GameObject should start disabled in the Inspector.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span></span>
+        <button class="btn-complete" data-task="5" onclick="completeTask(5)">Mark Complete ✓</button>
+      </div>
+    </div>
+
+    <!-- SELF ASSESSMENT -->
+    <div class="task-card" id="self-assess" style="border-color: var(--primary);">
+      <div class="task-header" style="background: var(--primary-bg);">
+        <div class="task-num" style="background: var(--accent);">★</div>
+        <div>
+          <div class="task-title">Self-Assessment</div>
+          <div class="task-time">Reflect on your performance before starting the Week 10 tutorial</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <div class="task-text">
+          <p>After completing (or attempting) all five tasks, honestly assess yourself:</p>
+          <table style="width:100%; border-collapse: collapse; margin-top: 16px; font-size: 14px;">
+            <thead>
+              <tr style="background: var(--bg-alt);">
+                <th style="text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border); font-weight: 700;">Completed Without Hints</th>
+                <th style="text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border); font-weight: 700;">What It Means</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border);">5 tasks</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border);">Excellent. You can build independently. The Week 10 tutorial should feel comfortable.</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border);">3–4 tasks</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border);">Solid foundation. Review the areas where you needed hints — those are your weak spots.</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border);">1–2 tasks</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid var(--border);">You can follow tutorials but struggle to build from scratch. Revisit Weeks 1–4 material and practice recreating those projects without the instructions.</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 14px;">0 tasks</td>
+                <td style="padding: 10px 14px;">The fundamentals haven't stuck yet. Schedule time to revisit the early tutorials and focus on understanding <em>why</em> each step works, not just copying it.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let completedTasks = {};
+let checkedCriteria = {};
+
+function toggleCriteria(el) {
+  const task = el.dataset.task;
+  const idx = el.dataset.idx;
+  const key = `${task}-${idx}`;
+  if (checkedCriteria[key]) {
+    delete checkedCriteria[key];
+    el.classList.remove('checked');
+    el.textContent = '';
+  } else {
+    checkedCriteria[key] = true;
+    el.classList.add('checked');
+    el.textContent = '✓';
+  }
+  saveState();
+}
+
+function completeTask(num) {
+  const btn = document.querySelector(`.btn-complete[data-task="${num}"]`);
+  if (completedTasks[num]) return;
+
+  completedTasks[num] = true;
+  btn.textContent = 'Completed ✓';
+  btn.classList.add('done');
+
+  const card = document.getElementById(`task-${num}`);
+  card.classList.add('completed');
+
+  const nav = document.getElementById(`nav-${num}`);
+  nav.classList.add('done');
+  nav.textContent = '✓';
+
+  updateProgress();
+  saveState();
+}
+
+function updateProgress() {
+  const count = Object.keys(completedTasks).length;
+  document.getElementById('progressFill').style.width = `${(count / 5) * 100}%`;
+  document.getElementById('progressText').textContent = `${count} / 5 completed`;
+}
+
+function showHint(taskId, level) {
+  const el = document.getElementById(`${taskId}-hint-${level}`);
+  el.classList.toggle('show');
+}
+
+function saveState() {
+  localStorage.setItem('w10tasks', JSON.stringify({ completedTasks, checkedCriteria }));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('w10tasks');
+  if (!saved) return;
+  const data = JSON.parse(saved);
+
+  if (data.completedTasks) {
+    Object.keys(data.completedTasks).forEach(num => completeTask(parseInt(num)));
+  }
+
+  if (data.checkedCriteria) {
+    Object.keys(data.checkedCriteria).forEach(key => {
+      const [task, idx] = key.split('-');
+      const el = document.querySelector(`.criteria-check[data-task="${task}"][data-idx="${idx}"]`);
+      if (el) {
+        checkedCriteria[key] = true;
+        el.classList.add('checked');
+        el.textContent = '✓';
+      }
+    });
+  }
+}
+
+loadState();
+</script>
+</body>
+</html>
