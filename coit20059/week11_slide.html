@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 11 — RESTful Web Services</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #FFFFFF; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 60px 80px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 30px; color: #1a1a1a; }
+    h2 { font-size: 1.6rem; margin-bottom: 24px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.2rem; margin: 16px 0 8px; color: #333; }
+    p, li { font-size: 1.05rem; line-height: 1.7; margin-bottom: 10px; }
+    ul, ol { padding-left: 28px; }
+    .subtitle { font-size: 1.3rem; color: #555; margin-top: 10px; }
+    .meta { font-size: 1rem; color: #888; margin-top: 30px; }
+    .example {
+      background: #f8f9fa; border-left: 4px solid #4a7c59;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    .example-label { font-weight: bold; color: #4a7c59; margin-bottom: 6px; }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 16px 20px; margin: 16px 0; border-radius: 4px;
+    }
+    pre {
+      background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.88rem; margin: 12px 0;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.95rem;
+    }
+    /* Syntax highlighting */
+    .kw { color: #cba6f7; } /* keyword */
+    .str { color: #a6e3a1; } /* string */
+    .ann { color: #f9e2af; } /* annotation */
+    .cm { color: #6c7086; font-style: italic; } /* comment */
+    .typ { color: #89b4fa; } /* type */
+    .num { color: #fab387; } /* number */
+    table {
+      border-collapse: collapse; width: 100%; margin: 16px 0;
+      font-size: 0.98rem;
+    }
+    th, td {
+      border: 1px solid #ddd; padding: 10px 14px; text-align: left;
+    }
+    th { background: #f5f5f5; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+    /* Progress bar — red on white per Stephen's design system */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 4px;
+      background: #c0392b; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 20px; right: 30px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 20px; left: 30px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+    /* Table of Contents overlay */
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 60px 80px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item {
+      padding: 8px 0; cursor: pointer; color: #c0392b;
+      font-size: 1.05rem; border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 16px; color: #1a1a1a; }
+    .toc-close {
+      position: absolute; top: 20px; right: 30px;
+      font-size: 1.5rem; cursor: pointer; color: #999;
+      background: none; border: none;
+    }
+    /* Section divider slides */
+    .slide.section-divider {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .slide.section-divider h1 {
+      font-size: 2.8rem; border-bottom: 3px solid #c0392b;
+      padding-bottom: 16px;
+    }
+    .slide.section-divider .subtitle { font-size: 1.2rem; color: #666; margin-top: 16px; }
+    /* Illustration */
+    .illustration {
+      display: flex; justify-content: center; margin: 20px 0;
+    }
+    .illustration svg { max-width: 100%; height: auto; }
+    .illustration-caption {
+      text-align: center; font-size: 0.9rem; color: #666;
+      margin-top: 6px; font-style: italic;
+    }
+    /* Quiz */
+    .quiz { margin: 16px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 12px; font-size: 1.05rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 12px 16px; margin: 6px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 1rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #c0392b; background: #fff5f5; }
+    .quiz-option.correct { border-color: #4a7c59; background: #e8f5e9; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #ffebee; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 12px 16px;
+      background: #f0f4ff; border-radius: 6px;
+      font-size: 0.95rem; color: #333;
+    }
+    .quiz-explanation.visible { display: block; }
+    /* Two-column layout */
+    .two-col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+      margin-top: 10px;
+    }
+    .col h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → arrow keys to navigate &nbsp;|&nbsp; T for contents</div>
+
+<!-- TOC Overlay -->
+<div class="toc-overlay" id="tocOverlay">
+  <button class="toc-close" onclick="toggleTOC()">×</button>
+  <h2>Table of Contents</h2>
+  <div id="tocList"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================================ -->
+<div class="slide section-divider" id="slide-1" data-title="Title">
+  <h1>RESTful Web Services</h1>
+  <div class="subtitle">Week 11 — COIT20259 Enterprise Computing</div>
+  <div class="meta">Jakarta EE &amp; JAX-RS</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: 1.1 What is REST? -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-2" data-title="1.1 What is REST?">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 What is REST?</h2>
+  <div class="definition">
+    <strong>REST</strong> (Representational State Transfer) is an <em>architectural style</em> for designing networked applications. It was introduced by Roy Fielding in his 2000 doctoral dissertation.
+  </div>
+  <p>REST is <strong>not</strong> a protocol or a standard — it is a set of constraints that, when followed, produce scalable, simple, and maintainable web services.</p>
+  <div class="key-point">
+    <strong>Core idea:</strong> Everything is a <em>resource</em> identified by a URI. Clients interact with resources using standard HTTP methods.
+  </div>
+  <div class="example">
+    <div class="example-label">Example — Resource URIs:</div>
+    <p>
+      <span class="inline-code">GET /api/students</span> — list all students<br>
+      <span class="inline-code">GET /api/students/42</span> — get student with ID 42<br>
+      <span class="inline-code">POST /api/students</span> — create a new student
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: 1.2 REST Constraints -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-3" data-title="1.2 The Six REST Constraints">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 The Six REST Constraints</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Constraint</th><th>What It Means</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Client–Server</strong></td><td>UI and data storage are separated — they evolve independently</td></tr>
+      <tr><td>2</td><td><strong>Stateless</strong></td><td>Each request contains all the information the server needs — no session state stored on the server</td></tr>
+      <tr><td>3</td><td><strong>Cacheable</strong></td><td>Responses declare whether they can be cached to improve performance</td></tr>
+      <tr><td>4</td><td><strong>Uniform Interface</strong></td><td>Resources are identified by URIs; standard HTTP methods apply uniformly</td></tr>
+      <tr><td>5</td><td><strong>Layered System</strong></td><td>Client cannot tell if it is talking directly to the server or through a proxy/gateway</td></tr>
+      <tr><td>6</td><td><strong>Code on Demand</strong> <em>(optional)</em></td><td>Server can send executable code (e.g., JavaScript) to the client</td></tr>
+    </tbody>
+  </table>
+  <div class="key-point">
+    <strong>Statelessness</strong> is the constraint students struggle with most. It means no <span class="inline-code">HttpSession</span> — every request is self-contained.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: 1.3 HTTP Methods & CRUD -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-4" data-title="1.3 HTTP Methods & CRUD">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 HTTP Methods &amp; CRUD Mapping</h2>
+  <p>REST maps standard HTTP methods to database-style CRUD operations on resources:</p>
+  <table>
+    <thead>
+      <tr><th>HTTP Method</th><th>CRUD Operation</th><th>Idempotent?</th><th>Example</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>GET</strong></td><td>Read</td><td>Yes</td><td><span class="inline-code">GET /api/orders/7</span></td></tr>
+      <tr><td><strong>POST</strong></td><td>Create</td><td>No</td><td><span class="inline-code">POST /api/orders</span></td></tr>
+      <tr><td><strong>PUT</strong></td><td>Update (full)</td><td>Yes</td><td><span class="inline-code">PUT /api/orders/7</span></td></tr>
+      <tr><td><strong>DELETE</strong></td><td>Delete</td><td>Yes</td><td><span class="inline-code">DELETE /api/orders/7</span></td></tr>
+      <tr><td><strong>PATCH</strong></td><td>Update (partial)</td><td>No*</td><td><span class="inline-code">PATCH /api/orders/7</span></td></tr>
+    </tbody>
+  </table>
+  <div class="definition">
+    <strong>Idempotent</strong> means calling the operation multiple times produces the same result as calling it once. <span class="inline-code">GET</span>, <span class="inline-code">PUT</span>, and <span class="inline-code">DELETE</span> are idempotent; <span class="inline-code">POST</span> is not (each call may create a new resource).
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: Knowledge Check — REST Fundamentals -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-5" data-title="Knowledge Check — REST Fundamentals">
+  <div class="slide-number">1.Q</div>
+  <h2>Knowledge Check — REST Fundamentals</h2>
+
+  <div class="quiz" id="quiz-1">
+    <div class="quiz-question">Q1: Which REST constraint requires that each request carry all information needed by the server?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Uniform Interface</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) Stateless</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) Layered System</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) Client–Server</button>
+    <div class="quiz-explanation">Statelessness means no server-side session — every request must be self-contained with all context the server needs to process it.</div>
+  </div>
+
+  <div class="quiz" id="quiz-2">
+    <div class="quiz-question">Q2: You call <code>POST /api/products</code> three times with the same body. How many new products are likely created?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) 1 — POST is idempotent</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 3 — POST is not idempotent</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) 0 — POST only reads data</button>
+    <div class="quiz-explanation">POST is not idempotent. Each call typically creates a new resource, so three calls produce three products.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: Section Divider — JAX-RS -->
+<!-- ============================================================ -->
+<div class="slide section-divider" id="slide-6" data-title="Section 2: JAX-RS in Jakarta EE">
+  <h1>Section 2</h1>
+  <div class="subtitle">JAX-RS — Building RESTful Services in Jakarta EE</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: 2.1 Introduction to JAX-RS -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-7" data-title="2.1 What is JAX-RS?">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 What is JAX-RS?</h2>
+  <div class="definition">
+    <strong>JAX-RS</strong> (Jakarta RESTful Web Services) is the Jakarta EE standard API for building RESTful web services in Java. The reference implementation is <strong>Jersey</strong> (bundled with GlassFish).
+  </div>
+  <div class="two-col">
+    <div class="col">
+      <h3>What JAX-RS gives you</h3>
+      <ul>
+        <li>Annotation-driven — minimal boilerplate</li>
+        <li>Automatic JSON/XML serialisation</li>
+        <li>Built-in parameter injection</li>
+        <li>Integrated with CDI, EJB, JPA</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Package change (Java EE → Jakarta EE)</h3>
+      <ul>
+        <li><span class="inline-code">javax.ws.rs</span> → <span class="inline-code">jakarta.ws.rs</span></li>
+        <li>Same API, new namespace</li>
+        <li>GlassFish 7 uses the Jakarta namespace</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-point">
+    In COIT20259, we deploy JAX-RS resources on <strong>GlassFish 7</strong>. The server handles JSON binding automatically via <strong>JSON-B</strong>.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: 2.2 Key JAX-RS Annotations -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-8" data-title="2.2 Key JAX-RS Annotations">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 Key JAX-RS Annotations</h2>
+  <table>
+    <thead>
+      <tr><th>Annotation</th><th>Purpose</th><th>Example</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="inline-code">@Path</span></td><td>Maps a class or method to a URI path</td><td><span class="inline-code">@Path("/students")</span></td></tr>
+      <tr><td><span class="inline-code">@GET</span></td><td>Handles HTTP GET requests</td><td>Retrieve resource(s)</td></tr>
+      <tr><td><span class="inline-code">@POST</span></td><td>Handles HTTP POST requests</td><td>Create a resource</td></tr>
+      <tr><td><span class="inline-code">@PUT</span></td><td>Handles HTTP PUT requests</td><td>Update a resource</td></tr>
+      <tr><td><span class="inline-code">@DELETE</span></td><td>Handles HTTP DELETE requests</td><td>Delete a resource</td></tr>
+      <tr><td><span class="inline-code">@Produces</span></td><td>Specifies response media type</td><td><span class="inline-code">@Produces("application/json")</span></td></tr>
+      <tr><td><span class="inline-code">@Consumes</span></td><td>Specifies request media type</td><td><span class="inline-code">@Consumes("application/json")</span></td></tr>
+      <tr><td><span class="inline-code">@PathParam</span></td><td>Extracts a value from the URI</td><td><span class="inline-code">@PathParam("id")</span></td></tr>
+      <tr><td><span class="inline-code">@QueryParam</span></td><td>Extracts a query string parameter</td><td><span class="inline-code">@QueryParam("page")</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: 2.3 Building a Simple REST Resource -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-9" data-title="2.3 A Simple REST Resource">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Building a Simple REST Resource</h2>
+  <p>A complete JAX-RS resource class that returns a list of students as JSON:</p>
+  <pre><code><span class="ann">@Path</span>(<span class="str">"/students"</span>)
+<span class="ann">@Produces</span>(<span class="typ">MediaType</span>.APPLICATION_JSON)
+<span class="kw">public class</span> <span class="typ">StudentResource</span> {
+
+    <span class="ann">@Inject</span>
+    <span class="kw">private</span> <span class="typ">StudentService</span> service;
+
+    <span class="ann">@GET</span>                              <span class="cm">// GET /api/students</span>
+    <span class="kw">public</span> <span class="typ">List</span>&lt;<span class="typ">Student</span>&gt; <span class="kw">getAll</span>() {
+        <span class="kw">return</span> service.findAll();
+    }
+
+    <span class="ann">@GET</span>
+    <span class="ann">@Path</span>(<span class="str">"/{id}"</span>)                    <span class="cm">// GET /api/students/42</span>
+    <span class="kw">public</span> <span class="typ">Student</span> <span class="kw">getById</span>(<span class="ann">@PathParam</span>(<span class="str">"id"</span>) <span class="typ">Long</span> id) {
+        <span class="kw">return</span> service.find(id);
+    }
+
+    <span class="ann">@POST</span>                             <span class="cm">// POST /api/students</span>
+    <span class="ann">@Consumes</span>(<span class="typ">MediaType</span>.APPLICATION_JSON)
+    <span class="kw">public</span> <span class="typ">Response</span> <span class="kw">create</span>(<span class="typ">Student</span> s) {
+        service.save(s);
+        <span class="kw">return</span> <span class="typ">Response</span>.status(<span class="num">201</span>).entity(s).build();
+    }
+}</code></pre>
+  <div class="key-point">
+    Notice: no manual JSON parsing. <strong>JSON-B</strong> automatically converts Java objects to/from JSON.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: 2.4 Path & Query Parameters -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-10" data-title="2.4 Path & Query Parameters">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 Path Parameters vs. Query Parameters</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>Path Parameters</h3>
+      <p>Used to identify a <strong>specific resource</strong>.</p>
+      <pre><code><span class="cm">// URL: /api/students/42</span>
+<span class="ann">@GET</span>
+<span class="ann">@Path</span>(<span class="str">"/{id}"</span>)
+<span class="kw">public</span> <span class="typ">Student</span> get(
+    <span class="ann">@PathParam</span>(<span class="str">"id"</span>) <span class="typ">Long</span> id
+) { ... }</code></pre>
+      <p>The <span class="inline-code">{id}</span> in the path is mandatory — the URL won't match without it.</p>
+    </div>
+    <div class="col">
+      <h3>Query Parameters</h3>
+      <p>Used for <strong>optional filtering, sorting, pagination</strong>.</p>
+      <pre><code><span class="cm">// URL: /api/students?major=IT&amp;page=2</span>
+<span class="ann">@GET</span>
+<span class="kw">public</span> <span class="typ">List</span>&lt;<span class="typ">Student</span>&gt; search(
+    <span class="ann">@QueryParam</span>(<span class="str">"major"</span>) <span class="typ">String</span> m,
+    <span class="ann">@QueryParam</span>(<span class="str">"page"</span>)
+      <span class="ann">@DefaultValue</span>(<span class="str">"1"</span>) <span class="typ">int</span> p
+) { ... }</code></pre>
+      <p>Query params are optional — the method still works if omitted.</p>
+    </div>
+  </div>
+  <div class="key-point">
+    <strong>Rule of thumb:</strong> if the parameter identifies <em>which</em> resource → path param. If it filters or modifies the response → query param.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Knowledge Check — JAX-RS -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-11" data-title="Knowledge Check — JAX-RS">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — JAX-RS</h2>
+
+  <div class="quiz" id="quiz-3">
+    <div class="quiz-question">Q3: Which annotation maps a Java class to the URI path <code>/api/orders</code>?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) @GET("/api/orders")</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) @Path("/api/orders")</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) @Produces("/api/orders")</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) @RequestMapping("/api/orders")</button>
+    <div class="quiz-explanation"><code>@Path</code> maps classes and methods to URI paths. <code>@RequestMapping</code> is a Spring annotation — not Jakarta EE.</div>
+  </div>
+
+  <div class="quiz" id="quiz-4">
+    <div class="quiz-question">Q4: A method is annotated with <code>@GET @Path("/{id}")</code>. What does <code>@PathParam("id")</code> do on the method parameter?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Sets the response content type</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) Reads a query string parameter</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) Extracts the {id} value from the URI</button>
+    <div class="quiz-explanation"><code>@PathParam</code> binds the <code>{id}</code> template variable in the URI to the Java method parameter.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: Section Divider — Request & Response -->
+<!-- ============================================================ -->
+<div class="slide section-divider" id="slide-12" data-title="Section 3: Request & Response Handling">
+  <h1>Section 3</h1>
+  <div class="subtitle">Request &amp; Response Handling</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: 3.1 JSON, Media Types & Content Negotiation -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-13" data-title="3.1 JSON & Content Negotiation">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 JSON, Media Types &amp; Content Negotiation</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>JSON-B — automatic serialisation</h3>
+      <p>Jakarta JSON Binding (JSON-B) converts Java objects to JSON and back with zero configuration:</p>
+      <pre><code><span class="cm">// Java object</span>
+<span class="typ">Student</span> s = <span class="kw">new</span> <span class="typ">Student</span>();
+s.setName(<span class="str">"Alice"</span>);
+s.setGpa(<span class="num">3.8</span>);
+
+<span class="cm">// Becomes JSON automatically:</span>
+{
+  <span class="str">"name"</span>: <span class="str">"Alice"</span>,
+  <span class="str">"gpa"</span>: <span class="num">3.8</span>
+}</code></pre>
+    </div>
+    <div class="col">
+      <h3>Content Negotiation</h3>
+      <p>The client tells the server what format it wants via the <span class="inline-code">Accept</span> header:</p>
+      <pre><code><span class="cm">Accept: application/json</span>
+<span class="cm">Accept: application/xml</span></code></pre>
+      <p>The server responds in the matching format if supported.</p>
+      <div class="key-point">
+        <span class="inline-code">@Produces</span> on the resource class declares which media types it supports. In our course, we use JSON exclusively.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: 3.2 Response & Status Codes -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-14" data-title="3.2 Response & Status Codes">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Response Object &amp; HTTP Status Codes</h2>
+  <p>The <span class="inline-code">Response</span> class gives you fine-grained control over what the server sends back:</p>
+  <pre><code><span class="ann">@POST</span>
+<span class="kw">public</span> <span class="typ">Response</span> create(<span class="typ">Student</span> s) {
+    service.save(s);
+    <span class="typ">URI</span> uri = <span class="typ">URI</span>.create(<span class="str">"/api/students/"</span> + s.getId());
+    <span class="kw">return</span> <span class="typ">Response</span>.created(uri)       <span class="cm">// 201 Created</span>
+                   .entity(s)            <span class="cm">// response body</span>
+                   .build();
+}
+
+<span class="ann">@DELETE</span> <span class="ann">@Path</span>(<span class="str">"/{id}"</span>)
+<span class="kw">public</span> <span class="typ">Response</span> delete(<span class="ann">@PathParam</span>(<span class="str">"id"</span>) <span class="typ">Long</span> id) {
+    service.remove(id);
+    <span class="kw">return</span> <span class="typ">Response</span>.noContent().build(); <span class="cm">// 204 No Content</span>
+}</code></pre>
+  <table>
+    <thead><tr><th>Code</th><th>Meaning</th><th>When to Use</th></tr></thead>
+    <tbody>
+      <tr><td><strong>200</strong> OK</td><td>Request succeeded</td><td>GET, PUT success</td></tr>
+      <tr><td><strong>201</strong> Created</td><td>New resource created</td><td>POST success</td></tr>
+      <tr><td><strong>204</strong> No Content</td><td>Success, no body</td><td>DELETE success</td></tr>
+      <tr><td><strong>400</strong> Bad Request</td><td>Invalid input</td><td>Validation failure</td></tr>
+      <tr><td><strong>404</strong> Not Found</td><td>Resource doesn't exist</td><td>ID not in database</td></tr>
+      <tr><td><strong>500</strong> Internal Error</td><td>Server-side failure</td><td>Unhandled exception</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: 3.3 Summary & Key Takeaways -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-15" data-title="3.3 Summary & Key Takeaways">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Summary &amp; Key Takeaways</h2>
+
+  <div class="illustration">
+    <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+      <!-- Client -->
+      <rect x="10" y="70" width="130" height="80" rx="8" fill="#f0f4ff" stroke="#3b5998" stroke-width="2"/>
+      <text x="75" y="100" text-anchor="middle" font-size="14" font-weight="bold" fill="#3b5998">Client</text>
+      <text x="75" y="120" text-anchor="middle" font-size="11" fill="#555">(Browser / App)</text>
+      <!-- Arrow right -->
+      <line x1="140" y1="95" x2="240" y2="95" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrowR)"/>
+      <text x="190" y="85" text-anchor="middle" font-size="11" fill="#c0392b">HTTP Request</text>
+      <!-- JAX-RS -->
+      <rect x="240" y="50" width="200" height="120" rx="8" fill="#fff8e1" stroke="#f9a825" stroke-width="2"/>
+      <text x="340" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a1a1a">JAX-RS Resource</text>
+      <text x="340" y="100" text-anchor="middle" font-size="11" fill="#555">@Path @GET @POST</text>
+      <text x="340" y="118" text-anchor="middle" font-size="11" fill="#555">@Produces(JSON)</text>
+      <text x="340" y="136" text-anchor="middle" font-size="11" fill="#555">@PathParam @QueryParam</text>
+      <text x="340" y="154" text-anchor="middle" font-size="11" fill="#555">→ Response + Status Code</text>
+      <!-- Arrow right -->
+      <line x1="440" y1="110" x2="530" y2="110" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrowR)"/>
+      <text x="485" y="100" text-anchor="middle" font-size="11" fill="#4a7c59">JPA / EJB</text>
+      <!-- Database -->
+      <rect x="530" y="70" width="130" height="80" rx="8" fill="#e8f5e9" stroke="#4a7c59" stroke-width="2"/>
+      <text x="595" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#4a7c59">Database</text>
+      <text x="595" y="125" text-anchor="middle" font-size="11" fill="#555">(MySQL)</text>
+      <!-- Arrow left -->
+      <line x1="240" y1="130" x2="140" y2="130" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrowL)"/>
+      <text x="190" y="148" text-anchor="middle" font-size="11" fill="#3b5998">JSON Response</text>
+      <!-- Arrowhead defs -->
+      <defs>
+        <marker id="arrowR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/></marker>
+        <marker id="arrowL" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6 Z" fill="#1a1a1a"/></marker>
+      </defs>
+    </svg>
+  </div>
+  <div class="illustration-caption">Figure 3.1: RESTful request flow in a Jakarta EE application</div>
+
+  <div class="key-point" style="margin-top: 20px;">
+    <strong>What you should remember from this week:</strong><br><br>
+    1. REST is an architectural style — resources + URIs + HTTP methods<br>
+    2. JAX-RS uses annotations (<span class="inline-code">@Path</span>, <span class="inline-code">@GET</span>, <span class="inline-code">@POST</span>, etc.) to build services with minimal code<br>
+    3. JSON-B handles serialisation automatically — no manual parsing needed<br>
+    4. Use the <span class="inline-code">Response</span> class to set proper HTTP status codes (201, 204, 404…)<br>
+    5. Path params identify resources; query params filter or paginate
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function showSlide(n) {
+    if (n < 0 || n >= slides.length) return;
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    document.getElementById('progressBar').style.width =
+      ((current + 1) / slides.length * 100) + '%';
+    document.getElementById('navIndicator').textContent =
+      (current + 1) + ' / ' + slides.length;
+  }
+
+  function toggleTOC() {
+    document.getElementById('tocOverlay').classList.toggle('active');
+  }
+
+  function buildTOC() {
+    const list = document.getElementById('tocList');
+    slides.forEach((s, i) => {
+      const title = s.getAttribute('data-title') || ('Slide ' + (i + 1));
+      const div = document.createElement('div');
+      div.className = s.classList.contains('section-divider') ? 'toc-item toc-section' : 'toc-item';
+      div.textContent = (i + 1) + '. ' + title;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    });
+  }
+
+  function checkAnswer(btn, isCorrect) {
+    const quiz = btn.closest('.quiz');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    const options = quiz.querySelectorAll('.quiz-option');
+    options.forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('tocOverlay').classList.contains('active')) {
+      if (e.key === 'Escape' || e.key === 't' || e.key === 'T') toggleTOC();
+      return;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') showSlide(current + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') showSlide(current - 1);
+    else if (e.key === 't' || e.key === 'T') toggleTOC();
+  });
+
+  // Touch/swipe support for mobile
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) {
+      if (diff < 0) showSlide(current + 1);
+      else showSlide(current - 1);
+    }
+  });
+
+  showSlide(0);
+  buildTOC();
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "\\(", right: "\\)", display: false}
+    ]
+  });
+</script>
+</body>
+</html>

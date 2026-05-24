@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REST API Coding Challenges</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+    :root {
+      --bg-deep: #0f1117;
+      --bg-panel: #161822;
+      --bg-editor: #1b1d2b;
+      --bg-surface: #222438;
+      --border: #2a2d3e;
+      --border-active: #4a4f6a;
+      --text: #c9cedc;
+      --text-dim: #6b7194;
+      --text-bright: #e8ecf8;
+      --accent: #e05252;
+      --accent-glow: rgba(224, 82, 82, 0.15);
+      --green: #4ade80;
+      --green-dim: rgba(74, 222, 128, 0.12);
+      --red: #f87171;
+      --red-dim: rgba(248, 113, 113, 0.12);
+      --amber: #fbbf24;
+      --amber-dim: rgba(251, 191, 36, 0.1);
+      --blue: #60a5fa;
+      --purple: #a78bfa;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Source Serif 4', Georgia, serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      height: 52px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 20px;
+    }
+    .topbar-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+    .topbar-logo span { color: var(--text-dim); font-weight: 400; }
+    .problem-tabs {
+      display: flex; gap: 4px; margin-left: 20px;
+    }
+    .problem-tab {
+      padding: 8px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid transparent;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .problem-tab:hover { color: var(--text); background: var(--bg-surface); }
+    .problem-tab.active {
+      color: var(--text-bright);
+      background: var(--bg-editor);
+      border-color: var(--border);
+      border-bottom-color: var(--bg-editor);
+    }
+    .problem-tab .diff {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-left: 8px;
+      font-weight: 500;
+      vertical-align: middle;
+    }
+    .diff-medium { background: var(--amber-dim); color: var(--amber); }
+    .diff-hard { background: var(--red-dim); color: var(--red); }
+    .topbar-right {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    /* ── Split pane ── */
+    .workspace {
+      display: flex;
+      height: calc(100vh - 52px);
+    }
+
+    /* ── Left: Problem Description ── */
+    .problem-pane {
+      width: 45%;
+      min-width: 340px;
+      overflow-y: auto;
+      padding: 32px 28px 60px;
+      border-right: 1px solid var(--border);
+      background: var(--bg-panel);
+    }
+    .problem-pane::-webkit-scrollbar { width: 6px; }
+    .problem-pane::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+    .problem-pane::-webkit-scrollbar-track { background: transparent; }
+
+    .problem-pane h2 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.4rem;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+    }
+    .problem-tags {
+      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: var(--bg-surface);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .problem-pane p, .problem-pane li {
+      font-size: 0.98rem;
+      line-height: 1.75;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .problem-pane h3 {
+      font-size: 1.05rem;
+      color: var(--text-bright);
+      margin: 24px 0 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+    }
+    .problem-pane ul { padding-left: 22px; }
+    .problem-pane code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-editor);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      color: var(--blue);
+    }
+    .example-block {
+      background: var(--bg-editor);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 12px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+    }
+    .example-block .label {
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .example-block .io-val { color: var(--green); }
+    .hint-box {
+      background: var(--amber-dim);
+      border-left: 3px solid var(--amber);
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .hint-box strong { color: var(--amber); }
+    .context-box {
+      background: var(--accent-glow);
+      border-left: 3px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-size: 0.9rem;
+    }
+    .context-box strong { color: var(--accent); }
+
+    /* ── Right: Editor + Output ── */
+    .editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-deep);
+    }
+    .editor-header {
+      height: 38px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    .editor-header .lang-badge {
+      background: var(--bg-surface);
+      padding: 3px 10px;
+      border-radius: 4px;
+      color: var(--amber);
+      border: 1px solid var(--border);
+    }
+
+    .editor-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .code-editor {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-editor);
+      color: var(--text-bright);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.65;
+      padding: 20px 20px 20px 56px;
+      border: none;
+      outline: none;
+      resize: none;
+      tab-size: 2;
+      white-space: pre;
+      overflow: auto;
+    }
+    .code-editor::-webkit-scrollbar { width: 6px; height: 6px; }
+    .code-editor::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+    .code-editor::-webkit-scrollbar-track { background: transparent; }
+
+    .line-numbers {
+      position: absolute;
+      top: 0; left: 0;
+      width: 44px;
+      padding: 20px 0;
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: var(--text-dim);
+      pointer-events: none;
+      user-select: none;
+      overflow: hidden;
+      background: var(--bg-editor);
+      border-right: 1px solid var(--border);
+      padding-right: 8px;
+    }
+
+    /* ── Bottom: Controls + Output ── */
+    .bottom-section {
+      border-top: 1px solid var(--border);
+      background: var(--bg-panel);
+    }
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-run {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-run:hover { background: #c94444; transform: translateY(-1px); }
+    .btn-run:active { transform: translateY(0); }
+    .btn-reset {
+      background: var(--bg-surface);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .btn-reset:hover { color: var(--text); border-color: var(--border-active); }
+    .run-status {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+    }
+    .status-pass { color: var(--green); }
+    .status-fail { color: var(--red); }
+    .status-idle { color: var(--text-dim); }
+
+    .output-area {
+      height: 180px;
+      overflow-y: auto;
+      padding: 14px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .output-area::-webkit-scrollbar { width: 6px; }
+    .output-area::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+
+    .test-result {
+      padding: 8px 14px;
+      margin: 4px 0;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-editor);
+    }
+    .test-result.pass { border-left: 3px solid var(--green); }
+    .test-result.fail { border-left: 3px solid var(--red); }
+    .test-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .test-icon-pass { color: var(--green); }
+    .test-icon-fail { color: var(--red); }
+    .test-label { font-weight: 500; color: var(--text-bright); font-size: 0.78rem; }
+    .test-detail { color: var(--text-dim); font-size: 0.75rem; margin-top: 2px; }
+    .test-detail .expected { color: var(--green); }
+    .test-detail .got { color: var(--red); }
+
+    .welcome-output {
+      color: var(--text-dim);
+      font-style: italic;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .workspace { flex-direction: column; }
+      .problem-pane { width: 100%; height: 45vh; border-right: none; border-bottom: 1px solid var(--border); }
+      .editor-pane { height: 55vh; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Bar ── -->
+<div class="topbar">
+  <div class="topbar-logo">COIT20259 <span>// coding challenges</span></div>
+  <div class="problem-tabs">
+    <button class="problem-tab active" onclick="switchProblem(0)">
+      Q1: API Transformer
+      <span class="diff diff-medium">Medium</span>
+    </button>
+    <button class="problem-tab" onclick="switchProblem(1)">
+      Q2: Route Matcher
+      <span class="diff diff-hard">Hard</span>
+    </button>
+  </div>
+  <div class="topbar-right" id="timer"></div>
+</div>
+
+<!-- ── Workspace ── -->
+<div class="workspace">
+
+  <!-- Left: Problem Description -->
+  <div class="problem-pane" id="problemPane"></div>
+
+  <!-- Right: Editor + Output -->
+  <div class="editor-pane">
+    <div class="editor-header">
+      <span class="lang-badge">JavaScript</span>
+    </div>
+    <div class="editor-area">
+      <div class="line-numbers" id="lineNumbers"></div>
+      <textarea class="code-editor" id="codeEditor" spellcheck="false"></textarea>
+    </div>
+    <div class="bottom-section">
+      <div class="controls-bar">
+        <button class="btn btn-run" onclick="runTests()">&#9654; Run Tests</button>
+        <button class="btn btn-reset" onclick="resetCode()">Reset</button>
+        <div class="run-status status-idle" id="runStatus">Press Run to test your solution</div>
+      </div>
+      <div class="output-area" id="outputArea">
+        <div class="welcome-output">Test results will appear here after you click Run.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────
+// PROBLEM DEFINITIONS
+// ──────────────────────────────────────────────────────
+const problems = [
+  {
+    title: "Q1. REST API Response Transformer",
+    tags: ["REST API", "JSON", "Data Processing", "Interview"],
+    descriptionHTML: `
+      <div class="context-box">
+        <strong>Interview scenario:</strong> You're building a frontend that consumes a REST API. The backend team returns raw data, and your job is to transform it into exactly what the UI needs — in a single function call.
+      </div>
+      <p>A product catalog REST endpoint <code>GET /api/products</code> returns a JSON array of product objects. Each product has this shape:</p>
+      <div class="example-block">
+        <div class="label">Product Shape</div>
+        { id, name, category, price, inStock, rating }
+      </div>
+      <p>Write a function <code>transformProducts(products, options)</code> that processes the response according to the <code>options</code> object:</p>
+      <ul>
+        <li><code>options.category</code> (string) — keep only products in this category. If <code>null</code> or missing, keep all.</li>
+        <li><code>options.inStockOnly</code> (boolean) — if <code>true</code>, exclude out-of-stock items.</li>
+        <li><code>options.sortBy</code> (string) — sort by <code>"price"</code> or <code>"rating"</code>, ascending. If missing, don't sort.</li>
+        <li><code>options.limit</code> (number) — return at most this many items. If missing, return all.</li>
+      </ul>
+      <p>The returned array should contain <strong>simplified objects</strong> with only these fields:</p>
+      <div class="example-block">
+        <div class="label">Output Shape</div>
+        { id, name, price, rating }
+      </div>
+      <h3>Example</h3>
+      <div class="example-block">
+        <div class="label">Input</div>
+products = [
+  { id:1, name:"Laptop",  category:"Electronics", price:999,  inStock:true,  rating:4.5 },
+  { id:2, name:"Phone",   category:"Electronics", price:699,  inStock:false, rating:4.8 },
+  { id:3, name:"Desk",    category:"Furniture",   price:250,  inStock:true,  rating:4.2 },
+  { id:4, name:"Monitor", category:"Electronics", price:350,  inStock:true,  rating:4.6 }
+]
+options = { category: "Electronics", inStockOnly: true, sortBy: "price", limit: 2 }
+
+<div class="label" style="margin-top:10px;">Output</div>
+<span class="io-val">[
+  { id:4, name:"Monitor", price:350, rating:4.6 },
+  { id:1, name:"Laptop",  price:999, rating:4.5 }
+]</span>
+      </div>
+      <div class="hint-box">
+        <strong>Hint:</strong> Think filter → filter → sort → slice → map. Each step is independent. This is exactly how you'd process a REST response before rendering it in a UI component.
+      </div>
+    `,
+    starterCode: `function transformProducts(products, options) {
+  // Step 1: Filter by category (if specified)
+
+  // Step 2: Filter by inStock (if options.inStockOnly)
+
+  // Step 3: Sort by options.sortBy ("price" or "rating")
+
+  // Step 4: Limit the results (if options.limit)
+
+  // Step 5: Map to simplified shape { id, name, price, rating }
+
+}`,
+    testCases: [
+      {
+        name: "Filter + sort + limit",
+        fn: (solve) => {
+          const products = [
+            { id:1, name:"Laptop",  category:"Electronics", price:999,  inStock:true,  rating:4.5 },
+            { id:2, name:"Phone",   category:"Electronics", price:699,  inStock:false, rating:4.8 },
+            { id:3, name:"Desk",    category:"Furniture",   price:250,  inStock:true,  rating:4.2 },
+            { id:4, name:"Monitor", category:"Electronics", price:350,  inStock:true,  rating:4.6 }
+          ];
+          const result = solve(products, { category:"Electronics", inStockOnly:true, sortBy:"price", limit:2 });
+          const expected = [ { id:4, name:"Monitor", price:350, rating:4.6 }, { id:1, name:"Laptop", price:999, rating:4.5 } ];
+          return { result, expected, pass: JSON.stringify(result) === JSON.stringify(expected) };
+        }
+      },
+      {
+        name: "No options — return all as simplified",
+        fn: (solve) => {
+          const products = [
+            { id:1, name:"A", category:"X", price:10, inStock:true, rating:3.0 },
+            { id:2, name:"B", category:"Y", price:20, inStock:false, rating:4.0 }
+          ];
+          const result = solve(products, {});
+          const expected = [ { id:1, name:"A", price:10, rating:3.0 }, { id:2, name:"B", price:20, rating:4.0 } ];
+          return { result, expected, pass: JSON.stringify(result) === JSON.stringify(expected) };
+        }
+      },
+      {
+        name: "Sort by rating",
+        fn: (solve) => {
+          const products = [
+            { id:1, name:"A", category:"X", price:50, inStock:true, rating:2.5 },
+            { id:2, name:"B", category:"X", price:30, inStock:true, rating:4.9 },
+            { id:3, name:"C", category:"X", price:40, inStock:true, rating:3.1 }
+          ];
+          const result = solve(products, { sortBy:"rating" });
+          return { result, expected: "sorted by rating ascending: 2.5 → 3.1 → 4.9", pass: result[0].rating === 2.5 && result[1].rating === 3.1 && result[2].rating === 4.9 };
+        }
+      },
+      {
+        name: "inStockOnly filters correctly",
+        fn: (solve) => {
+          const products = [
+            { id:1, name:"A", category:"X", price:10, inStock:false, rating:5 },
+            { id:2, name:"B", category:"X", price:20, inStock:true,  rating:3 },
+            { id:3, name:"C", category:"X", price:30, inStock:false, rating:4 }
+          ];
+          const result = solve(products, { inStockOnly:true });
+          return { result, expected: "only id:2", pass: result.length === 1 && result[0].id === 2 };
+        }
+      },
+      {
+        name: "Empty product list",
+        fn: (solve) => {
+          const result = solve([], { category:"Electronics", sortBy:"price" });
+          return { result, expected: [], pass: Array.isArray(result) && result.length === 0 };
+        }
+      }
+    ]
+  },
+  {
+    title: "Q2. REST Route Pattern Matcher",
+    tags: ["REST Routing", "String Parsing", "JAX-RS @Path", "Interview"],
+    descriptionHTML: `
+      <div class="context-box">
+        <strong>Interview scenario:</strong> You're asked to explain how frameworks like JAX-RS match a URL like <code>/api/students/42</code> to a method annotated <code>@Path("/{id}")</code>. Then you're asked to implement it.
+      </div>
+      <p>In Jakarta EE, the <code>@Path</code> annotation uses <strong>URI templates</strong> with curly-brace placeholders:</p>
+      <div class="example-block">
+        <div class="label">URI Template examples</div>
+"/products"                 → matches "/products" exactly
+"/products/{id}"            → matches "/products/42", "/products/abc"
+"/users/{userId}/orders/{orderId}" → matches "/users/7/orders/99"
+      </div>
+      <p>Write a function <code>matchRoute(pattern, url)</code> that:</p>
+      <ul>
+        <li>Returns <code>null</code> if the URL does <strong>not</strong> match the pattern.</li>
+        <li>Returns an <strong>object</strong> of extracted path parameters if it does match.</li>
+        <li>Returns an <strong>empty object</strong> <code>{}</code> if it matches but the pattern has no parameters.</li>
+      </ul>
+      <h3>Examples</h3>
+      <div class="example-block">
+        <div class="label">Example 1</div>
+matchRoute("/products/{id}", "/products/42")
+<span class="io-val">→ { id: "42" }</span>
+
+<div class="label" style="margin-top:8px;">Example 2</div>
+matchRoute("/users/{userId}/orders/{orderId}", "/users/7/orders/99")
+<span class="io-val">→ { userId: "7", orderId: "99" }</span>
+
+<div class="label" style="margin-top:8px;">Example 3</div>
+matchRoute("/products/{id}", "/orders/42")
+<span class="io-val">→ null</span>
+
+<div class="label" style="margin-top:8px;">Example 4</div>
+matchRoute("/products", "/products")
+<span class="io-val">→ {}</span>
+      </div>
+      <div class="hint-box">
+        <strong>Hint:</strong> Split both the pattern and URL by <code>/</code>. Walk through the segments in parallel. A segment like <code>{id}</code> matches any value; a literal segment must match exactly. Extract the parameter name from between the braces.
+      </div>
+    `,
+    starterCode: `function matchRoute(pattern, url) {
+  // Step 1: Split pattern and url into segments by "/"
+  //         (filter out empty strings from leading slash)
+
+  // Step 2: If segment counts differ, return null
+
+  // Step 3: Walk through segments in parallel
+  //   - If pattern segment is {something}, extract the param name
+  //     and store the URL segment as its value
+  //   - If pattern segment is a literal, it must match exactly
+  //     or return null
+
+  // Step 4: Return the params object
+
+}`,
+    testCases: [
+      {
+        name: 'Single path param: "/products/{id}" vs "/products/42"',
+        fn: (solve) => {
+          const result = solve("/products/{id}", "/products/42");
+          const expected = { id: "42" };
+          return { result, expected, pass: JSON.stringify(result) === JSON.stringify(expected) };
+        }
+      },
+      {
+        name: 'Two params: "/users/{userId}/orders/{orderId}" vs "/users/7/orders/99"',
+        fn: (solve) => {
+          const result = solve("/users/{userId}/orders/{orderId}", "/users/7/orders/99");
+          const expected = { userId: "7", orderId: "99" };
+          return { result, expected, pass: JSON.stringify(result) === JSON.stringify(expected) };
+        }
+      },
+      {
+        name: 'No match — different prefix: "/products/{id}" vs "/orders/42"',
+        fn: (solve) => {
+          const result = solve("/products/{id}", "/orders/42");
+          return { result, expected: null, pass: result === null };
+        }
+      },
+      {
+        name: 'No match — wrong segment count: "/a/{id}" vs "/a/b/c"',
+        fn: (solve) => {
+          const result = solve("/a/{id}", "/a/b/c");
+          return { result, expected: null, pass: result === null };
+        }
+      },
+      {
+        name: 'Exact match, no params: "/products" vs "/products"',
+        fn: (solve) => {
+          const result = solve("/products", "/products");
+          const expected = {};
+          return { result, expected, pass: JSON.stringify(result) === JSON.stringify(expected) };
+        }
+      },
+      {
+        name: 'No match — completely different: "/api/v1" vs "/dashboard"',
+        fn: (solve) => {
+          const result = solve("/api/v1", "/dashboard");
+          return { result, expected: null, pass: result === null };
+        }
+      }
+    ]
+  }
+];
+
+// ──────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────
+let currentProblem = 0;
+const userCode = [problems[0].starterCode, problems[1].starterCode];
+let startTime = Date.now();
+
+// ──────────────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────────────
+function switchProblem(idx) {
+  // Save current code
+  userCode[currentProblem] = document.getElementById('codeEditor').value;
+  currentProblem = idx;
+
+  // Update tabs
+  document.querySelectorAll('.problem-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+
+  // Render problem
+  const p = problems[idx];
+  document.getElementById('problemPane').innerHTML =
+    `<h2>${p.title}</h2>
+     <div class="problem-tags">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+     ${p.descriptionHTML}`;
+
+  // Render code
+  document.getElementById('codeEditor').value = userCode[idx];
+  updateLineNumbers();
+
+  // Reset output
+  document.getElementById('outputArea').innerHTML = '<div class="welcome-output">Press Run to test your solution.</div>';
+  document.getElementById('runStatus').textContent = 'Press Run to test your solution';
+  document.getElementById('runStatus').className = 'run-status status-idle';
+
+  // Reset timer
+  startTime = Date.now();
+}
+
+function updateLineNumbers() {
+  const editor = document.getElementById('codeEditor');
+  const lines = editor.value.split('\n').length;
+  const nums = document.getElementById('lineNumbers');
+  nums.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
+}
+
+function resetCode() {
+  userCode[currentProblem] = problems[currentProblem].starterCode;
+  document.getElementById('codeEditor').value = userCode[currentProblem];
+  updateLineNumbers();
+  document.getElementById('outputArea').innerHTML = '<div class="welcome-output">Code reset. Press Run to test.</div>';
+  document.getElementById('runStatus').textContent = 'Code reset';
+  document.getElementById('runStatus').className = 'run-status status-idle';
+}
+
+// ──────────────────────────────────────────────────────
+// TEST RUNNER
+// ──────────────────────────────────────────────────────
+function runTests() {
+  const code = document.getElementById('codeEditor').value;
+  userCode[currentProblem] = code;
+  const p = problems[currentProblem];
+  const output = document.getElementById('outputArea');
+  const status = document.getElementById('runStatus');
+  output.innerHTML = '';
+
+  // Try to create the function
+  let solveFn;
+  try {
+    solveFn = new Function(code + `\nreturn ${code.match(/function\s+(\w+)/)?.[1] || 'solve'};`)();
+  } catch (e) {
+    output.innerHTML = `<div class="test-result fail">
+      <div class="test-header"><span class="test-icon-fail">✗</span><span class="test-label">Compilation Error</span></div>
+      <div class="test-detail">${escapeHtml(e.message)}</div>
+    </div>`;
+    status.textContent = 'Compilation Error';
+    status.className = 'run-status status-fail';
+    return;
+  }
+
+  let passed = 0;
+  const total = p.testCases.length;
+
+  p.testCases.forEach((tc, i) => {
+    let res;
+    try {
+      res = tc.fn(solveFn);
+    } catch (e) {
+      res = { pass: false, result: 'Runtime Error: ' + e.message, expected: '—' };
+    }
+
+    const icon = res.pass ? '<span class="test-icon-pass">✓</span>' : '<span class="test-icon-fail">✗</span>';
+    const cls = res.pass ? 'pass' : 'fail';
+    if (res.pass) passed++;
+
+    let detail = '';
+    if (!res.pass) {
+      detail = `<div class="test-detail">
+        <span class="expected">Expected: ${escapeHtml(JSON.stringify(res.expected))}</span><br>
+        <span class="got">Got: ${escapeHtml(JSON.stringify(res.result))}</span>
+      </div>`;
+    }
+
+    output.innerHTML += `<div class="test-result ${cls}">
+      <div class="test-header">${icon}<span class="test-label">Test ${i + 1}: ${escapeHtml(tc.name)}</span></div>
+      ${detail}
+    </div>`;
+  });
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+  if (passed === total) {
+    status.textContent = `All ${total} tests passed — ${elapsed}s`;
+    status.className = 'run-status status-pass';
+  } else {
+    status.textContent = `${passed}/${total} passed — ${elapsed}s`;
+    status.className = 'run-status status-fail';
+  }
+}
+
+function escapeHtml(str) {
+  const s = String(str);
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ──────────────────────────────────────────────────────
+// Timer
+// ──────────────────────────────────────────────────────
+function updateTimer() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  document.getElementById('timer').textContent =
+    String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
+setInterval(updateTimer, 1000);
+
+// ──────────────────────────────────────────────────────
+// Editor line numbers + tab support
+// ──────────────────────────────────────────────────────
+const editor = document.getElementById('codeEditor');
+editor.addEventListener('input', updateLineNumbers);
+editor.addEventListener('scroll', () => {
+  document.getElementById('lineNumbers').style.transform =
+    `translateY(-${editor.scrollTop}px)`;
+});
+editor.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+    editor.selectionStart = editor.selectionEnd = start + 2;
+    updateLineNumbers();
+  }
+});
+
+// ── Init ──
+switchProblem(0);
+</script>
+</body>
+</html>

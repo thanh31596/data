@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 11 Lab — Building a RESTful Web Service</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #FFFFFF; color: #1a1a1a;
+      overflow: hidden; height: 100vh;
+    }
+    .slide {
+      display: none; width: 100vw; height: 100vh;
+      padding: 50px 70px; position: relative;
+      flex-direction: column; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .slide.active { display: flex; }
+    .slide-number {
+      position: absolute; top: 18px; right: 28px;
+      font-size: 0.85rem; color: #999;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 24px; color: #1a1a1a; }
+    h2 { font-size: 1.5rem; margin-bottom: 20px; color: #1a1a1a; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+    h3 { font-size: 1.15rem; margin: 14px 0 8px; color: #333; }
+    p, li { font-size: 1rem; line-height: 1.7; margin-bottom: 8px; }
+    ul, ol { padding-left: 26px; }
+    .subtitle { font-size: 1.2rem; color: #555; margin-top: 10px; }
+    .meta { font-size: 0.95rem; color: #888; margin-top: 24px; }
+
+    /* Callout boxes */
+    .step-box {
+      background: #f8f9fa; border-left: 4px solid #c0392b;
+      padding: 14px 18px; margin: 10px 0; border-radius: 4px;
+    }
+    .step-box .step-label {
+      font-weight: bold; color: #c0392b; margin-bottom: 4px; font-size: 0.95rem;
+    }
+    .definition {
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .key-point {
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .success-box {
+      background: #e8f5e9; border-left: 4px solid #4a7c59;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .success-box .check-label {
+      font-weight: bold; color: #4a7c59; margin-bottom: 4px; font-size: 0.95rem;
+    }
+    .warning-box {
+      background: #fff3e0; border-left: 4px solid #e65100;
+      padding: 14px 18px; margin: 12px 0; border-radius: 4px;
+    }
+    .warning-box strong { color: #e65100; }
+
+    /* Code */
+    pre {
+      background: #1e1e2e; color: #cdd6f4; padding: 14px; border-radius: 6px;
+      overflow-x: auto; font-size: 0.82rem; margin: 10px 0; line-height: 1.55;
+    }
+    code { font-family: 'Courier New', monospace; }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; font-size: 0.9rem;
+    }
+    .kw { color: #cba6f7; }
+    .str { color: #a6e3a1; }
+    .ann { color: #f9e2af; }
+    .cm { color: #6c7086; font-style: italic; }
+    .typ { color: #89b4fa; }
+    .num { color: #fab387; }
+    .tag { color: #f38ba8; }
+    .attr { color: #a6e3a1; }
+    .val { color: #fab387; }
+
+    /* Menu path breadcrumb styling */
+    .menu-path {
+      font-family: 'Courier New', monospace;
+      background: #eee; padding: 2px 8px; border-radius: 3px;
+      font-size: 0.9rem; white-space: nowrap;
+    }
+
+    /* Tables */
+    table {
+      border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92rem;
+    }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #f5f5f5; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+
+    /* Checklist */
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li {
+      padding: 6px 0 6px 30px; position: relative; border-bottom: 1px solid #f0f0f0;
+    }
+    .checklist li::before {
+      content: '☐'; position: absolute; left: 4px; top: 6px;
+      font-size: 1.1rem; color: #c0392b;
+    }
+
+    /* Two column */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+
+    /* Progress bar */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 4px;
+      background: #c0392b; transition: width 0.3s; z-index: 100;
+    }
+    .nav-indicator {
+      position: fixed; bottom: 18px; right: 28px;
+      font-size: 0.85rem; color: #999; z-index: 100;
+    }
+    .nav-hint {
+      position: fixed; bottom: 18px; left: 28px;
+      font-size: 0.75rem; color: #ccc; z-index: 100;
+    }
+
+    /* TOC */
+    .toc-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.97); z-index: 200;
+      padding: 50px 70px; overflow-y: auto;
+    }
+    .toc-overlay.active { display: block; }
+    .toc-overlay h2 { border: none; }
+    .toc-item { padding: 7px 0; cursor: pointer; color: #c0392b; font-size: 1rem; border-bottom: 1px solid #f0f0f0; }
+    .toc-item:hover { color: #1a1a1a; }
+    .toc-section { font-weight: 700; margin-top: 14px; color: #1a1a1a; }
+    .toc-close { position: absolute; top: 18px; right: 28px; font-size: 1.5rem; cursor: pointer; color: #999; background: none; border: none; }
+
+    /* Section divider */
+    .slide.section-divider { justify-content: center; align-items: center; text-align: center; }
+    .slide.section-divider h1 { font-size: 2.6rem; border-bottom: 3px solid #c0392b; padding-bottom: 14px; }
+    .slide.section-divider .subtitle { font-size: 1.15rem; color: #666; margin-top: 14px; }
+
+    /* Quiz */
+    .quiz { margin: 12px 0; }
+    .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1rem; }
+    .quiz-option {
+      display: block; width: 100%; text-align: left;
+      padding: 10px 14px; margin: 5px 0;
+      background: #f8f9fa; border: 2px solid #e0e0e0;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-family: inherit; color: #1a1a1a;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-option:hover { border-color: #c0392b; background: #fff5f5; }
+    .quiz-option.correct { border-color: #4a7c59; background: #e8f5e9; cursor: default; }
+    .quiz-option.incorrect { border-color: #c0392b; background: #ffebee; cursor: default; }
+    .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+    .quiz-explanation {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #f0f4ff; border-left: 4px solid #3b5998;
+      border-radius: 4px; font-size: 0.9rem;
+    }
+    .quiz-explanation.visible { display: block; }
+
+    /* File tree */
+    .file-tree {
+      font-family: 'Courier New', monospace; font-size: 0.88rem;
+      background: #f8f9fa; padding: 14px 18px; border-radius: 6px;
+      line-height: 1.8; margin: 10px 0; border: 1px solid #e0e0e0;
+    }
+    .file-tree .folder { color: #3b5998; font-weight: bold; }
+    .file-tree .file { color: #1a1a1a; }
+    .file-tree .highlight { color: #c0392b; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → arrow keys &nbsp;|&nbsp; T for contents</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <button class="toc-close" onclick="toggleTOC()">×</button>
+  <h2>Lab Guide — Table of Contents</h2>
+  <div id="tocList"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================================ -->
+<div class="slide section-divider" id="slide-1" data-title="Lab: Building a RESTful Web Service">
+  <h1>Lab — Building a RESTful Web Service</h1>
+  <div class="subtitle">Week 11 Self-Directed Practice</div>
+  <div class="meta">NetBeans + GlassFish 7 + MySQL &nbsp;|&nbsp; COIT20259 Enterprise Computing</div>
+  <p style="margin-top:30px; color:#888; font-size:0.95rem;">Work through each step at your own pace. All source code is provided inline.<br>Use arrow keys to navigate. Press <strong>T</strong> for the table of contents.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: Objectives & Prerequisites -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-2" data-title="Objectives & Prerequisites">
+  <div class="slide-number">1</div>
+  <h2>Objectives &amp; Prerequisites</h2>
+
+  <h3>What you will build</h3>
+  <p>A complete Jakarta EE RESTful web service that performs CRUD operations on a <strong>Product</strong> entity, backed by a MySQL database and deployed on GlassFish 7.</p>
+
+  <h3>By the end of this lab you will be able to:</h3>
+  <ul>
+    <li>Create a JAX-RS resource class with <span class="inline-code">@Path</span>, <span class="inline-code">@GET</span>, <span class="inline-code">@POST</span>, <span class="inline-code">@PUT</span>, <span class="inline-code">@DELETE</span></li>
+    <li>Use <span class="inline-code">@PathParam</span> and <span class="inline-code">@QueryParam</span> to accept input</li>
+    <li>Return proper HTTP status codes using the <span class="inline-code">Response</span> class</li>
+    <li>Test your API endpoints using a browser and <span class="inline-code">curl</span></li>
+  </ul>
+
+  <div class="success-box">
+    <div class="check-label">Pre-lab checklist — confirm before starting:</div>
+    <ul class="checklist">
+      <li>MySQL is running (check via <span class="inline-code">mysqladmin ping</span> or MySQL Workbench)</li>
+      <li>GlassFish 7 is running (<span class="inline-code">http://localhost:4848</span> loads the Admin Console)</li>
+      <li>JDBC connection pool and resource are configured in GlassFish (from earlier labs)</li>
+      <li>Apache NetBeans is open and can see GlassFish under the <strong>Services → Servers</strong> tab</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: Create the project -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-3" data-title="Step 1: Create the Maven Web Project">
+  <div class="slide-number">2</div>
+  <h2>Step 1 — Create a New Maven Web Application</h2>
+
+  <div class="step-box">
+    <div class="step-label">1.1 — New Project</div>
+    Go to <span class="menu-path">File → New Project</span>.<br>
+    Select <strong>Categories:</strong> <span class="inline-code">Java with Maven</span> → <strong>Projects:</strong> <span class="inline-code">Web Application</span>. Click <strong>Next</strong>.
+  </div>
+
+  <div class="step-box">
+    <div class="step-label">1.2 — Name and Location</div>
+    <table>
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Project Name</td><td><span class="inline-code">ProductRestService</span></td></tr>
+      <tr><td>Group Id</td><td><span class="inline-code">au.edu.cqu</span></td></tr>
+      <tr><td>Package</td><td><span class="inline-code">au.edu.cqu.productrest</span></td></tr>
+    </tbody></table>
+    Click <strong>Next</strong>.
+  </div>
+
+  <div class="step-box">
+    <div class="step-label">1.3 — Server and Settings</div>
+    <table>
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Server</td><td><span class="inline-code">GlassFish Server</span></td></tr>
+      <tr><td>Java EE Version</td><td><span class="inline-code">Jakarta EE 10 Web</span> (or latest available)</td></tr>
+    </table>
+    Click <strong>Finish</strong>. NetBeans generates the project structure.
+  </div>
+
+  <div class="warning-box">
+    <strong>Common mistake:</strong> If GlassFish doesn't appear in the Server dropdown, you need to add it first: <span class="menu-path">Tools → Servers → Add Server → GlassFish</span> and point to your GlassFish installation directory.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: pom.xml dependencies -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-4" data-title="Step 2: Configure pom.xml">
+  <div class="slide-number">3</div>
+  <h2>Step 2 — Add Dependencies to pom.xml</h2>
+
+  <p>Open <span class="inline-code">pom.xml</span> from the <strong>Project Files</strong> node. Ensure these dependencies are present inside <span class="inline-code">&lt;dependencies&gt;</span>:</p>
+
+  <pre><code><span class="tag">&lt;dependency&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>jakarta.platform<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>jakarta.jakartaee-api<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;version&gt;</span><span class="val">10.0.0</span><span class="tag">&lt;/version&gt;</span>
+    <span class="tag">&lt;scope&gt;</span>provided<span class="tag">&lt;/scope&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span>
+
+<span class="tag">&lt;dependency&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>mysql<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>mysql-connector-java<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;version&gt;</span><span class="val">8.0.33</span><span class="tag">&lt;/version&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span></code></pre>
+
+  <div class="key-point">
+    <strong>Why <span class="inline-code">provided</span> scope?</strong> GlassFish already contains the Jakarta EE libraries. The <span class="inline-code">provided</span> scope means "I need this to compile, but the server will provide it at runtime." This keeps your WAR file small.
+  </div>
+
+  <div class="step-box">
+    <div class="step-label">Save and build</div>
+    After editing, right-click the project → <span class="menu-path">Build with Dependencies</span> (or press <strong>F11</strong>). Watch the Output window — Maven will download any missing dependencies.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: Create the Entity -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-5" data-title="Step 3: Create the Product Entity">
+  <div class="slide-number">4</div>
+  <h2>Step 3 — Create the Product Entity</h2>
+
+  <div class="step-box">
+    <div class="step-label">3.1 — Create the class</div>
+    Right-click the package <span class="inline-code">au.edu.cqu.productrest</span> → <span class="menu-path">New → Java Class</span>.<br>
+    Name it <span class="inline-code">Product</span>. Click <strong>Finish</strong>.
+  </div>
+
+  <p>Replace the file contents with:</p>
+
+  <pre><code><span class="kw">package</span> au.edu.cqu.productrest;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> java.io.Serializable;
+
+<span class="ann">@Entity</span>
+<span class="ann">@Table</span>(name = <span class="str">"products"</span>)
+<span class="kw">public class</span> <span class="typ">Product</span> <span class="kw">implements</span> <span class="typ">Serializable</span> {
+
+    <span class="ann">@Id</span>
+    <span class="ann">@GeneratedValue</span>(strategy = <span class="typ">GenerationType</span>.IDENTITY)
+    <span class="kw">private</span> <span class="typ">Long</span> id;
+
+    <span class="ann">@Column</span>(nullable = <span class="kw">false</span>)
+    <span class="kw">private</span> <span class="typ">String</span> name;
+
+    <span class="kw">private</span> <span class="typ">String</span> description;
+
+    <span class="ann">@Column</span>(nullable = <span class="kw">false</span>)
+    <span class="kw">private</span> <span class="kw">double</span> price;
+
+    <span class="cm">// Default constructor (required by JPA)</span>
+    <span class="kw">public</span> Product() {}
+
+    <span class="cm">// Getters and setters</span>
+    <span class="kw">public</span> <span class="typ">Long</span> getId() { <span class="kw">return</span> id; }
+    <span class="kw">public void</span> setId(<span class="typ">Long</span> id) { <span class="kw">this</span>.id = id; }
+    <span class="kw">public</span> <span class="typ">String</span> getName() { <span class="kw">return</span> name; }
+    <span class="kw">public void</span> setName(<span class="typ">String</span> name) { <span class="kw">this</span>.name = name; }
+    <span class="kw">public</span> <span class="typ">String</span> getDescription() { <span class="kw">return</span> description; }
+    <span class="kw">public void</span> setDescription(<span class="typ">String</span> d) { <span class="kw">this</span>.description = d; }
+    <span class="kw">public double</span> getPrice() { <span class="kw">return</span> price; }
+    <span class="kw">public void</span> setPrice(<span class="kw">double</span> price) { <span class="kw">this</span>.price = price; }
+}</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: persistence.xml -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-6" data-title="Step 4: Create persistence.xml">
+  <div class="slide-number">5</div>
+  <h2>Step 4 — Create persistence.xml</h2>
+
+  <div class="step-box">
+    <div class="step-label">4.1 — Create the file</div>
+    Right-click <span class="inline-code">src/main/resources</span> → <span class="menu-path">New → Folder</span> → name it <span class="inline-code">META-INF</span>.<br>
+    Right-click <span class="inline-code">META-INF</span> → <span class="menu-path">New → XML Document</span> → name it <span class="inline-code">persistence</span> → Click <strong>Finish</strong>.
+  </div>
+
+  <p>Replace the entire file with:</p>
+
+  <pre><code><span class="tag">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="tag">&lt;persistence</span> <span class="attr">version</span>=<span class="str">"3.0"</span>
+  <span class="attr">xmlns</span>=<span class="str">"https://jakarta.ee/xml/ns/persistence"</span>
+  <span class="attr">xmlns:xsi</span>=<span class="str">"http://www.w3.org/2001/XMLSchema-instance"</span>
+  <span class="attr">xsi:schemaLocation</span>=<span class="str">"https://jakarta.ee/xml/ns/persistence
+    https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"</span><span class="tag">&gt;</span>
+
+  <span class="tag">&lt;persistence-unit</span> <span class="attr">name</span>=<span class="str">"ProductPU"</span>
+                     <span class="attr">transaction-type</span>=<span class="str">"JTA"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;jta-data-source&gt;</span>jdbc/myDatasource<span class="tag">&lt;/jta-data-source&gt;</span>
+    <span class="tag">&lt;class&gt;</span>au.edu.cqu.productrest.Product<span class="tag">&lt;/class&gt;</span>
+    <span class="tag">&lt;properties&gt;</span>
+      <span class="tag">&lt;property</span> <span class="attr">name</span>=<span class="str">"jakarta.persistence.schema-generation.database.action"</span>
+                <span class="attr">value</span>=<span class="str">"create"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;/properties&gt;</span>
+  <span class="tag">&lt;/persistence-unit&gt;</span>
+<span class="tag">&lt;/persistence&gt;</span></code></pre>
+
+  <div class="warning-box">
+    <strong>Critical:</strong> The <span class="inline-code">&lt;jta-data-source&gt;</span> value must match the JDBC Resource JNDI name you configured in GlassFish Admin Console (<span class="inline-code">http://localhost:4848</span> → Resources → JDBC → JDBC Resources). If yours is different, update it here.
+  </div>
+
+  <div class="key-point">
+    <strong><span class="inline-code">schema-generation...action = "create"</span></strong> tells JPA to auto-create the <span class="inline-code">products</span> table on first deployment. Change to <span class="inline-code">"none"</span> after the table exists to avoid data loss on redeployment.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: Application Config -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-7" data-title="Step 5: JAX-RS Application Config">
+  <div class="slide-number">6</div>
+  <h2>Step 5 — Create the JAX-RS Application Config</h2>
+
+  <p>JAX-RS needs a small configuration class that tells the server "this project has REST endpoints" and defines the base URL path.</p>
+
+  <div class="step-box">
+    <div class="step-label">5.1 — Create the class</div>
+    Right-click the package <span class="inline-code">au.edu.cqu.productrest</span> → <span class="menu-path">New → Java Class</span>.<br>
+    Name: <span class="inline-code">RestApplication</span>. Click <strong>Finish</strong>.
+  </div>
+
+  <pre><code><span class="kw">package</span> au.edu.cqu.productrest;
+
+<span class="kw">import</span> jakarta.ws.rs.ApplicationPath;
+<span class="kw">import</span> jakarta.ws.rs.core.Application;
+
+<span class="ann">@ApplicationPath</span>(<span class="str">"/api"</span>)       <span class="cm">// All REST URLs start with /api</span>
+<span class="kw">public class</span> <span class="typ">RestApplication</span> <span class="kw">extends</span> <span class="typ">Application</span> {
+    <span class="cm">// No code needed — the annotation does all the work</span>
+}</code></pre>
+
+  <div class="definition">
+    <strong>What this does:</strong> The <span class="inline-code">@ApplicationPath("/api")</span> annotation registers the JAX-RS servlet with GlassFish and sets <span class="inline-code">/api</span> as the base path. So a resource at <span class="inline-code">@Path("/products")</span> becomes accessible at:<br><br>
+    <span class="inline-code">http://localhost:8080/ProductRestService/api/products</span>
+  </div>
+
+  <div class="file-tree">
+    <span class="folder">au.edu.cqu.productrest</span><br>
+    &nbsp;&nbsp;├── <span class="file">Product.java</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (JPA entity)<br>
+    &nbsp;&nbsp;├── <span class="highlight">RestApplication.java</span> &nbsp;&nbsp; (JAX-RS config — you are here)<br>
+    &nbsp;&nbsp;└── <span class="file">ProductResource.java</span> &nbsp;&nbsp; (next step)
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: REST Resource — GET -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-8" data-title="Step 6: Create the REST Resource (GET)">
+  <div class="slide-number">7</div>
+  <h2>Step 6 — Create the ProductResource (GET endpoints)</h2>
+
+  <div class="step-box">
+    <div class="step-label">6.1 — Create the class</div>
+    Right-click the package → <span class="menu-path">New → Java Class</span> → Name: <span class="inline-code">ProductResource</span>.
+  </div>
+
+  <p>Start with GET endpoints only — we'll add POST, PUT, DELETE next:</p>
+
+  <pre><code><span class="kw">package</span> au.edu.cqu.productrest;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> jakarta.ws.rs.*;
+<span class="kw">import</span> jakarta.ws.rs.core.*;
+<span class="kw">import</span> java.util.List;
+
+<span class="ann">@Path</span>(<span class="str">"/products"</span>)
+<span class="ann">@Produces</span>(<span class="typ">MediaType</span>.APPLICATION_JSON)
+<span class="ann">@Consumes</span>(<span class="typ">MediaType</span>.APPLICATION_JSON)
+<span class="kw">public class</span> <span class="typ">ProductResource</span> {
+
+    <span class="ann">@PersistenceContext</span>(unitName = <span class="str">"ProductPU"</span>)
+    <span class="kw">private</span> <span class="typ">EntityManager</span> em;
+
+    <span class="cm">// GET /api/products — return all products</span>
+    <span class="ann">@GET</span>
+    <span class="kw">public</span> <span class="typ">List</span>&lt;<span class="typ">Product</span>&gt; getAll() {
+        <span class="kw">return</span> em.createQuery(<span class="str">"SELECT p FROM Product p"</span>,
+                              <span class="typ">Product</span>.<span class="kw">class</span>).getResultList();
+    }
+
+    <span class="cm">// GET /api/products/5 — return one product by ID</span>
+    <span class="ann">@GET</span>
+    <span class="ann">@Path</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> <span class="typ">Response</span> getById(<span class="ann">@PathParam</span>(<span class="str">"id"</span>) <span class="typ">Long</span> id) {
+        <span class="typ">Product</span> p = em.find(<span class="typ">Product</span>.<span class="kw">class</span>, id);
+        <span class="kw">if</span> (p == <span class="kw">null</span>) {
+            <span class="kw">return</span> <span class="typ">Response</span>.status(<span class="num">404</span>).build();
+        }
+        <span class="kw">return</span> <span class="typ">Response</span>.ok(p).build();
+    }
+}</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: Deploy & Test GET -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-9" data-title="Step 7: Deploy & Test GET">
+  <div class="slide-number">8</div>
+  <h2>Step 7 — Deploy &amp; Test GET Endpoints</h2>
+
+  <div class="step-box">
+    <div class="step-label">7.1 — Clean, Build, and Deploy</div>
+    <ol>
+      <li>Right-click the project → <span class="menu-path">Clean and Build</span></li>
+      <li>Open GlassFish Admin Console (<span class="inline-code">http://localhost:4848</span>) → Applications → <strong>Undeploy</strong> any old version</li>
+      <li>Right-click the project → <span class="menu-path">Deploy</span> (or <span class="menu-path">Run</span>)</li>
+      <li>Watch the <strong>GlassFish Output</strong> tab for errors</li>
+    </ol>
+  </div>
+
+  <div class="step-box">
+    <div class="step-label">7.2 — Test in your browser</div>
+    Open: <span class="inline-code">http://localhost:8080/ProductRestService/api/products</span><br><br>
+    You should see an empty JSON array: <span class="inline-code">[]</span><br>
+    This is correct — the database table was just created and has no data yet.
+  </div>
+
+  <div class="success-box">
+    <div class="check-label">Verification checklist:</div>
+    <ul class="checklist">
+      <li>Browser shows <span class="inline-code">[]</span> (empty JSON array) — not a 404 or error page</li>
+      <li>GlassFish Output shows "ProductRestService was successfully deployed"</li>
+      <li>No exceptions in the server log</li>
+    </ul>
+  </div>
+
+  <div class="warning-box">
+    <strong>Getting a 404?</strong> Check that your <span class="inline-code">@ApplicationPath</span> is <span class="inline-code">"/api"</span> and your <span class="inline-code">@Path</span> is <span class="inline-code">"/products"</span>. The full URL is: context root + application path + resource path.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: Add POST -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-10" data-title="Step 8: Add POST Endpoint">
+  <div class="slide-number">9</div>
+  <h2>Step 8 — Add the POST Endpoint (Create)</h2>
+
+  <p>Add this method inside <span class="inline-code">ProductResource.java</span>, below the GET methods:</p>
+
+  <pre><code><span class="cm">// POST /api/products — create a new product</span>
+<span class="ann">@POST</span>
+<span class="ann">@Transactional</span>
+<span class="kw">public</span> <span class="typ">Response</span> create(<span class="typ">Product</span> product) {
+    em.persist(product);
+    <span class="kw">return</span> <span class="typ">Response</span>
+        .status(<span class="typ">Response</span>.<span class="typ">Status</span>.CREATED)   <span class="cm">// 201</span>
+        .entity(product)
+        .build();
+}</code></pre>
+
+  <div class="key-point">
+    <strong>Add this import</strong> at the top of the file:<br>
+    <span class="inline-code">import jakarta.transaction.Transactional;</span><br><br>
+    <span class="inline-code">@Transactional</span> tells the container to wrap this method in a database transaction. Without it, <span class="inline-code">em.persist()</span> will fail because there's no active transaction.
+  </div>
+
+  <div class="step-box">
+    <div class="step-label">8.1 — Redeploy and test with curl</div>
+    Clean and Build → Redeploy. Then open a <strong>terminal / command prompt</strong> and run:
+  </div>
+
+  <pre><code><span class="cm"># Create a product</span>
+curl -X POST http://localhost:8080/ProductRestService/api/products \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Laptop","description":"A fast laptop","price":999.99}'
+
+<span class="cm"># Verify it was saved</span>
+curl http://localhost:8080/ProductRestService/api/products</code></pre>
+
+  <div class="success-box">
+    <div class="check-label">Expected result:</div>
+    The POST returns the product with an auto-generated <span class="inline-code">id</span> field. The second GET call returns a JSON array containing your new product.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Add PUT and DELETE -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-11" data-title="Step 9: Add PUT & DELETE">
+  <div class="slide-number">10</div>
+  <h2>Step 9 — Add PUT and DELETE Endpoints</h2>
+
+  <p>Add both methods inside <span class="inline-code">ProductResource.java</span>:</p>
+
+  <pre><code><span class="cm">// PUT /api/products/5 — update an existing product</span>
+<span class="ann">@PUT</span>
+<span class="ann">@Path</span>(<span class="str">"/{id}"</span>)
+<span class="ann">@Transactional</span>
+<span class="kw">public</span> <span class="typ">Response</span> update(<span class="ann">@PathParam</span>(<span class="str">"id"</span>) <span class="typ">Long</span> id,
+                       <span class="typ">Product</span> updated) {
+    <span class="typ">Product</span> existing = em.find(<span class="typ">Product</span>.<span class="kw">class</span>, id);
+    <span class="kw">if</span> (existing == <span class="kw">null</span>) {
+        <span class="kw">return</span> <span class="typ">Response</span>.status(<span class="num">404</span>).build();
+    }
+    existing.setName(updated.getName());
+    existing.setDescription(updated.getDescription());
+    existing.setPrice(updated.getPrice());
+    em.merge(existing);
+    <span class="kw">return</span> <span class="typ">Response</span>.ok(existing).build();       <span class="cm">// 200</span>
+}
+
+<span class="cm">// DELETE /api/products/5 — delete a product</span>
+<span class="ann">@DELETE</span>
+<span class="ann">@Path</span>(<span class="str">"/{id}"</span>)
+<span class="ann">@Transactional</span>
+<span class="kw">public</span> <span class="typ">Response</span> delete(<span class="ann">@PathParam</span>(<span class="str">"id"</span>) <span class="typ">Long</span> id) {
+    <span class="typ">Product</span> p = em.find(<span class="typ">Product</span>.<span class="kw">class</span>, id);
+    <span class="kw">if</span> (p == <span class="kw">null</span>) {
+        <span class="kw">return</span> <span class="typ">Response</span>.status(<span class="num">404</span>).build();
+    }
+    em.remove(p);
+    <span class="kw">return</span> <span class="typ">Response</span>.noContent().build();      <span class="cm">// 204</span>
+}</code></pre>
+
+  <div class="step-box">
+    <div class="step-label">9.1 — Redeploy and test</div>
+    <pre><code><span class="cm"># Update product with id=1</span>
+curl -X PUT http://localhost:8080/ProductRestService/api/products/1 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Gaming Laptop","description":"Very fast","price":1499.99}'
+
+<span class="cm"># Delete product with id=1</span>
+curl -X DELETE http://localhost:8080/ProductRestService/api/products/1</code></pre>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: Full Test Walkthrough -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-12" data-title="Step 10: Full CRUD Test">
+  <div class="slide-number">11</div>
+  <h2>Step 10 — Full CRUD Test Walkthrough</h2>
+
+  <p>Redeploy your final version, then run these commands in order. Verify each response.</p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>curl Command</th><th>Expected Status</th><th>What to Check</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><span class="inline-code">curl .../api/products</span></td>
+        <td>200</td>
+        <td>Returns <span class="inline-code">[]</span> or existing products</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><span class="inline-code">curl -X POST ... -d '{"name":"Phone","price":699}'</span></td>
+        <td>201</td>
+        <td>Returns product with <span class="inline-code">"id":1</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><span class="inline-code">curl .../api/products/1</span></td>
+        <td>200</td>
+        <td>Returns the phone product</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><span class="inline-code">curl -X PUT ... -d '{"name":"Smartphone","price":749}'</span></td>
+        <td>200</td>
+        <td>Returns updated product</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><span class="inline-code">curl -X DELETE .../api/products/1</span></td>
+        <td>204</td>
+        <td>No body returned (correct!)</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><span class="inline-code">curl .../api/products/1</span></td>
+        <td>404</td>
+        <td>Product no longer exists</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="success-box">
+    <div class="check-label">If all six tests pass, your RESTful CRUD service is fully working.</div>
+    Take a screenshot of your terminal output — useful evidence for your portfolio.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: Troubleshooting -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-13" data-title="Troubleshooting Guide">
+  <div class="slide-number">12</div>
+  <h2>Troubleshooting Guide</h2>
+
+  <table>
+    <thead>
+      <tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>404 on all URLs</td>
+        <td><span class="inline-code">RestApplication.java</span> missing or <span class="inline-code">@ApplicationPath</span> wrong</td>
+        <td>Verify the class exists and extends <span class="inline-code">Application</span>. Check the context root in GlassFish Admin Console.</td>
+      </tr>
+      <tr>
+        <td>500 Internal Server Error</td>
+        <td>Persistence unit not found or JDBC pool broken</td>
+        <td>Check <span class="inline-code">persistence.xml</span> is in <span class="inline-code">src/main/resources/META-INF/</span>. Verify the JNDI name matches GlassFish. Ping the JDBC pool in Admin Console.</td>
+      </tr>
+      <tr>
+        <td>POST returns 415 Unsupported Media Type</td>
+        <td>Missing <span class="inline-code">Content-Type</span> header in curl</td>
+        <td>Add <span class="inline-code">-H "Content-Type: application/json"</span> to your curl command.</td>
+      </tr>
+      <tr>
+        <td>POST returns 500 — "no transaction"</td>
+        <td>Missing <span class="inline-code">@Transactional</span> annotation</td>
+        <td>Add <span class="inline-code">@Transactional</span> to POST, PUT, DELETE methods. Import <span class="inline-code">jakarta.transaction.Transactional</span>.</td>
+      </tr>
+      <tr>
+        <td>JSON response is empty <span class="inline-code">{}</span></td>
+        <td>Entity fields are missing getters</td>
+        <td>JSON-B uses getter methods. Ensure every field has a public <span class="inline-code">getXxx()</span> method.</td>
+      </tr>
+      <tr>
+        <td>Table not created in MySQL</td>
+        <td><span class="inline-code">schema-generation</span> property missing or wrong</td>
+        <td>Set <span class="inline-code">database.action</span> to <span class="inline-code">"create"</span> in persistence.xml. Check MySQL user has CREATE TABLE permission.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: Knowledge Check -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-14" data-title="Knowledge Check">
+  <div class="slide-number">13</div>
+  <h2>Knowledge Check</h2>
+
+  <div class="quiz" id="quiz-1">
+    <div class="quiz-question">Q1: Your REST resource is at <code>@Path("/products")</code> and your config has <code>@ApplicationPath("/api")</code>. The app is deployed as "ProductRestService". What is the full URL?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) http://localhost:8080/api/products</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) http://localhost:8080/ProductRestService/api/products</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) http://localhost:8080/ProductRestService/products</button>
+    <div class="quiz-explanation">The URL is: <strong>context root</strong> (/ProductRestService) + <strong>application path</strong> (/api) + <strong>resource path</strong> (/products).</div>
+  </div>
+
+  <div class="quiz" id="quiz-2">
+    <div class="quiz-question">Q2: What happens if you remove <code>@Transactional</code> from the POST method?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) Nothing — it works fine without it</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">B) The response changes to XML format</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">C) A 500 error because em.persist() requires an active transaction</button>
+    <div class="quiz-explanation"><code>em.persist()</code> writes to the database, which requires a JTA transaction. <code>@Transactional</code> tells the container to start one automatically.</div>
+  </div>
+
+  <div class="quiz" id="quiz-3">
+    <div class="quiz-question">Q3: After a successful DELETE, what HTTP status code should your endpoint return?</div>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">A) 200 OK</button>
+    <button class="quiz-option" onclick="checkAnswer(this, true)" data-correct="true">B) 204 No Content</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">C) 201 Created</button>
+    <button class="quiz-option" onclick="checkAnswer(this, false)">D) 404 Not Found</button>
+    <div class="quiz-explanation">204 No Content is the standard response for a successful DELETE — the operation succeeded and there is no response body to return.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: Extension Tasks & Summary -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-15" data-title="Extension Tasks & Summary">
+  <div class="slide-number">14</div>
+  <h2>Extension Tasks &amp; Summary</h2>
+
+  <div class="two-col">
+    <div class="col">
+      <h3>Extension Task 1 — Search by name</h3>
+      <p>Add a <span class="inline-code">@QueryParam</span>-based search to the GET-all endpoint. If the caller provides <span class="inline-code">?name=Laptop</span>, filter results to products whose name contains that string.</p>
+      <pre><code><span class="ann">@GET</span>
+<span class="kw">public</span> <span class="typ">List</span>&lt;<span class="typ">Product</span>&gt; getAll(
+    <span class="ann">@QueryParam</span>(<span class="str">"name"</span>) <span class="typ">String</span> name) {
+  <span class="kw">if</span> (name != <span class="kw">null</span>) {
+    <span class="kw">return</span> em.createQuery(
+      <span class="str">"SELECT p FROM Product p "</span> +
+      <span class="str">"WHERE p.name LIKE :n"</span>,
+      <span class="typ">Product</span>.<span class="kw">class</span>)
+      .setParameter(<span class="str">"n"</span>, <span class="str">"%"</span>+name+<span class="str">"%"</span>)
+      .getResultList();
+  }
+  <span class="kw">return</span> em.createQuery(
+    <span class="str">"SELECT p FROM Product p"</span>,
+    <span class="typ">Product</span>.<span class="kw">class</span>).getResultList();
+}</code></pre>
+    </div>
+    <div class="col">
+      <h3>Extension Task 2 — Add a second entity</h3>
+      <p>Create a <span class="inline-code">Category</span> entity with fields <span class="inline-code">id</span> and <span class="inline-code">name</span>. Add a <span class="inline-code">@ManyToOne</span> relationship from <span class="inline-code">Product</span> to <span class="inline-code">Category</span>. Build a <span class="inline-code">CategoryResource</span> with GET and POST endpoints.</p>
+
+      <h3 style="margin-top:24px;">What you learned today</h3>
+      <ul>
+        <li>Created a Maven Web Application in NetBeans</li>
+        <li>Wrote a JPA entity and persistence.xml</li>
+        <li>Configured JAX-RS with <span class="inline-code">@ApplicationPath</span></li>
+        <li>Built GET, POST, PUT, DELETE endpoints</li>
+        <li>Returned proper HTTP status codes</li>
+        <li>Tested with curl from the command line</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="key-point" style="margin-top:16px;">
+    <strong>Next week</strong> we'll look at securing REST endpoints, handling validation errors, and consuming REST services from a client application.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================================ -->
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function showSlide(n) {
+    if (n < 0 || n >= slides.length) return;
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    slides[current].scrollTop = 0;
+    document.getElementById('progressBar').style.width =
+      ((current + 1) / slides.length * 100) + '%';
+    document.getElementById('navIndicator').textContent =
+      (current + 1) + ' / ' + slides.length;
+  }
+
+  function toggleTOC() {
+    document.getElementById('tocOverlay').classList.toggle('active');
+  }
+
+  function buildTOC() {
+    const list = document.getElementById('tocList');
+    slides.forEach((s, i) => {
+      const title = s.getAttribute('data-title') || ('Slide ' + (i + 1));
+      const div = document.createElement('div');
+      div.className = s.classList.contains('section-divider') ? 'toc-item toc-section' : 'toc-item';
+      div.textContent = (i + 1) + '. ' + title;
+      div.onclick = () => { showSlide(i); toggleTOC(); };
+      list.appendChild(div);
+    });
+  }
+
+  function checkAnswer(btn, isCorrect) {
+    const quiz = btn.closest('.quiz');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    const options = quiz.querySelectorAll('.quiz-option');
+    options.forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('tocOverlay').classList.contains('active')) {
+      if (e.key === 'Escape' || e.key === 't' || e.key === 'T') toggleTOC();
+      return;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') showSlide(current + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') showSlide(current - 1);
+    else if (e.key === 't' || e.key === 'T') toggleTOC();
+  });
+
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) {
+      if (diff < 0) showSlide(current + 1);
+      else showSlide(current - 1);
+    }
+  });
+
+  showSlide(0);
+  buildTOC();
+</script>
+</body>
+</html>
