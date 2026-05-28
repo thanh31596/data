@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 11 — Sound Arena Tutorial | COIT20271</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --primary: #7c3aed;
+    --primary-light: #a78bfa;
+    --primary-dark: #6d28d9;
+    --primary-bg: #f5f3ff;
+    --primary-bg2: #ede9fe;
+    --accent: #f59e0b;
+    --accent-bg: #fffbeb;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --bg: #ffffff;
+    --bg-alt: #f8fafc;
+    --border: #e2e8f0;
+    --code-bg: #1e1533;
+    --code-text: #e2e8f0;
+    --sidebar-w: 280px;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text);
+    background: var(--bg-alt);
+    line-height: 1.6;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: var(--sidebar-w); height: 100vh;
+    background: #1e1533;
+    color: #cbd5e1;
+    padding: 24px 20px;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex; flex-direction: column;
+  }
+
+  .sidebar-title {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--primary-light);
+    margin-bottom: 6px;
+  }
+
+  .sidebar-week {
+    font-size: 22px; font-weight: 800;
+    color: #f1f5f9;
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+
+  .sidebar-progress { margin-bottom: 24px; }
+
+  .sidebar-progress-label {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 8px; color: #94a3b8;
+  }
+
+  .progress-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; }
+
+  .progress-fill {
+    height: 100%; background: var(--primary-light);
+    border-radius: 4px; transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-text { font-size: 13px; margin-top: 6px; color: #94a3b8; }
+
+  .sidebar-nav { list-style: none; flex: 1; }
+  .sidebar-nav li { margin-bottom: 2px; }
+
+  .sidebar-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; font-size: 13px; font-weight: 500;
+    color: #94a3b8; text-decoration: none;
+    border-radius: 6px; transition: all 0.2s;
+  }
+
+  .sidebar-nav a:hover { background: #2d2248; color: #e2e8f0; }
+
+  .nav-num {
+    width: 22px; height: 22px;
+    background: var(--primary-dark);
+    color: var(--primary-light);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* MAIN */
+  .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+  .hero {
+    background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #a78bfa 100%);
+    color: white; padding: 60px 48px;
+    position: relative; overflow: hidden;
+  }
+
+  .hero::after {
+    content: ''; position: absolute; top: -40%; right: -8%;
+    width: 350px; height: 350px;
+    background: rgba(255,255,255,0.05); border-radius: 50%;
+  }
+
+  .hero-label {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    opacity: 0.8; margin-bottom: 8px;
+  }
+
+  .hero h1 { font-size: 36px; font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
+  .hero p { font-size: 16px; opacity: 0.85; max-width: 640px; line-height: 1.6; }
+
+  .content { max-width: 860px; padding: 40px 48px 80px; }
+
+  /* SECTIONS */
+  .section { margin-bottom: 48px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px; padding-bottom: 12px;
+    border-bottom: 3px solid var(--primary-bg2);
+    cursor: pointer; user-select: none;
+  }
+
+  .section-num {
+    width: 36px; height: 36px;
+    background: var(--primary);
+    color: white; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; flex-shrink: 0;
+  }
+
+  .section-title { font-size: 22px; font-weight: 800; color: var(--primary-dark); }
+
+  .section-body { display: block; }
+  .section-body.collapsed { display: none; }
+
+  /* STEPS */
+  .step-list {
+    list-style: none; counter-reset: steps;
+    margin: 16px 0;
+  }
+
+  .step-list li {
+    counter-increment: steps;
+    padding: 10px 0 10px 40px;
+    position: relative; font-size: 15px; line-height: 1.7;
+  }
+
+  .step-list li::before {
+    content: counter(steps);
+    position: absolute; left: 0; top: 11px;
+    width: 26px; height: 26px;
+    background: var(--primary-bg2);
+    color: var(--primary-dark);
+    border-radius: 50%;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .checklist { list-style: none; margin: 12px 0; }
+
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 6px 0; font-size: 14px;
+  }
+
+  .check-box {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; transition: all 0.2s;
+    margin-top: 2px;
+  }
+
+  .check-box:hover { border-color: var(--primary); }
+  .check-box.checked { background: var(--success); border-color: var(--success); color: white; }
+
+  /* CODE */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 8px;
+    margin: 14px 0 18px;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px;
+    background: #2d2248;
+    border-bottom: 1px solid #3d3060;
+  }
+
+  .code-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--primary-light); font-weight: 600;
+  }
+
+  .copy-btn {
+    padding: 3px 12px;
+    background: #3d3060; color: #94a3b8;
+    border: none; border-radius: 4px;
+    font-family: inherit; font-size: 11px;
+    cursor: pointer; transition: all 0.2s;
+  }
+
+  .copy-btn:hover { background: #4d4070; color: #e2e8f0; }
+
+  .code-body {
+    padding: 16px 20px; overflow-x: auto;
+  }
+
+  .code-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; line-height: 1.7;
+    color: var(--code-text); white-space: pre; display: block;
+  }
+
+  .kw { color: #c084fc; }
+  .ty { color: #67e8f9; }
+  .str { color: #86efac; }
+  .num { color: #fbbf24; }
+  .cm { color: #64748b; font-style: italic; }
+  .fn { color: #93c5fd; }
+  .at { color: #f9a8d4; }
+
+  .inline-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; background: #f1f5f9;
+    padding: 2px 6px; border-radius: 4px;
+    color: var(--primary-dark);
+  }
+
+  /* CALLOUTS */
+  .callout {
+    padding: 18px 22px; border-radius: 10px;
+    margin: 16px 0; font-size: 14px; line-height: 1.6;
+  }
+
+  .callout-info { background: var(--primary-bg); border-left: 4px solid var(--primary); }
+  .callout-warn { background: var(--accent-bg); border-left: 4px solid var(--accent); }
+  .callout-success { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .callout-danger { background: var(--danger-bg); border-left: 4px solid var(--danger); }
+
+  .callout strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .callout-info strong { color: var(--primary-dark); }
+  .callout-warn strong { color: #92400e; }
+  .callout-success strong { color: #15803d; }
+  .callout-danger strong { color: var(--danger); }
+
+  .text-block { font-size: 15px; line-height: 1.7; margin: 12px 0; }
+  .text-block p { margin-bottom: 8px; }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .hero { padding: 36px 20px; }
+    .hero h1 { font-size: 28px; }
+    .content { padding: 24px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-title">COIT20271</div>
+  <div class="sidebar-week">Week 11<br>Sound Arena</div>
+  <div class="sidebar-progress">
+    <div class="sidebar-progress-label">Progress</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">0 / 42 steps</div>
+  </div>
+  <ul class="sidebar-nav">
+    <li><a href="#sec-1"><span class="nav-num">1</span>Project & Assets</a></li>
+    <li><a href="#sec-2"><span class="nav-num">2</span>Scene Layout</a></li>
+    <li><a href="#sec-3"><span class="nav-num">3</span>Background Music</a></li>
+    <li><a href="#sec-4"><span class="nav-num">4</span>Player Movement</a></li>
+    <li><a href="#sec-5"><span class="nav-num">5</span>Collectible SFX</a></li>
+    <li><a href="#sec-6"><span class="nav-num">6</span>Enemy Spawner Audio</a></li>
+    <li><a href="#sec-7"><span class="nav-num">7</span>Timer & Game Over</a></li>
+    <li><a href="#sec-8"><span class="nav-num">8</span>3D Spatial Audio</a></li>
+    <li><a href="#sec-9"><span class="nav-num">9</span>Build & Test</a></li>
+  </ul>
+</aside>
+
+<div class="main">
+  <div class="hero">
+    <div class="hero-label">Week 11 — Tutorial</div>
+    <h1>🔊 Sound Arena</h1>
+    <p>Build a timed collection game with background music, pickup sound effects, spawn audio, spatial 3D sound, and a game-over jingle. You'll use free Asset Store audio packs and write scripts to trigger sounds from gameplay events.</p>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══════════ SECTION 1 ═══════════ -->
+    <div class="section" id="sec-1">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">1</div>
+        <div class="section-title">Project & Asset Store Setup</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>You'll need a set of audio clips for this tutorial: a background music loop, a collectible pickup sound, a spawn sound, and a game-over jingle. We'll get these from the Unity Asset Store.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Create a new <span class="inline-code">3D (Built-in Render Pipeline)</span> project named <strong>SoundArena</strong>. Alternatively, create a new Scene in an existing project.</li>
+          <li>Open the <strong>Asset Store</strong> in your browser at <span class="inline-code">assetstore.unity.com</span>. Log in with your Unity account.</li>
+          <li>Search for a free sound effects pack. Suggested searches:
+            <ul style="margin: 8px 0 4px 20px; font-size: 14px; color: var(--text-light);">
+              <li><strong>"Free Sound Effects Pack"</strong> by Olivier Girardot</li>
+              <li><strong>"FREE Casual Game SFX Pack"</strong> by Dustyroom</li>
+              <li><strong>"Universal Sound FX"</strong> (free version) by Imphenzia</li>
+              <li>Any free pack that includes: pickup/coin, impact/spawn, and a short music loop</li>
+            </ul>
+          </li>
+          <li>Click <strong>Add to My Assets</strong>, then open Unity and go to <strong>Window → Package Manager</strong>. Switch the dropdown to <strong>My Assets</strong>, find your pack, and click <strong>Download</strong> then <strong>Import</strong>.</li>
+          <li>After import, browse the audio files in your Project window. Take note of which clips you'll use for:
+            <ul style="margin: 8px 0 4px 20px; font-size: 14px;">
+              <li>🎵 <strong>Music</strong> — a looping track (any calm or upbeat loop)</li>
+              <li>✨ <strong>Pickup</strong> — a short chime or coin sound</li>
+              <li>👾 <strong>Spawn</strong> — a whoosh, pop, or impact</li>
+              <li>🏁 <strong>Game Over</strong> — a jingle, fail sound, or descending tone</li>
+            </ul>
+          </li>
+        </ol>
+
+        <div class="callout callout-info">
+          <strong>No Asset Store access?</strong>
+          You can use any <span class="inline-code">.wav</span>, <span class="inline-code">.mp3</span>, or <span class="inline-code">.ogg</span> files. Free sounds are available at freesound.org or mixkit.co. Download files and drag them into your Unity Project's Assets folder.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Audio pack imported into Unity</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Identified clips for music, pickup, spawn, and game over</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 2 ═══════════ -->
+    <div class="section" id="sec-2">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">2</div>
+        <div class="section-title">Scene Layout</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>Build the gameplay scene — a ground plane with a player, collectibles, and a spawner. This reuses what you built in Week 10's micro-tasks.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Create a <span class="inline-code">Plane</span> at (0, 0, 0). Scale it to (2, 1, 2) so the arena is larger.</li>
+          <li>Create a <span class="inline-code">Cube</span> at (0, 0.5, 0). Name it <strong>Player</strong>. Give it a blue Material. Add a <span class="inline-code">Rigidbody</span> component.</li>
+          <li>Create a <span class="inline-code">Sphere</span> at (3, 0.5, 3). Name it <strong>Collectible</strong>. Scale to (0.5, 0.5, 0.5). Give it a yellow Material.</li>
+          <li>On the Sphere's Collider, tick <span class="inline-code">Is Trigger</span>.</li>
+          <li>Add the tag <span class="inline-code">Collectible</span> in Edit → Project Settings → Tags and Layers. Assign it to the Sphere.</li>
+          <li>Drag the Sphere from Hierarchy into the Project window to create a <strong>Prefab</strong>. Delete the original from the scene.</li>
+          <li>Create a <span class="inline-code">Capsule</span>. Give it a red Material. Create a Prefab from it. Delete the original. This is the enemy Prefab.</li>
+          <li>Create an empty GameObject named <span class="inline-code">Spawner</span> at (0, 0, 0).</li>
+          <li>Create an empty GameObject named <span class="inline-code">GameManager</span>.</li>
+          <li>Add UI text elements: create <strong>GameObject → UI → Text - TextMeshPro</strong> twice — one for Score (top-left), one for Timer (top-right). Set default text to "Score: 0" and "30" respectively. If prompted, import TMP Essentials.</li>
+          <li>Create a third TextMeshPro text centred on screen with text <strong>"Time's Up!"</strong>, font size 60. <strong>Disable</strong> this GameObject (uncheck its checkbox).</li>
+        </ol>
+
+        <div class="callout callout-warn">
+          <strong>AudioListener check</strong>
+          Select the <strong>Main Camera</strong> in your Hierarchy and confirm it has an <span class="inline-code">AudioListener</span> component. This is added by default — do not remove it. Do not add AudioListener to any other object.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Ground plane, Player cube with Rigidbody</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Collectible Prefab (trigger, tagged)</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Enemy Prefab (red capsule)</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> UI: Score text, Timer text, Game Over text (disabled)</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Main Camera has AudioListener</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 3 ═══════════ -->
+    <div class="section" id="sec-3">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">3</div>
+        <div class="section-title">Background Music</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>Background music plays continuously from the moment the scene loads. It should loop, be 2D (heard at the same volume everywhere), and be quieter than sound effects so it doesn't drown them out.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Create an empty GameObject named <span class="inline-code">BackgroundMusic</span>.</li>
+          <li>Add an <span class="inline-code">AudioSource</span> component to it (Add Component → Audio → Audio Source).</li>
+          <li>Drag your music AudioClip from the Project window into the <span class="inline-code">AudioClip</span> field on the AudioSource.</li>
+          <li>Configure the AudioSource:
+            <ul style="margin: 8px 0 4px 20px; font-size: 14px;">
+              <li><strong>Play On Awake:</strong> ✅ Checked</li>
+              <li><strong>Loop:</strong> ✅ Checked</li>
+              <li><strong>Volume:</strong> 0.3 (keep it subtle)</li>
+              <li><strong>Spatial Blend:</strong> 0 (fully 2D — heard everywhere equally)</li>
+            </ul>
+          </li>
+          <li>Press <strong>Play</strong> and verify the music starts immediately and loops continuously.</li>
+        </ol>
+
+        <div class="callout callout-info">
+          <strong>Why no script?</strong>
+          For simple looping music, you don't need any code. The AudioSource component handles play-on-awake and looping entirely through Inspector settings. You'll add script control later when you need to stop the music on game over.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Music plays when scene starts</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Music loops without gaps</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Volume is subtle (not overpowering)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 4 ═══════════ -->
+    <div class="section" id="sec-4">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">4</div>
+        <div class="section-title">Player Movement (with Audio)</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>The player moves with WASD using physics. We'll also add an AudioSource to the player so it can play pickup and other sounds triggered by gameplay events.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Add an <span class="inline-code">AudioSource</span> component to the <strong>Player</strong> object.</li>
+          <li>On this AudioSource, <strong>uncheck Play On Awake</strong> (we'll trigger sounds from scripts). Set <strong>Spatial Blend to 0</strong> (2D).</li>
+          <li>Create a new C# script called <span class="inline-code">PlayerMovement</span> and attach it to the Player.</li>
+        </ol>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-filename">PlayerMovement.cs</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <div class="code-body"><code><span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">PlayerMovement</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> speed = <span class="num">6f</span>;
+
+    <span class="kw">private</span> <span class="ty">Rigidbody</span> rb;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        rb = <span class="fn">GetComponent</span>&lt;<span class="ty">Rigidbody</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">FixedUpdate</span>()
+    {
+        <span class="kw">float</span> h = <span class="ty">Input</span>.<span class="fn">GetAxis</span>(<span class="str">"Horizontal"</span>);
+        <span class="kw">float</span> v = <span class="ty">Input</span>.<span class="fn">GetAxis</span>(<span class="str">"Vertical"</span>);
+
+        <span class="ty">Vector3</span> movement = <span class="kw">new</span> <span class="ty">Vector3</span>(h, <span class="num">0f</span>, v);
+        rb.velocity = movement * speed;
+    }
+}</code></div>
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Player moves with WASD/arrow keys</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Player has an AudioSource (Play On Awake off)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 5 ═══════════ -->
+    <div class="section" id="sec-5">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">5</div>
+        <div class="section-title">Collectible Pickup with Sound Effects</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>When the player picks up a collectible, a sound should play. We use <span class="inline-code">PlayOneShot()</span> because it allows multiple pickup sounds to overlap if the player collects rapidly.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Create a new C# script called <span class="inline-code">PlayerCollector</span> and attach it to the <strong>Player</strong>.</li>
+          <li>In the Inspector, drag your pickup AudioClip into the <span class="inline-code">pickupSound</span> field.</li>
+          <li>Drag the Score TextMeshPro object into the <span class="inline-code">scoreText</span> field.</li>
+          <li>Manually place 5–6 instances of the Collectible Prefab around the ground plane so you can test.</li>
+        </ol>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-filename">PlayerCollector.cs</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <div class="code-body"><code><span class="kw">using</span> TMPro;
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">PlayerCollector</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioClip</span> pickupSound;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">TMP_Text</span> scoreText;
+
+    <span class="kw">private</span> <span class="ty">AudioSource</span> audioSource;
+    <span class="kw">private int</span> score = <span class="num">0</span>;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        audioSource = <span class="fn">GetComponent</span>&lt;<span class="ty">AudioSource</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">OnTriggerEnter</span>(<span class="ty">Collider</span> other)
+    {
+        <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Collectible"</span>))
+        {
+            score++;
+            scoreText.text = <span class="str">"Score: "</span> + score;
+
+            <span class="cm">// Play the sound on the player's AudioSource</span>
+            audioSource.<span class="fn">PlayOneShot</span>(pickupSound);
+
+            <span class="cm">// Destroy the collectible object</span>
+            <span class="fn">Destroy</span>(other.gameObject);
+        }
+    }
+}</code></div>
+        </div>
+
+        <div class="callout callout-info">
+          <strong>Why PlayOneShot instead of Play?</strong>
+          <span class="inline-code">Play()</span> interrupts any sound currently playing on that AudioSource. If the player picks up two items quickly, the first sound would cut off. <span class="inline-code">PlayOneShot()</span> layers sounds on top of each other — both play to completion.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Collecting a sphere plays the pickup sound</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Score updates on screen</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Rapid pickups overlap sounds correctly</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 6 ═══════════ -->
+    <div class="section" id="sec-6">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">6</div>
+        <div class="section-title">Enemy Spawner with Audio</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>Enemies spawn every 2 seconds at random positions. Each spawn plays a sound <em>at the spawn location</em> using <span class="inline-code">AudioSource.PlayClipAtPoint()</span> — a static method that creates a temporary AudioSource, plays the clip, then cleans itself up.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Create a new C# script called <span class="inline-code">EnemySpawner</span> and attach it to the <strong>Spawner</strong> object.</li>
+          <li>Drag the enemy Prefab into the <span class="inline-code">enemyPrefab</span> field in the Inspector.</li>
+          <li>Drag your spawn AudioClip into the <span class="inline-code">spawnSound</span> field.</li>
+        </ol>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-filename">EnemySpawner.cs</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <div class="code-body"><code><span class="kw">using</span> System.Collections;
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">EnemySpawner</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> enemyPrefab;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioClip</span> spawnSound;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> spawnInterval = <span class="num">2f</span>;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> spawnRange = <span class="num">8f</span>;
+
+    <span class="kw">void</span> <span class="fn">Start</span>()
+    {
+        <span class="fn">StartCoroutine</span>(<span class="fn">SpawnLoop</span>());
+    }
+
+    <span class="ty">IEnumerator</span> <span class="fn">SpawnLoop</span>()
+    {
+        <span class="kw">while</span> (<span class="kw">true</span>)
+        {
+            <span class="kw">float</span> x = <span class="ty">Random</span>.<span class="fn">Range</span>(-spawnRange, spawnRange);
+            <span class="kw">float</span> z = <span class="ty">Random</span>.<span class="fn">Range</span>(-spawnRange, spawnRange);
+            <span class="ty">Vector3</span> spawnPos = <span class="kw">new</span> <span class="ty">Vector3</span>(x, <span class="num">1f</span>, z);
+
+            <span class="fn">Instantiate</span>(enemyPrefab, spawnPos, <span class="ty">Quaternion</span>.identity);
+
+            <span class="cm">// Play sound at the spawn position</span>
+            <span class="ty">AudioSource</span>.<span class="fn">PlayClipAtPoint</span>(spawnSound, spawnPos);
+
+            <span class="kw">yield return new</span> <span class="ty">WaitForSeconds</span>(spawnInterval);
+        }
+    }
+}</code></div>
+        </div>
+
+        <div class="callout callout-warn">
+          <strong>Why PlayClipAtPoint here?</strong>
+          The Spawner object sits at the centre of the arena, but enemies spawn at random positions. <span class="inline-code">PlayClipAtPoint()</span> creates a temporary one-shot AudioSource at the exact spawn position. Later when you enable 3D spatial audio, the spawn sound will come from the correct direction.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Enemies spawn every 2 seconds at random positions</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> A sound plays at each spawn location</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 7 ═══════════ -->
+    <div class="section" id="sec-7">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">7</div>
+        <div class="section-title">Timer & Game Over Audio</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>A 30-second countdown timer ticks down. When it hits zero, the game freezes, background music stops, and a game-over sound plays. This script controls the overall game state.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Create a new C# script called <span class="inline-code">GameTimer</span> and attach it to <strong>GameManager</strong>.</li>
+          <li>Add an <span class="inline-code">AudioSource</span> component to GameManager. Uncheck Play On Awake.</li>
+          <li>In the Inspector, assign:
+            <ul style="margin: 6px 0 4px 20px; font-size: 14px;">
+              <li><strong>timerText</strong> — the Timer TMP text object</li>
+              <li><strong>gameOverUI</strong> — the "Time's Up!" text GameObject</li>
+              <li><strong>gameOverSound</strong> — your game-over AudioClip</li>
+              <li><strong>backgroundMusic</strong> — the BackgroundMusic AudioSource (drag the BackgroundMusic object)</li>
+            </ul>
+          </li>
+        </ol>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-filename">GameTimer.cs</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <div class="code-body"><code><span class="kw">using</span> TMPro;
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">GameTimer</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">TMP_Text</span> timerText;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> gameOverUI;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioClip</span> gameOverSound;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioSource</span> backgroundMusic;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> startTime = <span class="num">30f</span>;
+
+    <span class="kw">private</span> <span class="ty">AudioSource</span> audioSource;
+    <span class="kw">private float</span> timeRemaining;
+    <span class="kw">private bool</span> isGameOver = <span class="kw">false</span>;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        audioSource = <span class="fn">GetComponent</span>&lt;<span class="ty">AudioSource</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">Start</span>()
+    {
+        timeRemaining = startTime;
+        gameOverUI.<span class="fn">SetActive</span>(<span class="kw">false</span>);
+        <span class="ty">Time</span>.timeScale = <span class="num">1f</span>;  <span class="cm">// Reset in case it was frozen</span>
+    }
+
+    <span class="kw">void</span> <span class="fn">Update</span>()
+    {
+        <span class="kw">if</span> (isGameOver) <span class="kw">return</span>;
+
+        timeRemaining -= <span class="ty">Time</span>.deltaTime;
+
+        <span class="kw">if</span> (timeRemaining <= <span class="num">0f</span>)
+        {
+            timeRemaining = <span class="num">0f</span>;
+            <span class="fn">GameOver</span>();
+        }
+
+        timerText.text = <span class="ty">Mathf</span>.<span class="fn">CeilToInt</span>(timeRemaining).<span class="fn">ToString</span>();
+    }
+
+    <span class="kw">void</span> <span class="fn">GameOver</span>()
+    {
+        isGameOver = <span class="kw">true</span>;
+        gameOverUI.<span class="fn">SetActive</span>(<span class="kw">true</span>);
+
+        <span class="cm">// Stop the background music</span>
+        backgroundMusic.<span class="fn">Stop</span>();
+
+        <span class="cm">// Play the game-over jingle</span>
+        audioSource.<span class="fn">PlayOneShot</span>(gameOverSound);
+
+        <span class="cm">// Freeze the game after a short delay</span>
+        <span class="cm">// (so the game-over sound can still play)</span>
+        <span class="fn">Invoke</span>(<span class="str">"FreezeGame"</span>, <span class="num">0.1f</span>);
+    }
+
+    <span class="kw">void</span> <span class="fn">FreezeGame</span>()
+    {
+        <span class="ty">Time</span>.timeScale = <span class="num">0f</span>;
+    }
+}</code></div>
+        </div>
+
+        <div class="callout callout-danger">
+          <strong>Why not freeze immediately?</strong>
+          Setting <span class="inline-code">Time.timeScale = 0f</span> immediately would prevent the game-over sound from playing because <span class="inline-code">AudioSource</span> timing depends on the game clock. We use <span class="inline-code">Invoke()</span> with a tiny 0.1s delay to let the audio system register the play command before freezing.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Timer counts down from 30</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> "Time's Up!" appears at zero</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Background music stops on game over</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Game over sound plays</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Game freezes after the sound starts</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 8 ═══════════ -->
+    <div class="section" id="sec-8">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">8</div>
+        <div class="section-title">3D Spatial Audio</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>Right now all sounds are 2D — they sound the same regardless of where the player is. Let's make the collectibles emit a subtle spatial hum so the player can hear them in 3D space.</p>
+        </div>
+
+        <ol class="step-list">
+          <li>Open the <strong>Collectible Prefab</strong> (double-click it in the Project window).</li>
+          <li>Add an <span class="inline-code">AudioSource</span> component to the Prefab.</li>
+          <li>Assign a looping ambient sound (a hum, sparkle, or gentle tone) to the AudioClip field. If your audio pack doesn't have one, any short sound will do.</li>
+          <li>Configure the AudioSource:
+            <ul style="margin: 8px 0 4px 20px; font-size: 14px;">
+              <li><strong>Play On Awake:</strong> ✅ Checked</li>
+              <li><strong>Loop:</strong> ✅ Checked</li>
+              <li><strong>Volume:</strong> 0.5</li>
+              <li><strong>Spatial Blend:</strong> 1 (fully 3D)</li>
+            </ul>
+          </li>
+          <li>Expand the <strong>3D Sound Settings</strong> section at the bottom of the AudioSource:
+            <ul style="margin: 8px 0 4px 20px; font-size: 14px;">
+              <li><strong>Min Distance:</strong> 1 (full volume within 1 unit)</li>
+              <li><strong>Max Distance:</strong> 15 (silent beyond 15 units)</li>
+              <li><strong>Volume Rolloff:</strong> Logarithmic (default — sounds natural)</li>
+            </ul>
+          </li>
+          <li>Save the Prefab and return to the scene.</li>
+          <li>Place 5–6 collectibles around the arena at various distances from the player start position.</li>
+          <li>Press Play and walk around — you should hear collectibles get louder as you approach and quieter as you move away. The sound should also pan left/right based on the collectible's position relative to the camera.</li>
+        </ol>
+
+        <div class="callout callout-success">
+          <strong>Test it properly</strong>
+          Place a collectible far away (e.g., at position 12, 0.5, 12) and one close (at 2, 0.5, 2). When the game starts, you should hear the nearby one clearly and the distant one faintly. Walk toward the far one and listen for the volume increase. This is 3D spatial audio working.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Collectibles hum/glow audibly when nearby</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Sound fades with distance</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Sound pans left/right based on position</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 9 ═══════════ -->
+    <div class="section" id="sec-9">
+      <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-num">9</div>
+        <div class="section-title">Build & Test</div>
+      </div>
+      <div class="section-body">
+        <div class="text-block">
+          <p>Run through the complete game and verify every audio element works together.</p>
+        </div>
+
+        <div class="callout callout-info">
+          <strong>Final Audio Checklist</strong>
+          Play the game from start to finish and confirm every item below. If any audio is missing or behaving incorrectly, check the relevant section above.
+        </div>
+
+        <ul class="checklist">
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Background music starts immediately and loops</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Player moves with WASD</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Collecting a sphere plays a pickup sound and updates the score</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Rapid pickups produce overlapping sounds (not cutting each other off)</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Enemies spawn every 2 seconds with a spawn sound</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Collectible hum is louder when nearby and quieter when far away</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Timer counts down and freezes the game at 0</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Background music stops on game over</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Game-over sound plays before the game freezes</li>
+          <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> No console errors or warnings about multiple AudioListeners</li>
+        </ul>
+
+        <div class="callout callout-warn">
+          <strong>Extension challenges (optional)</strong>
+          If you finish early, try these: add a footstep sound that plays only while the player is moving, make enemies emit a 3D growl sound using an AudioSource on the enemy Prefab, or add a UI button click sound when the player presses a restart button.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggleSection(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('collapsed');
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  el.textContent = el.classList.contains('checked') ? '✓' : '';
+  updateProgress();
+  saveState();
+}
+
+function updateProgress() {
+  const total = document.querySelectorAll('.check-box').length;
+  const checked = document.querySelectorAll('.check-box.checked').length;
+  document.getElementById('progressFill').style.width = `${(checked / total) * 100}%`;
+  document.getElementById('progressText').textContent = `${checked} / ${total} steps`;
+}
+
+function copyCode(btn) {
+  const code = btn.closest('.code-block').querySelector('code');
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+function saveState() {
+  const checks = [];
+  document.querySelectorAll('.check-box').forEach((el, i) => {
+    if (el.classList.contains('checked')) checks.push(i);
+  });
+  localStorage.setItem('w11tutorial', JSON.stringify(checks));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('w11tutorial');
+  if (!saved) return;
+  const checks = JSON.parse(saved);
+  document.querySelectorAll('.check-box').forEach((el, i) => {
+    if (checks.includes(i)) {
+      el.classList.add('checked');
+      el.textContent = '✓';
+    }
+  });
+  updateProgress();
+}
+
+loadState();
+</script>
+</body>
+</html>

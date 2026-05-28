@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 11 — Audio in Unity | COIT20271</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --primary: #7c3aed;
+    --primary-light: #a78bfa;
+    --primary-dark: #6d28d9;
+    --bg: #0f0a1a;
+    --bg-card: #1a1128;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --accent: #f59e0b;
+    --code-bg: #1e1533;
+    --green: #22c55e;
+    --red: #ef4444;
+    --cyan: #22d3ee;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .deck { position: relative; height: 100vh; width: 100vw; }
+
+  .slide {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  .slide-label {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--primary-light);
+    margin-bottom: 10px;
+  }
+
+  .slide h1 {
+    font-size: 48px; font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #a78bfa, #f0abfc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .slide h2 {
+    font-size: 34px; font-weight: 800;
+    margin-bottom: 24px;
+    color: var(--text);
+  }
+
+  .slide p, .slide li {
+    font-size: 18px; line-height: 1.7;
+    color: #cbd5e1;
+  }
+
+  .slide p { margin-bottom: 12px; max-width: 700px; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 16px;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-top: 16px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .card h3 {
+    font-size: 17px; font-weight: 700;
+    color: var(--primary-light);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .card p, .card li { font-size: 15px; color: #94a3b8; line-height: 1.6; }
+
+  .card-icon {
+    width: 28px; height: 28px;
+    background: rgba(124, 58, 237, 0.2);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .code-box {
+    background: var(--code-bg);
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #e2e8f0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .kw { color: #c084fc; }
+  .ty { color: #67e8f9; }
+  .str { color: #86efac; }
+  .num { color: #fbbf24; }
+  .cm { color: #64748b; font-style: italic; }
+  .fn { color: #93c5fd; }
+  .at { color: #f9a8d4; }
+
+  .diagram-row {
+    display: flex; align-items: center; gap: 24px;
+    margin: 20px 0;
+    justify-content: center;
+  }
+
+  .dia-box {
+    background: var(--bg-card);
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 160px;
+  }
+
+  .dia-box.highlight { border-color: var(--accent); background: rgba(245, 158, 11, 0.08); }
+  .dia-box.green { border-color: var(--green); background: rgba(34, 197, 94, 0.08); }
+  .dia-box.cyan { border-color: var(--cyan); background: rgba(34, 211, 238, 0.08); }
+
+  .dia-box h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .dia-box p { font-size: 12px; color: #94a3b8; margin: 0; }
+
+  .dia-arrow { font-size: 24px; color: var(--primary-light); }
+
+  .prop-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  .prop-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: rgba(124, 58, 237, 0.15);
+    color: var(--primary-light);
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .prop-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: #cbd5e1;
+  }
+
+  .prop-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--cyan);
+    font-weight: 600;
+  }
+
+  .vs-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .vs-2d { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+  .vs-3d { background: rgba(124, 58, 237, 0.15); color: var(--primary-light); }
+
+  .tip {
+    background: rgba(245, 158, 11, 0.08);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin-top: 16px;
+    font-size: 14px;
+    color: #cbd5e1;
+    max-width: 700px;
+  }
+
+  .tip strong { color: var(--accent); }
+
+  /* NAV */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 32px;
+    background: rgba(15, 10, 26, 0.85);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(124, 58, 237, 0.15);
+    z-index: 100;
+  }
+
+  .nav-bar span {
+    font-size: 13px; color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .nav-dots {
+    display: flex; gap: 6px;
+  }
+
+  .nav-dot {
+    width: 8px; height: 8px;
+    background: #334155;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-dot.active { background: var(--primary-light); transform: scale(1.3); }
+
+  .nav-btn {
+    padding: 8px 20px;
+    background: rgba(124, 58, 237, 0.2);
+    color: var(--primary-light);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-btn:hover { background: rgba(124, 58, 237, 0.35); }
+
+  /* TITLE SLIDE */
+  .title-slide {
+    align-items: center;
+    text-align: center;
+  }
+
+  .title-slide h1 { font-size: 56px; }
+  .title-slide p { text-align: center; }
+
+  .wave-icon { font-size: 64px; margin-bottom: 16px; }
+
+  @media (max-width: 900px) {
+    .slide { padding: 30px 24px; }
+    .slide h1 { font-size: 32px; }
+    .slide h2 { font-size: 24px; }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .diagram-row { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide title-slide active" data-idx="0">
+    <div class="wave-icon">🔊</div>
+    <div class="slide-label">COIT20271 — Week 11</div>
+    <h1>Audio in Unity</h1>
+    <p>How to add background music, sound effects, and spatial audio to your game.</p>
+  </div>
+
+  <!-- SLIDE 2: Audio Architecture -->
+  <div class="slide" data-idx="1">
+    <div class="slide-label">Fundamentals</div>
+    <h2>How Audio Works in Unity</h2>
+    <p>Unity's audio system has three core parts that work together:</p>
+
+    <div class="diagram-row">
+      <div class="dia-box highlight">
+        <h4>🎵 AudioClip</h4>
+        <p>The audio file itself<br>(.wav, .mp3, .ogg)</p>
+      </div>
+      <div class="dia-arrow">→</div>
+      <div class="dia-box green">
+        <h4>🔈 AudioSource</h4>
+        <p>The speaker that plays<br>the clip in the scene</p>
+      </div>
+      <div class="dia-arrow">→</div>
+      <div class="dia-box cyan">
+        <h4>👂 AudioListener</h4>
+        <p>The microphone that<br>hears (on Main Camera)</p>
+      </div>
+    </div>
+
+    <div class="tip">
+      <strong>Key rule:</strong> Every scene needs exactly <strong>one AudioListener</strong> — Unity adds it to the Main Camera by default. Multiple AudioListeners cause warnings and overlapping sound.
+    </div>
+  </div>
+
+  <!-- SLIDE 3: AudioSource Properties -->
+  <div class="slide" data-idx="2">
+    <div class="slide-label">Component Deep Dive</div>
+    <h2>AudioSource — Key Properties</h2>
+
+    <table class="prop-table">
+      <thead>
+        <tr><th>Property</th><th>What It Does</th><th>Typical Use</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>AudioClip</td><td>The sound file to play</td><td>Assign in Inspector or via script</td></tr>
+        <tr><td>Play On Awake</td><td>Starts playing when the scene loads</td><td>Background music, ambient loops</td></tr>
+        <tr><td>Loop</td><td>Repeats the clip continuously</td><td>Music, environmental sounds</td></tr>
+        <tr><td>Volume</td><td>Loudness (0 = silent, 1 = full)</td><td>Balance music vs SFX levels</td></tr>
+        <tr><td>Pitch</td><td>Speed/pitch (1 = normal)</td><td>Slow-mo effects, variation</td></tr>
+        <tr><td>Spatial Blend</td><td>0 = 2D (everywhere), 1 = 3D (positional)</td><td>2D for music, 3D for world SFX</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SLIDE 4: Playing Audio from Scripts -->
+  <div class="slide" data-idx="3">
+    <div class="slide-label">Scripting Audio</div>
+    <h2>Three Ways to Play Sound</h2>
+
+    <div class="three-col">
+      <div class="card">
+        <h3><span class="card-icon">▶</span> Play()</h3>
+        <div class="code-box"><span class="cm">// Plays the assigned clip</span>
+audioSource.<span class="fn">Play</span>();
+audioSource.<span class="fn">Stop</span>();</div>
+        <p>Plays the clip set on the AudioSource. Calling Play() again restarts it. Good for <strong>music</strong> and <strong>single continuous sounds</strong>.</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="card-icon">🔫</span> PlayOneShot()</h3>
+        <div class="code-box"><span class="cm">// Fire-and-forget SFX</span>
+audioSource.<span class="fn">PlayOneShot</span>(clip);</div>
+        <p>Plays a clip <strong>without interrupting</strong> anything already playing. Can overlap. Perfect for <strong>rapid SFX</strong> (gunshots, pickups, footsteps).</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="card-icon">📍</span> PlayClipAtPoint()</h3>
+        <div class="code-box"><span class="cm">// Sound at a world position</span>
+<span class="ty">AudioSource</span>.<span class="fn">PlayClipAtPoint</span>(
+    clip, transform.position);</div>
+        <p>Creates a temporary AudioSource at a position, plays the clip, then self-destructs. Use for <strong>explosions</strong> and <strong>destroyed objects</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: 2D vs 3D Audio -->
+  <div class="slide" data-idx="4">
+    <div class="slide-label">Spatial Audio</div>
+    <h2>2D vs 3D Sound</h2>
+
+    <div class="two-col">
+      <div class="card">
+        <h3><span class="vs-badge vs-2d">2D</span> Spatial Blend = 0</h3>
+        <p>Sound is heard at the <strong>same volume everywhere</strong> regardless of distance or direction. No stereo panning.</p>
+        <p style="margin-top:12px;"><strong>Use for:</strong></p>
+        <ul style="margin-left:18px;">
+          <li>Background music</li>
+          <li>UI sounds (button clicks)</li>
+          <li>Narrator / voiceover</li>
+          <li>Global announcements</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3><span class="vs-badge vs-3d">3D</span> Spatial Blend = 1</h3>
+        <p>Sound gets <strong>louder as you approach</strong> and fades with distance. Pans left/right based on position.</p>
+        <p style="margin-top:12px;"><strong>Use for:</strong></p>
+        <ul style="margin-left:18px;">
+          <li>Enemy footsteps / growls</li>
+          <li>Environmental (waterfalls, fire)</li>
+          <li>Collectible hum / glow</li>
+          <li>Anything with a position in the world</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tip">
+      <strong>3D Settings:</strong> When Spatial Blend is set to 1, configure <strong>Min Distance</strong> (full volume range) and <strong>Max Distance</strong> (silence beyond this). The <strong>Volume Rolloff</strong> curve controls how quickly sound fades between these distances.
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Common Script Pattern -->
+  <div class="slide" data-idx="5">
+    <div class="slide-label">Putting It Together</div>
+    <h2>Common Audio Pattern</h2>
+    <p>A typical script that plays different sounds for different game events:</p>
+
+    <div class="code-box" style="max-width: 700px;"><span class="kw">public class</span> <span class="ty">PlayerAudio</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioClip</span> pickupSound;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioClip</span> hurtSound;
+
+    <span class="kw">private</span> <span class="ty">AudioSource</span> audioSource;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        audioSource = <span class="fn">GetComponent</span>&lt;<span class="ty">AudioSource</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">OnTriggerEnter</span>(<span class="ty">Collider</span> other)
+    {
+        <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Coin"</span>))
+            audioSource.<span class="fn">PlayOneShot</span>(pickupSound);
+
+        <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Enemy"</span>))
+            audioSource.<span class="fn">PlayOneShot</span>(hurtSound);
+    }
+}</div>
+  </div>
+
+  <!-- SLIDE 7: Best Practices -->
+  <div class="slide" data-idx="6">
+    <div class="slide-label">Guidelines</div>
+    <h2>Audio Best Practices</h2>
+
+    <div class="two-col">
+      <div class="card">
+        <h3><span class="card-icon">✅</span> Do</h3>
+        <ul style="margin-left: 18px;">
+          <li>Keep <strong>one AudioListener</strong> per scene (on the camera)</li>
+          <li>Use <strong>PlayOneShot()</strong> for SFX that may overlap</li>
+          <li>Use separate AudioSources for music and SFX</li>
+          <li>Set Spatial Blend to <strong>0</strong> for music, <strong>1</strong> for world sounds</li>
+          <li>Use <strong>.wav</strong> for short SFX, <strong>.ogg</strong> for music (smaller file size)</li>
+          <li>Adjust volumes so music doesn't drown out SFX</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3><span class="card-icon">❌</span> Don't</h3>
+        <ul style="margin-left: 18px;">
+          <li>Don't add multiple AudioListeners — causes doubled audio</li>
+          <li>Don't use <strong>Play()</strong> for rapid SFX — each call interrupts the last</li>
+          <li>Don't forget to assign AudioClips in the Inspector</li>
+          <li>Don't import huge uncompressed files for background music</li>
+          <li>Don't play sounds on destroyed objects — use PlayClipAtPoint()</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tip">
+      <strong>Next up:</strong> In the tutorial, you'll build a complete game with background music, pickup SFX, spawn sounds, spatial audio, and a game-over jingle. Head to the Sound Arena tutorial!
+    </div>
+  </div>
+
+</div>
+
+<!-- NAV BAR -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="go(-1)">← Prev</button>
+  <div class="nav-dots" id="dots"></div>
+  <span id="slideNum">1 / 7</span>
+  <button class="nav-btn" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+function render() {
+  slides.forEach((s, i) => s.classList.toggle('active', i === current));
+  document.getElementById('slideNum').textContent = `${current + 1} / ${total}`;
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+}
+
+function go(dir) {
+  current = Math.max(0, Math.min(total - 1, current + dir));
+  render();
+}
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => { current = i; render(); };
+  dotsEl.appendChild(d);
+}
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+});
+</script>
+</body>
+</html>
