@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crystal Collector — Full Game Tutorial | COIT20271</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  :root {
+    --primary: #059669; --primary-light: #34d399; --primary-dark: #047857;
+    --primary-bg: #ecfdf5; --primary-bg2: #d1fae5;
+    --accent: #f59e0b; --accent-bg: #fffbeb;
+    --text: #1e293b; --text-light: #64748b;
+    --bg: #ffffff; --bg-alt: #f8fafc; --border: #e2e8f0;
+    --code-bg: #0f1f1a; --code-text: #e2e8f0;
+    --sidebar-w: 270px;
+    --danger: #dc2626; --danger-bg: #fef2f2;
+    --success: #16a34a; --success-bg: #f0fdf4;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Plus Jakarta Sans',sans-serif; color:var(--text); background:var(--bg-alt); line-height:1.6; }
+
+  .sidebar {
+    position:fixed; top:0; left:0; width:var(--sidebar-w); height:100vh;
+    background:#0f1f1a; color:#cbd5e1; padding:24px 20px;
+    overflow-y:auto; z-index:100; display:flex; flex-direction:column;
+  }
+  .sidebar-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--primary-light); margin-bottom:6px; }
+  .sidebar-week { font-size:20px; font-weight:800; color:#f1f5f9; margin-bottom:24px; line-height:1.2; }
+  .sidebar-progress { margin-bottom:24px; }
+  .sidebar-progress-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; color:#94a3b8; }
+  .progress-bar { height:8px; background:#1e3a30; border-radius:4px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--primary-light); border-radius:4px; transition:width .4s; width:0%; }
+  .progress-text { font-size:13px; margin-top:6px; color:#94a3b8; }
+  .sidebar-nav { list-style:none; flex:1; }
+  .sidebar-nav li { margin-bottom:2px; }
+  .sidebar-nav a { display:flex; align-items:center; gap:10px; padding:9px 12px; font-size:12px; font-weight:500; color:#94a3b8; text-decoration:none; border-radius:6px; transition:all .2s; }
+  .sidebar-nav a:hover { background:#1e3a30; color:#e2e8f0; }
+  .nav-num { width:22px; height:22px; background:var(--primary-dark); color:var(--primary-light); border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+
+  .main { margin-left:var(--sidebar-w); min-height:100vh; }
+  .hero {
+    background:linear-gradient(135deg,#064e3b 0%,#059669 50%,#34d399 100%);
+    color:white; padding:60px 48px; position:relative; overflow:hidden;
+  }
+  .hero::after { content:''; position:absolute; top:-40%; right:-8%; width:350px; height:350px; background:rgba(255,255,255,.05); border-radius:50%; }
+  .hero-label { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:2px; opacity:.8; margin-bottom:8px; }
+  .hero h1 { font-size:36px; font-weight:800; line-height:1.2; margin-bottom:12px; }
+  .hero p { font-size:16px; opacity:.85; max-width:640px; line-height:1.6; }
+  .content { max-width:860px; padding:40px 48px 80px; }
+
+  .section { margin-bottom:48px; }
+  .section-header { display:flex; align-items:center; gap:14px; margin-bottom:24px; padding-bottom:12px; border-bottom:3px solid var(--primary-bg2); }
+  .section-num { width:36px; height:36px; background:var(--primary); color:white; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; flex-shrink:0; }
+  .section-title { font-size:22px; font-weight:800; color:var(--primary-dark); }
+
+  .step-list { list-style:none; counter-reset:steps; margin:16px 0; }
+  .step-list li { counter-increment:steps; padding:10px 0 10px 40px; position:relative; font-size:15px; line-height:1.7; }
+  .step-list li::before { content:counter(steps); position:absolute; left:0; top:11px; width:26px; height:26px; background:var(--primary-bg2); color:var(--primary-dark); border-radius:50%; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+  .checklist { list-style:none; margin:12px 0; }
+  .check-item { display:flex; align-items:flex-start; gap:10px; padding:6px 0; font-size:14px; }
+  .check-box { width:20px; height:20px; border:2px solid var(--border); border-radius:4px; flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; transition:all .2s; margin-top:2px; }
+  .check-box:hover { border-color:var(--primary); }
+  .check-box.checked { background:var(--success); border-color:var(--success); color:white; }
+
+  .code-block { background:var(--code-bg); border-radius:8px; margin:14px 0 18px; overflow:hidden; }
+  .code-header { display:flex; align-items:center; justify-content:space-between; padding:8px 16px; background:#1a2e26; border-bottom:1px solid #2d4a3e; }
+  .code-filename { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--primary-light); font-weight:600; }
+  .copy-btn { padding:3px 12px; background:#2d4a3e; color:#94a3b8; border:none; border-radius:4px; font-family:inherit; font-size:11px; cursor:pointer; transition:all .2s; }
+  .copy-btn:hover { background:#3d5a4e; color:#e2e8f0; }
+  .code-body { padding:16px 20px; overflow-x:auto; }
+  .code-body code { font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.7; color:var(--code-text); white-space:pre; display:block; }
+  .kw { color:#c084fc; } .ty { color:#67e8f9; } .str { color:#86efac; } .num { color:#fbbf24; }
+  .cm { color:#64748b; font-style:italic; } .fn { color:#93c5fd; } .at { color:#f9a8d4; }
+  .inline-code { font-family:'JetBrains Mono',monospace; font-size:12px; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:var(--primary-dark); }
+
+  .callout { padding:18px 22px; border-radius:10px; margin:16px 0; font-size:14px; line-height:1.6; }
+  .callout-info { background:var(--primary-bg); border-left:4px solid var(--primary); }
+  .callout-warn { background:var(--accent-bg); border-left:4px solid var(--accent); }
+  .callout-success { background:var(--success-bg); border-left:4px solid var(--success); }
+  .callout-danger { background:var(--danger-bg); border-left:4px solid var(--danger); }
+  .callout strong { display:block; font-size:14px; font-weight:700; margin-bottom:4px; }
+  .callout-info strong { color:var(--primary-dark); }
+  .callout-warn strong { color:#92400e; }
+  .callout-danger strong { color:var(--danger); }
+  .callout-success strong { color:#15803d; }
+
+  .text-block { font-size:15px; line-height:1.7; margin:12px 0; }
+  .text-block p { margin-bottom:8px; }
+
+  @media (max-width:900px) {
+    .sidebar { display:none; } .main { margin-left:0; }
+    .hero { padding:36px 20px; } .hero h1 { font-size:28px; }
+    .content { padding:24px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-title">COIT20271</div>
+  <div class="sidebar-week">Crystal Collector<br>Full Game Build</div>
+  <div class="sidebar-progress">
+    <div class="sidebar-progress-label">Progress</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">0 steps</div>
+  </div>
+  <ul class="sidebar-nav">
+    <li><a href="#sec-1"><span class="nav-num">1</span>Project & Assets</a></li>
+    <li><a href="#sec-2"><span class="nav-num">2</span>Arena Build</a></li>
+    <li><a href="#sec-3"><span class="nav-num">3</span>Player</a></li>
+    <li><a href="#sec-4"><span class="nav-num">4</span>Camera Follow</a></li>
+    <li><a href="#sec-5"><span class="nav-num">5</span>Collectibles</a></li>
+    <li><a href="#sec-6"><span class="nav-num">6</span>Enemies</a></li>
+    <li><a href="#sec-7"><span class="nav-num">7</span>Game Manager</a></li>
+    <li><a href="#sec-8"><span class="nav-num">8</span>UI System</a></li>
+    <li><a href="#sec-9"><span class="nav-num">9</span>Audio</a></li>
+    <li><a href="#sec-10"><span class="nav-num">10</span>Polish & Particles</a></li>
+  </ul>
+</aside>
+
+<div class="main">
+  <div class="hero">
+    <div class="hero-label">COIT20271 — Complete Game Tutorial</div>
+    <h1>💎 Crystal Collector</h1>
+    <p>Build a complete, polished collection game from scratch. Navigate an arena, collect crystals for points, avoid enemies that chase you, and survive to the final buzzer. Includes camera follow, audio, particles, difficulty scaling, and a full game-over/restart loop.</p>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══════════ SECTION 1 ═══════════ -->
+    <div class="section" id="sec-1">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <div class="section-title">Project & Assets</div>
+      </div>
+
+      <div class="text-block">
+        <p>Create a new project and import a free audio pack. The visual style uses Unity primitives with coloured materials — no 3D model imports needed.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Create a new <span class="inline-code">3D (Built-in Render Pipeline)</span> project named <strong>CrystalCollector</strong>.</li>
+        <li>In the Project window, create these folders: <span class="inline-code">Scripts</span>, <span class="inline-code">Materials</span>, <span class="inline-code">Prefabs</span>, <span class="inline-code">Audio</span>.</li>
+        <li>Import a free audio pack from the Asset Store (search <strong>"Free Sound Effects Pack"</strong> or <strong>"Free Casual Game SFX"</strong>). You need clips for: pickup chime, enemy hit/fail, background music loop, and a spawn whoosh. Alternative: download free clips from <strong>mixkit.co</strong> and drag them into your Audio folder.</li>
+        <li>Create the following <strong>Materials</strong> in the Materials folder:
+          <ul style="margin:8px 0 4px 20px; font-size:14px;">
+            <li><strong>Mat_Ground</strong> — dark grey (hex #2D2D2D)</li>
+            <li><strong>Mat_Wall</strong> — dark teal (hex #1A3A3A)</li>
+            <li><strong>Mat_Player</strong> — bright blue (hex #3B82F6)</li>
+            <li><strong>Mat_Crystal</strong> — bright green (hex #34D399), set <strong>Emission</strong> to enabled with colour #34D399 at intensity 1.5</li>
+            <li><strong>Mat_Enemy</strong> — bright red (hex #EF4444), set <strong>Emission</strong> to enabled with colour #EF4444 at intensity 1</li>
+          </ul>
+        </li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>Emissive materials</strong>
+        To set emission: select the Material, check <span class="inline-code">Emission</span>, click the colour box next to it, and pick the colour + intensity. Emissive objects glow slightly and look striking against the dark ground.
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Project created with folder structure</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Audio clips imported</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> 5 materials created with correct colours</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 2 ═══════════ -->
+    <div class="section" id="sec-2">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <div class="section-title">Arena Build</div>
+      </div>
+
+      <div class="text-block">
+        <p>Build a walled arena so the player and enemies stay within bounds. The dark aesthetic with emissive objects creates a clean, modern look.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Create a <span class="inline-code">Plane</span> at (0, 0, 0). Scale to (3, 1, 3). Apply <strong>Mat_Ground</strong>. Name it <strong>Ground</strong>.</li>
+        <li>Create 4 <span class="inline-code">Cube</span> walls around the arena edges:
+          <ul style="margin:8px 0 4px 20px; font-size:14px;">
+            <li><strong>Wall_North</strong> — Position (0, 0.5, 15), Scale (30, 1, 0.5)</li>
+            <li><strong>Wall_South</strong> — Position (0, 0.5, -15), Scale (30, 1, 0.5)</li>
+            <li><strong>Wall_East</strong> — Position (15, 0.5, 0), Scale (0.5, 1, 30)</li>
+            <li><strong>Wall_West</strong> — Position (-15, 0.5, 0), Scale (0.5, 1, 30)</li>
+          </ul>
+          Apply <strong>Mat_Wall</strong> to all four.
+        </li>
+        <li>Create an empty GameObject named <span class="inline-code">Arena</span>. Drag all walls and the ground into it to keep the Hierarchy clean.</li>
+        <li>Select the <strong>Directional Light</strong>. Set its colour to a cool white (hex #C8D8E8), intensity to 0.6, and rotation to (50, -30, 0). This creates soft, atmospheric lighting.</li>
+        <li>Set the scene's ambient light: go to <strong>Window → Rendering → Lighting</strong>. Under Environment, set <strong>Ambient Color</strong> to a dark blue-grey (hex #1A1A2E).</li>
+      </ol>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Ground plane with dark material</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> 4 walls enclosing the arena</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Lighting configured (dim, atmospheric)</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 3 ═══════════ -->
+    <div class="section" id="sec-3">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <div class="section-title">Player</div>
+      </div>
+
+      <ol class="step-list">
+        <li>Create a <span class="inline-code">Cube</span> at (0, 0.5, 0). Name it <strong>Player</strong>. Apply <strong>Mat_Player</strong>.</li>
+        <li>Add a <span class="inline-code">Rigidbody</span>. Expand <strong>Constraints</strong>: freeze rotation X, Y, Z.</li>
+        <li>Add an <span class="inline-code">AudioSource</span>. Uncheck <strong>Play On Awake</strong>.</li>
+        <li>Add a <span class="inline-code">Trail Renderer</span> component. Set <strong>Time</strong> to 0.3, <strong>Start Width</strong> to 0.3, <strong>End Width</strong> to 0. Under the colour gradient, set the start to the player's blue colour and the end to transparent. Uncheck <strong>Cast Shadows</strong>. Set <strong>Materials → Element 0</strong> to Unity's <span class="inline-code">Default-Line</span> material.</li>
+        <li>Set the Player's Tag to <span class="inline-code">Player</span> (this tag already exists by default).</li>
+        <li>Create <span class="inline-code">PlayerMovement.cs</span> in the Scripts folder and attach it to Player.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">PlayerMovement.cs</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><code><span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">PlayerMovement</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> speed = <span class="num">8f</span>;
+
+    <span class="kw">private</span> <span class="ty">Rigidbody</span> rb;
+    <span class="kw">private bool</span> canMove = <span class="kw">true</span>;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        rb = <span class="fn">GetComponent</span>&lt;<span class="ty">Rigidbody</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">FixedUpdate</span>()
+    {
+        <span class="kw">if</span> (!canMove) <span class="kw">return</span>;
+
+        <span class="kw">float</span> h = <span class="ty">Input</span>.<span class="fn">GetAxis</span>(<span class="str">"Horizontal"</span>);
+        <span class="kw">float</span> v = <span class="ty">Input</span>.<span class="fn">GetAxis</span>(<span class="str">"Vertical"</span>);
+        <span class="ty">Vector3</span> move = <span class="kw">new</span> <span class="ty">Vector3</span>(h, <span class="num">0f</span>, v).normalized;
+
+        rb.<span class="fn">MovePosition</span>(rb.position + move * speed * <span class="ty">Time</span>.fixedDeltaTime);
+    }
+
+    <span class="kw">public void</span> <span class="fn">DisableMovement</span>()
+    {
+        canMove = <span class="kw">false</span>;
+    }
+}</code></div>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Why .normalized?</strong>
+        Without normalizing, diagonal movement (pressing W+D together) would be faster than cardinal movement because the vector (1,0,1) has a magnitude of ~1.41. Calling <span class="inline-code">.normalized</span> clamps it to magnitude 1 so all directions move at equal speed.
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Player cube with Rigidbody, rotation frozen</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Trail Renderer shows a blue trail behind movement</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Player moves with WASD at equal speed in all directions</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 4 ═══════════ -->
+    <div class="section" id="sec-4">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <div class="section-title">Camera Follow</div>
+      </div>
+
+      <div class="text-block">
+        <p>A fixed-angle camera that smoothly follows the player, giving a top-down/isometric view of the arena.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Select the <strong>Main Camera</strong>. Set its position to (0, 14, -8) and rotation to (60, 0, 0). This gives a clear top-down-ish view.</li>
+        <li>Set the Camera's <strong>Clear Flags</strong> to <span class="inline-code">Solid Color</span> and <strong>Background</strong> to dark (#0A0A1A).</li>
+        <li>Create <span class="inline-code">CameraFollow.cs</span> and attach it to the Main Camera.</li>
+        <li>In the Inspector, drag the <strong>Player</strong> object into the <span class="inline-code">target</span> field.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">CameraFollow.cs</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><code><span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">CameraFollow</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">Transform</span> target;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> smoothSpeed = <span class="num">5f</span>;
+
+    <span class="kw">private</span> <span class="ty">Vector3</span> offset;
+
+    <span class="kw">void</span> <span class="fn">Start</span>()
+    {
+        <span class="cm">// Store the initial distance between camera and player</span>
+        offset = transform.position - target.position;
+    }
+
+    <span class="kw">void</span> <span class="fn">LateUpdate</span>()
+    {
+        <span class="ty">Vector3</span> desiredPos = target.position + offset;
+        transform.position = <span class="ty">Vector3</span>.<span class="fn">Lerp</span>(
+            transform.position, desiredPos,
+            smoothSpeed * <span class="ty">Time</span>.deltaTime);
+    }
+}</code></div>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Why LateUpdate?</strong>
+        The player moves in FixedUpdate. If the camera also moved in Update, it could read the player's position before or after the physics step, causing jitter. LateUpdate runs after all Update and FixedUpdate calls, so the player's final position is settled.
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Camera follows the player smoothly</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Arena is clearly visible from the camera angle</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 5 ═══════════ -->
+    <div class="section" id="sec-5">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <div class="section-title">Collectibles</div>
+      </div>
+
+      <div class="text-block">
+        <p>Glowing crystals that rotate in place. The player picks them up by moving into them. A spawner keeps a steady supply on the field.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Create a <span class="inline-code">Sphere</span> at (0, 0.5, 0). Scale to (0.5, 0.5, 0.5). Apply <strong>Mat_Crystal</strong>. Name it <strong>Crystal</strong>.</li>
+        <li>Tick <span class="inline-code">Is Trigger</span> on its Sphere Collider.</li>
+        <li>Add the tag <span class="inline-code">Crystal</span> in Tag Manager and assign it.</li>
+        <li>Add a <span class="inline-code">Point Light</span> as a child of the Crystal (right-click Crystal → Light → Point Light). Set colour to #34D399, range 3, intensity 1. This makes it glow on the ground.</li>
+        <li>Create <span class="inline-code">Collectible.cs</span> and attach it to Crystal.</li>
+        <li>Drag Crystal from Hierarchy into the Prefabs folder to create a Prefab. Delete the original from the scene.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">Collectible.cs</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><code><span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">Collectible</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> rotateSpeed = <span class="num">90f</span>;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> bobHeight = <span class="num">0.2f</span>;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> bobSpeed = <span class="num">2f</span>;
+
+    <span class="kw">private float</span> startY;
+
+    <span class="kw">void</span> <span class="fn">Start</span>()
+    {
+        startY = transform.position.y;
+    }
+
+    <span class="kw">void</span> <span class="fn">Update</span>()
+    {
+        <span class="cm">// Rotate</span>
+        transform.<span class="fn">Rotate</span>(<span class="ty">Vector3</span>.up, rotateSpeed * <span class="ty">Time</span>.deltaTime);
+
+        <span class="cm">// Bob up and down</span>
+        <span class="kw">float</span> newY = startY + <span class="ty">Mathf</span>.<span class="fn">Sin</span>(<span class="ty">Time</span>.time * bobSpeed) * bobHeight;
+        <span class="ty">Vector3</span> pos = transform.position;
+        pos.y = newY;
+        transform.position = pos;
+    }
+}</code></div>
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Crystal Prefab rotates and bobs</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Green glow from Point Light visible on ground</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Prefab saved to Prefabs folder</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 6 ═══════════ -->
+    <div class="section" id="sec-6">
+      <div class="section-header">
+        <div class="section-num">6</div>
+        <div class="section-title">Enemies</div>
+      </div>
+
+      <div class="text-block">
+        <p>Red capsules that chase the player. If one touches the player, game over. They use a simple script that moves toward the player's position each frame.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Create a <span class="inline-code">Capsule</span> at (0, 1, 0). Apply <strong>Mat_Enemy</strong>. Name it <strong>Enemy</strong>.</li>
+        <li>Add a <span class="inline-code">Rigidbody</span>. Freeze rotation X, Y, Z. Set <strong>Collision Detection</strong> to <span class="inline-code">Continuous</span>.</li>
+        <li>Tick <span class="inline-code">Is Trigger</span> on its Capsule Collider.</li>
+        <li>Add the tag <span class="inline-code">Enemy</span> in Tag Manager and assign it.</li>
+        <li>Add a <span class="inline-code">Point Light</span> as a child. Colour #EF4444, range 2, intensity 0.8.</li>
+        <li>Create <span class="inline-code">EnemyAI.cs</span> and attach it to the Enemy.</li>
+        <li>Drag into the Prefabs folder to create a Prefab. Delete the original.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">EnemyAI.cs</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><code><span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">EnemyAI</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> speed = <span class="num">3f</span>;
+
+    <span class="kw">private</span> <span class="ty">Transform</span> player;
+
+    <span class="kw">void</span> <span class="fn">Start</span>()
+    {
+        <span class="ty">GameObject</span> p = <span class="ty">GameObject</span>.<span class="fn">FindWithTag</span>(<span class="str">"Player"</span>);
+        <span class="kw">if</span> (p != <span class="kw">null</span>) player = p.transform;
+    }
+
+    <span class="kw">void</span> <span class="fn">Update</span>()
+    {
+        <span class="kw">if</span> (player == <span class="kw">null</span>) <span class="kw">return</span>;
+
+        <span class="ty">Vector3</span> dir = (player.position - transform.position).normalized;
+        dir.y = <span class="num">0f</span>; <span class="cm">// Stay on ground plane</span>
+
+        transform.position += dir * speed * <span class="ty">Time</span>.deltaTime;
+    }
+}</code></div>
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Enemy Prefab with red glow</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Enemies chase the player when spawned</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 7 ═══════════ -->
+    <div class="section" id="sec-7">
+      <div class="section-header">
+        <div class="section-num">7</div>
+        <div class="section-title">Game Manager</div>
+      </div>
+
+      <div class="text-block">
+        <p>The central script that runs the game: spawns collectibles and enemies, tracks score and time, handles pickup and enemy-hit events, and controls game-over state. Attach it to an empty <span class="inline-code">GameManager</span> GameObject.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Create an empty GameObject named <span class="inline-code">GameManager</span>.</li>
+        <li>Add an <span class="inline-code">AudioSource</span> to it. Uncheck Play On Awake.</li>
+        <li>Create <span class="inline-code">GameManager.cs</span> and attach it.</li>
+        <li>Assign all the Inspector references after creating the UI in the next section.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">GameManager.cs</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><code><span class="kw">using</span> System.Collections;
+<span class="kw">using</span> TMPro;
+<span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">GameManager</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">Header</span>(<span class="str">"Prefabs"</span>)]
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> crystalPrefab;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> enemyPrefab;
+
+    [<span class="at">Header</span>(<span class="str">"Spawning"</span>)]
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> crystalInterval = <span class="num">3f</span>;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> enemyInterval = <span class="num">5f</span>;
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> spawnRange = <span class="num">13f</span>;
+    [<span class="at">SerializeField</span>] <span class="kw">private int</span> maxCrystals = <span class="num">8</span>;
+
+    [<span class="at">Header</span>(<span class="str">"UI"</span>)]
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">TMP_Text</span> scoreText;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">TMP_Text</span> timerText;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> gameOverPanel;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">TMP_Text</span> finalScoreText;
+
+    [<span class="at">Header</span>(<span class="str">"Audio"</span>)]
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioClip</span> pickupClip;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioClip</span> hitClip;
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">AudioSource</span> musicSource;
+
+    [<span class="at">Header</span>(<span class="str">"Settings"</span>)]
+    [<span class="at">SerializeField</span>] <span class="kw">private float</span> gameDuration = <span class="num">60f</span>;
+
+    <span class="kw">private</span> <span class="ty">AudioSource</span> sfxSource;
+    <span class="kw">private int</span> score;
+    <span class="kw">private float</span> timeRemaining;
+    <span class="kw">private bool</span> isGameOver;
+    <span class="kw">private int</span> crystalCount;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        sfxSource = <span class="fn">GetComponent</span>&lt;<span class="ty">AudioSource</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">Start</span>()
+    {
+        <span class="ty">Time</span>.timeScale = <span class="num">1f</span>;
+        score = <span class="num">0</span>;
+        timeRemaining = gameDuration;
+        isGameOver = <span class="kw">false</span>;
+        gameOverPanel.<span class="fn">SetActive</span>(<span class="kw">false</span>);
+        <span class="fn">UpdateUI</span>();
+
+        <span class="fn">StartCoroutine</span>(<span class="fn">SpawnCrystals</span>());
+        <span class="fn">StartCoroutine</span>(<span class="fn">SpawnEnemies</span>());
+    }
+
+    <span class="kw">void</span> <span class="fn">Update</span>()
+    {
+        <span class="kw">if</span> (isGameOver) <span class="kw">return</span>;
+
+        timeRemaining -= <span class="ty">Time</span>.deltaTime;
+        <span class="kw">if</span> (timeRemaining &lt;= <span class="num">0f</span>)
+        {
+            timeRemaining = <span class="num">0f</span>;
+            <span class="fn">EndGame</span>();
+        }
+        timerText.text = <span class="ty">Mathf</span>.<span class="fn">CeilToInt</span>(timeRemaining).<span class="fn">ToString</span>();
+    }
+
+    <span class="cm">// ── Called by PlayerCollector ──</span>
+
+    <span class="kw">public void</span> <span class="fn">CrystalCollected</span>()
+    {
+        score += <span class="num">10</span>;
+        crystalCount--;
+        sfxSource.<span class="fn">PlayOneShot</span>(pickupClip);
+        <span class="fn">UpdateUI</span>();
+    }
+
+    <span class="kw">public void</span> <span class="fn">PlayerHit</span>()
+    {
+        sfxSource.<span class="fn">PlayOneShot</span>(hitClip);
+        <span class="fn">EndGame</span>();
+    }
+
+    <span class="kw">void</span> <span class="fn">EndGame</span>()
+    {
+        isGameOver = <span class="kw">true</span>;
+        musicSource.<span class="fn">Stop</span>();
+        gameOverPanel.<span class="fn">SetActive</span>(<span class="kw">true</span>);
+        finalScoreText.text = <span class="str">"Final Score: "</span> + score;
+
+        <span class="cm">// Disable player movement</span>
+        <span class="fn">FindAnyObjectByType</span>&lt;<span class="ty">PlayerMovement</span>&gt;().<span class="fn">DisableMovement</span>();
+
+        <span class="ty">Time</span>.timeScale = <span class="num">0f</span>;
+    }
+
+    <span class="kw">void</span> <span class="fn">UpdateUI</span>()
+    {
+        scoreText.text = <span class="str">"Score: "</span> + score;
+    }
+
+    <span class="kw">public void</span> <span class="fn">RestartGame</span>()
+    {
+        <span class="ty">Time</span>.timeScale = <span class="num">1f</span>;
+        <span class="ty">UnityEngine</span>.<span class="ty">SceneManagement</span>.<span class="ty">SceneManager</span>.<span class="fn">LoadScene</span>(
+            <span class="ty">UnityEngine</span>.<span class="ty">SceneManagement</span>.<span class="ty">SceneManager</span>.<span class="fn">GetActiveScene</span>().name);
+    }
+
+    <span class="cm">// ── Spawners ──</span>
+
+    <span class="ty">IEnumerator</span> <span class="fn">SpawnCrystals</span>()
+    {
+        <span class="kw">while</span> (!isGameOver)
+        {
+            <span class="kw">if</span> (crystalCount &lt; maxCrystals)
+            {
+                <span class="ty">Vector3</span> pos = <span class="fn">RandomArenaPos</span>(<span class="num">0.5f</span>);
+                <span class="fn">Instantiate</span>(crystalPrefab, pos, <span class="ty">Quaternion</span>.identity);
+                crystalCount++;
+            }
+            <span class="kw">yield return new</span> <span class="ty">WaitForSeconds</span>(crystalInterval);
+        }
+    }
+
+    <span class="ty">IEnumerator</span> <span class="fn">SpawnEnemies</span>()
+    {
+        <span class="kw">float</span> interval = enemyInterval;
+        <span class="kw">while</span> (!isGameOver)
+        {
+            <span class="kw">yield return new</span> <span class="ty">WaitForSeconds</span>(interval);
+            <span class="ty">Vector3</span> pos = <span class="fn">RandomArenaPos</span>(<span class="num">1f</span>);
+            <span class="fn">Instantiate</span>(enemyPrefab, pos, <span class="ty">Quaternion</span>.identity);
+
+            <span class="cm">// Gradually spawn faster (minimum 1.5s)</span>
+            interval = <span class="ty">Mathf</span>.<span class="fn">Max</span>(<span class="num">1.5f</span>, interval - <span class="num">0.2f</span>);
+        }
+    }
+
+    <span class="ty">Vector3</span> <span class="fn">RandomArenaPos</span>(<span class="kw">float</span> yHeight)
+    {
+        <span class="kw">float</span> x = <span class="ty">Random</span>.<span class="fn">Range</span>(-spawnRange, spawnRange);
+        <span class="kw">float</span> z = <span class="ty">Random</span>.<span class="fn">Range</span>(-spawnRange, spawnRange);
+        <span class="kw">return new</span> <span class="ty">Vector3</span>(x, yHeight, z);
+    }
+}</code></div>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Difficulty scaling</strong>
+        Each time an enemy spawns, the interval decreases by 0.2 seconds (clamped at 1.5s minimum). By the end of a 60-second game, enemies spawn roughly 3× faster than at the start. Students can tune <span class="inline-code">enemyInterval</span> and the reduction rate in the Inspector.
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> GameManager object created with AudioSource</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Script compiles with no errors</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 8 ═══════════ -->
+    <div class="section" id="sec-8">
+      <div class="section-header">
+        <div class="section-num">8</div>
+        <div class="section-title">UI System</div>
+      </div>
+
+      <div class="text-block">
+        <p>Two layers of UI: a HUD (score + timer always visible) and a Game Over panel that appears on top when the game ends.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Create <strong>GameObject → UI → Text - TextMeshPro</strong>. Name it <strong>ScoreText</strong>. Anchor top-left. Pos (20, -20). Font size 32. Text: "Score: 0".</li>
+        <li>Create another TMP text named <strong>TimerText</strong>. Anchor top-right. Pos (-20, -20). Font size 32. Text: "60". Set alignment to right.</li>
+        <li>Create <strong>GameObject → UI → Panel</strong>. Name it <strong>GameOverPanel</strong>. Set its Image colour to (0, 0, 0, 200) for a dark semi-transparent overlay.</li>
+        <li>Inside GameOverPanel, create a TMP text named <strong>GameOverTitle</strong>. Centre it. Text: "GAME OVER". Font size 60. Bold. White.</li>
+        <li>Below the title, create another TMP text named <strong>FinalScoreText</strong>. Text: "Final Score: 0". Font size 32. White.</li>
+        <li>Create <strong>GameObject → UI → Button - TextMeshPro</strong> inside the panel. Name it <strong>RestartButton</strong>. Position below the score. Set the button text to "Play Again".</li>
+        <li>On the RestartButton's <strong>On Click ()</strong> event, click +, drag the <strong>GameManager</strong> object into the slot, and select <span class="inline-code">GameManager → RestartGame</span>.</li>
+        <li><strong>Disable</strong> the GameOverPanel (uncheck its checkbox).</li>
+      </ol>
+
+      <div class="text-block">
+        <p>Now create the <strong>PlayerCollector</strong> script — this bridges gameplay events to the GameManager:</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">PlayerCollector.cs</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><code><span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">PlayerCollector</span> : <span class="ty">MonoBehaviour</span>
+{
+    <span class="kw">private</span> <span class="ty">GameManager</span> gm;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        gm = <span class="fn">FindAnyObjectByType</span>&lt;<span class="ty">GameManager</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">OnTriggerEnter</span>(<span class="ty">Collider</span> other)
+    {
+        <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Crystal"</span>))
+        {
+            gm.<span class="fn">CrystalCollected</span>();
+            <span class="fn">Destroy</span>(other.gameObject);
+        }
+
+        <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Enemy"</span>))
+        {
+            gm.<span class="fn">PlayerHit</span>();
+        }
+    }
+}</code></div>
+      </div>
+
+      <ol class="step-list" style="counter-reset: steps 8;">
+        <li>Attach <span class="inline-code">PlayerCollector.cs</span> to the <strong>Player</strong> object.</li>
+        <li>Now wire up <strong>all GameManager Inspector references</strong>:
+          <ul style="margin:8px 0 4px 20px; font-size:14px;">
+            <li><strong>crystalPrefab</strong> → Crystal prefab from Project window</li>
+            <li><strong>enemyPrefab</strong> → Enemy prefab from Project window</li>
+            <li><strong>scoreText</strong> → ScoreText from Hierarchy</li>
+            <li><strong>timerText</strong> → TimerText from Hierarchy</li>
+            <li><strong>gameOverPanel</strong> → GameOverPanel from Hierarchy</li>
+            <li><strong>finalScoreText</strong> → FinalScoreText from Hierarchy</li>
+            <li><strong>pickupClip</strong> → your pickup audio clip</li>
+            <li><strong>hitClip</strong> → your fail/hit audio clip</li>
+            <li><strong>musicSource</strong> → (set up in the next section)</li>
+          </ul>
+        </li>
+      </ol>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Score and Timer visible on screen</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> GameOverPanel is disabled and has Restart button wired</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> PlayerCollector attached to Player</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> All GameManager Inspector fields assigned (except musicSource)</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 9 ═══════════ -->
+    <div class="section" id="sec-9">
+      <div class="section-header">
+        <div class="section-num">9</div>
+        <div class="section-title">Audio</div>
+      </div>
+
+      <ol class="step-list">
+        <li>Create an empty GameObject named <strong>BackgroundMusic</strong>. Add an <span class="inline-code">AudioSource</span>.</li>
+        <li>Assign your music loop clip. Set <strong>Play On Awake: ✅</strong>, <strong>Loop: ✅</strong>, <strong>Volume: 0.25</strong>, <strong>Spatial Blend: 0</strong> (2D).</li>
+        <li>Drag the BackgroundMusic object into the GameManager's <span class="inline-code">musicSource</span> field.</li>
+        <li>Press Play. Verify: music plays on start, pickup sound on crystal collection, hit sound on enemy contact, music stops on game over.</li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>Audio recap</strong>
+        The GameManager uses <span class="inline-code">PlayOneShot()</span> for SFX so sounds overlap cleanly. Background music is on a separate AudioSource with its own volume control. <span class="inline-code">musicSource.Stop()</span> is called on game over. Audio is unaffected by <span class="inline-code">Time.timeScale = 0</span> — the hit sound still plays after the game freezes.
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Background music plays and loops</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Pickup SFX on crystal collection</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Hit SFX on enemy contact</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Music stops on game over</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════ SECTION 10 ═══════════ -->
+    <div class="section" id="sec-10">
+      <div class="section-header">
+        <div class="section-num">10</div>
+        <div class="section-title">Polish & Particles</div>
+      </div>
+
+      <div class="text-block">
+        <p>Add a particle burst when crystals are collected. This makes pickups feel satisfying and the game feel polished.</p>
+      </div>
+
+      <ol class="step-list">
+        <li>Create a <span class="inline-code">Particle System</span> (GameObject → Effects → Particle System). Name it <strong>PickupBurst</strong>.</li>
+        <li>Configure it for a short one-shot burst:
+          <ul style="margin:8px 0 4px 20px; font-size:14px;">
+            <li><strong>Duration:</strong> 0.3</li>
+            <li><strong>Looping:</strong> ❌ Off</li>
+            <li><strong>Start Lifetime:</strong> 0.4</li>
+            <li><strong>Start Speed:</strong> 6</li>
+            <li><strong>Start Size:</strong> 0.15</li>
+            <li><strong>Start Color:</strong> #34D399 (crystal green)</li>
+            <li><strong>Simulation Space:</strong> World</li>
+            <li><strong>Play On Awake:</strong> ❌ Off</li>
+            <li>Under <strong>Emission</strong>: Rate over Time = 0, add a single <strong>Burst</strong> at time 0 with count 20</li>
+            <li>Under <strong>Shape</strong>: Sphere, Radius 0.3</li>
+            <li>Under <strong>Renderer</strong>: Material = Default-Particle</li>
+          </ul>
+        </li>
+        <li>Drag PickupBurst into the Prefabs folder. Delete the original from the scene.</li>
+        <li>Now update <strong>PlayerCollector.cs</strong> to spawn the particle burst on pickup:</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">PlayerCollector.cs — updated</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><code><span class="kw">using</span> UnityEngine;
+
+<span class="kw">public class</span> <span class="ty">PlayerCollector</span> : <span class="ty">MonoBehaviour</span>
+{
+    [<span class="at">SerializeField</span>] <span class="kw">private</span> <span class="ty">GameObject</span> pickupEffect;
+
+    <span class="kw">private</span> <span class="ty">GameManager</span> gm;
+
+    <span class="kw">void</span> <span class="fn">Awake</span>()
+    {
+        gm = <span class="fn">FindAnyObjectByType</span>&lt;<span class="ty">GameManager</span>&gt;();
+    }
+
+    <span class="kw">void</span> <span class="fn">OnTriggerEnter</span>(<span class="ty">Collider</span> other)
+    {
+        <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Crystal"</span>))
+        {
+            <span class="cm">// Spawn particle burst at crystal position</span>
+            <span class="kw">if</span> (pickupEffect != <span class="kw">null</span>)
+            {
+                <span class="ty">GameObject</span> fx = <span class="fn">Instantiate</span>(pickupEffect,
+                    other.transform.position, <span class="ty">Quaternion</span>.identity);
+                <span class="fn">Destroy</span>(fx, <span class="num">1f</span>); <span class="cm">// Clean up after particles finish</span>
+            }
+
+            gm.<span class="fn">CrystalCollected</span>();
+            <span class="fn">Destroy</span>(other.gameObject);
+        }
+
+        <span class="kw">if</span> (other.<span class="fn">CompareTag</span>(<span class="str">"Enemy"</span>))
+        {
+            gm.<span class="fn">PlayerHit</span>();
+        }
+    }
+}</code></div>
+      </div>
+
+      <ol class="step-list" style="counter-reset: steps 4;">
+        <li>Drag the PickupBurst prefab into the <span class="inline-code">pickupEffect</span> field on the Player's PlayerCollector component.</li>
+        <li>Press Play and collect a crystal — a burst of green particles should fly out.</li>
+      </ol>
+
+      <div class="callout callout-success">
+        <strong>Final playtest checklist</strong>
+        Play the complete game from start to finish. You should experience: background music, smooth camera follow, rotating/bobbing crystals with green glow, enemies chasing you with red glow, particle bursts on pickup, escalating difficulty, game over on hit or timeout, and a working restart button. If all of that works — you've built a complete game.
+      </div>
+
+      <ul class="checklist">
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Green particle burst on crystal pickup</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Particles clean up after 1 second</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Full game loop works: play → collect → avoid → game over → restart</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> Difficulty increases over time (enemies spawn faster)</li>
+        <li class="check-item"><span class="check-box" onclick="toggleCheck(this)"></span> No console errors or warnings</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  el.textContent = el.classList.contains('checked') ? '✓' : '';
+  updateProgress(); saveState();
+}
+function updateProgress() {
+  const t = document.querySelectorAll('.check-box').length;
+  const c = document.querySelectorAll('.check-box.checked').length;
+  document.getElementById('progressFill').style.width = `${(c/t)*100}%`;
+  document.getElementById('progressText').textContent = `${c} / ${t} steps`;
+}
+function copyCode(btn) {
+  const code = btn.closest('.code-block').querySelector('code');
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+function saveState() {
+  const checks = [];
+  document.querySelectorAll('.check-box').forEach((el,i) => { if (el.classList.contains('checked')) checks.push(i); });
+  localStorage.setItem('crystalCollector', JSON.stringify(checks));
+}
+function loadState() {
+  const saved = localStorage.getItem('crystalCollector');
+  if (!saved) return;
+  JSON.parse(saved).forEach(i => {
+    const el = document.querySelectorAll('.check-box')[i];
+    if (el) { el.classList.add('checked'); el.textContent = '✓'; }
+  });
+  updateProgress();
+}
+loadState();
+</script>
+</body>
+</html>
