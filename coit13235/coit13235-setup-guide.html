@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COIT13235 — Development Environment Setup Guide</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #fafafa; color: #1a1a1a;
+      line-height: 1.7; padding: 0;
+    }
+
+    /* ── Header ── */
+    .page-header {
+      background: #1a1a1a; color: #fff;
+      padding: 48px 0 40px; text-align: center;
+    }
+    .page-header h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 6px; }
+    .page-header .subtitle { font-size: 1.05rem; color: #aaa; }
+    .page-header .unit-code {
+      display: inline-block; background: #3b5998; color: #fff;
+      padding: 3px 14px; border-radius: 20px; font-size: 0.78rem;
+      letter-spacing: 0.5px; margin-bottom: 14px;
+    }
+
+    /* ── Progress tracker ── */
+    .progress-strip {
+      background: #fff; border-bottom: 1px solid #e8e8e8;
+      padding: 16px 0; text-align: center; position: sticky; top: 0; z-index: 50;
+    }
+    .progress-strip .bar-track {
+      width: min(600px, 85%); height: 8px; background: #e8e8e8;
+      border-radius: 4px; margin: 0 auto 8px; overflow: hidden;
+    }
+    .progress-strip .bar-fill {
+      height: 100%; background: #4a7c59; border-radius: 4px;
+      width: 0%; transition: width 0.4s ease;
+    }
+    .progress-strip .bar-label { font-size: 0.82rem; color: #888; }
+
+    /* ── Content container ── */
+    .container { max-width: 760px; margin: 0 auto; padding: 30px 24px 80px; }
+
+    /* ── Step cards ── */
+    .step-card {
+      background: #fff; border: 1px solid #e0e0e0;
+      border-radius: 10px; margin-bottom: 22px;
+      overflow: hidden; transition: border-color 0.3s;
+    }
+    .step-card.completed { border-color: #4a7c59; }
+    .step-card.completed .step-header { background: #f3faf5; }
+    .step-card.completed .step-num { background: #4a7c59; }
+
+    .step-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 22px; cursor: pointer; user-select: none;
+      background: #fafafa; transition: background 0.2s;
+    }
+    .step-header:hover { background: #f5f5f5; }
+    .step-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #3b5998; color: #fff; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.95rem; flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .step-title { font-size: 1.08rem; font-weight: 600; flex: 1; }
+    .step-time {
+      font-size: 0.78rem; color: #999;
+      background: #f0f0f0; padding: 3px 10px; border-radius: 12px;
+    }
+    .step-chevron {
+      font-size: 1.1rem; color: #bbb; transition: transform 0.3s;
+    }
+    .step-card.open .step-chevron { transform: rotate(90deg); }
+    .step-check-icon { font-size: 1.1rem; color: #4a7c59; display: none; }
+    .step-card.completed .step-check-icon { display: inline; }
+    .step-card.completed .step-num-text { display: none; }
+
+    .step-body { display: none; padding: 0 22px 22px; }
+    .step-card.open .step-body { display: block; }
+
+    /* ── Content elements ── */
+    .substep {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .substep:last-child { border-bottom: none; }
+    .substep input[type="checkbox"] {
+      margin-top: 4px; width: 18px; height: 18px;
+      accent-color: #4a7c59; cursor: pointer; flex-shrink: 0;
+    }
+    .substep-content { flex: 1; }
+    .substep-content p { margin-bottom: 6px; }
+
+    .info-box {
+      padding: 14px 16px; border-radius: 6px; margin: 10px 0;
+      font-size: 0.92rem;
+    }
+    .info-box.blue { background: #eef2fa; border-left: 4px solid #3b5998; }
+    .info-box.green { background: #eef7f0; border-left: 4px solid #4a7c59; }
+    .info-box.amber { background: #fef8e8; border-left: 4px solid #f9a825; }
+    .info-box.red { background: #fef0f0; border-left: 4px solid #c0392b; }
+
+    code, .code-block {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.88rem;
+    }
+    .inline-code {
+      background: #f0f0f0; padding: 2px 7px; border-radius: 4px;
+      font-family: 'Consolas', 'Courier New', monospace; font-size: 0.88rem;
+    }
+    .code-block {
+      background: #1e1e1e; color: #d4d4d4;
+      padding: 16px 18px; border-radius: 8px; margin: 10px 0;
+      overflow-x: auto; line-height: 1.55;
+    }
+    .code-block .comment { color: #6a9955; }
+    .code-block .string { color: #ce9178; }
+    .code-block .key { color: #9cdcfe; }
+
+    .link-btn {
+      display: inline-block; background: #3b5998; color: #fff;
+      padding: 8px 20px; border-radius: 6px; text-decoration: none;
+      font-size: 0.9rem; margin: 6px 4px 6px 0; transition: background 0.2s;
+    }
+    .link-btn:hover { background: #2d4373; }
+    .link-btn.secondary { background: #555; }
+    .link-btn.secondary:hover { background: #333; }
+
+    /* ── Platform tabs ── */
+    .platform-tabs {
+      display: flex; gap: 0; margin: 10px 0; border-radius: 6px;
+      overflow: hidden; border: 1px solid #ddd;
+    }
+    .platform-tab {
+      flex: 1; padding: 8px 12px; text-align: center;
+      cursor: pointer; font-size: 0.88rem; font-weight: 600;
+      background: #f5f5f5; color: #666;
+      border-right: 1px solid #ddd; transition: all 0.2s;
+    }
+    .platform-tab:last-child { border-right: none; }
+    .platform-tab.active { background: #3b5998; color: #fff; }
+    .platform-content { display: none; padding: 12px 0; }
+    .platform-content.active { display: block; }
+
+    /* ── Screenshot placeholder ── */
+    .screenshot {
+      background: #f0f0f0; border: 1px dashed #ccc; border-radius: 8px;
+      padding: 20px; text-align: center; margin: 10px 0;
+      color: #999; font-size: 0.85rem;
+    }
+
+    /* ── Verify banner ── */
+    .verify-banner {
+      background: #1a1a1a; color: #4a7c59;
+      font-family: 'Consolas', 'Courier New', monospace;
+      padding: 18px 20px; border-radius: 8px; margin: 12px 0;
+      font-size: 0.82rem; line-height: 1.6; white-space: pre; overflow-x: auto;
+    }
+
+    /* ── Troubleshooting ── */
+    .trouble-toggle {
+      display: flex; align-items: center; gap: 8px;
+      cursor: pointer; color: #c0392b; font-weight: 600;
+      font-size: 0.92rem; padding: 8px 0; user-select: none;
+    }
+    .trouble-content { display: none; padding: 0 0 8px 26px; }
+    .trouble-content.open { display: block; }
+
+    /* ── Diagram ── */
+    .diagram-wrap { text-align: center; margin: 16px 0; }
+    .diagram-wrap svg { max-width: 100%; }
+    .diagram-caption {
+      font-size: 0.82rem; color: #888; font-style: italic; margin-top: 4px;
+    }
+
+    /* ── Done card ── */
+    .done-card {
+      background: #f3faf5; border: 2px solid #4a7c59;
+      border-radius: 10px; padding: 30px; text-align: center;
+      margin-top: 30px; display: none;
+    }
+    .done-card.visible { display: block; }
+    .done-card h2 { color: #4a7c59; margin-bottom: 8px; }
+
+    @media (max-width: 600px) {
+      .page-header h1 { font-size: 1.4rem; }
+      .container { padding: 20px 14px 60px; }
+      .step-header { padding: 14px 16px; }
+      .step-body { padding: 0 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <div class="unit-code">COIT13235</div>
+    <h1>Development Environment Setup</h1>
+    <div class="subtitle">Self-directed guide &mdash; follow at your own pace</div>
+  </div>
+
+  <div class="progress-strip">
+    <div class="bar-track"><div class="bar-fill" id="progressFill"></div></div>
+    <div class="bar-label" id="progressLabel">0 of 6 steps completed</div>
+  </div>
+
+  <div class="container">
+
+    <!-- ── OVERVIEW ── -->
+    <div class="info-box blue">
+      <strong>What you're building:</strong> A Java 26 + Spring Boot 4 development environment in VS Code. Budget about <strong>30-45 minutes</strong> for the full setup. Tick each checkbox as you go &mdash; the progress bar tracks your completion.
+    </div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 90" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#999"/></marker>
+        </defs>
+        <!-- Step boxes -->
+        <rect x="5" y="15" width="100" height="55" rx="6" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.5"/>
+        <text x="55" y="38" text-anchor="middle" font-size="10" font-weight="bold" fill="#3b5998">Step 1</text>
+        <text x="55" y="54" text-anchor="middle" font-size="9" fill="#555">OpenJDK 26</text>
+
+        <line x1="105" y1="42" x2="125" y2="42" stroke="#999" stroke-width="1.2" marker-end="url(#a)"/>
+
+        <rect x="125" y="15" width="100" height="55" rx="6" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.5"/>
+        <text x="175" y="38" text-anchor="middle" font-size="10" font-weight="bold" fill="#3b5998">Step 2</text>
+        <text x="175" y="54" text-anchor="middle" font-size="9" fill="#555">VS Code</text>
+
+        <line x1="225" y1="42" x2="245" y2="42" stroke="#999" stroke-width="1.2" marker-end="url(#a)"/>
+
+        <rect x="245" y="15" width="100" height="55" rx="6" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.5"/>
+        <text x="295" y="38" text-anchor="middle" font-size="10" font-weight="bold" fill="#4a7c59">Step 3</text>
+        <text x="295" y="54" text-anchor="middle" font-size="9" fill="#555">Extensions</text>
+
+        <line x1="345" y1="42" x2="365" y2="42" stroke="#999" stroke-width="1.2" marker-end="url(#a)"/>
+
+        <rect x="365" y="15" width="100" height="55" rx="6" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.5"/>
+        <text x="415" y="38" text-anchor="middle" font-size="10" font-weight="bold" fill="#4a7c59">Step 4</text>
+        <text x="415" y="54" text-anchor="middle" font-size="9" fill="#555">Configure</text>
+
+        <line x1="465" y1="42" x2="485" y2="42" stroke="#999" stroke-width="1.2" marker-end="url(#a)"/>
+
+        <rect x="485" y="15" width="100" height="55" rx="6" fill="#fff8e1" stroke="#f9a825" stroke-width="1.5"/>
+        <text x="535" y="38" text-anchor="middle" font-size="10" font-weight="bold" fill="#e68a00">Step 5</text>
+        <text x="535" y="54" text-anchor="middle" font-size="9" fill="#555">First Project</text>
+
+        <line x1="585" y1="42" x2="605" y2="42" stroke="#999" stroke-width="1.2" marker-end="url(#a)"/>
+
+        <rect x="605" y="15" width="80" height="55" rx="6" fill="#f3faf5" stroke="#4a7c59" stroke-width="2"/>
+        <text x="645" y="38" text-anchor="middle" font-size="10" font-weight="bold" fill="#4a7c59">Step 6</text>
+        <text x="645" y="54" text-anchor="middle" font-size="9" fill="#4a7c59">Verify</text>
+      </svg>
+      <div class="diagram-caption">Complete each step in order. Steps 1-4 are installation; Step 5-6 verify it all works.</div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- STEP 1: OpenJDK -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div class="step-card open" id="step-1" data-total="3">
+      <div class="step-header" onclick="toggleStep(1)">
+        <div class="step-num"><span class="step-num-text">1</span><span class="step-check-icon">&#10003;</span></div>
+        <div class="step-title">Download &amp; Install OpenJDK 26</div>
+        <div class="step-time">~10 min</div>
+        <div class="step-chevron">&#9654;</div>
+      </div>
+      <div class="step-body">
+
+        <div class="info-box amber">
+          <strong>Version note:</strong> This unit uses <strong>Spring Boot 4</strong> with <strong>JDK 26</strong> where possible. Fallback: Spring Boot 3.x with JDK 24. Some A2 quizzes use JDK 17 due to infrastructure (mainly different library names).
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(1)" id="c1-1">
+          <div class="substep-content">
+            <p><strong>1a. Download OpenJDK 26</strong></p>
+            <p>Go to the official OpenJDK site and download the archive for your platform (~200 MB):</p>
+            <a href="https://jdk.java.net/" target="_blank" class="link-btn">jdk.java.net</a>
+
+            <div class="platform-tabs" data-group="jdk">
+              <div class="platform-tab active" onclick="showPlatform('jdk','win')">Windows</div>
+              <div class="platform-tab" onclick="showPlatform('jdk','mac')">macOS</div>
+              <div class="platform-tab" onclick="showPlatform('jdk','linux')">Linux</div>
+            </div>
+            <div class="platform-content active" id="jdk-win">
+              <p>Choose <strong>Windows / x64</strong> &rarr; <strong>ZIP</strong> archive.</p>
+              <p>The file will be named something like <span class="inline-code">openjdk-26.0.1_windows-x64_bin.zip</span></p>
+            </div>
+            <div class="platform-content" id="jdk-mac">
+              <p>Choose <strong>macOS / aarch64</strong> (Apple Silicon) or <strong>x64</strong> (Intel) &rarr; <strong>tar.gz</strong> archive.</p>
+              <div class="info-box amber">Mac is not officially supported by the unit but should be workable. You may need to adjust paths.</div>
+            </div>
+            <div class="platform-content" id="jdk-linux">
+              <p>Choose <strong>Linux / x64</strong> &rarr; <strong>tar.gz</strong> archive.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(1)" id="c1-2">
+          <div class="substep-content">
+            <p><strong>1b. Extract to a permanent location</strong></p>
+            <p>Unzip/extract the archive to a folder you <strong>won't move or delete</strong>. You'll reference this path later.</p>
+
+            <div class="platform-tabs" data-group="extract">
+              <div class="platform-tab active" onclick="showPlatform('extract','win')">Windows</div>
+              <div class="platform-tab" onclick="showPlatform('extract','mac')">macOS</div>
+              <div class="platform-tab" onclick="showPlatform('extract','linux')">Linux</div>
+            </div>
+            <div class="platform-content active" id="extract-win">
+              <p>Suggested location:</p>
+              <div class="code-block"><span class="string">C:\openjdk-26.0.1_windows-x64_bin\jdk-26.0.1</span></div>
+              <p>Right-click the ZIP &rarr; <strong>Extract All</strong> &rarr; choose <span class="inline-code">C:\</span> as the destination.</p>
+            </div>
+            <div class="platform-content" id="extract-mac">
+              <div class="code-block">tar -xzf openjdk-26*.tar.gz -C ~/Library/Java/</div>
+            </div>
+            <div class="platform-content" id="extract-linux">
+              <div class="code-block">sudo tar -xzf openjdk-26*.tar.gz -C /opt/</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(1)" id="c1-3">
+          <div class="substep-content">
+            <p><strong>1c. Verify Java is accessible</strong></p>
+            <p>Open a terminal/command prompt and run:</p>
+            <div class="platform-tabs" data-group="verify-java">
+              <div class="platform-tab active" onclick="showPlatform('verify-java','win')">Windows</div>
+              <div class="platform-tab" onclick="showPlatform('verify-java','mac')">macOS / Linux</div>
+            </div>
+            <div class="platform-content active" id="verify-java-win">
+              <div class="code-block">C:\openjdk-26.0.1_windows-x64_bin\jdk-26.0.1\bin\java --version</div>
+            </div>
+            <div class="platform-content" id="verify-java-mac">
+              <div class="code-block">~/Library/Java/jdk-26.0.1/bin/java --version</div>
+            </div>
+            <p>You should see output like: <span class="inline-code">openjdk 26.0.1 ...</span></p>
+
+            <div class="trouble-toggle" onclick="toggleTrouble(this)">&#9654; Troubleshooting: "command not found"</div>
+            <div class="trouble-content">
+              <ul>
+                <li>Double-check the path &mdash; make sure you're pointing to the <span class="inline-code">bin</span> folder inside the JDK.</li>
+                <li>Ensure you extracted the full archive (not a nested folder).</li>
+                <li>On Windows, you may need to restart the command prompt after extracting.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- STEP 2: VS Code -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-2" data-total="2">
+      <div class="step-header" onclick="toggleStep(2)">
+        <div class="step-num"><span class="step-num-text">2</span><span class="step-check-icon">&#10003;</span></div>
+        <div class="step-title">Download &amp; Install VS Code</div>
+        <div class="step-time">~5 min</div>
+        <div class="step-chevron">&#9654;</div>
+      </div>
+      <div class="step-body">
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(2)" id="c2-1">
+          <div class="substep-content">
+            <p><strong>2a. Download VS Code</strong></p>
+            <p>Download the installer for your platform (~110 MB):</p>
+            <a href="https://code.visualstudio.com/" target="_blank" class="link-btn">code.visualstudio.com</a>
+          </div>
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(2)" id="c2-2">
+          <div class="substep-content">
+            <p><strong>2b. Install and launch VS Code</strong></p>
+            <p>Run the installer with default settings. Open VS Code when done.</p>
+            <div class="info-box blue">
+              <strong>Tip:</strong> If you use the <strong>Microsoft build of OpenJDK</strong>, the Java integration in VS Code may be smoother. But the standard OpenJDK from jdk.java.net works fine with manual configuration (next step).
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- STEP 3: Extensions -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-3" data-total="2">
+      <div class="step-header" onclick="toggleStep(3)">
+        <div class="step-num"><span class="step-num-text">3</span><span class="step-check-icon">&#10003;</span></div>
+        <div class="step-title">Install VS Code Extensions</div>
+        <div class="step-time">~5 min</div>
+        <div class="step-chevron">&#9654;</div>
+      </div>
+      <div class="step-body">
+
+        <p>In VS Code, click the <strong>Extensions</strong> icon in the left sidebar (or press <span class="inline-code">Ctrl+Shift+X</span>).</p>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(3)" id="c3-1">
+          <div class="substep-content">
+            <p><strong>3a. Install "Extension Pack for Java" by Microsoft</strong></p>
+            <p>Search for <span class="inline-code">Extension Pack for Java</span> and click <strong>Install</strong>.</p>
+            <p>This pack includes: Language Support, Debugger, Test Runner, Maven, IntelliSense, and Project Manager.</p>
+          </div>
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(3)" id="c3-2">
+          <div class="substep-content">
+            <p><strong>3b. Install "Spring Boot Extension Pack" by VMware</strong></p>
+            <p>Search for <span class="inline-code">Spring Boot Extension Pack</span> and click <strong>Install</strong>.</p>
+            <p>This adds: Spring Boot Tools, Spring Initializr, and Spring Boot Dashboard.</p>
+            <div class="info-box green">
+              <strong>After both extensions are installed:</strong> Your IDE now supports <strong>Maven</strong> and <strong>Spring Boot</strong> project creation. We'll verify this in Step 5.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- STEP 4: Configure Java Runtime -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-4" data-total="2">
+      <div class="step-header" onclick="toggleStep(4)">
+        <div class="step-num"><span class="step-num-text">4</span><span class="step-check-icon">&#10003;</span></div>
+        <div class="step-title">Configure Java Runtime in VS Code</div>
+        <div class="step-time">~5 min</div>
+        <div class="step-chevron">&#9654;</div>
+      </div>
+      <div class="step-body">
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(4)" id="c4-1">
+          <div class="substep-content">
+            <p><strong>4a. Open VS Code settings</strong></p>
+            <p>Go to: <strong>Manage</strong> (gear icon, bottom-left) &rarr; <strong>Settings</strong></p>
+            <p>In the search bar at the top, type: <span class="inline-code">java.configuration.runtimes</span></p>
+            <p>Click <strong>"Edit in settings.json"</strong>.</p>
+          </div>
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(4)" id="c4-2">
+          <div class="substep-content">
+            <p><strong>4b. Add the Java runtime configuration</strong></p>
+            <p>Add the following block inside the <span class="inline-code">settings.json</span> file (adjust the path to match where you extracted the JDK):</p>
+
+            <div class="platform-tabs" data-group="config">
+              <div class="platform-tab active" onclick="showPlatform('config','win')">Windows</div>
+              <div class="platform-tab" onclick="showPlatform('config','mac')">macOS</div>
+              <div class="platform-tab" onclick="showPlatform('config','linux')">Linux</div>
+            </div>
+            <div class="platform-content active" id="config-win">
+              <div class="code-block">{
+  <span class="key">"java.configuration.runtimes"</span>: [
+    {
+      <span class="key">"name"</span>: <span class="string">"JavaSE-26"</span>,
+      <span class="key">"path"</span>: <span class="string">"C:\\openjdk-26.0.1_windows-x64_bin\\jdk-26.0.1"</span>
+    }
+  ]
+}</div>
+              <div class="info-box amber">
+                <strong>Note the double backslashes <span class="inline-code">\\</span></strong> &mdash; JSON requires you to escape backslashes. So <span class="inline-code">C:\folder</span> becomes <span class="inline-code">C:\\folder</span> in the JSON file.
+              </div>
+            </div>
+            <div class="platform-content" id="config-mac">
+              <div class="code-block">{
+  <span class="key">"java.configuration.runtimes"</span>: [
+    {
+      <span class="key">"name"</span>: <span class="string">"JavaSE-26"</span>,
+      <span class="key">"path"</span>: <span class="string">"~/Library/Java/jdk-26.0.1"</span>
+    }
+  ]
+}</div>
+            </div>
+            <div class="platform-content" id="config-linux">
+              <div class="code-block">{
+  <span class="key">"java.configuration.runtimes"</span>: [
+    {
+      <span class="key">"name"</span>: <span class="string">"JavaSE-26"</span>,
+      <span class="key">"path"</span>: <span class="string">"/opt/jdk-26.0.1"</span>
+    }
+  ]
+}</div>
+            </div>
+
+            <p>Save the file (<span class="inline-code">Ctrl+S</span>). VS Code will now use JDK 26 for Java projects.</p>
+
+            <div class="trouble-toggle" onclick="toggleTrouble(this)">&#9654; Troubleshooting: VS Code doesn't detect Java</div>
+            <div class="trouble-content">
+              <ul>
+                <li>Check that the path points to the JDK <strong>root folder</strong> (the one containing <span class="inline-code">bin</span>, <span class="inline-code">lib</span>, etc.), not the <span class="inline-code">bin</span> folder itself.</li>
+                <li>Restart VS Code after saving <span class="inline-code">settings.json</span>.</li>
+                <li>Open the VS Code Command Palette (<span class="inline-code">Ctrl+Shift+P</span>) and run <span class="inline-code">Java: Configure Java Runtime</span> to see if the JDK is detected.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- STEP 5: Create First Project -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-5" data-total="3">
+      <div class="step-header" onclick="toggleStep(5)">
+        <div class="step-num"><span class="step-num-text">5</span><span class="step-check-icon">&#10003;</span></div>
+        <div class="step-title">Create Your First Spring Boot Project</div>
+        <div class="step-time">~5 min</div>
+        <div class="step-chevron">&#9654;</div>
+      </div>
+      <div class="step-body">
+
+        <div class="info-box blue">This is the moment of truth. If this works, your entire setup is correct.</div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(5)" id="c5-1">
+          <div class="substep-content">
+            <p><strong>5a. Start the Spring Initializr wizard</strong></p>
+            <p>In VS Code, go to: <strong>File</strong> &rarr; <strong>New File...</strong> &rarr; select <strong>New Java Project</strong> &rarr; choose <strong>Spring Boot</strong>.</p>
+            <p>If you don't see "Spring Boot" as an option, your extensions may not be installed. Go back to Step 3.</p>
+          </div>
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(5)" id="c5-2">
+          <div class="substep-content">
+            <p><strong>5b. Configure the project wizard</strong></p>
+            <p>Choose these options at each prompt:</p>
+            <table style="width:100%; border-collapse:collapse; margin:10px 0; font-size:0.92rem;">
+              <tr style="background:#f5f5f5"><th style="padding:8px 12px; border:1px solid #ddd; text-align:left">Prompt</th><th style="padding:8px 12px; border:1px solid #ddd; text-align:left">Choose</th></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Build tool</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>Maven</strong></td></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Spring Boot version</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>4.1.0</strong> (or latest)</td></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Language</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>Java</strong></td></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Group Id</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>com.example</strong></td></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Artifact Id</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>demo</strong></td></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Packaging</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>Jar</strong></td></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Java version</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>26</strong></td></tr>
+              <tr><td style="padding:8px 12px; border:1px solid #ddd">Dependencies</td><td style="padding:8px 12px; border:1px solid #ddd"><strong>No dependencies</strong> (skip)</td></tr>
+            </table>
+            <p>Choose a <strong>temporary folder</strong> to generate the project into.</p>
+          </div>
+        </div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(5)" id="c5-3">
+          <div class="substep-content">
+            <p><strong>5c. Open and run the project</strong></p>
+            <p>VS Code will open the project. Navigate to:</p>
+            <div class="code-block">src/main/java/com/example/demo/<strong>DemoApplication.java</strong></div>
+            <p>Click the <strong>&#9654; Play button</strong> (top right of the editor, or the green triangle next to <span class="inline-code">main</span>).</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- STEP 6: Verify -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-6" data-total="1">
+      <div class="step-header" onclick="toggleStep(6)">
+        <div class="step-num"><span class="step-num-text">6</span><span class="step-check-icon">&#10003;</span></div>
+        <div class="step-title">Verify — The Spring Boot Banner</div>
+        <div class="step-time">~1 min</div>
+        <div class="step-chevron">&#9654;</div>
+      </div>
+      <div class="step-body">
+
+        <p>In the VS Code <strong>Terminal</strong> panel, you should see this banner:</p>
+
+        <div class="verify-banner">  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v4.1.0)</div>
+
+        <div class="substep">
+          <input type="checkbox" onchange="updateProgress(6)" id="c6-1">
+          <div class="substep-content">
+            <p><strong>6a. Confirm you see the Spring Boot banner above</strong></p>
+            <div class="info-box green">
+              <strong>If you see this banner, you're done.</strong> Your environment is fully configured for COIT13235. You can delete this test project now.
+            </div>
+          </div>
+        </div>
+
+        <div class="trouble-toggle" onclick="toggleTrouble(this)">&#9654; Troubleshooting: Application fails to start</div>
+        <div class="trouble-content">
+          <ul>
+            <li><strong>Wrong Java version:</strong> Open a terminal in VS Code and run <span class="inline-code">java --version</span>. It should show 26. If not, check your <span class="inline-code">settings.json</span> runtime path.</li>
+            <li><strong>Maven errors:</strong> Make sure you have internet access &mdash; Maven downloads dependencies on first run.</li>
+            <li><strong>Port in use:</strong> If you see "port 8080 already in use", close other apps or change the port in <span class="inline-code">application.properties</span>.</li>
+            <li><strong>Extensions not loaded:</strong> Restart VS Code. Check that both extension packs show "Enabled" in the Extensions panel.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Done card ── -->
+    <div class="done-card" id="doneCard">
+      <h2>&#10003; Setup Complete</h2>
+      <p>You're ready for COIT13235. Your environment supports Java 26, Maven, Git, and Spring Boot 4.</p>
+      <p style="margin-top:12px; color:#666; font-size:0.9rem;">Next: review prerequisite content (OOP, Databases, Software Design) and read Chapter 1 of Fernando 2022.</p>
+    </div>
+
+    <!-- ── Quick reference ── -->
+    <div style="margin-top:36px; padding-top:20px; border-top:1px solid #e0e0e0;">
+      <h3 style="font-size:1.05rem; margin-bottom:12px; color:#555;">Quick Reference — What You Installed</h3>
+      <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+        <tr style="background:#f5f5f5"><th style="padding:8px 12px; border:1px solid #ddd; text-align:left">Component</th><th style="padding:8px 12px; border:1px solid #ddd; text-align:left">Version</th><th style="padding:8px 12px; border:1px solid #ddd; text-align:left">Purpose</th></tr>
+        <tr><td style="padding:8px 12px; border:1px solid #ddd">OpenJDK</td><td style="padding:8px 12px; border:1px solid #ddd">26</td><td style="padding:8px 12px; border:1px solid #ddd">Java runtime &amp; compiler</td></tr>
+        <tr><td style="padding:8px 12px; border:1px solid #ddd">VS Code</td><td style="padding:8px 12px; border:1px solid #ddd">Latest</td><td style="padding:8px 12px; border:1px solid #ddd">Code editor / IDE</td></tr>
+        <tr><td style="padding:8px 12px; border:1px solid #ddd">Extension Pack for Java</td><td style="padding:8px 12px; border:1px solid #ddd">Microsoft</td><td style="padding:8px 12px; border:1px solid #ddd">Java language support, debugger, Maven</td></tr>
+        <tr><td style="padding:8px 12px; border:1px solid #ddd">Spring Boot Extension Pack</td><td style="padding:8px 12px; border:1px solid #ddd">VMware</td><td style="padding:8px 12px; border:1px solid #ddd">Spring Initializr, Boot Tools, Dashboard</td></tr>
+        <tr><td style="padding:8px 12px; border:1px solid #ddd">Spring Boot</td><td style="padding:8px 12px; border:1px solid #ddd">4.1.0</td><td style="padding:8px 12px; border:1px solid #ddd">Enterprise Java framework</td></tr>
+        <tr><td style="padding:8px 12px; border:1px solid #ddd">Maven</td><td style="padding:8px 12px; border:1px solid #ddd">Bundled</td><td style="padding:8px 12px; border:1px solid #ddd">Build tool &amp; dependency management</td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Step toggle ──
+    function toggleStep(n) {
+      const card = document.getElementById('step-' + n);
+      card.classList.toggle('open');
+    }
+
+    // ── Platform tabs ──
+    function showPlatform(group, platform) {
+      const tabs = document.querySelectorAll('.platform-tabs[data-group="' + group + '"] .platform-tab');
+      tabs.forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const contents = document.querySelectorAll('[id^="' + group + '-"]');
+      contents.forEach(c => c.classList.remove('active'));
+      document.getElementById(group + '-' + platform).classList.add('active');
+    }
+
+    // ── Troubleshooting toggle ──
+    function toggleTrouble(el) {
+      const content = el.nextElementSibling;
+      content.classList.toggle('open');
+      el.innerHTML = (content.classList.contains('open') ? '&#9660; ' : '&#9654; ') +
+        el.textContent.replace(/^[▶▼]\s*/, '');
+    }
+
+    // ── Progress tracking ──
+    function updateProgress(stepNum) {
+      const card = document.getElementById('step-' + stepNum);
+      const total = parseInt(card.dataset.total);
+      const checked = card.querySelectorAll('input[type="checkbox"]:checked').length;
+
+      if (checked === total) {
+        card.classList.add('completed');
+        // Auto-open next step
+        const next = document.getElementById('step-' + (stepNum + 1));
+        if (next && !next.classList.contains('open')) {
+          next.classList.add('open');
+        }
+      } else {
+        card.classList.remove('completed');
+      }
+
+      // Update global progress
+      const allCards = document.querySelectorAll('.step-card');
+      let completedSteps = 0;
+      allCards.forEach(c => { if (c.classList.contains('completed')) completedSteps++; });
+
+      const pct = Math.round((completedSteps / allCards.length) * 100);
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent =
+        completedSteps + ' of ' + allCards.length + ' steps completed' +
+        (completedSteps === allCards.length ? ' — All done!' : '');
+
+      // Show done card
+      document.getElementById('doneCard').classList.toggle('visible', completedSteps === allCards.length);
+    }
+  </script>
+
+</body>
+</html>
