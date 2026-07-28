@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 3 — Sentiment Analysis</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', 'Arial', sans-serif;
+    background: #fff; color: #1a1a1a;
+    overflow: hidden; height: 100vh;
+  }
+  .slide {
+    display: none; width: 100vw; height: 100vh;
+    padding: 54px 76px; position: relative;
+    flex-direction: column; justify-content: flex-start;
+  }
+  .slide.active { display: flex; }
+  .slide-number { position: absolute; top: 18px; right: 28px; font-size: 0.8rem; color: #aaa; }
+  h1 { font-size: 2.1rem; margin-bottom: 22px; line-height: 1.2; }
+  h2 { font-size: 1.55rem; margin-bottom: 20px; border-bottom: 2px solid #e2e2e2; padding-bottom: 8px; }
+  h3 { font-size: 1.15rem; margin: 14px 0 6px; color: #333; }
+  p, li { font-size: 1.04rem; line-height: 1.6; margin-bottom: 8px; }
+  ul, ol { padding-left: 26px; }
+  .lead { font-size: 1.12rem; color: #333; }
+  .muted { color: #777; }
+  .center { text-align: center; }
+
+  .definition { background: #f0f4ff; border-left: 4px solid #3b5998; padding: 14px 18px; margin: 14px 0; border-radius: 4px; }
+  .example    { background: #f6faf6; border-left: 4px solid #4a7c59; padding: 14px 18px; margin: 14px 0; border-radius: 4px; }
+  .key-point  { background: #fff8e1; border-left: 4px solid #f9a825; padding: 14px 18px; margin: 14px 0; border-radius: 4px; }
+  .label { font-weight: 700; margin-bottom: 4px; }
+  .lbl-blue { color: #3b5998; } .lbl-green { color: #4a7c59; } .lbl-amber { color: #b8860b; }
+
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #ddd; padding: 9px 13px; text-align: left; font-size: 0.98rem; }
+  th { background: #f5f5f5; font-weight: 600; }
+  td.c, th.c { text-align: center; }
+  .mono { font-family: 'Courier New', monospace; }
+
+  /* sentiment pills */
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; }
+  .s-pos { color: #2f6b46; background: #eaf5ea; border: 1px solid #cfe6d4; }
+  .s-neu { color: #8a6d1a; background: #fdf6e3; border: 1px solid #f0e2b8; }
+  .s-neg { color: #a5281c; background: #fdecea; border: 1px solid #f3c9c4; }
+
+  /* message cards */
+  .msg { padding: 11px 15px; border-radius: 6px; margin: 8px 0; font-size: 1rem; }
+  .m-pos { background: #f2faf4; border: 1px solid #d7eadd; border-left: 4px solid #4a7c59; }
+  .m-neu { background: #fdfaf0; border-left: 4px solid #f9a825; border: 1px solid #f0e6c8; }
+  .m-neg { background: #fdf3f2; border-left: 4px solid #c0392b; border: 1px solid #f2d5d1; }
+
+  .two-col { display: flex; gap: 24px; }
+  .col { flex: 1; }
+
+  .illustration { display: flex; justify-content: center; margin: 14px 0; }
+  .illustration svg { max-width: 100%; height: auto; }
+  .caption { text-align: center; font-size: 0.86rem; color: #777; margin-top: 4px; font-style: italic; }
+
+  /* emoji signal map */
+  .signal-row { display: flex; align-items: center; gap: 16px; padding: 10px 14px; margin: 8px 0; border-radius: 6px; background: #fafafa; border: 1px solid #eee; }
+  .signal-emoji { font-size: 2rem; width: 46px; text-align: center; }
+  .arrow-txt { color: #999; font-size: 1.3rem; }
+
+  /* word chips for lexicon scoring */
+  .chip { display: inline-block; padding: 3px 9px; margin: 3px; border-radius: 6px; font-size: 0.95rem; }
+  .chip-pos { background: #eaf5ea; color: #2f6b46; border: 1px solid #cfe6d4; }
+  .chip-neg { background: #fdecea; color: #a5281c; border: 1px solid #f3c9c4; }
+  .chip-neu { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
+
+  .clean-flow { font-family: 'Courier New', monospace; font-size: 0.95rem; }
+  .clean-step { padding: 8px 12px; margin: 6px 0; border-radius: 5px; background: #f6f6f6; border: 1px solid #e8e8e8; }
+  .clean-tag { display:inline-block; font-family:'Helvetica Neue',sans-serif; font-size:0.78rem; color:#3b5998; background:#eef2fb; padding:1px 8px; border-radius: 12px; margin-right:8px; }
+
+  /* navigation */
+  .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: #3b5998; transition: width 0.3s; z-index: 100; }
+  .nav-indicator { position: fixed; bottom: 16px; right: 28px; font-size: 0.8rem; color: #aaa; z-index: 100; }
+  .nav-hint { position: fixed; bottom: 16px; left: 28px; font-size: 0.72rem; color: #ccc; z-index: 100; }
+
+  .toc-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255,255,255,0.98); z-index: 200; padding: 54px 76px; overflow-y: auto; }
+  .toc-overlay.active { display: block; }
+  .toc-overlay h2 { border: none; }
+  .toc-item { padding: 6px 0; cursor: pointer; color: #3b5998; font-size: 1rem; border-bottom: 1px solid #f0f0f0; }
+  .toc-item:hover { color: #1a1a1a; }
+  .toc-section { font-weight: 700; margin-top: 12px; color: #1a1a1a; }
+
+  .slide.section-divider { justify-content: center; align-items: flex-start; }
+  .slide.section-divider .sec-num { font-size: 1rem; color: #3b5998; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .slide.section-divider h1 { font-size: 2.7rem; border-bottom: 3px solid #1a1a1a; padding-bottom: 14px; }
+  .slide.section-divider .sec-sub { margin-top: 16px; color: #666; font-size: 1.1rem; max-width: 640px; }
+
+  /* quiz */
+  .quiz { margin: 10px 0; }
+  .quiz-question { font-weight: 600; margin-bottom: 10px; font-size: 1.04rem; }
+  .quiz-option { display: block; width: 100%; text-align: left; padding: 11px 15px; margin: 6px 0; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; font-size: 0.98rem; font-family: inherit; color: #1a1a1a; transition: border-color 0.2s, background 0.2s; }
+  .quiz-option:hover { border-color: #999; }
+  .quiz-option.correct { border-color: #4a7c59; background: #eaf5ea; cursor: default; }
+  .quiz-option.incorrect { border-color: #c0392b; background: #fdf0ef; cursor: default; }
+  .quiz-option.dimmed { opacity: 0.5; cursor: default; }
+  .quiz-explanation { display: none; margin-top: 10px; padding: 11px 15px; background: #f0f4ff; border-left: 4px solid #3b5998; border-radius: 4px; font-size: 0.94rem; }
+  .quiz-explanation.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ============ TITLE ============ -->
+<div class="slide section-divider active">
+  <div class="sec-num">DATA4500 · Week 3</div>
+  <h1>Sentiment Analysis</h1>
+  <div class="sec-sub">Teaching computers to read the mood of customer messages — and why marketers care. We'll use a real dataset of 100 BrewLab customer messages throughout.</div>
+</div>
+
+<!-- ============ SECTION 1 ============ -->
+<div class="slide section-divider">
+  <div class="sec-num">Section 1</div>
+  <h1>Understanding Sentiment Analysis</h1>
+  <div class="sec-sub">What it is, why it matters for marketing, and the categories we sort messages into.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 What is sentiment analysis?</h2>
+  <div class="definition">
+    <div class="label lbl-blue">Definition</div>
+    <strong>Sentiment analysis</strong> is the automatic process of reading a piece of text and deciding whether the feeling behind it is <span class="pill s-pos">Positive</span>, <span class="pill s-neu">Neutral</span>, or <span class="pill s-neg">Negative</span>.
+  </div>
+  <p>A human can read one review and tell you the customer is happy. The problem is <strong>scale</strong>: a brand may receive thousands of reviews, tweets, and messages every day. No team can read them all.</p>
+  <div class="key-point">
+    <div class="label lbl-amber">The core idea</div>
+    Sentiment analysis lets us measure <em>emotion at scale</em> — turning a mountain of free-text into a simple, countable signal we can chart and act on.
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 Why marketers care</h2>
+  <p>Every message a customer writes is a tiny piece of feedback. Read together, they answer questions marketers ask constantly:</p>
+  <table>
+    <tr><th>Question</th><th>How sentiment helps</th></tr>
+    <tr><td>How do people feel about our brand right now?</td><td>Track the share of positive vs negative mentions over time</td></tr>
+    <tr><td>Did our new campaign land well?</td><td>Compare sentiment before and after launch</td></tr>
+    <tr><td>What are people complaining about?</td><td>Zoom into the negative messages to find recurring issues</td></tr>
+    <tr><td>Is a problem going viral?</td><td>Spot a sudden spike in negative sentiment early</td></tr>
+  </table>
+  <div class="example">
+    <div class="label lbl-green">In this course</div>
+    We'll treat our 100 messages as feedback for <strong>BrewLab</strong>, our running coffee retailer. The same techniques apply to reviews, survey comments, and social media posts.
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 The three sentiment classes</h2>
+  <p>In this dataset, every message is labelled as one of three classes. Here is a real example of each:</p>
+  <div class="msg m-pos"><span class="pill s-pos">Positive</span> &nbsp; "Excellent the product! A joy to interact with. 🙂"</div>
+  <div class="msg m-neu"><span class="pill s-neu">Neutral</span> &nbsp; "Average experience. Not bad but not great. 😐"</div>
+  <div class="msg m-neg"><span class="pill s-neg">Negative</span> &nbsp; "Frustrated with service. Wait times were unbearable. 😠"</div>
+  <div class="key-point">
+    <div class="label lbl-amber">Notice</div>
+    <strong>Neutral is not "no opinion."</strong> It usually means <em>mixed or lukewarm</em> — the customer is neither delighted nor upset. This class is the hardest to get right.
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">1.Q</div>
+  <h2>Knowledge Check — Section 1</h2>
+  <div class="quiz" id="q1">
+    <div class="quiz-question">Q1. What is the main reason marketers use sentiment analysis instead of reading messages by hand?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) Computers understand feelings better than people do</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) It measures emotion across thousands of messages that no team could read manually</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) It removes the need to ever look at individual messages</button>
+    <div class="quiz-explanation">The value is <em>scale</em>. Humans are still better at nuance, but they cannot read everything — sentiment analysis turns huge volumes of text into a countable signal.</div>
+  </div>
+  <div class="quiz" id="q2">
+    <div class="quiz-question">Q2. A message says: "It's fine. It does the job, nothing more." Which class fits best?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) Positive</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) Neutral</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) Negative</button>
+    <div class="quiz-explanation">"Fine… nothing more" is lukewarm — neither happy nor upset. That mixed, in-between tone is exactly what Neutral captures.</div>
+  </div>
+</div>
+
+<!-- ============ SECTION 2 ============ -->
+<div class="slide section-divider">
+  <div class="sec-num">Section 2</div>
+  <h1>Exploring Our Dataset</h1>
+  <div class="sec-sub">Before analysing anything, always look at your data: its shape, its balance, and how messy it is.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 The dataset structure</h2>
+  <p>Our file has just three columns and 100 rows. Simple, but enough to learn the whole workflow.</p>
+  <table>
+    <tr><th class="c">ID</th><th>Text</th><th class="c">Sentiment</th></tr>
+    <tr><td class="c">1</td><td>Excellent the product! A joy to interact with. 🙂</td><td class="c"><span class="pill s-pos">Positive</span></td></tr>
+    <tr><td class="c">2</td><td>Worst service. Everything broke immediately. 😠</td><td class="c"><span class="pill s-neg">Negative</span></td></tr>
+    <tr><td class="c">3</td><td>So-so experience. Did the job with no frills. 😐</td><td class="c"><span class="pill s-neu">Neutral</span></td></tr>
+    <tr><td class="c">…</td><td>…</td><td class="c">…</td></tr>
+  </table>
+  <div class="two-col">
+    <div class="col definition"><div class="label lbl-blue">Text</div>The raw customer message. This is the <em>input</em> — what we analyse.</div>
+    <div class="col example"><div class="label lbl-green">Sentiment</div>The correct answer, added by a human. This is the <em>label</em> we learn from and check against.</div>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 How the classes are balanced</h2>
+  <p>Counting the labels reveals the messages are <strong>not</strong> split evenly across the three classes:</p>
+  <div class="illustration">
+    <svg viewBox="0 0 520 320" xmlns="http://www.w3.org/2000/svg">
+      <!-- gridlines + y labels -->
+      <line x1="70" y1="270" x2="470" y2="270" stroke="#999" stroke-width="1.5"/>
+      <line x1="70" y1="60"  x2="70"  y2="270" stroke="#999" stroke-width="1.5"/>
+      <line x1="70" y1="203.3" x2="470" y2="203.3" stroke="#eee" stroke-width="1"/>
+      <line x1="70" y1="136.7" x2="470" y2="136.7" stroke="#eee" stroke-width="1"/>
+      <line x1="70" y1="70"    x2="470" y2="70"    stroke="#eee" stroke-width="1"/>
+      <text x="60" y="274" text-anchor="end" font-size="12" fill="#666">0</text>
+      <text x="60" y="207" text-anchor="end" font-size="12" fill="#666">20</text>
+      <text x="60" y="141" text-anchor="end" font-size="12" fill="#666">40</text>
+      <text x="60" y="74"  text-anchor="end" font-size="12" fill="#666">60</text>
+      <!-- bars -->
+      <rect x="115" y="70"    width="70" height="200"  fill="#4a7c59"/>
+      <rect x="235" y="190"   width="70" height="80"   fill="#f9a825"/>
+      <rect x="355" y="216.7" width="70" height="53.3" fill="#c0392b"/>
+      <!-- value labels -->
+      <text x="150" y="60"    text-anchor="middle" font-size="14" font-weight="700" fill="#2f6b46">60</text>
+      <text x="270" y="182"   text-anchor="middle" font-size="14" font-weight="700" fill="#8a6d1a">24</text>
+      <text x="390" y="208.7" text-anchor="middle" font-size="14" font-weight="700" fill="#a5281c">16</text>
+      <!-- x labels -->
+      <text x="150" y="290" text-anchor="middle" font-size="13" fill="#333">Positive</text>
+      <text x="270" y="290" text-anchor="middle" font-size="13" fill="#333">Neutral</text>
+      <text x="390" y="290" text-anchor="middle" font-size="13" fill="#333">Negative</text>
+      <text x="270" y="312" text-anchor="middle" font-size="11" fill="#999">Number of messages (out of 100)</text>
+    </svg>
+  </div>
+  <div class="caption">Figure 2.1 — Sentiment distribution: 60% Positive, 24% Neutral, 16% Negative.</div>
+  <div class="key-point">
+    <div class="label lbl-amber">This is called class imbalance</div>
+    Positive messages outnumber Negative ones nearly 4 to 1. Keep this in mind — it will come back to bite us when we measure accuracy in Section 5.
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 Real text is messy</h2>
+  <p>Real customer text is never tidy. Look closely at these actual rows and spot the problems:</p>
+  <div class="msg m-pos" style="font-family:'Courier New',monospace;">"<span style="background:#ffe9a8;">Excellent the product!</span> <span style="background:#ffd6d6;">excellentchoice</span> A joy to interact with. 🙂"</div>
+  <div class="msg m-neu" style="font-family:'Courier New',monospace;">"It's fine experience. Managed my tasks well. 😐 <span style="background:#ffd6d6;">adequate</span>"</div>
+  <ul>
+    <li><span style="background:#ffe9a8;">Broken grammar</span> — "Excellent the product!" is not a normal sentence.</li>
+    <li><span style="background:#ffd6d6;">Stuck-together words</span> — "excellentchoice" should be two words.</li>
+    <li>Stray words, mixed <span class="mono">CAPS</span>, punctuation, and emojis all mixed in.</li>
+  </ul>
+  <div class="definition">
+    <div class="label lbl-blue">Why this matters</div>
+    A computer treats "excellentchoice" and "excellent choice" as completely different things. Before analysis, we must <strong>clean</strong> the text — that's Section 4.
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — Section 2</h2>
+  <div class="quiz" id="q3">
+    <div class="quiz-question">Q1. Our dataset has 60 Positive, 24 Neutral, and 16 Negative messages. What is this situation called?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) Clean data</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) Class imbalance</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) Missing data</button>
+    <div class="quiz-explanation">When one class (here, Positive) appears far more often than the others, the classes are <em>imbalanced</em>. This affects how we should measure success.</div>
+  </div>
+  <div class="quiz" id="q4">
+    <div class="quiz-question">Q2. Why is "excellentchoice" a problem for a computer?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) It is spelled incorrectly and will cause an error</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) The computer sees it as one unknown word, not the two words "excellent" and "choice"</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) Computers cannot read the letter combinations</button>
+    <div class="quiz-explanation">A computer matches exact words. "excellentchoice" won't match the positive word "excellent" unless we split it during cleaning.</div>
+  </div>
+</div>
+
+<!-- ============ SECTION 3 ============ -->
+<div class="slide section-divider">
+  <div class="sec-num">Section 3</div>
+  <h1>How It Works</h1>
+  <div class="sec-sub">The overall pipeline, and the two main approaches to deciding sentiment.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 The sentiment analysis pipeline</h2>
+  <p>Whatever method we use, the message travels through the same four steps:</p>
+  <div class="illustration">
+    <svg viewBox="0 0 940 150" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 Z" fill="#888"/>
+        </marker>
+      </defs>
+      <!-- boxes -->
+      <g font-size="13" fill="#1a1a1a" text-anchor="middle">
+        <rect x="8"   y="45" width="150" height="60" rx="8" fill="#f0f4ff" stroke="#3b5998"/>
+        <text x="83"  y="72">Customer</text><text x="83" y="90">message</text>
+        <rect x="205" y="45" width="150" height="60" rx="8" fill="#f6faf6" stroke="#4a7c59"/>
+        <text x="280" y="72">Clean</text><text x="280" y="90">the text</text>
+        <rect x="402" y="45" width="150" height="60" rx="8" fill="#fdfaf0" stroke="#f9a825"/>
+        <text x="477" y="72">Spot the</text><text x="477" y="90">sentiment clues</text>
+        <rect x="599" y="45" width="150" height="60" rx="8" fill="#f0f4ff" stroke="#3b5998"/>
+        <text x="674" y="72">Decide the</text><text x="674" y="90">sentiment</text>
+        <rect x="796" y="45" width="138" height="60" rx="8" fill="#eef7ef" stroke="#2f6b46"/>
+        <text x="865" y="66" font-weight="700" fill="#2f6b46">Label:</text>
+        <text x="865" y="86" font-size="11">Pos / Neu / Neg</text>
+      </g>
+      <!-- arrows -->
+      <g stroke="#888" stroke-width="1.6" marker-end="url(#ah)">
+        <line x1="158" y1="75" x2="203" y2="75"/>
+        <line x1="355" y1="75" x2="400" y2="75"/>
+        <line x1="552" y1="75" x2="597" y2="75"/>
+        <line x1="749" y1="75" x2="794" y2="75"/>
+      </g>
+    </svg>
+  </div>
+  <div class="caption">Figure 3.1 — The four-step sentiment pipeline. Everything else in this lecture fits into one of these boxes.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 Approach A — the dictionary method</h2>
+  <div class="definition">
+    <div class="label lbl-blue">Lexicon (dictionary) approach</div>
+    We keep a list of words with known feelings — positive words score <span class="chip chip-pos">+1</span>, negative words score <span class="chip chip-neg">−1</span>. We add up the scores in a message and read off the total.
+  </div>
+  <p>Example on a real message — <em>"Excellent product, but slow support and poor packaging."</em></p>
+  <div style="margin:10px 0;">
+    <span class="chip chip-pos">Excellent +1</span>
+    <span class="chip chip-neu">product 0</span>
+    <span class="chip chip-neu">but 0</span>
+    <span class="chip chip-neg">slow −1</span>
+    <span class="chip chip-neu">support 0</span>
+    <span class="chip chip-neg">poor −1</span>
+    <span class="chip chip-neu">packaging 0</span>
+  </div>
+  <p><strong>Total score = +1 −1 −1 = −1</strong> &nbsp;→&nbsp; below zero &nbsp;→&nbsp; <span class="pill s-neg">Negative</span></p>
+  <div class="key-point"><div class="label lbl-amber">Strength &amp; weakness</div>Simple and needs no training data — but it can't understand context, sarcasm, or new slang, and someone must build the word list.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 Approach B — the learning method</h2>
+  <div class="definition">
+    <div class="label lbl-blue">Machine learning approach</div>
+    Instead of writing rules by hand, we <strong>show the computer many labelled examples</strong> (like our 100 messages). It learns the patterns that separate Positive from Negative on its own.
+  </div>
+  <div class="illustration">
+    <svg viewBox="0 0 720 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#888"/></marker>
+      </defs>
+      <g font-size="13" text-anchor="middle" fill="#1a1a1a">
+        <rect x="10"  y="50" width="180" height="66" rx="8" fill="#f6faf6" stroke="#4a7c59"/>
+        <text x="100" y="78">Labelled examples</text><text x="100" y="98" font-size="11" fill="#666">text + correct sentiment</text>
+        <rect x="270" y="50" width="150" height="66" rx="8" fill="#f0f4ff" stroke="#3b5998"/>
+        <text x="345" y="80">Model learns</text><text x="345" y="99" font-size="11" fill="#666">the patterns</text>
+        <rect x="500" y="50" width="210" height="66" rx="8" fill="#fdfaf0" stroke="#f9a825"/>
+        <text x="605" y="78">Predicts sentiment</text><text x="605" y="98" font-size="11" fill="#666">on brand-new messages</text>
+      </g>
+      <g stroke="#888" stroke-width="1.6" marker-end="url(#ah2)">
+        <line x1="190" y1="83" x2="268" y2="83"/>
+        <line x1="420" y1="83" x2="498" y2="83"/>
+      </g>
+    </svg>
+  </div>
+  <div class="caption">Figure 3.2 — Learn patterns from labelled data, then apply them to new, unseen messages.</div>
+  <div class="key-point"><div class="label lbl-amber">Strength &amp; weakness</div>Adapts to your own data and often more accurate — but it needs many labelled examples to learn from.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 Comparing the two approaches</h2>
+  <table>
+    <tr><th></th><th>Dictionary method</th><th>Learning method</th></tr>
+    <tr><td><strong>How it decides</strong></td><td>Adds up word scores from a fixed list</td><td>Learns patterns from labelled examples</td></tr>
+    <tr><td><strong>Needs training data?</strong></td><td class="c">No</td><td class="c">Yes — the more the better</td></tr>
+    <tr><td><strong>Set-up effort</strong></td><td>Build/choose the word list</td><td>Collect and label examples</td></tr>
+    <tr><td><strong>Handles your slang &amp; context</strong></td><td>Poorly</td><td>Better</td></tr>
+    <tr><td><strong>Good first choice when…</strong></td><td>You have no labels yet</td><td>You have plenty of labelled data</td></tr>
+  </table>
+  <div class="example"><div class="label lbl-green">Practical tip</div>Teams often start with the dictionary method to get going quickly, then switch to the learning method once they have collected enough labelled feedback.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Section 3</h2>
+  <div class="quiz" id="q5">
+    <div class="quiz-question">Q1. Using a positive/negative word list that we add up is which approach?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">A) The dictionary (lexicon) method</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">B) The learning (machine learning) method</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) Neither — this is just cleaning</button>
+    <div class="quiz-explanation">Scoring words from a fixed list and summing them is the dictionary/lexicon method. No learning from examples is involved.</div>
+  </div>
+  <div class="quiz" id="q6">
+    <div class="quiz-question">Q2. What does the learning method most need that the dictionary method does not?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) A faster computer</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) Many labelled examples to learn from</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) A list of positive and negative words</button>
+    <div class="quiz-explanation">Machine learning discovers patterns from labelled data, so it depends on having enough examples with correct sentiment labels.</div>
+  </div>
+</div>
+
+<!-- ============ SECTION 4 ============ -->
+<div class="slide section-divider">
+  <div class="sec-num">Section 4</div>
+  <h1>Preparing the Text</h1>
+  <div class="sec-sub">Cleaning messy customer text so the computer can read the real signal — including the emojis.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 Why we clean the text first</h2>
+  <p>Computers match words exactly. To them, all of these look like <em>different</em> words:</p>
+  <table>
+    <tr><th>These should be the same word…</th><th>…but the computer sees</th></tr>
+    <tr><td class="mono">Excellent, excellent, EXCELLENT, excellent!</td><td class="c">4 different words</td></tr>
+    <tr><td class="mono">excellentchoice</td><td class="c">1 unknown word</td></tr>
+  </table>
+  <div class="key-point"><div class="label lbl-amber">The goal of cleaning</div>Make every version of a word look identical, so real signals like "excellent" get counted every time they appear.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">4.2</div>
+  <h2>4.2 The cleaning steps</h2>
+  <p>We tidy the text one step at a time. Watch a real message get cleaned:</p>
+  <div class="clean-flow">
+    <div class="clean-step"><span class="clean-tag">start</span>Excellent the product! excellentchoice A joy. 🙂</div>
+    <div class="clean-step"><span class="clean-tag">lower-case</span>excellent the product! excellentchoice a joy. 🙂</div>
+    <div class="clean-step"><span class="clean-tag">remove punctuation</span>excellent the product excellentchoice a joy 🙂</div>
+    <div class="clean-step"><span class="clean-tag">fix stuck words</span>excellent the product excellent choice a joy 🙂</div>
+    <div class="clean-step"><span class="clean-tag">split into words (tokenise)</span>[ excellent · the · product · excellent · choice · a · joy · 🙂 ]</div>
+  </div>
+  <div class="definition"><div class="label lbl-blue">Tokenising</div>The last step splits the message into a list of individual words (called <em>tokens</em>). Now each word can be looked up and counted.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">4.3</div>
+  <h2>4.3 Don't throw away the emojis</h2>
+  <p>It is tempting to delete emojis as "junk." In this dataset that would be a mistake — the emoji is a <strong>perfect</strong> clue to sentiment:</p>
+  <div class="signal-row"><div class="signal-emoji">🙂</div><span class="arrow-txt">→</span><span class="pill s-pos">Positive</span><span class="muted">appears in all 60 positive messages</span></div>
+  <div class="signal-row"><div class="signal-emoji">😐</div><span class="arrow-txt">→</span><span class="pill s-neu">Neutral</span><span class="muted">appears in all 24 neutral messages</span></div>
+  <div class="signal-row"><div class="signal-emoji">😠</div><span class="arrow-txt">→</span><span class="pill s-neg">Negative</span><span class="muted">appears in all 16 negative messages</span></div>
+  <div class="key-point"><div class="label lbl-amber">Lesson</div>A "clue" (or <em>feature</em>) is anything that helps predict the answer. Here, keywords <em>and</em> emojis are both strong features. Know your data before deleting anything.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">4.Q</div>
+  <h2>Knowledge Check — Section 4</h2>
+  <div class="quiz" id="q7">
+    <div class="quiz-question">Q1. Why do we convert all text to lower-case during cleaning?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) Lower-case letters are faster to read</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) So "Excellent" and "excellent" count as the same word</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) To remove the emojis</button>
+    <div class="quiz-explanation">Case is not meaningful for sentiment, so we standardise it — otherwise every capitalisation would be treated as a separate word.</div>
+  </div>
+  <div class="quiz" id="q8">
+    <div class="quiz-question">Q2. In our dataset, should we delete the emojis before analysis?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) Yes — emojis are always noise</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) No — here the emoji perfectly matches the sentiment, so it is a strong clue</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) It makes no difference either way</button>
+    <div class="quiz-explanation">🙂/😐/😠 line up exactly with Positive/Neutral/Negative. Deleting them would throw away the single most reliable feature in this data.</div>
+  </div>
+</div>
+
+<!-- ============ SECTION 5 ============ -->
+<div class="slide section-divider">
+  <div class="sec-num">Section 5</div>
+  <h1>Measuring Performance</h1>
+  <div class="sec-sub">How do we know if our sentiment analysis is any good? And why the obvious answer can fool us.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">5.1</div>
+  <h2>5.1 Accuracy — the simplest score</h2>
+  <p>To check a method, we compare its guesses against the human labels and count how many it got right.</p>
+  <p style="margin:16px 0;">$$\text{Accuracy} = \frac{\text{Number of correct predictions}}{\text{Total number of messages}}$$</p>
+  <div class="example">
+    <div class="label lbl-green">Example</div>
+    If a method labels 82 of our 100 messages correctly, its accuracy is <strong>82 ÷ 100 = 82%</strong>.
+  </div>
+  <p class="muted">Accuracy is easy to explain to a client — but on its own it can be misleading. Here's why.</p>
+</div>
+
+<div class="slide">
+  <div class="slide-number">5.2</div>
+  <h2>5.2 The imbalance trap</h2>
+  <p>Remember our data is 60% Positive. Imagine a lazy method that ignores the text and just guesses <span class="pill s-pos">Positive</span> <strong>every single time</strong>:</p>
+  <div class="illustration">
+    <svg viewBox="0 0 520 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- 100% stacked bar of what "always positive" gets right/wrong -->
+      <rect x="20"  y="34" width="288" height="42" fill="#4a7c59"/>
+      <rect x="308" y="34" width="192" height="42" fill="#d0d0d0"/>
+      <text x="164" y="60" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">60 correct (the Positives)</text>
+      <text x="404" y="60" text-anchor="middle" font-size="12" fill="#444">40 wrong</text>
+      <text x="20"  y="98" font-size="12" fill="#666">Guessing "Positive" every time → 60/100 right = 60% accuracy, while understanding nothing.</text>
+    </svg>
+  </div>
+  <div class="key-point">
+    <div class="label lbl-amber">The trap</div>
+    A useless method scores 60% just by exploiting the imbalance. So <strong>60% is the bar to beat</strong>, not a good result. With imbalanced data, always ask: "better than just guessing the biggest class?"
+  </div>
+  <p class="muted">This is why analysts also check each class separately — especially the rare but important Negative messages, which a lazy method would miss entirely.</p>
+</div>
+
+<div class="slide">
+  <div class="slide-number">5.Q</div>
+  <h2>Knowledge Check — Section 5</h2>
+  <div class="quiz" id="q9">
+    <div class="quiz-question">Q1. A method gets 45 out of 60 messages correct. What is its accuracy?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) 45%</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) 75%</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) 60%</button>
+    <div class="quiz-explanation">Accuracy = correct ÷ total = 45 ÷ 60 = 0.75 = 75%.</div>
+  </div>
+  <div class="quiz" id="q10">
+    <div class="quiz-question">Q2. On our dataset, why is 60% accuracy actually unimpressive?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) 60% is always a failing score</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) Always guessing "Positive" already reaches 60%, because 60% of messages are Positive</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) Because the dataset is too small</button>
+    <div class="quiz-explanation">With 60% of messages Positive, a method that always says "Positive" scores 60% without any understanding. A useful method must beat that baseline.</div>
+  </div>
+</div>
+
+<!-- ============ SECTION 6 ============ -->
+<div class="slide section-divider">
+  <div class="sec-num">Section 6</div>
+  <h1>In Practice</h1>
+  <div class="sec-sub">Where this gets used in marketing, what it still gets wrong, and the key points to remember.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">6.1</div>
+  <h2>6.1 Marketing applications</h2>
+  <p>Once you can score sentiment automatically, a lot of marketing work becomes measurable:</p>
+  <ul>
+    <li><strong>Brand health tracking</strong> — watch the positive vs negative share week by week.</li>
+    <li><strong>Campaign evaluation</strong> — did sentiment lift after a launch, ad, or promotion?</li>
+    <li><strong>Product feedback</strong> — mine negative reviews for the top recurring complaints.</li>
+    <li><strong>Customer service triage</strong> — route angry messages to a human first.</li>
+    <li><strong>Competitor comparison</strong> — measure how people feel about you vs rivals.</li>
+  </ul>
+  <div class="example"><div class="label lbl-green">For BrewLab</div>Track sentiment toward a new seasonal roast in its first week — and jump on complaints before they spread.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">6.2</div>
+  <h2>6.2 Where it goes wrong</h2>
+  <p>Sentiment analysis is powerful but not magic. Watch out for:</p>
+  <table>
+    <tr><th>Challenge</th><th>Example</th></tr>
+    <tr><td><strong>Sarcasm</strong></td><td>"Oh <em>great</em>, it broke again." — positive words, negative meaning</td></tr>
+    <tr><td><strong>Negation</strong></td><td>"not good" flips "good" — word lists often miss this</td></tr>
+    <tr><td><strong>Mixed opinions</strong></td><td>"Love the taste, hate the price" — genuinely both</td></tr>
+    <tr><td><strong>Context &amp; slang</strong></td><td>"sick" and "wicked" can be praise</td></tr>
+  </table>
+  <div class="key-point"><div class="label lbl-amber">Takeaway</div>Treat sentiment scores as a useful <em>estimate</em>, not absolute truth. Always sanity-check surprising results against the actual messages.</div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">6.3</div>
+  <h2>6.3 Key takeaways</h2>
+  <ol>
+    <li><strong>Sentiment analysis</strong> sorts text into Positive, Neutral, or Negative — measuring emotion at scale.</li>
+    <li>Always <strong>look at your data</strong> first: our dataset is imbalanced (60 / 24 / 16) and the text is messy.</li>
+    <li>The pipeline is: <strong>clean → find clues → decide → label.</strong></li>
+    <li>Two approaches: the <strong>dictionary method</strong> (word scores) and the <strong>learning method</strong> (learns from examples).</li>
+    <li><strong>Clean the text</strong> so words match — but keep useful clues like emojis.</li>
+    <li>Judge results with care: on imbalanced data, <strong>beat the "always guess the biggest class" baseline.</strong></li>
+  </ol>
+  <div class="example center"><div class="label lbl-green">Next</div>Practise these steps on the full 100-message dataset in the Week 3 exercise.</div>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → keys to navigate · T for contents</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Table of Contents</h2>
+  <div id="tocList"></div>
+  <p style="margin-top: 18px; color: #999; font-size: 0.85rem;">Press T or Escape to close</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  function showSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('navIndicator').textContent = (current + 1) + ' / ' + slides.length;
+    document.getElementById('progressBar').style.width = ((current + 1) / slides.length * 100) + '%';
+  }
+  function buildTOC() {
+    const list = document.getElementById('tocList');
+    slides.forEach((s, i) => {
+      const h = s.querySelector('h1, h2');
+      if (h) {
+        const div = document.createElement('div');
+        div.className = 'toc-item' + (s.classList.contains('section-divider') ? ' toc-section' : '');
+        div.textContent = h.textContent;
+        div.onclick = () => { showSlide(i); toggleTOC(); };
+        list.appendChild(div);
+      }
+    });
+  }
+  function toggleTOC() { document.getElementById('tocOverlay').classList.toggle('active'); }
+  function checkAnswer(btn, isCorrect) {
+    const quiz = btn.closest('.quiz');
+    if (quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o => {
+      if (o.dataset.correct === 'true') o.classList.add('correct');
+      else if (o === btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+    else if (e.key === 't' || e.key === 'T') { toggleTOC(); }
+    else if (e.key === 'Escape') { document.getElementById('tocOverlay').classList.remove('active'); }
+  });
+  showSlide(0);
+  buildTOC();
+  renderMathInElement(document.body, {
+    delimiters: [ {left: "$$", right: "$$", display: true}, {left: "\\(", right: "\\)", display: false} ]
+  });
+</script>
+</body>
+</html>

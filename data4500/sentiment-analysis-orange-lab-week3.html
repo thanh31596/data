@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 3 Lab — Sentiment Analysis in Orange</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', 'Arial', sans-serif;
+    color: #1a1a1a; background: #f4f5f7;
+    line-height: 1.6;
+  }
+  .page { max-width: 900px; margin: 0 auto; background: #fff; padding: 54px 64px 80px; }
+  header.doc { border-bottom: 3px solid #1a1a1a; padding-bottom: 18px; margin-bottom: 8px; }
+  .kicker { font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: #3b5998; margin-bottom: 8px; }
+  h1 { font-size: 2rem; line-height: 1.2; }
+  .subtitle { color: #666; margin-top: 8px; font-size: 1.05rem; }
+
+  h2 { font-size: 1.5rem; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 2px solid #e2e2e2; }
+  h3 { font-size: 1.15rem; margin: 20px 0 8px; color: #222; }
+  p, li { font-size: 1.02rem; margin-bottom: 10px; }
+  ul, ol { padding-left: 26px; }
+  a { color: #3b5998; }
+  .muted { color: #777; }
+  code, .mono { font-family: 'Courier New', monospace; background: #f2f2f2; padding: 1px 5px; border-radius: 4px; font-size: 0.94em; }
+
+  /* step cards */
+  .step { border: 1px solid #e4e4e4; border-radius: 10px; margin: 20px 0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .step-head { display: flex; align-items: center; gap: 14px; background: #f7f9fc; padding: 14px 20px; border-bottom: 1px solid #e8ecf3; }
+  .step-num { flex: 0 0 34px; height: 34px; border-radius: 50%; background: #3b5998; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; }
+  .step-title { font-size: 1.12rem; font-weight: 600; }
+  .step-body { padding: 16px 22px; }
+  .widget-chip { display: inline-block; background: #eaf5ea; color: #2f6b46; border: 1px solid #cfe6d4; border-radius: 6px; padding: 2px 10px; font-weight: 600; font-size: 0.9rem; }
+  .core-chip  { display: inline-block; background: #f0f4ff; color: #3b5998; border: 1px solid #d3ddf5; border-radius: 6px; padding: 2px 10px; font-weight: 600; font-size: 0.9rem; }
+
+  .callout { border-left: 4px solid #f9a825; background: #fff8e1; padding: 12px 16px; border-radius: 4px; margin: 12px 0; font-size: 0.98rem; }
+  .callout .lbl { font-weight: 700; color: #b8860b; display: block; margin-bottom: 3px; }
+  .expect { border-left: 4px solid #4a7c59; background: #f6faf6; padding: 12px 16px; border-radius: 4px; margin: 12px 0; font-size: 0.98rem; }
+  .expect .lbl { font-weight: 700; color: #2f6b46; display: block; margin-bottom: 3px; }
+  .note-blue { border-left: 4px solid #3b5998; background: #f0f4ff; padding: 12px 16px; border-radius: 4px; margin: 12px 0; font-size: 0.98rem; }
+  .note-blue .lbl { font-weight: 700; color: #3b5998; display: block; margin-bottom: 3px; }
+
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 0.96rem; }
+  th { background: #f5f5f5; font-weight: 600; }
+
+  .settings { background: #fbfbfb; border: 1px dashed #d8d8d8; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+  .settings b { color: #333; }
+
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+  .s-pos { color: #2f6b46; background: #eaf5ea; border: 1px solid #cfe6d4; }
+  .s-neu { color: #8a6d1a; background: #fdf6e3; border: 1px solid #f0e2b8; }
+  .s-neg { color: #a5281c; background: #fdecea; border: 1px solid #f3c9c4; }
+
+  .diagram { text-align: center; margin: 18px 0 6px; }
+  .diagram svg { max-width: 100%; height: auto; }
+  .cap { text-align: center; font-size: 0.86rem; color: #777; font-style: italic; margin-bottom: 8px; }
+
+  .toc { background: #f7f9fc; border: 1px solid #e8ecf3; border-radius: 10px; padding: 16px 22px; margin: 22px 0; }
+  .toc h3 { margin-top: 0; }
+  .toc ol { margin-bottom: 0; }
+
+  .optional-band { background: #fef6ee; border: 1px solid #f2dcc4; border-radius: 10px; padding: 4px 22px 18px; margin: 30px 0; }
+  .optional-tag { display:inline-block; background:#e07b39; color:#fff; font-size:0.78rem; font-weight:700; letter-spacing:1px; padding:3px 12px; border-radius:0 0 8px 8px; }
+
+  @media print { body { background:#fff; } .page { box-shadow:none; max-width:none; padding: 20px 24px; } .step { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc">
+  <div class="kicker">DATA4500 · Week 3 · Hands-on Lab</div>
+  <h1>Sentiment Analysis in Orange Data Mining</h1>
+  <div class="subtitle">A no-code, drag-and-drop walkthrough using 100 BrewLab customer messages. No programming required.</div>
+</header>
+
+<p>In the lecture we saw two ways to work out the sentiment of a message: the <strong>dictionary method</strong> (add up positive and negative words) and the <strong>learning method</strong> (learn from labelled examples). Orange lets us build <em>both</em> by connecting boxes on a canvas — no code at all.</p>
+
+<div class="toc">
+  <h3>What you'll do</h3>
+  <ol>
+    <li>Set up Orange and the Text add-on</li>
+    <li>Load the BrewLab messages (<span class="widget-chip">Corpus</span>)</li>
+    <li>Read the messages (<span class="widget-chip">Corpus Viewer</span>)</li>
+    <li>See the class balance (<span class="core-chip">Distributions</span>)</li>
+    <li>Score sentiment automatically with the dictionary method (<span class="widget-chip">Sentiment Analysis</span>)</li>
+    <li>Inspect the scores (<span class="core-chip">Data Table</span>)</li>
+    <li>Compare the computer's scores against the human labels (<span class="core-chip">Box Plot</span>)</li>
+    <li><em>Optional:</em> word cloud, and the machine-learning approach</li>
+  </ol>
+</div>
+
+<h2>The finished workflow</h2>
+<p>Here is the canvas you'll build. Each box is a "widget," and each line passes data from one widget to the next. Build it left to right.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif">
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#8aa0c8"/></marker>
+  </defs>
+  <!-- links -->
+  <g stroke="#8aa0c8" stroke-width="2" fill="none" marker-end="url(#a)">
+    <path d="M170,190 C230,190 240,67 298,67"/>
+    <path d="M170,190 C235,190 245,152 298,152"/>
+    <path d="M170,197 C235,220 245,267 298,267"/>
+    <path d="M500,255 C555,240 560,232 598,232"/>
+    <path d="M500,279 C555,300 560,322 598,322"/>
+  </g>
+  <!-- nodes -->
+  <g font-size="13.5" text-anchor="middle">
+    <g><rect x="40" y="163" width="130" height="54" rx="10" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.6"/>
+       <text x="105" y="188" font-weight="700" fill="#2f6b46">Corpus</text><text x="105" y="205" font-size="11" fill="#5f7d67">load the data</text></g>
+    <g><rect x="298" y="40" width="150" height="54" rx="10" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.6"/>
+       <text x="373" y="65" font-weight="700" fill="#2f6b46">Corpus Viewer</text><text x="373" y="82" font-size="11" fill="#5f7d67">read the messages</text></g>
+    <g><rect x="298" y="125" width="150" height="54" rx="10" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.6"/>
+       <text x="373" y="150" font-weight="700" fill="#3b5998">Distributions</text><text x="373" y="167" font-size="11" fill="#6b7fab">class balance</text></g>
+    <g><rect x="298" y="240" width="202" height="54" rx="10" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.6"/>
+       <text x="399" y="265" font-weight="700" fill="#2f6b46">Sentiment Analysis</text><text x="399" y="282" font-size="11" fill="#5f7d67">the dictionary method (VADER)</text></g>
+    <g><rect x="598" y="205" width="150" height="54" rx="10" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.6"/>
+       <text x="673" y="230" font-weight="700" fill="#3b5998">Data Table</text><text x="673" y="247" font-size="11" fill="#6b7fab">see the scores</text></g>
+    <g><rect x="598" y="295" width="150" height="54" rx="10" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.6"/>
+       <text x="673" y="320" font-weight="700" fill="#3b5998">Box Plot</text><text x="673" y="337" font-size="11" fill="#6b7fab">scores vs labels</text></g>
+  </g>
+  <!-- legend -->
+  <g font-size="11" text-anchor="start">
+    <rect x="40" y="330" width="14" height="14" rx="3" fill="#eaf5ea" stroke="#4a7c59"/><text x="60" y="341" fill="#555">Text Mining widget</text>
+    <rect x="180" y="330" width="14" height="14" rx="3" fill="#f0f4ff" stroke="#3b5998"/><text x="200" y="341" fill="#555">Core Orange widget</text>
+  </g>
+</svg>
+</div>
+<div class="cap">Figure 1 — The main workflow. The dictionary-method path runs Corpus → Sentiment Analysis → Box Plot.</div>
+
+<!-- ============ STEP 0 ============ -->
+<h2>Getting ready</h2>
+
+<div class="step">
+  <div class="step-head"><div class="step-num">0</div><div class="step-title">Install Orange and the Text add-on</div></div>
+  <div class="step-body">
+    <ol>
+      <li>Download and install <strong>Orange</strong> (free) from <a href="https://orangedatamining.com">orangedatamining.com</a> if you haven't already.</li>
+      <li>Open Orange. Go to the menu: <span class="mono">Options → Add-ons…</span></li>
+      <li>Tick the box next to <strong>Text</strong> (this is the text-mining pack that adds the Corpus and Sentiment Analysis widgets).</li>
+      <li>Click <strong>OK / Install</strong>, then <strong>restart Orange</strong> when prompted.</li>
+    </ol>
+    <div class="expect"><span class="lbl">You'll know it worked when…</span>a new <strong>Text Mining</strong> group appears in the widget list on the left, containing <em>Corpus</em>, <em>Preprocess Text</em>, <em>Sentiment Analysis</em>, and more.</div>
+    <p class="muted">Save the file <span class="mono">brewlab_sentiment_w3.csv</span> somewhere easy to find, like your Desktop.</p>
+  </div>
+</div>
+
+<div class="note-blue"><span class="lbl">How to build any workflow in Orange</span>Double-click a widget in the left-hand list (or drag it) to place it on the canvas. To connect two widgets, click and hold the dashed arc on the right edge of the first widget and drag the line onto the second. Double-click any widget to open its settings.</div>
+
+<!-- ============ STEP 1 ============ -->
+<h2>Part A — Load and explore the data</h2>
+
+<div class="step">
+  <div class="step-head"><div class="step-num">1</div><div class="step-title">Load the messages with <span class="widget-chip">Corpus</span></div></div>
+  <div class="step-body">
+    <p>The <strong>Corpus</strong> widget is how Orange loads text. Place it on the canvas and open it.</p>
+    <div class="settings">
+      <b>Settings:</b>
+      <ul style="margin:6px 0 0;">
+        <li>Click <strong>Browse</strong> and choose <span class="mono">brewlab_sentiment_w3.csv</span>.</li>
+        <li>In <b>Used text features</b>, make sure <span class="mono">Text</span> is on the right-hand (selected) side. This tells Orange the message column is the text to analyse.</li>
+        <li>Set <b>Title variable</b> to <span class="mono">ID</span> (so each message is labelled by its number).</li>
+      </ul>
+    </div>
+    <div class="expect"><span class="lbl">You should see</span>near the bottom: <em>Corpus of 100 documents</em>, with <span class="mono">Sentiment</span> recognised as a category (Positive / Neutral / Negative).</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><div class="step-num">2</div><div class="step-title">Read the messages with <span class="widget-chip">Corpus Viewer</span></div></div>
+  <div class="step-body">
+    <p>Connect <span class="mono">Corpus → Corpus Viewer</span> and open it. This simply lets you scroll through the raw messages.</p>
+    <div class="callout"><span class="lbl">Look for the mess</span>Notice the quirks we discussed in the lecture: the repeated "Excellent the product!", the stuck-together word "excellentchoice", and the emojis 🙂 😐 😠 at the end of each message. Real customer text is never tidy.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><div class="step-num">3</div><div class="step-title">See the class balance with <span class="core-chip">Distributions</span></div></div>
+  <div class="step-body">
+    <p>Connect <span class="mono">Corpus → Distributions</span>. In its settings, set <b>Variable</b> to <span class="mono">Sentiment</span>.</p>
+    <div class="expect"><span class="lbl">You should see</span>a bar chart with three bars: <span class="pill s-pos">Positive 60</span> <span class="pill s-neu">Neutral 24</span> <span class="pill s-neg">Negative 16</span>. This is the same <strong>class imbalance</strong> from the slides — Positive dominates.</div>
+    <div class="callout"><span class="lbl">Why this matters</span>Because 60% of messages are Positive, any method must beat 60% accuracy to be useful. Keep this number in your head.</div>
+  </div>
+</div>
+
+<!-- ============ STEP 4 ============ -->
+<h2>Part B — The dictionary method (automatic scoring)</h2>
+
+<p>Now the main event: let Orange read every message and score its sentiment automatically, using a built-in word dictionary called <strong>VADER</strong>.</p>
+
+<div class="step">
+  <div class="step-head"><div class="step-num">4</div><div class="step-title">Score sentiment with <span class="widget-chip">Sentiment Analysis</span></div></div>
+  <div class="step-body">
+    <p>Connect <span class="mono">Corpus → Sentiment Analysis</span> (connect it to the <em>original</em> Corpus, not to a cleaned version — see the note below). Open it and choose the method:</p>
+    <div class="settings"><b>Setting:</b> &nbsp; Method → <strong>Vader</strong></div>
+    <p>VADER adds four new number columns to every message:</p>
+    <table>
+      <tr><th>Column</th><th>Meaning</th></tr>
+      <tr><td class="mono">pos</td><td>how strongly positive (0 to 1)</td></tr>
+      <tr><td class="mono">neg</td><td>how strongly negative (0 to 1)</td></tr>
+      <tr><td class="mono">neu</td><td>how strongly neutral (0 to 1)</td></tr>
+      <tr><td class="mono">compound</td><td><strong>the overall score</strong>, from −1 (very negative) to +1 (very positive). Around 0 means neutral.</td></tr>
+    </table>
+    <div class="note-blue"><span class="lbl">Why feed it the raw, un-cleaned text?</span>Unlike the learning method, the dictionary method <em>uses</em> capital letters, exclamation marks, and emojis as clues — exactly the "signals" we said not to throw away in the lecture. So we deliberately skip cleaning here and let VADER read the message as the customer wrote it.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><div class="step-num">5</div><div class="step-title">Inspect the scores with <span class="core-chip">Data Table</span></div></div>
+  <div class="step-body">
+    <p>Connect <span class="mono">Sentiment Analysis → Data Table</span> and open it. You'll see every message alongside its new <span class="mono">compound</span> score and the human <span class="mono">Sentiment</span> label.</p>
+    <p>Click the <span class="mono">compound</span> column header to <strong>sort</strong> by it.</p>
+    <div class="expect"><span class="lbl">You should see</span>the most positive messages (highest compound, near +1) are the <span class="pill s-pos">Positive</span> ones; the lowest (near −1) are the <span class="pill s-neg">Negative</span> ones. The dictionary method is working.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><div class="step-num">6</div><div class="step-title">Compare computer vs human with <span class="core-chip">Box Plot</span></div></div>
+  <div class="step-body">
+    <p>This is the key comparison. Connect <span class="mono">Sentiment Analysis → Box Plot</span> and set:</p>
+    <div class="settings">
+      <b>Settings:</b>
+      <ul style="margin:6px 0 0;">
+        <li><b>Variable:</b> <span class="mono">compound</span> &nbsp;(the computer's score)</li>
+        <li><b>Subgroups:</b> <span class="mono">Sentiment</span> &nbsp;(the human label)</li>
+      </ul>
+    </div>
+    <p>This draws one box per human class, showing the range of VADER scores inside each.</p>
+    <div class="expect"><span class="lbl">What good agreement looks like</span>The <span class="pill s-pos">Positive</span> box sits high (positive compound), the <span class="pill s-neg">Negative</span> box sits low, and <span class="pill s-neu">Neutral</span> sits in the middle. When the boxes barely overlap, the computer and the humans mostly agree.</div>
+    <div class="callout"><span class="lbl">Discuss</span>Which class overlaps most with the others? Almost always it's <strong>Neutral</strong> — just as the lecture predicted, the lukewarm middle is the hardest for any method to pin down. VADER is a <em>general-purpose</em> dictionary, not tuned to BrewLab, so some disagreement is expected and worth discussing.</div>
+  </div>
+</div>
+
+<!-- ============ OPTIONAL: WORD CLOUD ============ -->
+<div class="optional-band">
+  <div style="text-align:center;"><span class="optional-tag">OPTIONAL</span></div>
+  <h3>Extra 1 — A word cloud of the messages</h3>
+  <p>For a quick visual of the most common words: place a <span class="widget-chip">Preprocess Text</span> widget and connect <span class="mono">Corpus → Preprocess Text → Word Cloud</span>.</p>
+  <div class="settings"><b>Preprocess Text settings (tick these):</b> Transformation → <em>Lowercase</em>; Tokenization → <em>Regexp</em>; Filtering → <em>Stopwords (English)</em>.</div>
+  <p>The <span class="widget-chip">Word Cloud</span> will show "excellent", "service", "experience" and friends sized by how often they appear. This is the <strong>cleaning</strong> step from the lecture, done with one widget.</p>
+</div>
+
+<!-- ============ OPTIONAL: ML PATH ============ -->
+<div class="optional-band">
+  <div style="text-align:center;"><span class="optional-tag">OPTIONAL · ADVANCED</span></div>
+  <h3>Extra 2 — The learning method (machine learning)</h3>
+  <p>Instead of a fixed dictionary, we can let Orange <em>learn</em> sentiment from the labelled examples. This path <strong>does</strong> want cleaned text, so it starts with Preprocess Text.</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 1000 210" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif">
+    <defs><marker id="b" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#8aa0c8"/></marker></defs>
+    <g stroke="#8aa0c8" stroke-width="2" fill="none" marker-end="url(#b)">
+      <line x1="130" y1="67" x2="163" y2="67"/>
+      <line x1="305" y1="67" x2="333" y2="67"/>
+      <line x1="465" y1="67" x2="493" y2="67"/>
+      <line x1="635" y1="67" x2="663" y2="67"/>
+      <line x1="815" y1="67" x2="833" y2="67"/>
+      <line x1="740" y1="140" x2="740" y2="96"/>
+    </g>
+    <g font-size="12.5" text-anchor="middle">
+      <g><rect x="10" y="40" width="120" height="54" rx="10" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.6"/><text x="70" y="65" font-weight="700" fill="#2f6b46">Corpus</text><text x="70" y="82" font-size="10.5" fill="#5f7d67">raw data</text></g>
+      <g><rect x="163" y="40" width="142" height="54" rx="10" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.6"/><text x="234" y="62" font-weight="700" fill="#2f6b46">Preprocess</text><text x="234" y="79" font-weight="700" fill="#2f6b46">Text</text></g>
+      <g><rect x="333" y="40" width="132" height="54" rx="10" fill="#eaf5ea" stroke="#4a7c59" stroke-width="1.6"/><text x="399" y="62" font-weight="700" fill="#2f6b46">Bag of</text><text x="399" y="79" font-weight="700" fill="#2f6b46">Words</text></g>
+      <g><rect x="493" y="40" width="142" height="54" rx="10" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.6"/><text x="564" y="62" font-weight="700" fill="#3b5998">Select</text><text x="564" y="79" font-weight="700" fill="#3b5998">Columns</text></g>
+      <g><rect x="663" y="40" width="152" height="54" rx="10" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.6"/><text x="739" y="62" font-weight="700" fill="#3b5998">Test and</text><text x="739" y="79" font-weight="700" fill="#3b5998">Score</text></g>
+      <g><rect x="833" y="40" width="152" height="54" rx="10" fill="#f0f4ff" stroke="#3b5998" stroke-width="1.6"/><text x="909" y="62" font-weight="700" fill="#3b5998">Confusion</text><text x="909" y="79" font-weight="700" fill="#3b5998">Matrix</text></g>
+      <g><rect x="663" y="140" width="152" height="54" rx="10" fill="#fdf6e3" stroke="#b8860b" stroke-width="1.6"/><text x="739" y="162" font-weight="700" fill="#8a6d1a">Logistic</text><text x="739" y="179" font-weight="700" fill="#8a6d1a">Regression</text></g>
+    </g>
+  </svg>
+  </div>
+  <div class="cap">Figure 2 — The learning-method path. The model (Logistic Regression) feeds into Test and Score, which is checked with a Confusion Matrix.</div>
+
+  <ol>
+    <li><strong>Preprocess Text</strong> — same settings as the word cloud above (lowercase, tokenize, English stopwords).</li>
+    <li><strong>Bag of Words</strong> — connect <span class="mono">Preprocess Text → Bag of Words</span>. Defaults are fine; this turns each message into word counts the model can use.</li>
+    <li><strong>Select Columns</strong> — connect <span class="mono">Bag of Words → Select Columns</span>. Put the word-count columns in <b>Features</b> and put <span class="mono">Sentiment</span> in <b>Target</b>.</li>
+    <li><strong>Test and Score</strong> — connect <span class="mono">Select Columns → Test and Score</span>. Also add a <span class="core-chip">Logistic Regression</span> widget and connect it in as the learner. Use <em>Cross validation</em> (5 folds).</li>
+    <li><strong>Confusion Matrix</strong> — connect <span class="mono">Test and Score → Confusion Matrix</span> to see exactly which classes get confused.</li>
+  </ol>
+  <div class="callout"><span class="lbl">Read it honestly</span>Look at the <b>CA</b> (Classification Accuracy) in Test and Score. Remember the 60% baseline — always-guess-Positive already scores that. A good model must clearly beat 60%. In the Confusion Matrix, check the <span class="pill s-neg">Negative</span> row: with only 16 examples, the rare class is the one models most often miss.</div>
+</div>
+
+<!-- ============ WRAP ============ -->
+<h2>What you built</h2>
+<ul>
+  <li>You loaded and explored real customer text without writing any code.</li>
+  <li>You confirmed the <strong>class imbalance</strong> (60 / 24 / 16) with the Distributions widget.</li>
+  <li>You ran the <strong>dictionary method</strong> (VADER) and compared its scores against human labels — seeing clear agreement for Positive/Negative and fuzziness for Neutral.</li>
+  <li>(Optional) You trained the <strong>learning method</strong> and judged it against the 60% baseline.</li>
+</ul>
+
+<div class="note-blue"><span class="lbl">Discussion questions</span>
+  <ol style="margin:6px 0 0;">
+    <li>For which sentiment class did the computer disagree most with the humans, and why might that be?</li>
+    <li>Why did we feed <em>raw</em> text to the dictionary method but <em>cleaned</em> text to the learning method?</li>
+    <li>If BrewLab used its own slang (e.g. "this brew is <em>sick</em>" as praise), which method would adapt better, and why?</li>
+  </ol>
+</div>
+
+<h2>Troubleshooting</h2>
+<table>
+  <tr><th>Problem</th><th>Fix</th></tr>
+  <tr><td>No "Text Mining" widgets appear</td><td>The add-on didn't install. Redo Step 0 and make sure you restarted Orange.</td></tr>
+  <tr><td>Corpus says "0 documents" or the text column is missing</td><td>Open Corpus and move <span class="mono">Text</span> into <b>Used text features</b>.</td></tr>
+  <tr><td>Sentiment Analysis has no effect / no new columns</td><td>Make sure a line actually connects Corpus into it, and that Method is set to <strong>Vader</strong>.</td></tr>
+  <tr><td>Box Plot won't let you pick <span class="mono">compound</span></td><td>You connected it to the plain Corpus. Connect it to <strong>Sentiment Analysis</strong> instead, which is where the scores are created.</td></tr>
+  <tr><td>Emojis show as boxes</td><td>Harmless — it's just a font display issue. VADER still reads them correctly.</td></tr>
+</table>
+
+<p class="muted" style="margin-top:30px; text-align:center;">DATA4500 — Marketing &amp; Social Media Analytics · Week 3 Lab · Dataset: <span class="mono">brewlab_sentiment_w3.csv</span> (100 messages)</p>
+
+</div>
+</body>
+</html>
