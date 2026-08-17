@@ -1,2116 +1,1148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Week 6: Advanced Classification Methods</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DATA4800 Workshop 6 — Naïve Bayes, SVM and Gradient Boosting</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+  :root{
+    --blue:#16337e;        /* deep blue for titles/headers */
+    --blue2:#1e5bb8;       /* secondary blue */
+    --accent:#1e88e5;      /* bright blue accent */
+    --ink:#1a1a1a;
+    --grey:#666;
+    --green:#2e7d32;
+    --red:#c0392b;
+    --amber:#f6a600;
+    --line:#e2e6ef;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:'Helvetica Neue','Arial',sans-serif;
+    background:#fff;color:var(--ink);
+    overflow:hidden;
+  }
+  .slide{
+    display:none;width:100vw;height:100vh;
+    padding:46px 70px 64px;position:relative;
+    flex-direction:column;justify-content:flex-start;
+  }
+  .slide.active{display:flex;}
+  .slide-number{
+    position:absolute;top:18px;right:28px;
+    font-size:.8rem;color:#b7bdcb;letter-spacing:.04em;font-weight:600;
+  }
+  h1{font-size:2.15rem;color:var(--blue);line-height:1.15;margin-bottom:18px;font-weight:800;}
+  h2{
+    font-size:1.62rem;color:var(--blue);font-weight:800;
+    margin-bottom:16px;padding-bottom:8px;border-bottom:3px solid var(--blue);
+    display:inline-block;
+  }
+  h3{font-size:1.16rem;color:var(--blue2);margin:14px 0 6px;font-weight:700;}
+  p,li{font-size:1.04rem;line-height:1.62;margin-bottom:8px;}
+  ul,ol{padding-left:24px;}
+  li{margin-bottom:6px;}
+  .lead{font-size:1.12rem;color:#33384a;margin-bottom:12px;}
+  b,strong{color:#101425;}
+  .cols{display:flex;gap:34px;align-items:flex-start;}
+  .col{flex:1;min-width:0;}
+  .center{align-items:center;justify-content:center;text-align:center;}
 
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background: white;
-            color: #333;
-            overflow: hidden;
-        }
+  /* callout boxes */
+  .box{padding:14px 18px;margin:12px 0;border-radius:8px;}
+  .scenario{background:#eef4ff;border-left:5px solid var(--accent);}
+  .scenario .tag{font-weight:800;color:var(--blue);letter-spacing:.02em;font-size:.82rem;text-transform:uppercase;margin-bottom:4px;}
+  .definition{background:#f1f5ff;border-left:5px solid var(--blue2);}
+  .key{background:#fff7e6;border-left:5px solid var(--amber);}
+  .note{background:#f6f7f9;border-left:5px solid #9aa3b6;font-size:.96rem;color:#444;}
+  .box .lbl{font-weight:800;font-size:.82rem;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}
+  .scenario .lbl{color:var(--blue);}
+  .definition .lbl{color:var(--blue2);}
+  .key .lbl{color:#b5820a;}
 
-        .slide-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 60px;
-        }
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:.98rem;}
+  th,td{border:1px solid var(--line);padding:8px 12px;text-align:center;}
+  th{background:var(--blue);color:#fff;font-weight:700;border-color:var(--blue);}
+  tbody tr:nth-child(even){background:#f6f8fc;}
+  td.lbl{background:#eef2fb;font-weight:700;color:var(--blue);text-align:left;}
+  .small{font-size:.9rem;}
+  .muted{color:var(--grey);}
+  .src{position:absolute;bottom:16px;left:70px;font-size:.72rem;color:#b7bdcb;}
 
-        .slide {
-            display: none;
-            width: 100%;
-            max-width: 1200px;
-            height: 100%;
-        }
+  /* illustrations */
+  .illustration{display:flex;justify-content:center;margin:8px 0;}
+  .illustration svg{max-width:100%;height:auto;}
+  .caption{text-align:center;font-size:.86rem;color:var(--grey);margin-top:2px;font-style:italic;}
 
-        .slide.active {
-            display: block;
-            animation: fadeIn 0.5s;
-        }
+  /* section dividers */
+  .slide.divider{justify-content:center;align-items:flex-start;}
+  .divider .kicker{font-size:1rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:10px;}
+  .divider h1{font-size:3rem;border:none;color:var(--blue);}
+  .divider .sub{font-size:1.15rem;color:#444;max-width:820px;margin-top:6px;}
+  .divider .rule{width:120px;height:5px;background:var(--accent);border-radius:3px;margin:22px 0 8px;}
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+  /* title slide */
+  .title-wrap{height:100%;display:flex;flex-direction:column;justify-content:center;}
+  .title-wrap .course{font-size:1.3rem;letter-spacing:.22em;color:var(--accent);font-weight:800;}
+  .title-wrap h1{font-size:3.4rem;margin:10px 0 4px;}
+  .title-wrap .wk{font-size:1.5rem;color:#333;font-weight:600;}
+  .title-wrap .topics{font-size:1.2rem;color:var(--blue2);margin-top:8px;font-weight:600;}
+  .brandbar{position:absolute;left:0;top:0;height:100%;width:14px;background:var(--blue);}
 
-        h1 {
-            color: #CC0000;
-            font-size: 48px;
-            margin-bottom: 30px;
-            font-weight: 300;
-        }
+  /* worked step reveal */
+  .worked{background:#f6f8fc;border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:8px 0;}
+  .worked .q{font-weight:700;color:var(--blue);margin-bottom:8px;}
+  .wstep{display:none;padding:9px 12px;margin:8px 0;background:#fff;border-left:4px solid var(--accent);border-radius:6px;}
+  .wstep.visible{display:block;animation:fadeUp .38s ease both;}
+  .wstep .n{font-weight:800;color:var(--accent);margin-right:6px;}
+  .wans{display:none;margin-top:10px;padding:10px 14px;background:#eaf5ea;border-left:4px solid var(--green);border-radius:6px;font-weight:600;}
+  .wans.visible{display:block;animation:fadeUp .4s ease both;}
+  .wbtn{margin-top:6px;background:var(--blue);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;}
+  .wbtn:hover{background:var(--blue2);}
 
-        h2 {
-            color: #CC0000;
-            font-size: 36px;
-            margin-bottom: 25px;
-            font-weight: 300;
-        }
+  /* posterior bars */
+  .barchart{margin:14px 0;}
+  .barrow{display:flex;align-items:center;margin:10px 0;gap:12px;}
+  .barrow .bl{width:120px;font-weight:700;}
+  .bartrack{flex:1;background:#eef2f7;border-radius:8px;height:34px;overflow:hidden;position:relative;}
+  .barfill{height:100%;width:0;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;color:#fff;font-weight:800;font-size:.95rem;}
+  .barfill.yes{background:linear-gradient(90deg,#2e7d32,#4caf50);}
+  .barfill.no{background:linear-gradient(90deg,#b23b2e,#e06455);}
+  .slide.active .barfill.yes{animation:growYes 1.1s cubic-bezier(.2,.7,.3,1) forwards .35s;}
+  .slide.active .barfill.no{animation:growNo 1.1s cubic-bezier(.2,.7,.3,1) forwards .35s;}
+  @keyframes growYes{to{width:82%;}}
+  @keyframes growNo{to{width:18%;}}
 
-        h3 {
-            color: #CC0000;
-            font-size: 28px;
-            margin-bottom: 20px;
-            font-weight: 300;
-        }
+  /* quizzes */
+  .quiz{margin:12px 0;}
+  .quiz-question{font-weight:700;margin-bottom:8px;font-size:1.04rem;color:#101425;}
+  .quiz-option{display:block;width:100%;text-align:left;padding:11px 15px;margin:6px 0;background:#f8f9fb;border:2px solid var(--line);border-radius:8px;cursor:pointer;font-size:1rem;font-family:inherit;color:var(--ink);transition:border-color .2s,background .2s;}
+  .quiz-option:hover{border-color:#9aa3b6;}
+  .quiz-option.correct{border-color:var(--green);background:#eaf5ea;cursor:default;}
+  .quiz-option.incorrect{border-color:var(--red);background:#fdf0ef;cursor:default;}
+  .quiz-option.dimmed{opacity:.5;cursor:default;}
+  .quiz-explanation{display:none;margin-top:10px;padding:11px 15px;background:#eef4ff;border-left:4px solid var(--accent);border-radius:6px;font-size:.96rem;}
+  .quiz-explanation.visible{display:block;animation:fadeUp .4s ease both;}
 
-        .subtitle {
-            font-size: 24px;
-            color: #666;
-            margin-bottom: 20px;
-        }
+  /* animation helpers */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  .slide.active .rv{animation:fadeUp .5s ease both;}
+  .slide.active .d1{animation-delay:.06s;} .slide.active .d2{animation-delay:.16s;}
+  .slide.active .d3{animation-delay:.28s;} .slide.active .d4{animation-delay:.40s;}
+  .slide.active .d5{animation-delay:.52s;} .slide.active .d6{animation-delay:.64s;}
+  @keyframes drawline{to{stroke-dashoffset:0;}}
+  .slide.active .draw{stroke-dasharray:600;stroke-dashoffset:600;animation:drawline 1.05s ease forwards .35s;}
+  @keyframes popIn{from{opacity:0;transform:scale(.4);}to{opacity:1;transform:scale(1);}}
+  .slide.active .pop{transform-box:fill-box;transform-origin:center;animation:popIn .5s ease both;}
+  .slide.active .pop.p1{animation-delay:.5s;}.slide.active .pop.p2{animation-delay:.66s;}.slide.active .pop.p3{animation-delay:.82s;}
+  @keyframes fadeSvg{from{opacity:0;}to{opacity:1;}}
+  .slide.active .fdelay{opacity:0;animation:fadeSvg .7s ease forwards 1.1s;}
 
-        .content {
-            font-size: 20px;
-            line-height: 1.6;
-            color: #333;
-        }
-
-        .bullet-point {
-            margin: 15px 0;
-            padding-left: 30px;
-            position: relative;
-        }
-
-        .bullet-point:before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: #CC0000;
-            font-size: 24px;
-        }
-
-        .navigation {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            gap: 15px;
-            z-index: 1000;
-        }
-
-        button {
-            background: #CC0000;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        }
-
-        button:hover {
-            background: #AA0000;
-        }
-
-        button:disabled {
-            background: #CCC;
-            cursor: not-allowed;
-        }
-
-        .slide-number {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            font-size: 16px;
-            color: #666;
-        }
-
-        .viz-container {
-            margin: 30px 0;
-            padding: 20px;
-            background: #FAFAFA;
-            border: 1px solid #E0E0E0;
-            border-radius: 4px;
-        }
-
-        .quiz-container {
-            margin: 30px 0;
-            padding: 30px;
-            background: #F5F5F5;
-            border-left: 4px solid #CC0000;
-        }
-
-        .quiz-option {
-            margin: 15px 0;
-            padding: 15px;
-            background: white;
-            border: 2px solid #DDD;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.3s;
-        }
-
-        .quiz-option:hover {
-            border-color: #CC0000;
-            background: #FFF5F5;
-        }
-
-        .quiz-option.correct {
-            border-color: #4CAF50;
-            background: #E8F5E9;
-        }
-
-        .quiz-option.incorrect {
-            border-color: #F44336;
-            background: #FFEBEE;
-        }
-
-        .quiz-feedback {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .quiz-feedback.correct {
-            background: #E8F5E9;
-            color: #2E7D32;
-        }
-
-        .quiz-feedback.incorrect {
-            background: #FFEBEE;
-            color: #C62828;
-        }
-
-        .formula {
-            font-size: 22px;
-            text-align: center;
-            margin: 25px 0;
-            padding: 20px;
-            background: #F5F5F5;
-            border-radius: 4px;
-            font-family: 'Times New Roman', serif;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 18px;
-        }
-
-        th {
-            background: #CC0000;
-            color: white;
-            padding: 12px;
-            text-align: left;
-        }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #DDD;
-        }
-
-        tr:nth-child(even) {
-            background: #F9F9F9;
-        }
-
-        .highlight-box {
-            background: #FFF9E6;
-            border-left: 4px solid #CC0000;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin: 20px 0;
-        }
-
-        .example-box {
-            background: #F0F7FF;
-            border: 2px solid #2196F3;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-
-        .step-indicator {
-            display: inline-block;
-            background: #CC0000;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 3px;
-            margin-right: 10px;
-            font-weight: bold;
-        }
-
-        svg {
-            display: block;
-            margin: 0 auto;
-        }
-
-        .control-panel {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .control-button {
-            background: #2196F3;
-            margin: 5px;
-            padding: 10px 20px;
-        }
-
-        .control-button:hover {
-            background: #1976D2;
-        }
-    </style>
+  /* nav */
+  .progress-bar{position:fixed;top:0;left:0;height:4px;background:var(--accent);transition:width .3s;z-index:100;}
+  .nav-indicator{position:fixed;bottom:16px;right:26px;font-size:.8rem;color:#aab;z-index:100;}
+  .nav-hint{position:fixed;bottom:16px;left:70px;font-size:.72rem;color:#ccd;z-index:100;}
+  .toc-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.98);z-index:200;padding:46px 70px;overflow-y:auto;}
+  .toc-overlay.active{display:block;}
+  .toc-overlay h2{border:none;}
+  .toc-grid{columns:2;column-gap:40px;margin-top:10px;}
+  .toc-item{padding:6px 0;cursor:pointer;color:var(--blue2);font-size:.98rem;break-inside:avoid;}
+  .toc-item:hover{color:var(--blue);text-decoration:underline;}
+  .toc-item.toc-section{font-weight:800;margin-top:12px;color:var(--blue);}
+</style>
 </head>
 <body>
-    <div class="slide-container">
-        <!-- Slide 1: Title -->
-        <div class="slide active">
-            <div style="text-align: center; padding-top: 15%;">
-                <h1 style="font-size: 56px;">Week 6: Advanced Classification Methods</h1>
-                <div class="subtitle" style="font-size: 28px; margin-top: 40px;">
-                    Naïve Bayes, Support Vector Machines, and Gradient Boosting
-                </div>
-                <div class="subtitle" style="font-size: 22px; margin-top: 60px; color: #999;">
-                    DATA4800: Artificial Intelligence and Machine Learning
-                </div>
-            </div>
-        </div>
+<div class="progress-bar" id="progressBar"></div>
 
-        <!-- Slide 2: Learning Objectives -->
-        <div class="slide">
-            <h2>Learning Objectives</h2>
-            <div class="content">
-                <p style="margin-bottom: 30px;">By the end of this workshop, you will be able to:</p>
-                <div class="bullet-point">Understand and apply Naïve Bayes classification using probability theory</div>
-                <div class="bullet-point">Implement Support Vector Machines for complex classification problems</div>
-                <div class="bullet-point">Utilize Gradient Boosting for high-accuracy predictions</div>
-                <div class="bullet-point">Compare classification methods and select appropriate algorithms for business problems</div>
-                <div class="bullet-point">Evaluate model performance using appropriate metrics</div>
-                
-                <div class="highlight-box" style="margin-top: 40px;">
-                    <strong>Key Focus:</strong> Understanding when and why to use different classification methods in real-world business scenarios
-                </div>
-            </div>
-        </div>
+<!-- ================= TITLE ================= -->
+<div class="slide active center">
+  <div class="brandbar"></div>
+  <div class="title-wrap">
+    <div class="course rv d1">DATA4800</div>
+    <h1 class="rv d2">Artificial Intelligence &amp; Machine Learning</h1>
+    <div class="wk rv d3">Workshop 6</div>
+    <div class="topics rv d4">Naïve Bayes &nbsp;·&nbsp; Support Vector Machines &nbsp;·&nbsp; Gradient Boosting</div>
+  </div>
+</div>
 
-        <!-- Slide 3: Week Overview -->
-        <div class="slide">
-            <h2>Classification Methods Overview</h2>
-            <div class="content">
-                <div class="two-column">
-                    <div>
-                        <h3>What We'll Cover</h3>
-                        <div class="bullet-point">Probabilistic Classification (Naïve Bayes)</div>
-                        <div class="bullet-point">Margin-Based Classification (SVM)</div>
-                        <div class="bullet-point">Ensemble Boosting Methods</div>
-                        <div class="bullet-point">Comparative Analysis</div>
-                    </div>
-                    <div>
-                        <h3>Business Applications</h3>
-                        <div class="bullet-point">Email spam detection</div>
-                        <div class="bullet-point">Customer segmentation</div>
-                        <div class="bullet-point">Employee attrition prediction</div>
-                        <div class="bullet-point">Medical diagnosis</div>
-                    </div>
-                </div>
-                
-                <div class="example-box" style="margin-top: 30px;">
-                    <strong>Real-World Context:</strong> Each method solves different types of business problems. Understanding their strengths and weaknesses helps you choose the right tool for your specific challenge.
-                </div>
-            </div>
-        </div>
+<!-- ================= ROADMAP ================= -->
+<div class="slide">
+  <div class="slide-number">0.1</div>
+  <h2>Where we are in the course</h2>
+  <p class="lead rv d1">You have already met the first family of classifiers. Today we add three more powerful tools and learn when to reach for each.</p>
+  <div class="illustration rv d2">
+    <svg viewBox="0 0 940 210" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif">
+      <!-- track -->
+      <line x1="40" y1="105" x2="900" y2="105" stroke="#d5dbe8" stroke-width="4"/>
+      <!-- done steps -->
+      <g font-size="13" text-anchor="middle">
+        <circle cx="90" cy="105" r="14" fill="#c7d2e8"/><text x="90" y="145" fill="#8792a8">Trees &amp;<tspan x="90" dy="15">Forests</tspan></text>
+        <circle cx="240" cy="105" r="14" fill="#c7d2e8"/><text x="240" y="145" fill="#8792a8">Clustering<tspan x="240" dy="15">&amp; PCA</tspan></text>
+        <circle cx="390" cy="105" r="14" fill="#c7d2e8"/><text x="390" y="145" fill="#8792a8">Assessment 1<tspan x="390" dy="15">(in class)</tspan></text>
+        <!-- current -->
+        <circle cx="560" cy="105" r="24" fill="#16337e"/>
+        <text x="560" y="110" fill="#fff" font-weight="800" font-size="15">6</text>
+        <text x="560" y="55" fill="#16337e" font-weight="800" font-size="15">You are here</text>
+        <text x="560" y="160" fill="#16337e" font-weight="700">Naïve Bayes,<tspan x="560" dy="15">SVM, Boosting</tspan></text>
+        <!-- upcoming -->
+        <circle cx="720" cy="105" r="14" fill="#c7d2e8"/><text x="720" y="145" fill="#8792a8">Neural<tspan x="720" dy="15">Networks</tspan></text>
+        <circle cx="860" cy="105" r="14" fill="#c7d2e8"/><text x="860" y="145" fill="#8792a8">Deep<tspan x="860" dy="15">CNNs</tspan></text>
+      </g>
+      <line x1="40" y1="105" x2="560" y2="105" stroke="#1e88e5" stroke-width="4" class="draw"/>
+    </svg>
+  </div>
+  <div class="box key rv d3"><div class="lbl">Big picture</div>Naïve Bayes, SVM and Gradient Boosting are all <b>supervised classification</b> methods — they learn from labelled examples to predict a category (Yes/No, Malignant/Benign, Stay/Leave).</div>
+</div>
 
-        <!-- Slide 4: Introduction to Naïve Bayes -->
-        <div class="slide">
-            <h2>Naïve Bayes Classification</h2>
-            <div class="content">
-                <h3>What is Naïve Bayes?</h3>
-                <p style="margin-bottom: 20px;">A probabilistic classifier that predicts outcomes based on the likelihood of features occurring together.</p>
-                
-                <div class="example-box">
-                    <strong>Business Analogy:</strong> Think of email spam filters. The algorithm learns from thousands of emails:
-                    <div class="bullet-point">Emails with words like "FREE", "WINNER", "CLICK NOW" are usually spam</div>
-                    <div class="bullet-point">Emails from unknown senders with attachments are suspicious</div>
-                    <div class="bullet-point">When a new email arrives, it calculates the probability it's spam based on these learned patterns</div>
-                </div>
-                
-                <div class="highlight-box" style="margin-top: 30px;">
-                    <strong>Why "Naïve"?</strong> The algorithm assumes all features are independent of each other (which is rarely true in reality, but often works well in practice).
-                </div>
-            </div>
-        </div>
+<!-- ================= LEARNING OUTCOMES ================= -->
+<div class="slide">
+  <div class="slide-number">0.2</div>
+  <h2>What you will be able to do</h2>
+  <table class="rv d1">
+    <tr><th style="width:70px">#</th><th style="text-align:left;padding-left:16px">By the end of this workshop you can…</th></tr>
+    <tr><td><b>1</b></td><td style="text-align:left"><b>Apply</b> Bayesian classification — use probabilities to predict a class.</td></tr>
+    <tr><td><b>2</b></td><td style="text-align:left"><b>Investigate</b> support vector machines — separate groups with the widest possible boundary.</td></tr>
+    <tr><td><b>3</b></td><td style="text-align:left"><b>Understand</b> gradient boosting — build a strong model from many small ones that learn from mistakes.</td></tr>
+  </table>
+  <div class="box scenario rv d2"><div class="lbl">How to read these slides</div>Each tool follows the same path: a <b>business problem</b> → the <b>idea in plain language</b> → a <b>worked example you can follow step by step</b> → a <b>hands-on activity</b> in Orange / Python.</div>
+</div>
 
-        <!-- Slide 5: Bayes Theorem Foundation -->
-        <div class="slide">
-            <h2>The Foundation: Conditional Probability</h2>
-            <div class="content">
-                <p style="margin-bottom: 30px;">Naïve Bayes is built on a simple question: <em>What is the probability of event A given that event B has occurred?</em></p>
-                
-                <div class="formula">
-                    P(A|B) = P(B|A) × P(A) / P(B)
-                </div>
-                
-                <div class="two-column">
-                    <div>
-                        <h3>In Plain English</h3>
-                        <div class="bullet-point"><strong>P(A|B)</strong>: Probability of A given B happened</div>
-                        <div class="bullet-point"><strong>P(B|A)</strong>: Probability of B given A happened</div>
-                        <div class="bullet-point"><strong>P(A)</strong>: Overall probability of A</div>
-                        <div class="bullet-point"><strong>P(B)</strong>: Overall probability of B</div>
-                    </div>
-                    <div>
-                        <h3>Email Spam Example</h3>
-                        <div class="bullet-point"><strong>P(Spam|"FREE")</strong>: Probability email is spam given it contains "FREE"</div>
-                        <div class="bullet-point"><strong>P("FREE"|Spam)</strong>: Probability spam contains "FREE"</div>
-                        <div class="bullet-point"><strong>P(Spam)</strong>: Overall spam rate</div>
-                        <div class="bullet-point"><strong>P("FREE")</strong>: Overall frequency of "FREE"</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- ================= SECTION 1 DIVIDER ================= -->
+<div class="slide divider">
+  <div class="slide-number">1</div>
+  <div class="kicker rv d1">Section 1</div>
+  <h1 class="rv d2">Naïve Bayes Classifiers</h1>
+  <div class="rule rv d3"></div>
+  <div class="sub rv d4">Classifying things by asking: <i>“Given what I observe, which outcome is most probable?”</i></div>
+</div>
 
-        <!-- Slide 6: Interactive Naïve Bayes Visualization -->
-        <div class="slide">
-            <h2>How Naïve Bayes Makes Decisions</h2>
-            <div class="content">
-                <p style="margin-bottom: 20px;">Customer Purchase Prediction Example: Will a customer buy based on their browsing behavior?</p>
-                
-                <div class="viz-container">
-                    <div id="naive-bayes-viz"></div>
-                </div>
-                
-                <div class="control-panel">
-                    <button class="control-button" onclick="updateNaiveBayes('email')">Email Campaign</button>
-                    <button class="control-button" onclick="updateNaiveBayes('browse')">Browsed Products</button>
-                    <button class="control-button" onclick="updateNaiveBayes('cart')">Added to Cart</button>
-                    <button class="control-button" onclick="updateNaiveBayes('reset')">Reset</button>
-                </div>
-                
-                <div id="nb-explanation" style="margin-top: 20px; padding: 15px; background: #F5F5F5; border-radius: 4px;"></div>
-            </div>
-        </div>
+<!-- 1.1 Where NB fits -->
+<div class="slide">
+  <div class="slide-number">1.1</div>
+  <h2>1.1 &nbsp;Where this tool fits</h2>
+  <p class="lead rv d1">Naïve Bayes is a form of <b>supervised learning</b> used for <b>classification</b> — predicting a label from labelled training data.</p>
+  <div class="illustration rv d2">
+    <svg viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="14">
+      <!-- root -->
+      <rect x="360" y="14" width="150" height="42" rx="8" fill="#16337e"/>
+      <text x="435" y="40" fill="#fff" text-anchor="middle" font-weight="700">Machine Learning</text>
+      <!-- branches -->
+      <line x1="435" y1="56" x2="160" y2="96" stroke="#9aa3b6" stroke-width="1.6"/>
+      <line x1="435" y1="56" x2="435" y2="96" stroke="#9aa3b6" stroke-width="1.6"/>
+      <line x1="435" y1="56" x2="710" y2="96" stroke="#9aa3b6" stroke-width="1.6"/>
+      <g text-anchor="middle">
+        <rect x="80" y="96" width="160" height="40" rx="8" fill="#e7edf9" stroke="#1e5bb8"/>
+        <text x="160" y="121" fill="#16337e" font-weight="700">Supervised</text>
+        <rect x="355" y="96" width="160" height="40" rx="8" fill="#f3f4f7" stroke="#9aa3b6"/>
+        <text x="435" y="121" fill="#555" font-weight="700">Unsupervised</text>
+        <rect x="630" y="96" width="160" height="40" rx="8" fill="#f3f4f7" stroke="#9aa3b6"/>
+        <text x="710" y="121" fill="#555" font-weight="700">Reinforcement</text>
+      </g>
+      <!-- supervised children -->
+      <line x1="160" y1="136" x2="95" y2="176" stroke="#9aa3b6" stroke-width="1.4"/>
+      <line x1="160" y1="136" x2="235" y2="176" stroke="#9aa3b6" stroke-width="1.4"/>
+      <g text-anchor="middle" class="fdelay">
+        <rect x="30" y="176" width="130" height="38" rx="8" fill="#f3f4f7" stroke="#9aa3b6"/>
+        <text x="95" y="200" fill="#555">Regression</text>
+        <rect x="175" y="176" width="150" height="38" rx="8" fill="#1e88e5" stroke="#16337e"/>
+        <text x="250" y="200" fill="#fff" font-weight="800">Classification</text>
+        <text x="250" y="238" fill="#16337e" font-weight="700" font-size="13">Naïve Bayes lives here</text>
+      </g>
+      <!-- unsupervised children -->
+      <line x1="435" y1="136" x2="400" y2="176" stroke="#9aa3b6" stroke-width="1.4"/>
+      <line x1="435" y1="136" x2="510" y2="176" stroke="#9aa3b6" stroke-width="1.4"/>
+      <g text-anchor="middle">
+        <rect x="335" y="176" width="130" height="38" rx="8" fill="#f3f4f7" stroke="#9aa3b6"/>
+        <text x="400" y="200" fill="#555">Clustering</text>
+        <rect x="480" y="176" width="150" height="38" rx="8" fill="#f3f4f7" stroke="#9aa3b6"/>
+        <text x="555" y="200" fill="#555">Density est.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="caption rv d3">Figure 1.1 — Naïve Bayes, SVM and Gradient Boosting are all classification methods.</div>
+</div>
 
-        <!-- Slide 7: Naïve Bayes Calculation Example -->
-        <div class="slide">
-            <h2>Step-by-Step Calculation</h2>
-            <div class="content">
-                <h3>Business Problem: Email Classification</h3>
-                <p style="margin-bottom: 20px;">Dataset: 1,000 emails (700 legitimate, 300 spam)</p>
-                
-                <table>
-                    <tr>
-                        <th>Feature</th>
-                        <th>Spam Emails (300)</th>
-                        <th>Legitimate (700)</th>
-                    </tr>
-                    <tr>
-                        <td>Contains "FREE"</td>
-                        <td>240 (80%)</td>
-                        <td>70 (10%)</td>
-                    </tr>
-                    <tr>
-                        <td>Contains "Meeting"</td>
-                        <td>30 (10%)</td>
-                        <td>490 (70%)</td>
-                    </tr>
-                    <tr>
-                        <td>Unknown Sender</td>
-                        <td>270 (90%)</td>
-                        <td>140 (20%)</td>
-                    </tr>
-                </table>
-                
-                <div class="example-box" style="margin-top: 20px;">
-                    <strong>New Email:</strong> Contains "FREE" and from Unknown Sender
-                    <br><br>
-                    <span class="step-indicator">Question</span> Is this email spam or legitimate?
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 8: Naïve Bayes Calculation Steps -->
-        <div class="slide">
-            <h2>Calculating the Probabilities</h2>
-            <div class="content">
-                <div style="font-size: 18px;">
-                    <div class="highlight-box">
-                        <span class="step-indicator">Step 1</span> <strong>Calculate P(Spam):</strong> 300/1000 = 0.30 (30% of emails are spam)
-                    </div>
-                    
-                    <div class="highlight-box">
-                        <span class="step-indicator">Step 2</span> <strong>Calculate P(Features|Spam):</strong>
-                        <br>• P("FREE"|Spam) = 240/300 = 0.80
-                        <br>• P(Unknown|Spam) = 270/300 = 0.90
-                        <br>• Combined: 0.80 × 0.90 = 0.72
-                    </div>
-                    
-                    <div class="highlight-box">
-                        <span class="step-indicator">Step 3</span> <strong>Calculate P(Features|Legitimate):</strong>
-                        <br>• P("FREE"|Legitimate) = 70/700 = 0.10
-                        <br>• P(Unknown|Legitimate) = 140/700 = 0.20
-                        <br>• Combined: 0.10 × 0.20 = 0.02
-                    </div>
-                    
-                    <div class="highlight-box">
-                        <span class="step-indicator">Step 4</span> <strong>Final Calculation:</strong>
-                        <br>• Spam Score: 0.72 × 0.30 = 0.216
-                        <br>• Legitimate Score: 0.02 × 0.70 = 0.014
-                        <br><br>
-                        <strong style="color: #CC0000; font-size: 20px;">Prediction: SPAM (0.216 > 0.014)</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 9: Quiz 1 - Naïve Bayes -->
-        <div class="slide">
-            <h2>Knowledge Check: Naïve Bayes</h2>
-            <div class="quiz-container">
-                <h3 style="color: #333; margin-bottom: 20px;">Question: Why is the Naïve Bayes classifier called "naïve"?</h3>
-                
-                <div class="quiz-option" onclick="checkQuiz(1, 'A', false)">
-                    <strong>A)</strong> It only works with small datasets
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(1, 'B', false)">
-                    <strong>B)</strong> It requires extensive feature engineering
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(1, 'C', true)">
-                    <strong>C)</strong> It assumes all features are independent of each other
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(1, 'D', false)">
-                    <strong>D)</strong> It cannot handle categorical variables
-                </div>
-                
-                <div id="quiz1-feedback"></div>
-            </div>
-        </div>
-
-        <!-- Slide 10: Naïve Bayes Strengths and Limitations -->
-        <div class="slide">
-            <h2>Naïve Bayes: When to Use It</h2>
-            <div class="content">
-                <div class="two-column">
-                    <div>
-                        <h3>Strengths</h3>
-                        <div class="bullet-point">Fast training and prediction</div>
-                        <div class="bullet-point">Works well with small datasets</div>
-                        <div class="bullet-point">Handles high-dimensional data effectively</div>
-                        <div class="bullet-point">Provides probability estimates</div>
-                        <div class="bullet-point">Simple to implement and interpret</div>
-                    </div>
-                    <div>
-                        <h3>Limitations</h3>
-                        <div class="bullet-point">Assumes feature independence (rarely true)</div>
-                        <div class="bullet-point">Sensitive to irrelevant features</div>
-                        <div class="bullet-point">Requires sufficient data per class</div>
-                        <div class="bullet-point">Cannot learn feature interactions</div>
-                        <div class="bullet-point">Zero probability problem with unseen features</div>
-                    </div>
-                </div>
-                
-                <div class="example-box" style="margin-top: 30px;">
-                    <strong>Best Use Cases:</strong> Text classification (spam detection, sentiment analysis), medical diagnosis with independent symptoms, real-time prediction systems where speed is critical
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 11: Introduction to SVM -->
-        <div class="slide">
-            <h2>Support Vector Machines (SVM)</h2>
-            <div class="content">
-                <h3>What is SVM?</h3>
-                <p style="margin-bottom: 20px;">A classification method that finds the optimal boundary (hyperplane) between classes with the maximum margin of separation.</p>
-                
-                <div class="example-box">
-                    <strong>Business Analogy:</strong> Imagine you're a retail analyst separating customers into "likely to buy" vs "unlikely to buy":
-                    <div class="bullet-point">You want the clearest possible boundary between the two groups</div>
-                    <div class="bullet-point">The boundary should have the widest "safety margin" to minimize errors</div>
-                    <div class="bullet-point">The customers closest to the boundary (support vectors) define where this line should be drawn</div>
-                </div>
-                
-                <div class="highlight-box" style="margin-top: 30px;">
-                    <strong>Key Concept:</strong> SVM doesn't just find any boundary—it finds the boundary with the maximum margin, making it more robust to new data.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 12: SVM Visual Demonstration -->
-        <div class="slide">
-            <h2>Finding the Optimal Boundary</h2>
-            <div class="content">
-                <p style="margin-bottom: 20px;">Customer Segmentation: Spending vs Visit Frequency</p>
-                
-                <div class="viz-container">
-                    <div id="svm-viz"></div>
-                </div>
-                
-                <div class="control-panel">
-                    <button class="control-button" onclick="toggleSVMMargin()">Toggle Margin</button>
-                    <button class="control-button" onclick="highlightSupportVectors()">Show Support Vectors</button>
-                    <button class="control-button" onclick="resetSVM()">Reset</button>
-                </div>
-                
-                <div class="highlight-box" style="margin-top: 20px;">
-                    <strong>Support Vectors:</strong> The data points closest to the decision boundary that actually determine where the boundary is placed. If we removed other points, the boundary wouldn't change, but removing support vectors would.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 13: The Kernel Trick -->
-        <div class="slide">
-            <h2>The Kernel Trick: Handling Complex Patterns</h2>
-            <div class="content">
-                <h3>When Simple Boundaries Don't Work</h3>
-                <p style="margin-bottom: 20px;">Sometimes data cannot be separated by a straight line in its original form.</p>
-                
-                <div class="two-column">
-                    <div>
-                        <h3>The Problem</h3>
-                        <div class="bullet-point">Real-world data often has complex, non-linear patterns</div>
-                        <div class="bullet-point">A straight line cannot separate circular or curved patterns</div>
-                        <div class="bullet-point">Example: Customer clusters based on multiple behaviors</div>
-                    </div>
-                    <div>
-                        <h3>The Solution</h3>
-                        <div class="bullet-point">Transform data into higher dimensions</div>
-                        <div class="bullet-point">Find linear separation in new space</div>
-                        <div class="bullet-point">Project decision boundary back to original space</div>
-                    </div>
-                </div>
-                
-                <div class="example-box" style="margin-top: 30px;">
-                    <strong>Business Analogy:</strong> Imagine trying to separate customers using only "age" and "income". Adding a third dimension like "purchase history" might make the separation much clearer—the kernel trick does this mathematically without explicitly creating new features.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 14: Kernel Visualization -->
-        <div class="slide">
-            <h2>Kernel Transformation in Action</h2>
-            <div class="content">
-                <p style="margin-bottom: 20px;">Watch how data that cannot be separated linearly becomes separable in higher dimensions:</p>
-                
-                <div class="viz-container">
-                    <div id="kernel-viz"></div>
-                </div>
-                
-                <div class="control-panel">
-                    <button class="control-button" onclick="showOriginalSpace()">Original 2D Space</button>
-                    <button class="control-button" onclick="showTransformedSpace()">Transformed 3D Space</button>
-                    <button class="control-button" onclick="animateKernel()">Animate Transformation</button>
-                </div>
-                
-                <div class="highlight-box" style="margin-top: 20px;">
-                    <strong>Common Kernels:</strong> Linear (straight line), Polynomial (curves), RBF/Gaussian (complex patterns), Sigmoid (S-shaped boundaries)
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 15: Quiz 2 - SVM -->
-        <div class="slide">
-            <h2>Knowledge Check: Support Vector Machines</h2>
-            <div class="quiz-container">
-                <h3 style="color: #333; margin-bottom: 20px;">Question: What is the primary objective of Support Vector Machines?</h3>
-                
-                <div class="quiz-option" onclick="checkQuiz(2, 'A', false)">
-                    <strong>A)</strong> Minimize the number of support vectors
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(2, 'B', true)">
-                    <strong>B)</strong> Find the decision boundary with the maximum margin between classes
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(2, 'C', false)">
-                    <strong>C)</strong> Classify data points as quickly as possible
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(2, 'D', false)">
-                    <strong>D)</strong> Reduce the dimensionality of the feature space
-                </div>
-                
-                <div id="quiz2-feedback"></div>
-            </div>
-        </div>
-
-        <!-- Slide 16: SVM Applications -->
-        <div class="slide">
-            <h2>SVM Business Applications</h2>
-            <div class="content">
-                <h3>Real-World Use Cases</h3>
-                
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Medical Diagnosis:</strong> Classifying patients as high-risk or low-risk based on multiple health indicators where clear separation is crucial for treatment decisions.
-                </div>
-                
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Customer Segmentation:</strong> Identifying premium customers from regular customers using purchase patterns, demographics, and engagement metrics when boundaries are complex.
-                </div>
-                
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Fraud Detection:</strong> Separating legitimate from fraudulent transactions using transaction features where the cost of misclassification is high.
-                </div>
-                
-                <div class="highlight-box">
-                    <strong>When to Choose SVM:</strong> Use when you need high accuracy with complex non-linear boundaries, have moderate-sized datasets, and can afford longer training times for better performance.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 17: SVM Strengths and Limitations -->
-        <div class="slide">
-            <h2>SVM: When to Use It</h2>
-            <div class="content">
-                <div class="two-column">
-                    <div>
-                        <h3>Strengths</h3>
-                        <div class="bullet-point">Effective in high-dimensional spaces</div>
-                        <div class="bullet-point">Works well with clear margin of separation</div>
-                        <div class="bullet-point">Handles non-linear boundaries via kernels</div>
-                        <div class="bullet-point">Memory efficient (only uses support vectors)</div>
-                        <div class="bullet-point">Robust against overfitting in high dimensions</div>
-                    </div>
-                    <div>
-                        <h3>Limitations</h3>
-                        <div class="bullet-point">Slow training time on large datasets</div>
-                        <div class="bullet-point">Requires careful parameter tuning</div>
-                        <div class="bullet-point">No probability estimates by default</div>
-                        <div class="bullet-point">Sensitive to feature scaling</div>
-                        <div class="bullet-point">Difficult to interpret with complex kernels</div>
-                    </div>
-                </div>
-                
-                <div class="example-box" style="margin-top: 30px;">
-                    <strong>Best Use Cases:</strong> Binary classification with clear but complex boundaries, high-dimensional data (text, genomics), problems where accuracy is more important than speed
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 18: Introduction to Gradient Boosting -->
-        <div class="slide">
-            <h2>Gradient Boosting</h2>
-            <div class="content">
-                <h3>What is Gradient Boosting?</h3>
-                <p style="margin-bottom: 20px;">An ensemble method that builds multiple weak learners sequentially, where each new model focuses on correcting the errors of previous models.</p>
-                
-                <div class="example-box">
-                    <strong>Business Analogy:</strong> Think of a team of analysts predicting employee attrition:
-                    <div class="bullet-point">Analyst 1 makes initial predictions (70% accuracy)</div>
-                    <div class="bullet-point">Analyst 2 focuses only on the cases Analyst 1 got wrong</div>
-                    <div class="bullet-point">Analyst 3 corrects remaining errors from both previous analysts</div>
-                    <div class="bullet-point">Final prediction combines all analysts' insights, achieving 95% accuracy</div>
-                </div>
-                
-                <div class="highlight-box" style="margin-top: 30px;">
-                    <strong>Key Concept:</strong> Each new model is trained to predict the errors (residuals) of the combined previous models, gradually improving overall accuracy.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 19: How Gradient Boosting Works -->
-        <div class="slide">
-            <h2>Sequential Error Correction</h2>
-            <div class="content">
-                <h3>Building Models Step by Step</h3>
-                
-                <div class="viz-container">
-                    <div id="boosting-viz"></div>
-                </div>
-                
-                <div class="control-panel">
-                    <button class="control-button" onclick="boostingStep(1)">Model 1</button>
-                    <button class="control-button" onclick="boostingStep(2)">Model 2</button>
-                    <button class="control-button" onclick="boostingStep(3)">Model 3</button>
-                    <button class="control-button" onclick="boostingStep(4)">Final Ensemble</button>
-                    <button class="control-button" onclick="resetBoosting()">Reset</button>
-                </div>
-                
-                <div id="boosting-explanation" style="margin-top: 20px; padding: 15px; background: #F5F5F5; border-radius: 4px;"></div>
-            </div>
-        </div>
-
-        <!-- Slide 20: Gradient Boosting vs Random Forest -->
-        <div class="slide">
-            <h2>Boosting vs Bagging: Key Differences</h2>
-            <div class="content">
-                <table>
-                    <tr>
-                        <th>Aspect</th>
-                        <th>Random Forest (Bagging)</th>
-                        <th>Gradient Boosting</th>
-                    </tr>
-                    <tr>
-                        <td><strong>Training</strong></td>
-                        <td>Parallel (independent trees)</td>
-                        <td>Sequential (each tree learns from previous errors)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Focus</strong></td>
-                        <td>Reduce variance through averaging</td>
-                        <td>Reduce bias by correcting errors</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Speed</strong></td>
-                        <td>Fast (can parallelize)</td>
-                        <td>Slower (sequential process)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Accuracy</strong></td>
-                        <td>Good</td>
-                        <td>Typically higher</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Overfitting Risk</strong></td>
-                        <td>Lower</td>
-                        <td>Higher (needs careful tuning)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Interpretability</strong></td>
-                        <td>Moderate</td>
-                        <td>Lower</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <!-- Slide 21: Quiz 3 - Gradient Boosting -->
-        <div class="slide">
-            <h2>Knowledge Check: Gradient Boosting</h2>
-            <div class="quiz-container">
-                <h3 style="color: #333; margin-bottom: 20px;">Question: How does Gradient Boosting differ from Random Forest in building models?</h3>
-                
-                <div class="quiz-option" onclick="checkQuiz(3, 'A', false)">
-                    <strong>A)</strong> It uses more trees than Random Forest
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(3, 'B', true)">
-                    <strong>B)</strong> It builds trees sequentially, with each tree correcting previous errors
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(3, 'C', false)">
-                    <strong>C)</strong> It only works with numerical features
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(3, 'D', false)">
-                    <strong>D)</strong> It trains all trees simultaneously in parallel
-                </div>
-                
-                <div id="quiz3-feedback"></div>
-            </div>
-        </div>
-
-        <!-- Slide 22: Gradient Boosting Parameters -->
-        <div class="slide">
-            <h2>Key Parameters in Gradient Boosting</h2>
-            <div class="content">
-                <div class="bullet-point"><strong>Number of Trees (n_estimators):</strong> More trees generally improve accuracy but increase training time and risk overfitting</div>
-                
-                <div class="bullet-point"><strong>Learning Rate:</strong> Controls how much each tree contributes to the final prediction. Lower rates need more trees but often perform better</div>
-                
-                <div class="bullet-point"><strong>Max Depth:</strong> Maximum depth of each tree. Deeper trees can capture complex patterns but risk overfitting</div>
-                
-                <div class="bullet-point"><strong>Subsample:</strong> Fraction of samples used for training each tree. Values < 1.0 introduce randomness and prevent overfitting</div>
-                
-                <div class="highlight-box" style="margin-top: 30px;">
-                    <strong>Practical Tip:</strong> Start with learning_rate=0.1, n_estimators=100, max_depth=3. Monitor validation performance and adjust gradually. Lower learning rates with more trees often yield best results.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 23: Gradient Boosting Applications -->
-        <div class="slide">
-            <h2>Gradient Boosting Business Applications</h2>
-            <div class="content">
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Employee Attrition Prediction:</strong> Combining multiple factors (salary, performance, tenure, department) to predict which employees are likely to leave, achieving high accuracy for proactive retention strategies.
-                </div>
-                
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Credit Risk Assessment:</strong> Evaluating loan applicants using financial history, employment data, and behavioral patterns where prediction accuracy directly impacts financial risk.
-                </div>
-                
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Customer Lifetime Value:</strong> Predicting long-term customer value based on purchase patterns, engagement metrics, and demographics for targeted marketing strategies.
-                </div>
-                
-                <div class="highlight-box">
-                    <strong>Industry Standard:</strong> Gradient Boosting (especially XGBoost and LightGBM implementations) frequently wins machine learning competitions and is widely used in industry for high-stakes predictions.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 24: Gradient Boosting Strengths and Limitations -->
-        <div class="slide">
-            <h2>Gradient Boosting: When to Use It</h2>
-            <div class="content">
-                <div class="two-column">
-                    <div>
-                        <h3>Strengths</h3>
-                        <div class="bullet-point">Often provides highest accuracy</div>
-                        <div class="bullet-point">Handles mixed data types well</div>
-                        <div class="bullet-point">Automatically captures feature interactions</div>
-                        <div class="bullet-point">Handles missing values effectively</div>
-                        <div class="bullet-point">Provides feature importance rankings</div>
-                        <div class="bullet-point">Robust to outliers</div>
-                    </div>
-                    <div>
-                        <h3>Limitations</h3>
-                        <div class="bullet-point">Longer training time</div>
-                        <div class="bullet-point">Requires careful hyperparameter tuning</div>
-                        <div class="bullet-point">Risk of overfitting with too many trees</div>
-                        <div class="bullet-point">Less interpretable than single trees</div>
-                        <div class="bullet-point">Cannot be parallelized during training</div>
-                        <div class="bullet-point">Sensitive to noisy data</div>
-                    </div>
-                </div>
-                
-                <div class="example-box" style="margin-top: 30px;">
-                    <strong>Best Use Cases:</strong> High-stakes predictions where accuracy is paramount, structured/tabular data, kaggle competitions, situations where you have time for proper hyperparameter tuning
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 25: Comparing All Three Methods -->
-        <div class="slide">
-            <h2>Method Comparison Overview</h2>
-            <div class="content">
-                <table>
-                    <tr>
-                        <th>Criteria</th>
-                        <th>Naïve Bayes</th>
-                        <th>SVM</th>
-                        <th>Gradient Boosting</th>
-                    </tr>
-                    <tr>
-                        <td><strong>Training Speed</strong></td>
-                        <td>Very Fast</td>
-                        <td>Slow</td>
-                        <td>Moderate</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Prediction Speed</strong></td>
-                        <td>Very Fast</td>
-                        <td>Fast</td>
-                        <td>Moderate</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Typical Accuracy</strong></td>
-                        <td>Good</td>
-                        <td>Very Good</td>
-                        <td>Excellent</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Interpretability</strong></td>
-                        <td>High</td>
-                        <td>Low</td>
-                        <td>Moderate</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Handles Non-linearity</strong></td>
-                        <td>No</td>
-                        <td>Yes (with kernels)</td>
-                        <td>Yes</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Dataset Size</strong></td>
-                        <td>Small to Medium</td>
-                        <td>Small to Medium</td>
-                        <td>Medium to Large</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <!-- Slide 26: Decision Framework -->
-        <div class="slide">
-            <h2>Choosing the Right Method</h2>
-            <div class="content">
-                <div class="viz-container">
-                    <div id="decision-tree-viz"></div>
-                </div>
-                
-                <div class="highlight-box" style="margin-top: 20px;">
-                    <strong>General Guidelines:</strong>
-                    <div class="bullet-point">Need fast results with limited data? → Naïve Bayes</div>
-                    <div class="bullet-point">Complex boundaries with moderate data? → SVM</div>
-                    <div class="bullet-point">Maximum accuracy on structured data? → Gradient Boosting</div>
-                    <div class="bullet-point">Need interpretability? → Naïve Bayes or Random Forest</div>
-                    <div class="bullet-point">Real-time predictions at scale? → Naïve Bayes or pre-trained SVM</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 27: Quiz 4 - Method Selection -->
-        <div class="slide">
-            <h2>Knowledge Check: Method Selection</h2>
-            <div class="quiz-container">
-                <h3 style="color: #333; margin-bottom: 20px;">Question: You need to build a real-time spam filter that processes millions of emails per day. Which method would be most appropriate?</h3>
-                
-                <div class="quiz-option" onclick="checkQuiz(4, 'A', true)">
-                    <strong>A)</strong> Naïve Bayes - fast training and prediction with good accuracy for text
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(4, 'B', false)">
-                    <strong>B)</strong> SVM - highest accuracy regardless of speed
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(4, 'C', false)">
-                    <strong>C)</strong> Gradient Boosting - best overall performance
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(4, 'D', false)">
-                    <strong>D)</strong> All methods would work equally well
-                </div>
-                
-                <div id="quiz4-feedback"></div>
-            </div>
-        </div>
-
-        <!-- Slide 28: Performance Metrics -->
-        <div class="slide">
-            <h2>Evaluating Classification Performance</h2>
-            <div class="content">
-                <h3>Key Metrics for Model Evaluation</h3>
-                
-                <div class="two-column">
-                    <div>
-                        <div class="bullet-point"><strong>Accuracy:</strong> Overall correct predictions / total predictions</div>
-                        <div class="bullet-point"><strong>Precision:</strong> True positives / (True positives + False positives)</div>
-                        <div class="bullet-point"><strong>Recall:</strong> True positives / (True positives + False negatives)</div>
-                        <div class="bullet-point"><strong>F1-Score:</strong> Harmonic mean of precision and recall</div>
-                    </div>
-                    <div>
-                        <div class="bullet-point"><strong>When to use Accuracy:</strong> Balanced datasets</div>
-                        <div class="bullet-point"><strong>When to use Precision:</strong> False positives are costly</div>
-                        <div class="bullet-point"><strong>When to use Recall:</strong> False negatives are costly</div>
-                        <div class="bullet-point"><strong>When to use F1:</strong> Balance both concerns</div>
-                    </div>
-                </div>
-                
-                <div class="example-box" style="margin-top: 30px;">
-                    <strong>Business Example:</strong> In fraud detection, missing actual fraud (false negative) is worse than flagging legitimate transactions (false positive). Therefore, prioritize Recall over Precision.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 29: Confusion Matrix -->
-        <div class="slide">
-            <h2>Understanding the Confusion Matrix</h2>
-            <div class="content">
-                <div class="viz-container">
-                    <div id="confusion-matrix-viz"></div>
-                </div>
-                
-                <table style="margin-top: 30px;">
-                    <tr>
-                        <th>Metric</th>
-                        <th>Formula</th>
-                        <th>Example Value</th>
-                    </tr>
-                    <tr>
-                        <td>Accuracy</td>
-                        <td>(TP + TN) / Total</td>
-                        <td>(85 + 10) / 120 = 79.2%</td>
-                    </tr>
-                    <tr>
-                        <td>Precision</td>
-                        <td>TP / (TP + FP)</td>
-                        <td>85 / (85 + 15) = 85.0%</td>
-                    </tr>
-                    <tr>
-                        <td>Recall</td>
-                        <td>TP / (TP + FN)</td>
-                        <td>85 / (85 + 10) = 89.5%</td>
-                    </tr>
-                    <tr>
-                        <td>F1-Score</td>
-                        <td>2 × (Precision × Recall) / (Precision + Recall)</td>
-                        <td>87.2%</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <!-- Slide 30: Practical Implementation Tips -->
-        <div class="slide">
-            <h2>Best Practices for Implementation</h2>
-            <div class="content">
-                <h3>Before Building Models</h3>
-                <div class="bullet-point">Understand your business problem and cost of errors</div>
-                <div class="bullet-point">Examine class distribution (balanced vs imbalanced)</div>
-                <div class="bullet-point">Perform exploratory data analysis</div>
-                <div class="bullet-point">Handle missing values appropriately</div>
-                <div class="bullet-point">Scale/normalize features (especially for SVM)</div>
-                
-                <h3 style="margin-top: 30px;">During Model Development</h3>
-                <div class="bullet-point">Always use train/test split or cross-validation</div>
-                <div class="bullet-point">Start simple, then increase complexity</div>
-                <div class="bullet-point">Monitor for overfitting vs underfitting</div>
-                <div class="bullet-point">Compare multiple algorithms</div>
-                <div class="bullet-point">Tune hyperparameters systematically</div>
-                
-                <div class="highlight-box" style="margin-top: 30px;">
-                    <strong>Remember:</strong> The best algorithm is the one that solves your specific business problem effectively, not necessarily the most complex one.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 31: Quiz 5 - Comprehensive -->
-        <div class="slide">
-            <h2>Knowledge Check: Comprehensive Review</h2>
-            <div class="quiz-container">
-                <h3 style="color: #333; margin-bottom: 20px;">Question: A healthcare company needs to predict patient readmission risk. They have a medium-sized dataset with complex feature interactions, and false negatives (missing high-risk patients) are very costly. Which method would be most appropriate?</h3>
-                
-                <div class="quiz-option" onclick="checkQuiz(5, 'A', false)">
-                    <strong>A)</strong> Naïve Bayes - simple and fast
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(5, 'B', false)">
-                    <strong>B)</strong> SVM with linear kernel - good for moderate datasets
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(5, 'C', true)">
-                    <strong>C)</strong> Gradient Boosting - handles complex interactions, high accuracy, can optimize for recall
-                </div>
-                
-                <div class="quiz-option" onclick="checkQuiz(5, 'D', false)">
-                    <strong>D)</strong> Random Forest - faster than Gradient Boosting
-                </div>
-                
-                <div id="quiz5-feedback"></div>
-            </div>
-        </div>
-
-        <!-- Slide 32: Case Study: Employee Attrition -->
-        <div class="slide">
-            <h2>Case Study: Employee Attrition Prediction</h2>
-            <div class="content">
-                <h3>Business Context</h3>
-                <p>A company wants to predict which employees are likely to leave to implement proactive retention strategies.</p>
-                
-                <table style="margin-top: 20px;">
-                    <tr>
-                        <th>Method</th>
-                        <th>Accuracy</th>
-                        <th>Precision</th>
-                        <th>Recall</th>
-                        <th>Training Time</th>
-                    </tr>
-                    <tr>
-                        <td>Naïve Bayes</td>
-                        <td>76%</td>
-                        <td>71%</td>
-                        <td>68%</td>
-                        <td>2 seconds</td>
-                    </tr>
-                    <tr>
-                        <td>SVM (RBF kernel)</td>
-                        <td>84%</td>
-                        <td>82%</td>
-                        <td>79%</td>
-                        <td>45 seconds</td>
-                    </tr>
-                    <tr>
-                        <td>Gradient Boosting</td>
-                        <td>89%</td>
-                        <td>87%</td>
-                        <td>86%</td>
-                        <td>28 seconds</td>
-                    </tr>
-                </table>
-                
-                <div class="highlight-box" style="margin-top: 30px;">
-                    <strong>Decision:</strong> Gradient Boosting was selected because the 5% improvement in recall means catching 5% more at-risk employees, which justifies the extra 26 seconds of training time.
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 33: Workshop Activities Overview -->
-        <div class="slide">
-            <h2>Today's Workshop Activities</h2>
-            <div class="content">
-                <h3>Hands-On Practice</h3>
-                
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Activity 1: Naïve Bayes Email Classification</strong>
-                    <div class="bullet-point">Build a spam filter using Naïve Bayes</div>
-                    <div class="bullet-point">Calculate probabilities manually</div>
-                    <div class="bullet-point">Implement in Orange Data Mining</div>
-                </div>
-                
-                <div class="example-box" style="margin-bottom: 20px;">
-                    <strong>Activity 2: SVM Customer Segmentation</strong>
-                    <div class="bullet-point">Classify customer purchase likelihood</div>
-                    <div class="bullet-point">Experiment with different kernels</div>
-                    <div class="bullet-point">Visualize decision boundaries</div>
-                </div>
-                
-                <div class="example-box">
-                    <strong>Activity 3: Model Comparison Challenge</strong>
-                    <div class="bullet-point">Apply all three methods to employee attrition dataset</div>
-                    <div class="bullet-point">Compare performance metrics</div>
-                    <div class="bullet-point">Recommend best approach with justification</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Slide 34: Summary and Key Takeaways -->
-        <div class="slide">
-            <h2>Key Takeaways</h2>
-            <div class="content">
-                <div class="highlight-box" style="margin-bottom: 20px;">
-                    <h3>Naïve Bayes</h3>
-                    <strong>Use when:</strong> You need fast, simple classification with independent features (text classification, real-time systems)
-                    <br><strong>Remember:</strong> Based on probability, assumes feature independence
-                </div>
-                
-                <div class="highlight-box" style="margin-bottom: 20px;">
-                    <h3>Support Vector Machines</h3>
-                    <strong>Use when:</strong> You have complex non-linear boundaries and can afford training time
-                    <br><strong>Remember:</strong> Finds maximum margin boundary, uses kernel trick for complex patterns
-                </div>
-                
-                <div class="highlight-box" style="margin-bottom: 20px;">
-                    <h3>Gradient Boosting</h3>
-                    <strong>Use when:</strong> You need highest accuracy on structured data and have time for tuning
-                    <br><strong>Remember:</strong> Sequential error correction, requires careful parameter tuning
-                </div>
-                
-                <div class="example-box" style="margin-top: 30px;">
-                    <strong>Next Steps:</strong> Practice with real datasets, experiment with different parameters, and always validate your results with appropriate metrics!
-                </div>
-            </div>
-        </div>
+<!-- 1.2 What is NB -->
+<div class="slide">
+  <div class="slide-number">1.2</div>
+  <h2>1.2 &nbsp;What is a Naïve Bayes classifier?</h2>
+  <div class="box scenario rv d1"><div class="lbl">Business scenario</div>Your email provider sees a new message. It must decide: <b>spam</b> or <b>not spam?</b> It has no certainty — but it has seen thousands of past emails. Words like “free”, “winner”, “invoice” each shift the odds. Naïve Bayes combines those clues into one decision.</div>
+  <div class="cols">
+    <div class="col rv d2">
+      <h3>The core idea</h3>
+      <p>Classify each item by its <b>conditional probabilities</b> — how likely each outcome is, <i>given</i> what we observe.</p>
+      <p>We write “the probability of A given B” as \(P(A \mid B)\).</p>
     </div>
-
-    <div class="slide-number">Slide <span id="current-slide">1</span> of 34</div>
-
-    <div class="navigation">
-        <button id="prev-btn" onclick="previousSlide()">Previous</button>
-        <button id="next-btn" onclick="nextSlide()">Next</button>
+    <div class="col rv d3">
+      <h3>Where it is used</h3>
+      <ul>
+        <li>Spam / email filtering</li>
+        <li>Sentiment analysis (positive vs negative reviews)</li>
+        <li>Classifying documents and articles by topic</li>
+      </ul>
     </div>
+  </div>
+  <div class="box key rv d4"><div class="lbl">Why “naïve”?</div>It makes a simplifying assumption: that the clues (features) are <b>independent</b> of one another. This is rarely perfectly true — but the method still works remarkably well, and it is fast.</div>
+</div>
 
-    <script>
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const totalSlides = slides.length;
-        
-        // Quiz state
-        const quizAnswered = {1: false, 2: false, 3: false, 4: false, 5: false};
-        
-        // Track which visualizations have been initialized
-        const vizInitialized = {
-            naiveBayes: false,
-            svm: false,
-            kernel: false,
-            boosting: false,
-            decision: false,
-            confusion: false
-        };
+<!-- 1.3 Golf intro -->
+<div class="slide">
+  <div class="slide-number">1.3</div>
+  <h2>1.3 &nbsp;Our running example: “Shall we play golf?”</h2>
+  <p class="lead rv d1">We will learn the method through a small weather dataset. The goal: predict whether a person will play golf (<b>Yes</b> or <b>No</b>) from the day's weather.</p>
+  <div class="cols">
+    <div class="col rv d2">
+      <table>
+        <tr><th></th><th>Outlook</th><th>Temp.</th><th>Humidity</th><th>Windy</th><th>Play?</th></tr>
+        <tr><td>0</td><td>Rainy</td><td>Hot</td><td>High</td><td>False</td><td>No</td></tr>
+        <tr><td>1</td><td>Rainy</td><td>Hot</td><td>High</td><td>True</td><td>No</td></tr>
+        <tr><td>2</td><td>Overcast</td><td>Hot</td><td>High</td><td>False</td><td>Yes</td></tr>
+        <tr><td>3</td><td>Sunny</td><td>Mild</td><td>High</td><td>False</td><td>Yes</td></tr>
+      </table>
+      <p class="small muted">(First four of 14 rows — full table appears in 1.10.)</p>
+    </div>
+    <div class="col rv d3">
+      <div class="box definition"><div class="lbl">The four clues (features)</div>
+        <ul style="margin-bottom:0">
+          <li><b>Outlook:</b> Sunny, Rainy, Overcast</li>
+          <li><b>Temperature:</b> Hot, Mild, Cool</li>
+          <li><b>Humidity:</b> High, Normal</li>
+          <li><b>Windy:</b> True, False</li>
+        </ul>
+      </div>
+      <div class="box key"><div class="lbl">The label to predict</div><b>Play Golf</b> — Yes or No.</div>
+    </div>
+  </div>
+  <div class="src">Dataset: geeksforgeeks.org/naive-bayes-classifiers</div>
+</div>
 
-        function showSlide(n) {
-            slides[currentSlide].classList.remove('active');
-            currentSlide = (n + totalSlides) % totalSlides;
-            slides[currentSlide].classList.add('active');
-            document.getElementById('current-slide').textContent = currentSlide + 1;
-            
-            document.getElementById('prev-btn').disabled = currentSlide === 0;
-            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
-            
-            // Initialize visualizations when slides become active (only once)
-            if (currentSlide === 5 && !vizInitialized.naiveBayes) {
-                vizInitialized.naiveBayes = true;
-                initNaiveBayesViz();
-            }
-            if (currentSlide === 11 && !vizInitialized.svm) {
-                vizInitialized.svm = true;
-                initSVMViz();
-            }
-            if (currentSlide === 13 && !vizInitialized.kernel) {
-                vizInitialized.kernel = true;
-                initKernelViz();
-            }
-            if (currentSlide === 18 && !vizInitialized.boosting) {
-                vizInitialized.boosting = true;
-                initBoostingViz();
-            }
-            if (currentSlide === 25 && !vizInitialized.decision) {
-                vizInitialized.decision = true;
-                initDecisionTreeViz();
-            }
-            if (currentSlide === 28 && !vizInitialized.confusion) {
-                vizInitialized.confusion = true;
-                initConfusionMatrixViz();
-            }
-        }
+<!-- 1.4 Conditional probability review -->
+<div class="slide">
+  <div class="slide-number">1.4</div>
+  <h2>1.4 &nbsp;Building block: conditional probability</h2>
+  <p class="lead rv d1">\(P(A \mid B)\) means: <b>out of the times B happens, how often does A also happen?</b></p>
+  <div class="cols">
+    <div class="col rv d2">
+      <div class="box scenario"><div class="lbl">Shop example</div>
+        <ul style="margin-bottom:6px">
+          <li>A = buys socks, \(P(A)=0.4\)</li>
+          <li>B = buys shoes, \(P(B)=0.5\)</li>
+          <li>Both, \(P(A \text{ and } B)=0.3\)</li>
+        </ul>
+        <p style="margin-bottom:0">“Of the people who bought shoes, what fraction also bought socks?”</p>
+      </div>
+      <p style="text-align:center;font-size:1.15rem;margin-top:6px">
+        $$P(A \mid B)=\frac{P(A \text{ and } B)}{P(B)}=\frac{0.3}{0.5}=0.6$$
+      </p>
+    </div>
+    <div class="col rv d3">
+      <div class="illustration">
+        <svg viewBox="0 0 320 230" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="14">
+          <circle cx="120" cy="115" r="80" fill="#1e88e5" fill-opacity="0.18" stroke="#1e5bb8" stroke-width="2"/>
+          <circle cx="205" cy="115" r="80" fill="#2e7d32" fill-opacity="0.18" stroke="#2e7d32" stroke-width="2"/>
+          <text x="80" y="60" fill="#16337e" font-weight="700">Socks (A)</text>
+          <text x="205" y="60" fill="#2e7d32" font-weight="700">Shoes (B)</text>
+          <text x="162" y="120" text-anchor="middle" fill="#101425" font-weight="800">A and B</text>
+          <text x="162" y="140" text-anchor="middle" fill="#101425" font-size="12">0.3</text>
+        </svg>
+      </div>
+      <div class="caption">The overlap is “both”. Dividing it by B's circle gives \(P(A\mid B)\).</div>
+    </div>
+  </div>
+</div>
 
-        function nextSlide() {
-            if (currentSlide < totalSlides - 1) {
-                showSlide(currentSlide + 1);
-            }
-        }
+<!-- 1.5 Activity 2: P(C|F) worked -->
+<div class="slide">
+  <div class="slide-number">1.5</div>
+  <h2>1.5 &nbsp;Activity: calculate \(P(C\mid F)\)</h2>
+  <div class="cols">
+    <div class="col" style="flex:0.9">
+      <div class="box scenario rv d1"><div class="lbl">Given</div>
+        <ul style="margin-bottom:0">
+          <li>\(P(C)=0.25\) — you have a cough</li>
+          <li>\(P(F)=0.15\) — you have the flu</li>
+          <li>\(P(C \text{ and } F)=0.12\) — both</li>
+        </ul>
+      </div>
+      <div class="box note rv d2"><b>Try first, then reveal.</b> Q1: state \(P(C\mid F)\) in words. Q2: compute it. Q3: can you find \(P(F\mid C)\)?</div>
+    </div>
+    <div class="col">
+      <div class="worked rv d2">
+        <div class="q">Step-by-step working</div>
+        <div class="wstep"><span class="n">1</span><b>In words:</b> \(P(C\mid F)\) is “the probability you have a cough, <i>given</i> you have the flu.”</div>
+        <div class="wstep"><span class="n">2</span><b>Formula:</b> $$P(C\mid F)=\frac{P(C \text{ and } F)}{P(F)}$$</div>
+        <div class="wstep"><span class="n">3</span><b>Substitute:</b> \(=\dfrac{0.12}{0.15}\)</div>
+        <div class="wstep"><span class="n">4</span><b>Divide:</b> \(=0.80\) → an 80% chance.</div>
+        <div class="wstep"><span class="n">5</span><b>Q3 — flip it:</b> \(P(F\mid C)=\dfrac{P(C \text{ and } F)}{P(C)}=\dfrac{0.12}{0.25}=0.48\). “Given a cough, a 48% chance of flu.”</div>
+        <div class="wstep"><span class="n">!</span><b>Key insight:</b> \(P(C\mid F)\neq P(F\mid C)\). The condition matters — this is exactly what Bayes' theorem lets us convert between.</div>
+        <button class="wbtn" onclick="nextStep(this)">Reveal Step 1 →</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-        function previousSlide() {
-            if (currentSlide > 0) {
-                showSlide(currentSlide - 1);
-            }
-        }
+<!-- 1.6 Bayes theorem -->
+<div class="slide">
+  <div class="slide-number">1.6</div>
+  <h2>1.6 &nbsp;Bayes' theorem — updating a belief with evidence</h2>
+  <p style="text-align:center;font-size:1.3rem;margin:6px 0 4px" class="rv d1">
+    $$P(A \mid B)=\frac{P(B \mid A)\,P(A)}{P(B)}$$
+  </p>
+  <div class="cols">
+    <div class="col rv d2">
+      <table class="small">
+        <tr><th style="text-align:left;padding-left:12px">Term</th><th style="text-align:left;padding-left:12px">Name &amp; meaning</th></tr>
+        <tr><td class="lbl">\(P(A\mid B)\)</td><td style="text-align:left"><b>Posterior</b> — belief in A <i>after</i> seeing evidence B.</td></tr>
+        <tr><td class="lbl">\(P(B\mid A)\)</td><td style="text-align:left"><b>Likelihood</b> — how well A explains the evidence.</td></tr>
+        <tr><td class="lbl">\(P(A)\)</td><td style="text-align:left"><b>Prior</b> — belief in A <i>before</i> any evidence.</td></tr>
+        <tr><td class="lbl">\(P(B)\)</td><td style="text-align:left"><b>Evidence</b> — how common B is overall.</td></tr>
+      </table>
+    </div>
+    <div class="col rv d3">
+      <div class="illustration">
+        <svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="14">
+          <rect x="20" y="70" width="120" height="52" rx="10" fill="#e7edf9" stroke="#1e5bb8" stroke-width="2"/>
+          <text x="80" y="93" text-anchor="middle" fill="#16337e" font-weight="700">Prior</text>
+          <text x="80" y="112" text-anchor="middle" fill="#555" font-size="12">initial belief</text>
+          <line x1="146" y1="96" x2="214" y2="96" stroke="#1e88e5" stroke-width="2.5" marker-end="url(#ar)"/>
+          <text x="180" y="60" text-anchor="middle" fill="#1e88e5" font-weight="700" font-size="12">evidence</text>
+          <text x="180" y="88" text-anchor="middle" fill="#1e88e5" font-size="12">B</text>
+          <rect x="220" y="70" width="120" height="52" rx="10" fill="#1e88e5" stroke="#16337e" stroke-width="2"/>
+          <text x="280" y="93" text-anchor="middle" fill="#fff" font-weight="800">Posterior</text>
+          <text x="280" y="112" text-anchor="middle" fill="#eaf2ff" font-size="12">updated belief</text>
+          <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1e88e5"/></marker></defs>
+        </svg>
+      </div>
+      <div class="caption">Evidence turns a prior belief into a sharper posterior belief.</div>
+    </div>
+  </div>
+</div>
 
-        // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowRight') nextSlide();
-            if (e.key === 'ArrowLeft') previousSlide();
-        });
+<!-- 1.7 Terminology -->
+<div class="slide">
+  <div class="slide-number">1.7</div>
+  <h2>1.7 &nbsp;Setting up the golf problem</h2>
+  <p class="lead rv d1">We restate the question in the language of classification.</p>
+  <div class="box definition rv d2"><div class="lbl">Notation</div>
+    <ul style="margin-bottom:0">
+      <li>\(y\) = the <b>class label</b> we want to predict — “Yes” or “No”.</li>
+      <li>\(X=(x_1,x_2,\dots,x_n)\) = the <b>feature vector</b> — the day's clues: (Outlook, Temperature, Humidity, Wind).</li>
+    </ul>
+  </div>
+  <div class="box scenario rv d3"><div class="lbl">One example day</div>
+    \(X=(\text{Rainy, Hot, High, False})\), \(\;y=\text{No}\). <br>
+    <b>The question we can now ask:</b> “What is the probability that someone will <i>not</i> play golf, given the weather is Rainy, Hot, High humidity, and no wind?”
+  </div>
+</div>
 
-        // Quiz functionality
-        function checkQuiz(quizNum, selected, isCorrect) {
-            if (quizAnswered[quizNum]) return;
-            
-            quizAnswered[quizNum] = true;
-            const options = document.querySelectorAll(`#quiz${quizNum}-feedback`).parentNode.querySelectorAll('.quiz-option');
-            const feedback = document.getElementById(`quiz${quizNum}-feedback`);
-            
-            options.forEach(opt => {
-                opt.style.pointerEvents = 'none';
-                if (opt.textContent.includes(selected)) {
-                    opt.classList.add(isCorrect ? 'correct' : 'incorrect');
-                }
-            });
-            
-            if (isCorrect) {
-                feedback.className = 'quiz-feedback correct';
-                feedback.textContent = '✓ Correct! Well done.';
-            } else {
-                feedback.className = 'quiz-feedback incorrect';
-                feedback.textContent = '✗ Not quite. Review the concepts and try the next quiz!';
-            }
-        }
+<!-- 1.8 The naive assumption -->
+<div class="slide">
+  <div class="slide-number">1.8</div>
+  <h2>1.8 &nbsp;The “naïve” independence assumption</h2>
+  <p class="lead rv d1">To keep the maths simple, we assume the clues do not influence each other <i>within a class</i>. This lets us <b>multiply</b> their probabilities.</p>
+  <div class="box definition rv d2">
+    <div class="lbl">The assumption</div>
+    $$P(x_1,x_2,\dots,x_n \mid y)=P(x_1\mid y)\times P(x_2\mid y)\times\cdots\times P(x_n\mid y)$$
+  </div>
+  <div class="cols rv d3">
+    <div class="col">
+      <h3>Other assumptions of the model</h3>
+      <ul>
+        <li>Features are independent (the “naïve” part)</li>
+        <li>Discrete features follow simple category counts</li>
+        <li>All features treated as equally important</li>
+        <li>No missing data</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="box key" style="margin-top:26px"><div class="lbl">In plain terms</div>Instead of studying every combination of weather together (which would need a huge dataset), we look at each clue on its own and combine them by multiplying. Simple, fast, surprisingly effective.</div>
+    </div>
+  </div>
+</div>
 
-        // Naïve Bayes Visualization
-        let nbState = {email: false, browse: false, cart: false};
-        
-        function initNaiveBayesViz() {
-            const container = document.getElementById('naive-bayes-viz');
-            
-            // Create SVG element directly
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '800');
-            svg.setAttribute('height', '300');
-            container.appendChild(svg);
-            
-            // Draw base probability bar
-            const baseRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            baseRect.setAttribute('x', '50');
-            baseRect.setAttribute('y', '100');
-            baseRect.setAttribute('width', '700');
-            baseRect.setAttribute('height', '40');
-            baseRect.setAttribute('fill', '#E0E0E0');
-            baseRect.setAttribute('stroke', '#999');
-            svg.appendChild(baseRect);
-            
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('x', '400');
-            label.setAttribute('y', '90');
-            label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('font-size', '16px');
-            label.textContent = 'Purchase Probability';
-            svg.appendChild(label);
-            
-            // Initial state
-            updateNaiveBayesDisplay();
-        }
+<!-- 1.9 From Bayes to classifier -->
+<div class="slide">
+  <div class="slide-number">1.9</div>
+  <h2>1.9 &nbsp;The decision rule</h2>
+  <p class="lead rv d1">Because the bottom of Bayes' formula, \(P(B)\), is the same for every class, we can ignore it when <i>comparing</i> classes. That leaves a simple recipe:</p>
+  <div class="box definition rv d2">
+    $$P(y \mid x_1,\dots,x_n)\;\propto\;P(y)\prod_{i=1}^{n}P(x_i \mid y)$$
+    <p class="small" style="margin:6px 0 0">(the “\(\propto\)” symbol means “is proportional to”.)</p>
+  </div>
+  <div class="box key rv d3"><div class="lbl">In words — the whole method in one line</div>
+    For each class (Yes and No): multiply the class's <b>base rate</b> by the <b>probability of each clue in that class</b>. <b>Whichever class scores higher wins.</b>
+    $$\hat{y}=\arg\max_{y}\;P(y)\prod_{i=1}^{n}P(x_i \mid y)$$
+  </div>
+</div>
 
-        function updateNaiveBayes(feature) {
-            if (feature === 'reset') {
-                nbState = {email: false, browse: false, cart: false};
-            } else {
-                nbState[feature] = !nbState[feature];
-            }
-            updateNaiveBayesDisplay();
-        }
+<!-- 1.10 Full dataset -->
+<div class="slide">
+  <div class="slide-number">1.10</div>
+  <h2>1.10 &nbsp;The full training data (14 days)</h2>
+  <div class="cols">
+    <div class="col rv d1" style="flex:1.4">
+      <table class="small">
+        <tr><th></th><th>Outlook</th><th>Temp.</th><th>Humidity</th><th>Windy</th><th>Play</th></tr>
+        <tr><td>0</td><td>Rainy</td><td>Hot</td><td>High</td><td>False</td><td>No</td></tr>
+        <tr><td>1</td><td>Rainy</td><td>Hot</td><td>High</td><td>True</td><td>No</td></tr>
+        <tr><td>2</td><td>Overcast</td><td>Hot</td><td>High</td><td>False</td><td>Yes</td></tr>
+        <tr><td>3</td><td>Sunny</td><td>Mild</td><td>High</td><td>False</td><td>Yes</td></tr>
+        <tr><td>4</td><td>Sunny</td><td>Cool</td><td>Normal</td><td>False</td><td>Yes</td></tr>
+        <tr><td>5</td><td>Sunny</td><td>Cool</td><td>Normal</td><td>True</td><td>No</td></tr>
+        <tr><td>6</td><td>Overcast</td><td>Cool</td><td>Normal</td><td>True</td><td>Yes</td></tr>
+        <tr><td>7</td><td>Rainy</td><td>Mild</td><td>High</td><td>False</td><td>No</td></tr>
+        <tr><td>8</td><td>Rainy</td><td>Cool</td><td>Normal</td><td>False</td><td>Yes</td></tr>
+        <tr><td>9</td><td>Sunny</td><td>Mild</td><td>Normal</td><td>False</td><td>Yes</td></tr>
+        <tr><td>10</td><td>Rainy</td><td>Mild</td><td>Normal</td><td>True</td><td>Yes</td></tr>
+        <tr><td>11</td><td>Overcast</td><td>Mild</td><td>High</td><td>True</td><td>Yes</td></tr>
+        <tr><td>12</td><td>Overcast</td><td>Hot</td><td>Normal</td><td>False</td><td>Yes</td></tr>
+        <tr><td>13</td><td>Sunny</td><td>Mild</td><td>High</td><td>True</td><td>No</td></tr>
+      </table>
+    </div>
+    <div class="col rv d2">
+      <div class="box scenario"><div class="lbl">Our test day</div>We want to classify a new day:
+      $$X=(\text{Sunny, Hot, Normal, False})$$</div>
+      <div class="box key"><div class="lbl">Count first</div>Of the 14 days: <b>9 are “Yes”</b>, <b>5 are “No”</b>. We will build all our probabilities by simply counting rows in this table.</div>
+    </div>
+  </div>
+  <div class="src">Dataset: geeksforgeeks.org/naive-bayes-classifiers</div>
+</div>
 
-        function updateNaiveBayesDisplay() {
-            let prob = 0.20; // Base probability
-            let features = [];
-            
-            if (nbState.email) { prob *= 1.3; features.push('Email Campaign (+30%)'); }
-            if (nbState.browse) { prob *= 1.5; features.push('Browsed Products (+50%)'); }
-            if (nbState.cart) { prob *= 2.0; features.push('Added to Cart (+100%)'); }
-            
-            prob = Math.min(prob, 0.95);
-            
-            const svg = document.querySelector('#naive-bayes-viz svg');
-            
-            // Remove old probability bar and text
-            const oldBar = svg.querySelector('.prob-bar');
-            const oldText = svg.querySelector('.prob-text');
-            if (oldBar) oldBar.remove();
-            if (oldText) oldText.remove();
-            
-            // Update probability bar
-            const probBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            probBar.setAttribute('class', 'prob-bar');
-            probBar.setAttribute('x', '50');
-            probBar.setAttribute('y', '100');
-            probBar.setAttribute('width', (700 * prob).toString());
-            probBar.setAttribute('height', '40');
-            probBar.setAttribute('fill', '#CC0000');
-            svg.appendChild(probBar);
-            
-            const probText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            probText.setAttribute('class', 'prob-text');
-            probText.setAttribute('x', (50 + 700 * prob + 10).toString());
-            probText.setAttribute('y', '125');
-            probText.setAttribute('font-size', '18px');
-            probText.setAttribute('font-weight', 'bold');
-            probText.textContent = `${(prob * 100).toFixed(1)}%`;
-            svg.appendChild(probText);
-            
-            // Update explanation
-            let explanation = `<strong>Base Purchase Rate:</strong> 20%<br>`;
-            if (features.length > 0) {
-                explanation += `<strong>Active Features:</strong> ${features.join(', ')}<br>`;
-                explanation += `<strong>Updated Probability:</strong> ${(prob * 100).toFixed(1)}%`;
-            } else {
-                explanation += `Click buttons above to add features and see how probability changes.`;
-            }
-            
-            document.getElementById('nb-explanation').innerHTML = explanation;
-        }
+<!-- 1.11 Class priors + freq -->
+<div class="slide">
+  <div class="slide-number">1.11</div>
+  <h2>1.11 &nbsp;Step 1 — class base rates (priors)</h2>
+  <p class="lead rv d1">Before looking at today's weather, how often is golf played at all?</p>
+  <div class="cols rv d2">
+    <div class="col">
+      <p style="font-size:1.15rem;text-align:center">
+        $$P(\text{Yes})=\frac{9}{14}\approx 0.64 \qquad P(\text{No})=\frac{5}{14}\approx 0.36$$
+      </p>
+    </div>
+  </div>
+  <h3 class="rv d3">Frequency tables — count Yes/No for each clue value</h3>
+  <div class="cols rv d3">
+    <div class="col">
+      <table class="small">
+        <tr><th>Outlook</th><th>Yes</th><th>No</th></tr>
+        <tr><td class="lbl">Sunny</td><td>3</td><td>2</td></tr>
+        <tr><td class="lbl">Overcast</td><td>4</td><td>0</td></tr>
+        <tr><td class="lbl">Rainy</td><td>2</td><td>3</td></tr>
+        <tr><td class="lbl">Total</td><td>9</td><td>5</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <table class="small">
+        <tr><th>Humidity</th><th>Yes</th><th>No</th></tr>
+        <tr><td class="lbl">Normal</td><td>6</td><td>1</td></tr>
+        <tr><td class="lbl">High</td><td>3</td><td>4</td></tr>
+        <tr><td class="lbl">Total</td><td>9</td><td>5</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <table class="small">
+        <tr><th>Windy</th><th>Yes</th><th>No</th></tr>
+        <tr><td class="lbl">False</td><td>6</td><td>2</td></tr>
+        <tr><td class="lbl">True</td><td>3</td><td>3</td></tr>
+        <tr><td class="lbl">Total</td><td>9</td><td>5</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <table class="small">
+        <tr><th>Temp.</th><th>Yes</th><th>No</th></tr>
+        <tr><td class="lbl">Hot</td><td>2</td><td>2</td></tr>
+        <tr><td class="lbl">Mild</td><td>4</td><td>2</td></tr>
+        <tr><td class="lbl">Cool</td><td>3</td><td>1</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="box note small rv d4">These counts come straight from the 14 rows in 1.10 — you can verify each one yourself.</div>
+</div>
 
-        // SVM Visualization
-        let svmShowMargin = false;
-        let svmShowSV = false;
-        let svmData = [];
-        
-        function initSVMViz() {
-            const container = document.getElementById('svm-viz');
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '800');
-            svg.setAttribute('height', '400');
-            container.appendChild(svg);
-            
-            // Generate sample data
-            const class1 = [];
-            const class2 = [];
-            
-            for (let i = 0; i < 30; i++) {
-                class1.push({
-                    x: Math.random() * 300 + 50,
-                    y: Math.random() * 150 + 50,
-                    class: 0
-                });
-            }
-            
-            for (let i = 0; i < 30; i++) {
-                class2.push({
-                    x: Math.random() * 300 + 450,
-                    y: Math.random() * 150 + 200,
-                    class: 1
-                });
-            }
-            
-            svmData = [...class1, ...class2];
-            
-            // Draw decision boundary
-            const boundary = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            boundary.setAttribute('class', 'decision-boundary');
-            boundary.setAttribute('x1', '400');
-            boundary.setAttribute('y1', '50');
-            boundary.setAttribute('x2', '250');
-            boundary.setAttribute('y2', '350');
-            boundary.setAttribute('stroke', '#CC0000');
-            boundary.setAttribute('stroke-width', '2');
-            svg.appendChild(boundary);
-            
-            // Draw points
-            svmData.forEach(point => {
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('class', 'data-point');
-                circle.setAttribute('cx', point.x);
-                circle.setAttribute('cy', point.y);
-                circle.setAttribute('r', '6');
-                circle.setAttribute('fill', point.class === 0 ? '#2196F3' : '#FF9800');
-                circle.setAttribute('stroke', '#333');
-                circle.setAttribute('stroke-width', '1');
-                svg.appendChild(circle);
-            });
-            
-            // Labels
-            const label1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label1.setAttribute('x', '150');
-            label1.setAttribute('y', '30');
-            label1.setAttribute('fill', '#2196F3');
-            label1.setAttribute('font-size', '16px');
-            label1.setAttribute('font-weight', 'bold');
-            label1.textContent = 'Unlikely to Buy';
-            svg.appendChild(label1);
-            
-            const label2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label2.setAttribute('x', '550');
-            label2.setAttribute('y', '380');
-            label2.setAttribute('fill', '#FF9800');
-            label2.setAttribute('font-size', '16px');
-            label2.setAttribute('font-weight', 'bold');
-            label2.textContent = 'Likely to Buy';
-            svg.appendChild(label2);
-        }
+<!-- 1.12 Conditional prob table -->
+<div class="slide">
+  <div class="slide-number">1.12</div>
+  <h2>1.12 &nbsp;Step 2 — probabilities for our test day</h2>
+  <p class="lead rv d1">Test day = <b>(Sunny, Hot, Normal, False)</b>. Turn each count into a probability by dividing by the class total (9 for Yes, 5 for No).</p>
+  <table class="rv d2">
+    <tr><th>Feature</th><th>Value</th><th>\(P(\text{value}\mid \text{Yes})\)</th><th>\(P(\text{value}\mid \text{No})\)</th></tr>
+    <tr><td class="lbl">Outlook</td><td>Sunny</td><td>3/9 ≈ 0.33</td><td>2/5 = 0.40</td></tr>
+    <tr><td class="lbl">Temperature</td><td>Hot</td><td>2/9 ≈ 0.22</td><td>2/5 = 0.40</td></tr>
+    <tr><td class="lbl">Humidity</td><td>Normal</td><td>6/9 ≈ 0.67</td><td>1/5 = 0.20</td></tr>
+    <tr><td class="lbl">Windy</td><td>False</td><td>6/9 ≈ 0.67</td><td>2/5 = 0.40</td></tr>
+  </table>
+  <div class="box key rv d3"><div class="lbl">Read the pattern</div>“Normal humidity” and “no wind” are much more common on <b>Yes</b> days (0.67 each) than on <b>No</b> days (0.20, 0.40). Those two clues will pull the answer toward Yes.</div>
+</div>
 
-        function toggleSVMMargin() {
-            svmShowMargin = !svmShowMargin;
-            const svg = document.querySelector('#svm-viz svg');
-            
-            // Remove existing margin lines
-            const existingLines = svg.querySelectorAll('.margin-line');
-            existingLines.forEach(line => line.remove());
-            
-            if (svmShowMargin) {
-                const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line1.setAttribute('class', 'margin-line');
-                line1.setAttribute('x1', '430');
-                line1.setAttribute('y1', '50');
-                line1.setAttribute('x2', '280');
-                line1.setAttribute('y2', '350');
-                line1.setAttribute('stroke', '#CC0000');
-                line1.setAttribute('stroke-width', '1');
-                line1.setAttribute('stroke-dasharray', '5,5');
-                svg.appendChild(line1);
-                
-                const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line2.setAttribute('class', 'margin-line');
-                line2.setAttribute('x1', '370');
-                line2.setAttribute('y1', '50');
-                line2.setAttribute('x2', '220');
-                line2.setAttribute('y2', '350');
-                line2.setAttribute('stroke', '#CC0000');
-                line2.setAttribute('stroke-width', '1');
-                line2.setAttribute('stroke-dasharray', '5,5');
-                svg.appendChild(line2);
-            }
-        }
+<!-- 1.13 Compute scores step by step -->
+<div class="slide">
+  <div class="slide-number">1.13</div>
+  <h2>1.13 &nbsp;Step 3 — multiply out each class score</h2>
+  <p class="lead rv d1">Multiply the base rate by all four clue probabilities, for each class.</p>
+  <div class="worked rv d2">
+    <div class="q">Follow the arithmetic step by step</div>
+    <div class="wstep"><span class="n">Y1</span><b>Yes — set up:</b> \(P(\text{Yes})\cdot P(\text{S}\mid Y)\cdot P(\text{H}\mid Y)\cdot P(\text{N}\mid Y)\cdot P(\text{F}\mid Y)\)</div>
+    <div class="wstep"><span class="n">Y2</span><b>Yes — substitute:</b> \(=\dfrac{9}{14}\cdot\dfrac{3}{9}\cdot\dfrac{2}{9}\cdot\dfrac{6}{9}\cdot\dfrac{6}{9}\)</div>
+    <div class="wstep"><span class="n">Y3</span><b>Yes — multiply:</b> \(\approx 0.643\times0.333\times0.222\times0.667\times0.667 \approx \mathbf{0.0212}\)</div>
+    <div class="wstep"><span class="n">N1</span><b>No — set up:</b> \(P(\text{No})\cdot P(\text{S}\mid N)\cdot P(\text{H}\mid N)\cdot P(\text{N}\mid N)\cdot P(\text{F}\mid N)\)</div>
+    <div class="wstep"><span class="n">N2</span><b>No — substitute:</b> \(=\dfrac{5}{14}\cdot\dfrac{2}{5}\cdot\dfrac{2}{5}\cdot\dfrac{1}{5}\cdot\dfrac{2}{5}\)</div>
+    <div class="wstep"><span class="n">N3</span><b>No — multiply:</b> \(\approx 0.357\times0.40\times0.40\times0.20\times0.40 \approx \mathbf{0.0046}\)</div>
+    <div class="wans"><b>Two raw scores:</b> &nbsp; Yes ≈ 0.0212 &nbsp; vs &nbsp; No ≈ 0.0046. &nbsp; Yes is already far larger — but let's turn them into clean percentages next.</div>
+    <button class="wbtn" onclick="nextStep(this)">Reveal Y1 →</button>
+  </div>
+</div>
 
-        function highlightSupportVectors() {
-            svmShowSV = !svmShowSV;
-            const svg = document.querySelector('#svm-viz svg');
-            
-            // Remove existing highlights
-            const existingHighlights = svg.querySelectorAll('.sv-highlight');
-            existingHighlights.forEach(h => h.remove());
-            
-            if (svmShowSV) {
-                // Highlight support vectors (points near decision boundary)
-                const svPoints = [
-                    {x: 350, y: 200},
-                    {x: 320, y: 250},
-                    {x: 380, y: 150}
-                ];
-                
-                svPoints.forEach(point => {
-                    const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    highlight.setAttribute('class', 'sv-highlight');
-                    highlight.setAttribute('cx', point.x);
-                    highlight.setAttribute('cy', point.y);
-                    highlight.setAttribute('r', '12');
-                    highlight.setAttribute('fill', 'none');
-                    highlight.setAttribute('stroke', '#4CAF50');
-                    highlight.setAttribute('stroke-width', '3');
-                    svg.appendChild(highlight);
-                });
-            }
-        }
+<!-- 1.14 Normalise & decide -->
+<div class="slide">
+  <div class="slide-number">1.14</div>
+  <h2>1.14 &nbsp;Step 4 — normalise and decide</h2>
+  <p class="lead rv d1">The two scores are proportional, not true probabilities. Divide each by their sum so they add to 100%.</p>
+  <p style="text-align:center;font-size:1.05rem" class="rv d2">
+    $$P(\text{Yes}\mid\text{today})=\frac{0.0212}{0.0212+0.0046}\approx 0.82
+    \qquad
+    P(\text{No}\mid\text{today})=\frac{0.0046}{0.0212+0.0046}\approx 0.18$$
+  </p>
+  <div class="barchart rv d3">
+    <div class="barrow"><div class="bl" style="color:var(--green)">Play — Yes</div><div class="bartrack"><div class="barfill yes">82%</div></div></div>
+    <div class="barrow"><div class="bl" style="color:var(--red)">Play — No</div><div class="bartrack"><div class="barfill no">18%</div></div></div>
+  </div>
+  <div class="box key rv d4"><div class="lbl">Decision</div>Since \(0.82 > 0.18\), the model predicts: <b>Yes — golf will be played.</b> The clues “normal humidity” and “no wind” were decisive.</div>
+  <div class="note small rv d4" style="margin-top:6px;padding:8px 12px;border-radius:6px;background:#f6f7f9;border-left:4px solid #9aa3b6">Note: every probability here was counted directly from the 14-row table, so your hand-calculation will match these figures exactly.</div>
+</div>
 
-        function resetSVM() {
-            svmShowMargin = false;
-            svmShowSV = false;
-            const container = document.getElementById('svm-viz');
-            container.innerHTML = '';
-            vizInitialized.svm = false;
-            initSVMViz();
-        }
+<!-- 1.Q Knowledge check NB -->
+<div class="slide">
+  <div class="slide-number">1.Q</div>
+  <h2>Knowledge Check — Naïve Bayes</h2>
+  <div class="quiz rv d1">
+    <div class="quiz-question">Q1. Why is the method called “naïve”?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) It only works on small datasets</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) It assumes the features are independent of one another</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) It cannot handle more than two classes</button>
+    <div class="quiz-explanation">The “naïve” assumption is feature independence — it lets us multiply individual clue probabilities together.</div>
+  </div>
+  <div class="quiz rv d2">
+    <div class="quiz-question">Q2. In our golf example, why could we ignore the denominator \(P(B)\) when comparing Yes vs No?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) It is always equal to 1</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) It is the same value for both classes, so it doesn't change which is larger</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) It is impossible to calculate</button>
+    <div class="quiz-explanation">\(P(B)\) is a shared constant. Dropping it keeps the comparison valid; we only restore it (via normalising) to get clean percentages.</div>
+  </div>
+</div>
 
-        // Kernel Visualization
-        function initKernelViz() {
-            const container = document.getElementById('kernel-viz');
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '800');
-            svg.setAttribute('height', '400');
-            container.appendChild(svg);
-            
-            // 2D circular pattern
-            for (let i = 0; i < 20; i++) {
-                const angle = i * Math.PI / 10;
-                const x = 200 + 50 * Math.cos(angle);
-                const y = 200 + 50 * Math.sin(angle);
-                
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('class', 'kernel-point');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', y);
-                circle.setAttribute('r', '5');
-                circle.setAttribute('fill', '#2196F3');
-                svg.appendChild(circle);
-            }
-            
-            for (let i = 0; i < 30; i++) {
-                const angle = i * Math.PI / 15;
-                const x = 200 + 120 * Math.cos(angle);
-                const y = 200 + 120 * Math.sin(angle);
-                
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('class', 'kernel-point');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', y);
-                circle.setAttribute('r', '5');
-                circle.setAttribute('fill', '#FF9800');
-                svg.appendChild(circle);
-            }
-            
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('x', '400');
-            label.setAttribute('y', '30');
-            label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('font-size', '16px');
-            label.setAttribute('font-weight', 'bold');
-            label.textContent = 'Original 2D Space - Non-linearly Separable';
-            svg.appendChild(label);
-        }
+<!-- ================= SECTION 2 DIVIDER ================= -->
+<div class="slide divider">
+  <div class="slide-number">2</div>
+  <div class="kicker rv d1">Section 2</div>
+  <h1 class="rv d2">Support Vector Machines</h1>
+  <div class="rule rv d3"></div>
+  <div class="sub rv d4">Drawing the <i>widest, safest</i> boundary between two groups.</div>
+</div>
 
-        function showOriginalSpace() {
-            const container = document.getElementById('kernel-viz');
-            container.innerHTML = '';
-            vizInitialized.kernel = false;
-            initKernelViz();
-        }
+<!-- 2.1 What is SVM -->
+<div class="slide">
+  <div class="slide-number">2.1</div>
+  <h2>2.1 &nbsp;What is a Support Vector Machine?</h2>
+  <div class="box scenario rv d1"><div class="lbl">Business scenario</div>A clinic plots two patient groups — healthy and at-risk — using two measurements. They want a single dividing line so that <b>future</b> patients can be sorted automatically. But many lines could separate today's data. Which line is <i>best</i>?</div>
+  <div class="cols">
+    <div class="col rv d2">
+      <h3>The idea</h3>
+      <p>An SVM finds the boundary (a <b>hyperplane</b>) that separates the classes with the <b>largest possible gap</b> on either side.</p>
+      <p>A wider gap means the boundary is more confident and generalises better to new data.</p>
+    </div>
+    <div class="col rv d3">
+      <h3>Good to know</h3>
+      <ul>
+        <li>Works for classification <i>and</i> regression.</li>
+        <li>In 2D the boundary is a line; in higher dimensions it is a “hyperplane”.</li>
+        <li>Milestone paper: Boser, Guyon &amp; Vapnik (1992).</li>
+      </ul>
+    </div>
+  </div>
+</div>
 
-        function showTransformedSpace() {
-            const container = document.getElementById('kernel-viz');
-            const svg = container.querySelector('svg');
-            svg.innerHTML = '';
-            
-            const label1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label1.setAttribute('x', '400');
-            label1.setAttribute('y', '25');
-            label1.setAttribute('text-anchor', 'middle');
-            label1.setAttribute('font-size', '16px');
-            label1.setAttribute('font-weight', 'bold');
-            label1.textContent = 'Kernel Transformation: Adding a 3rd Dimension (Z)';
-            svg.appendChild(label1);
-            
-            // LEFT SIDE: Top-down view (X-Y plane) - showing circular pattern
-            const leftTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            leftTitle.setAttribute('x', '200');
-            leftTitle.setAttribute('y', '60');
-            leftTitle.setAttribute('text-anchor', 'middle');
-            leftTitle.setAttribute('font-size', '14px');
-            leftTitle.setAttribute('font-weight', 'bold');
-            leftTitle.setAttribute('fill', '#666');
-            leftTitle.textContent = 'Top View (X-Y plane)';
-            svg.appendChild(leftTitle);
-            
-            // Draw circle patterns on left (top-down view)
-            for (let i = 0; i < 20; i++) {
-                const angle = i * Math.PI / 10;
-                const x = 200 + 50 * Math.cos(angle);
-                const y = 200 + 50 * Math.sin(angle);
-                
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', y);
-                circle.setAttribute('r', '5');
-                circle.setAttribute('fill', '#2196F3');
-                svg.appendChild(circle);
-            }
-            
-            for (let i = 0; i < 30; i++) {
-                const angle = i * Math.PI / 15;
-                const x = 200 + 100 * Math.cos(angle);
-                const y = 200 + 100 * Math.sin(angle);
-                
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', y);
-                circle.setAttribute('r', '5');
-                circle.setAttribute('fill', '#FF9800');
-                svg.appendChild(circle);
-            }
-            
-            // Draw axes for left view
-            const leftXAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            leftXAxis.setAttribute('x1', '100');
-            leftXAxis.setAttribute('y1', '200');
-            leftXAxis.setAttribute('x2', '300');
-            leftXAxis.setAttribute('y2', '200');
-            leftXAxis.setAttribute('stroke', '#CCC');
-            leftXAxis.setAttribute('stroke-width', '1');
-            svg.appendChild(leftXAxis);
-            
-            const leftYAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            leftYAxis.setAttribute('x1', '200');
-            leftYAxis.setAttribute('y1', '100');
-            leftYAxis.setAttribute('x2', '200');
-            leftYAxis.setAttribute('y2', '300');
-            leftYAxis.setAttribute('stroke', '#CCC');
-            leftYAxis.setAttribute('stroke-width', '1');
-            svg.appendChild(leftYAxis);
-            
-            const leftXLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            leftXLabel.setAttribute('x', '310');
-            leftXLabel.setAttribute('y', '205');
-            leftXLabel.setAttribute('font-size', '12px');
-            leftXLabel.setAttribute('fill', '#999');
-            leftXLabel.textContent = 'X';
-            svg.appendChild(leftXLabel);
-            
-            const leftYLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            leftYLabel.setAttribute('x', '205');
-            leftYLabel.setAttribute('y', '95');
-            leftYLabel.setAttribute('font-size', '12px');
-            leftYLabel.setAttribute('fill', '#999');
-            leftYLabel.textContent = 'Y';
-            svg.appendChild(leftYLabel);
-            
-            const leftNote = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            leftNote.setAttribute('x', '200');
-            leftNote.setAttribute('y', '330');
-            leftNote.setAttribute('text-anchor', 'middle');
-            leftNote.setAttribute('font-size', '11px');
-            leftNote.setAttribute('fill', '#666');
-            leftNote.textContent = 'Still circular (not separable)';
-            svg.appendChild(leftNote);
-            
-            // DIVIDER
-            const divider = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            divider.setAttribute('x1', '400');
-            divider.setAttribute('y1', '50');
-            divider.setAttribute('x2', '400');
-            divider.setAttribute('y2', '350');
-            divider.setAttribute('stroke', '#DDD');
-            divider.setAttribute('stroke-width', '2');
-            svg.appendChild(divider);
-            
-            // RIGHT SIDE: Side view showing Z (height) dimension
-            const rightTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            rightTitle.setAttribute('x', '600');
-            rightTitle.setAttribute('y', '60');
-            rightTitle.setAttribute('text-anchor', 'middle');
-            rightTitle.setAttribute('font-size', '14px');
-            rightTitle.setAttribute('font-weight', 'bold');
-            rightTitle.setAttribute('fill', '#666');
-            rightTitle.textContent = 'Side View (Distance-Z plane)';
-            svg.appendChild(rightTitle);
-            
-            // Draw side view axes
-            const sideXAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            sideXAxis.setAttribute('x1', '450');
-            sideXAxis.setAttribute('y1', '280');
-            sideXAxis.setAttribute('x2', '750');
-            sideXAxis.setAttribute('y2', '280');
-            sideXAxis.setAttribute('stroke', '#999');
-            sideXAxis.setAttribute('stroke-width', '2');
-            svg.appendChild(sideXAxis);
-            
-            const sideZAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            sideZAxis.setAttribute('x1', '450');
-            sideZAxis.setAttribute('y1', '100');
-            sideZAxis.setAttribute('x2', '450');
-            sideZAxis.setAttribute('y2', '280');
-            sideZAxis.setAttribute('stroke', '#999');
-            sideZAxis.setAttribute('stroke-width', '2');
-            svg.appendChild(sideZAxis);
-            
-            const sideXLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            sideXLabel.setAttribute('x', '600');
-            sideXLabel.setAttribute('y', '300');
-            sideXLabel.setAttribute('text-anchor', 'middle');
-            sideXLabel.setAttribute('font-size', '12px');
-            sideXLabel.setAttribute('fill', '#666');
-            sideXLabel.textContent = 'Distance from Center';
-            svg.appendChild(sideXLabel);
-            
-            const sideZLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            sideZLabel.setAttribute('x', '420');
-            sideZLabel.setAttribute('y', '190');
-            sideZLabel.setAttribute('text-anchor', 'middle');
-            sideZLabel.setAttribute('font-size', '12px');
-            sideZLabel.setAttribute('font-weight', 'bold');
-            sideZLabel.setAttribute('fill', '#666');
-            sideZLabel.textContent = 'Z';
-            svg.appendChild(sideZLabel);
-            
-            const sideZLabel2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            sideZLabel2.setAttribute('x', '420');
-            sideZLabel2.setAttribute('y', '205');
-            sideZLabel2.setAttribute('text-anchor', 'middle');
-            sideZLabel2.setAttribute('font-size', '10px');
-            sideZLabel2.setAttribute('fill', '#666');
-            sideZLabel2.textContent = '(Height)';
-            svg.appendChild(sideZLabel2);
-            
-            // Plot inner circle points (blue) - near center, LOW z
-            for (let i = 0; i < 20; i++) {
-                const radius = 50;
-                const distance = radius + (Math.random() - 0.5) * 15;
-                const x = 450 + distance * 1.2;
-                const z = 260 - distance * 0.3; // Lower height
-                
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', z);
-                circle.setAttribute('r', '5');
-                circle.setAttribute('fill', '#2196F3');
-                circle.setAttribute('stroke', '#1976D2');
-                circle.setAttribute('stroke-width', '1');
-                svg.appendChild(circle);
-            }
-            
-            // Plot outer circle points (orange) - far from center, HIGH z
-            for (let i = 0; i < 30; i++) {
-                const radius = 100;
-                const distance = radius + (Math.random() - 0.5) * 20;
-                const x = 450 + distance * 1.2;
-                const z = 260 - distance * 1.2; // Higher height (inverse relationship)
-                
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', z);
-                circle.setAttribute('r', '5');
-                circle.setAttribute('fill', '#FF9800');
-                circle.setAttribute('stroke', '#F57C00');
-                circle.setAttribute('stroke-width', '1');
-                svg.appendChild(circle);
-            }
-            
-            // Draw separating plane (horizontal line in side view)
-            const plane = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            plane.setAttribute('x1', '450');
-            plane.setAttribute('y1', '190');
-            plane.setAttribute('x2', '750');
-            plane.setAttribute('y2', '190');
-            plane.setAttribute('stroke', '#CC0000');
-            plane.setAttribute('stroke-width', '3');
-            plane.setAttribute('stroke-dasharray', '8,4');
-            svg.appendChild(plane);
-            
-            const planeLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            planeLabel.setAttribute('x', '755');
-            planeLabel.setAttribute('y', '195');
-            planeLabel.setAttribute('font-size', '12px');
-            planeLabel.setAttribute('font-weight', 'bold');
-            planeLabel.setAttribute('fill', '#CC0000');
-            planeLabel.textContent = '← Separating Plane';
-            svg.appendChild(planeLabel);
-            
-            // Add group labels on right
-            const blueGroupLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            blueGroupLabel.setAttribute('x', '520');
-            blueGroupLabel.setAttribute('y', '270');
-            blueGroupLabel.setAttribute('font-size', '11px');
-            blueGroupLabel.setAttribute('font-weight', 'bold');
-            blueGroupLabel.setAttribute('fill', '#2196F3');
-            blueGroupLabel.textContent = 'Blue: Low Z';
-            svg.appendChild(blueGroupLabel);
-            
-            const orangeGroupLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            orangeGroupLabel.setAttribute('x', '650');
-            orangeGroupLabel.setAttribute('y', '120');
-            orangeGroupLabel.setAttribute('font-size', '11px');
-            orangeGroupLabel.setAttribute('font-weight', 'bold');
-            orangeGroupLabel.setAttribute('fill', '#FF9800');
-            orangeGroupLabel.textContent = 'Orange: High Z';
-            svg.appendChild(orangeGroupLabel);
-            
-            const rightNote = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            rightNote.setAttribute('x', '600');
-            rightNote.setAttribute('y', '330');
-            rightNote.setAttribute('text-anchor', 'middle');
-            rightNote.setAttribute('font-size', '11px');
-            rightNote.setAttribute('fill', '#666');
-            rightNote.textContent = 'NOW linearly separable!';
-            svg.appendChild(rightNote);
-            
-            // Bottom explanation
-            const explanation = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            explanation.setAttribute('x', '400');
-            explanation.setAttribute('y', '370');
-            explanation.setAttribute('text-anchor', 'middle');
-            explanation.setAttribute('font-size', '13px');
-            explanation.setAttribute('font-weight', 'bold');
-            explanation.setAttribute('fill', '#333');
-            explanation.textContent = 'The kernel function adds height (Z) based on distance from center → Simple plane now separates the classes!';
-            svg.appendChild(explanation);
-        }
+<!-- 2.2 Hyperplane & margin (animated) -->
+<div class="slide">
+  <div class="slide-number">2.2</div>
+  <h2>2.2 &nbsp;The hyperplane and the margin</h2>
+  <p class="lead rv d1">Of all lines that separate the two groups, the SVM picks the one whose <b>margin</b> (the empty gap) is widest.</p>
+  <div class="illustration rv d2">
+    <svg viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="13">
+      <line x1="50" y1="290" x2="530" y2="290" stroke="#333" stroke-width="1.5"/>
+      <line x1="50" y1="290" x2="50" y2="30" stroke="#333" stroke-width="1.5"/>
+      <text x="290" y="312" text-anchor="middle" fill="#555">feature x₁</text>
+      <text x="24" y="160" text-anchor="middle" fill="#555" transform="rotate(-90 24 160)">feature x₂</text>
+      <!-- margins -->
+      <line x1="120" y1="280" x2="470" y2="70" stroke="#2e7d32" stroke-width="1.6" stroke-dasharray="7 6" class="fdelay"/>
+      <line x1="180" y1="290" x2="530" y2="80" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="7 6" class="fdelay"/>
+      <!-- hyperplane -->
+      <line x1="150" y1="285" x2="500" y2="75" stroke="#16337e" stroke-width="3" class="draw"/>
+      <text x="330" y="150" fill="#16337e" font-weight="700" transform="rotate(-31 330 150)">optimal hyperplane</text>
+      <!-- class A (blue circles) top-right -->
+      <g fill="#1e88e5">
+        <circle cx="400" cy="70" r="9"/><circle cx="450" cy="110" r="9"/><circle cx="480" cy="60" r="9"/><circle cx="430" cy="150" r="9"/>
+      </g>
+      <!-- class B (red squares) bottom-left -->
+      <g fill="#c0392b">
+        <rect x="110" y="230" width="17" height="17"/><rect x="160" y="255" width="17" height="17"/><rect x="90" y="200" width="17" height="17"/>
+      </g>
+      <!-- support vectors highlighted -->
+      <circle cx="360" cy="118" r="10" fill="#1e88e5" stroke="#16337e" stroke-width="3" class="pop p1"/>
+      <rect x="200" y="215" width="18" height="18" fill="#c0392b" stroke="#7d1c12" stroke-width="3" class="pop p2"/>
+      <!-- margin arrow -->
+      <g class="fdelay">
+        <line x1="300" y1="205" x2="345" y2="140" stroke="#333" stroke-width="1" marker-end="url(#a2)"/>
+        <line x1="300" y1="205" x2="255" y2="270" stroke="#333" stroke-width="1" marker-end="url(#a2)"/>
+        <text x="235" y="200" fill="#101425" font-weight="700">margin</text>
+      </g>
+      <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#333"/></marker></defs>
+    </svg>
+  </div>
+  <div class="caption rv d3">Figure 2.2 — the solid line maximises the empty margin between the dashed edges.</div>
+</div>
 
-        function animateKernel() {
-            showOriginalSpace();
-            setTimeout(showTransformedSpace, 1500);
-        }
+<!-- 2.3 Support vectors -->
+<div class="slide">
+  <div class="slide-number">2.3</div>
+  <h2>2.3 &nbsp;Support vectors — the points that matter</h2>
+  <div class="cols">
+    <div class="col rv d1">
+      <div class="box definition"><div class="lbl">Definition</div>The <b>support vectors</b> are the data points sitting closest to the boundary. They alone define where the boundary goes.</div>
+      <div class="box key"><div class="lbl">Why this is powerful</div>You could delete every other point and the boundary would not move. The SVM cares only about the hardest, borderline cases — not the easy ones far from the edge.</div>
+    </div>
+    <div class="col rv d2">
+      <div class="illustration">
+        <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="13">
+          <line x1="90" y1="270" x2="360" y2="60" stroke="#16337e" stroke-width="3"/>
+          <line x1="70" y1="265" x2="330" y2="60" stroke="#2e7d32" stroke-width="1.4" stroke-dasharray="6 5"/>
+          <line x1="120" y1="275" x2="380" y2="70" stroke="#c0392b" stroke-width="1.4" stroke-dasharray="6 5"/>
+          <g fill="#1e88e5"><circle cx="300" cy="70" r="9"/><circle cx="340" cy="100" r="9"/><circle cx="270" cy="120" r="9"/></g>
+          <g fill="#c0392b"><rect x="80" y="210" width="16" height="16"/><rect x="120" y="240" width="16" height="16"/></g>
+          <!-- support vectors -->
+          <circle cx="245" cy="150" r="10" fill="#1e88e5" stroke="#16337e" stroke-width="3"/>
+          <rect x="150" y="205" width="18" height="18" fill="#c0392b" stroke="#7d1c12" stroke-width="3"/>
+          <text x="250" y="135" fill="#16337e" font-weight="700" font-size="12">support vector</text>
+          <text x="60" y="200" fill="#c0392b" font-weight="700" font-size="12">support vector</text>
+        </svg>
+      </div>
+      <div class="caption">Only the circled/outlined points define the boundary.</div>
+    </div>
+  </div>
+</div>
 
-        // Gradient Boosting Visualization
-        let boostingCurrentStep = 0;
-        
-        function initBoostingViz() {
-            const container = document.getElementById('boosting-viz');
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '800');
-            svg.setAttribute('height', '300');
-            container.appendChild(svg);
-            
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('x', '400');
-            label.setAttribute('y', '30');
-            label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('font-size', '16px');
-            label.setAttribute('font-weight', 'bold');
-            label.textContent = 'Sequential Model Building';
-            svg.appendChild(label);
-            
-            boostingStep(0);
-        }
+<!-- 2.4 Kernel trick -->
+<div class="slide">
+  <div class="slide-number">2.4</div>
+  <h2>2.4 &nbsp;When a straight line won't work: the kernel trick</h2>
+  <p class="lead rv d1">Sometimes no straight line can separate the groups. The SVM cleverly <b>lifts the data into a higher dimension</b> where a flat boundary <i>does</i> exist.</p>
+  <div class="cols">
+    <div class="col rv d2" style="flex:0.9">
+      <div class="illustration">
+        <svg viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="12">
+          <rect x="10" y="10" width="220" height="200" fill="#f6f8fc" stroke="#d5dbe8"/>
+          <text x="120" y="30" text-anchor="middle" fill="#555">2D — no line can split these</text>
+          <!-- red cluster centre -->
+          <g fill="#c0392b"><circle cx="120" cy="120" r="7"/><circle cx="105" cy="105" r="7"/><circle cx="135" cy="108" r="7"/><circle cx="118" cy="138" r="7"/><circle cx="100" cy="130" r="7"/></g>
+          <!-- blue ring around -->
+          <g fill="#1e88e5"><circle cx="120" cy="65" r="7"/><circle cx="70" cy="95" r="7"/><circle cx="70" cy="145" r="7"/><circle cx="120" cy="180" r="7"/><circle cx="175" cy="150" r="7"/><circle cx="175" cy="95" r="7"/></g>
+        </svg>
+      </div>
+    </div>
+    <div class="col rv d3" style="flex:0.3;display:flex;align-items:center;justify-content:center">
+      <svg viewBox="0 0 90 60" width="90"><line x1="5" y1="30" x2="75" y2="30" stroke="#1e88e5" stroke-width="3" marker-end="url(#k)"/><text x="40" y="20" text-anchor="middle" fill="#1e88e5" font-weight="700" font-size="13">kernel</text><defs><marker id="k" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1e88e5"/></marker></defs></svg>
+    </div>
+    <div class="col rv d4" style="flex:0.9">
+      <div class="illustration">
+        <svg viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="12">
+          <rect x="10" y="10" width="220" height="200" fill="#f6f8fc" stroke="#d5dbe8"/>
+          <text x="120" y="30" text-anchor="middle" fill="#555">3D — now a flat plane splits them</text>
+          <!-- lifted red (up high) -->
+          <g fill="#c0392b"><circle cx="120" cy="70" r="7"/><circle cx="105" cy="60" r="7"/><circle cx="135" cy="62" r="7"/><circle cx="118" cy="82" r="7"/><circle cx="100" cy="75" r="7"/></g>
+          <!-- separating plane -->
+          <polygon points="40,130 200,110 210,140 50,160" fill="#16337e" fill-opacity="0.25" stroke="#16337e" stroke-width="2"/>
+          <text x="150" y="128" fill="#16337e" font-weight="700" font-size="11">decision surface</text>
+          <!-- blue low -->
+          <g fill="#1e88e5"><circle cx="70" cy="185" r="7"/><circle cx="120" cy="192" r="7"/><circle cx="170" cy="185" r="7"/><circle cx="95" cy="172" r="7"/><circle cx="150" cy="172" r="7"/></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="caption rv d5">Figure 2.4 — the “kernel trick” projects data upward until a simple flat cut separates the classes.</div>
+</div>
 
-        function boostingStep(step) {
-            boostingCurrentStep = step;
-            const svg = document.querySelector('#boosting-viz svg');
-            
-            // Remove old elements
-            const oldElements = svg.querySelectorAll('.boosting-elements');
-            oldElements.forEach(el => el.remove());
-            
-            const models = ['Model 1', 'Model 2', 'Model 3', 'Final'];
-            const accuracies = [70, 85, 92, 95];
-            const colors = ['#90CAF9', '#64B5F6', '#42A5F5', '#CC0000'];
-            
-            for (let i = 0; i <= step && i < 4; i++) {
-                const x = 50 + i * 180;
-                
-                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('class', 'boosting-elements');
-                rect.setAttribute('x', x);
-                rect.setAttribute('y', '100');
-                rect.setAttribute('width', '150');
-                rect.setAttribute('height', '150');
-                rect.setAttribute('fill', colors[i]);
-                rect.setAttribute('stroke', '#333');
-                rect.setAttribute('stroke-width', '2');
-                svg.appendChild(rect);
-                
-                const text1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text1.setAttribute('class', 'boosting-elements');
-                text1.setAttribute('x', x + 75);
-                text1.setAttribute('y', '140');
-                text1.setAttribute('text-anchor', 'middle');
-                text1.setAttribute('font-size', '16px');
-                text1.setAttribute('font-weight', 'bold');
-                text1.setAttribute('fill', 'white');
-                text1.textContent = models[i];
-                svg.appendChild(text1);
-                
-                const text2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text2.setAttribute('class', 'boosting-elements');
-                text2.setAttribute('x', x + 75);
-                text2.setAttribute('y', '180');
-                text2.setAttribute('text-anchor', 'middle');
-                text2.setAttribute('font-size', '24px');
-                text2.setAttribute('font-weight', 'bold');
-                text2.setAttribute('fill', 'white');
-                text2.textContent = `${accuracies[i]}%`;
-                svg.appendChild(text2);
-                
-                if (i < 3 && i < step) {
-                    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    arrow.setAttribute('class', 'boosting-elements');
-                    arrow.setAttribute('x', x + 160);
-                    arrow.setAttribute('y', '180');
-                    arrow.setAttribute('text-anchor', 'middle');
-                    arrow.setAttribute('font-size', '24px');
-                    arrow.textContent = '→';
-                    svg.appendChild(arrow);
-                }
-            }
-            
-            const explanations = [
-                'Click Model 1 to start',
-                'Model 1: First attempt with 70% accuracy',
-                'Model 2: Focuses on errors from Model 1, combined accuracy 85%',
-                'Model 3: Further corrects remaining errors, combined accuracy 92%',
-                'Final Ensemble: All models combined achieve 95% accuracy'
-            ];
-            
-            document.getElementById('boosting-explanation').innerHTML = 
-                `<strong>Step ${step}:</strong> ${explanations[step]}`;
-        }
+<!-- 2.5 Real example -->
+<div class="slide">
+  <div class="slide-number">2.5</div>
+  <h2>2.5 &nbsp;A real use: normal vs cancer patients</h2>
+  <p class="lead rv d1">Plot patients by two gene measurements. The SVM finds the line with the largest gap between the two patient groups.</p>
+  <div class="illustration rv d2">
+    <svg viewBox="0 0 620 260" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="13">
+      <line x1="50" y1="230" x2="590" y2="230" stroke="#333" stroke-width="1.5"/>
+      <line x1="50" y1="230" x2="50" y2="20" stroke="#333" stroke-width="1.5"/>
+      <text x="600" y="234" fill="#555">Gene X</text>
+      <text x="40" y="16" fill="#555">Gene Y</text>
+      <!-- normal (blue stars ~ circles) left -->
+      <g fill="#1e5bb8"><circle cx="110" cy="80" r="8"/><circle cx="150" cy="110" r="8"/><circle cx="120" cy="140" r="8"/><circle cx="90" cy="180" r="8"/><circle cx="170" cy="160" r="8"/><circle cx="140" cy="70" r="8"/></g>
+      <!-- cancer (red) right -->
+      <g fill="#c0392b"><circle cx="430" cy="120" r="8"/><circle cx="470" cy="150" r="8"/><circle cx="500" cy="110" r="8"/><circle cx="450" cy="180" r="8"/><circle cx="520" cy="160" r="8"/><circle cx="480" cy="90" r="8"/></g>
+      <!-- gap boundary -->
+      <line x1="270" y1="215" x2="330" y2="45" stroke="#c0392b" stroke-width="2.5" class="draw"/>
+      <line x1="240" y1="220" x2="300" y2="50" stroke="#333" stroke-dasharray="6 5" stroke-width="1.3" class="fdelay"/>
+      <line x1="300" y1="212" x2="360" y2="42" stroke="#333" stroke-dasharray="6 5" stroke-width="1.3" class="fdelay"/>
+      <text x="360" y="60" fill="#101425" font-weight="700" class="fdelay">← gap (margin) →</text>
+      <text x="130" y="252" fill="#1e5bb8" font-weight="700" text-anchor="middle">Normal patients</text>
+      <text x="475" y="252" fill="#c0392b" font-weight="700" text-anchor="middle">Cancer patients</text>
+    </svg>
+  </div>
+  <div class="box key rv d3"><div class="lbl">Takeaway</div>The best boundary is the one furthest from the borderline patients on both sides — giving the most reliable predictions for new patients.</div>
+</div>
 
-        function resetBoosting() {
-            boostingStep(0);
-        }
+<!-- 2.6 SVM activity -->
+<div class="slide">
+  <div class="slide-number">2.6</div>
+  <h2>2.6 &nbsp;Activity — breast cancer prediction with SVM</h2>
+  <div class="box scenario rv d1"><div class="lbl">Your role</div>You are an analyst at a cancer clinic. You are given a dataset with several measurements per tumour and a label: <b>0 = malignant, 1 = benign</b>. Build an SVM to predict the label for new cases.</div>
+  <div class="cols rv d2">
+    <div class="col">
+      <h3>What to do</h3>
+      <ol>
+        <li>Load the built-in breast-cancer dataset (scikit-learn / Orange).</li>
+        <li>Split into training and test sets.</li>
+        <li>Train an SVM classifier.</li>
+        <li>Read off accuracy and the confusion matrix.</li>
+      </ol>
+    </div>
+    <div class="col">
+      <div class="box definition"><div class="lbl">Resources</div>Notebook: <br><code>DATA4800_Week_6_Breast_Cancer_SVM_Gradient_Boosting.ipynb</code><br><br>In <b>Orange</b>: File → Data Sampler → SVM → Test &amp; Score.</div>
+    </div>
+  </div>
+  <div class="src">Source: datacamp.com/tutorial/svm-classification-scikit-learn-python</div>
+</div>
 
-        // Decision Tree Visualization
-        function initDecisionTreeViz() {
-            const container = document.getElementById('decision-tree-viz');
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '1000');
-            svg.setAttribute('height', '450');
-            container.appendChild(svg);
-            
-            // Draw decision tree
-            const nodes = [
-                {x: 500, y: 50, text: 'Need real-time predictions?', type: 'question'},
-                {x: 300, y: 150, text: 'YES', type: 'answer'},
-                {x: 700, y: 150, text: 'NO', type: 'answer'},
-                {x: 300, y: 220, text: 'Naïve Bayes', type: 'result'},
-                {x: 550, y: 250, text: 'Complex non-linear\nboundaries?', type: 'question'},
-                {x: 450, y: 350, text: 'YES', type: 'answer'},
-                {x: 650, y: 350, text: 'NO', type: 'answer'},
-                {x: 450, y: 420, text: 'SVM', type: 'result'},
-                {x: 650, y: 420, text: 'Gradient Boosting', type: 'result'}
-            ];
-            
-            // Draw connections
-            const connections = [
-                {x1: 500, y1: 50, x2: 300, y2: 150},
-                {x1: 500, y1: 50, x2: 700, y2: 150},
-                {x1: 300, y1: 150, x2: 300, y2: 220},
-                {x1: 700, y1: 150, x2: 550, y2: 250},
-                {x1: 550, y1: 250, x2: 450, y2: 350},
-                {x1: 550, y1: 250, x2: 650, y2: 350},
-                {x1: 450, y1: 350, x2: 450, y2: 420},
-                {x1: 650, y1: 350, x2: 650, y2: 420}
-            ];
-            
-            connections.forEach(conn => {
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', conn.x1);
-                line.setAttribute('y1', conn.y1);
-                line.setAttribute('x2', conn.x2);
-                line.setAttribute('y2', conn.y2);
-                line.setAttribute('stroke', '#999');
-                line.setAttribute('stroke-width', '2');
-                svg.appendChild(line);
-            });
-            
-            nodes.forEach(node => {
-                const color = node.type === 'result' ? '#CC0000' : 
-                              node.type === 'question' ? '#2196F3' : '#666';
-                
-                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('x', node.x - 70);
-                rect.setAttribute('y', node.y - 25);
-                rect.setAttribute('width', '140');
-                rect.setAttribute('height', '50');
-                rect.setAttribute('rx', '5');
-                rect.setAttribute('fill', color);
-                rect.setAttribute('stroke', '#333');
-                rect.setAttribute('stroke-width', '1');
-                svg.appendChild(rect);
-                
-                const lines = node.text.split('\n');
-                lines.forEach((line, i) => {
-                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    text.setAttribute('x', node.x);
-                    text.setAttribute('y', node.y + (lines.length === 1 ? 5 : -5 + i * 15));
-                    text.setAttribute('text-anchor', 'middle');
-                    text.setAttribute('font-size', '12px');
-                    text.setAttribute('fill', 'white');
-                    text.setAttribute('font-weight', node.type === 'result' ? 'bold' : 'normal');
-                    text.textContent = line;
-                    svg.appendChild(text);
-                });
-            });
-        }
+<!-- 2.Q Knowledge check SVM -->
+<div class="slide">
+  <div class="slide-number">2.Q</div>
+  <h2>Knowledge Check — SVM</h2>
+  <div class="quiz rv d1">
+    <div class="quiz-question">Q1. What does an SVM try to maximise when choosing its boundary?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) The number of data points on each side</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) The margin — the empty gap between the two classes</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) The number of features in the dataset</button>
+    <div class="quiz-explanation">A wider margin gives a more confident boundary that generalises better to unseen data.</div>
+  </div>
+  <div class="quiz rv d2">
+    <div class="quiz-question">Q2. What is the “kernel trick” for?</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) Removing outliers from the data</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">B) Speeding up training on large datasets</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">C) Lifting data into higher dimensions so a flat boundary can separate it</button>
+    <div class="quiz-explanation">When no straight line works, the kernel maps data upward where a simple separating surface exists.</div>
+  </div>
+</div>
 
-        // Confusion Matrix Visualization
-        function initConfusionMatrixViz() {
-            const container = document.getElementById('confusion-matrix-viz');
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '500');
-            svg.setAttribute('height', '400');
-            container.appendChild(svg);
-            
-            const matrix = [
-                {row: 'Actual Positive', col: 'Predicted Positive', value: 85, label: 'TP: 85', color: '#4CAF50'},
-                {row: 'Actual Positive', col: 'Predicted Negative', value: 10, label: 'FN: 10', color: '#F44336'},
-                {row: 'Actual Negative', col: 'Predicted Positive', value: 15, label: 'FP: 15', color: '#F44336'},
-                {row: 'Actual Negative', col: 'Predicted Negative', value: 10, label: 'TN: 10', color: '#4CAF50'}
-            ];
-            
-            const cellSize = 150;
-            const startX = 100;
-            const startY = 50;
-            
-            // Labels
-            const label1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label1.setAttribute('x', startX + cellSize);
-            label1.setAttribute('y', startY - 10);
-            label1.setAttribute('text-anchor', 'middle');
-            label1.setAttribute('font-weight', 'bold');
-            label1.textContent = 'Predicted Positive';
-            svg.appendChild(label1);
-            
-            const label2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label2.setAttribute('x', startX + cellSize * 2);
-            label2.setAttribute('y', startY - 10);
-            label2.setAttribute('text-anchor', 'middle');
-            label2.setAttribute('font-weight', 'bold');
-            label2.textContent = 'Predicted Negative';
-            svg.appendChild(label2);
-            
-            const label3 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label3.setAttribute('x', startX - 10);
-            label3.setAttribute('y', startY + cellSize / 2);
-            label3.setAttribute('text-anchor', 'end');
-            label3.setAttribute('font-weight', 'bold');
-            label3.textContent = 'Actual Positive';
-            svg.appendChild(label3);
-            
-            const label4 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label4.setAttribute('x', startX - 10);
-            label4.setAttribute('y', startY + cellSize * 1.5);
-            label4.setAttribute('text-anchor', 'end');
-            label4.setAttribute('font-weight', 'bold');
-            label4.textContent = 'Actual Negative';
-            svg.appendChild(label4);
-            
-            // Matrix cells
-            matrix.forEach((cell, i) => {
-                const row = i < 2 ? 0 : 1;
-                const col = i % 2;
-                
-                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('x', startX + col * cellSize);
-                rect.setAttribute('y', startY + row * cellSize);
-                rect.setAttribute('width', cellSize);
-                rect.setAttribute('height', cellSize);
-                rect.setAttribute('fill', cell.color);
-                rect.setAttribute('opacity', '0.7');
-                rect.setAttribute('stroke', '#333');
-                rect.setAttribute('stroke-width', '2');
-                svg.appendChild(rect);
-                
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', startX + col * cellSize + cellSize / 2);
-                text.setAttribute('y', startY + row * cellSize + cellSize / 2);
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('font-size', '24px');
-                text.setAttribute('font-weight', 'bold');
-                text.setAttribute('fill', 'white');
-                text.textContent = cell.label;
-                svg.appendChild(text);
-            });
-        }
+<!-- ================= SECTION 3 DIVIDER ================= -->
+<div class="slide divider">
+  <div class="slide-number">3</div>
+  <div class="kicker rv d1">Section 3</div>
+  <h1 class="rv d2">Ensemble Learning &amp; Gradient Boosting</h1>
+  <div class="rule rv d3"></div>
+  <div class="sub rv d4">Many small models, working together, beat one big model.</div>
+</div>
 
-        // Initialize first slide
-        showSlide(0);
-    </script>
+<!-- 3.1 Ensemble learning -->
+<div class="slide">
+  <div class="slide-number">3.1</div>
+  <h2>3.1 &nbsp;What is ensemble learning?</h2>
+  <div class="box scenario rv d1"><div class="lbl">Everyday analogy</div>Ask one expert and you get one opinion, possibly biased. Ask a diverse panel and combine their answers — the group is usually more accurate than any single member. Ensemble learning applies this “wisdom of the crowd” to models.</div>
+  <div class="definition box rv d2"><div class="lbl">Definition</div><b>Ensemble learning</b> combines many models to produce better predictions than any one alone. The two main strategies are <b>bagging</b> and <b>boosting</b>.</div>
+</div>
+
+<!-- 3.2 Bagging vs boosting -->
+<div class="slide">
+  <div class="slide-number">3.2</div>
+  <h2>3.2 &nbsp;Bagging vs Boosting</h2>
+  <div class="cols">
+    <div class="col rv d1">
+      <h3 style="color:var(--green)">Bagging — work in parallel</h3>
+      <div class="illustration">
+        <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="12">
+          <rect x="10" y="80" width="46" height="30" rx="5" fill="#e7edf9" stroke="#1e5bb8"/><text x="33" y="100" text-anchor="middle" fill="#16337e">data</text>
+          <g stroke="#9aa3b6" stroke-width="1.4" fill="none">
+            <path d="M56,95 C90,40 110,40 130,45"/><path d="M56,95 L130,95"/><path d="M56,95 C90,150 110,150 130,145"/>
+          </g>
+          <rect x="130" y="30" width="60" height="30" rx="5" fill="#f3f4f7" stroke="#9aa3b6"/><text x="160" y="50" text-anchor="middle" fill="#555">model 1</text>
+          <rect x="130" y="80" width="60" height="30" rx="5" fill="#f3f4f7" stroke="#9aa3b6"/><text x="160" y="100" text-anchor="middle" fill="#555">model 2</text>
+          <rect x="130" y="130" width="60" height="30" rx="5" fill="#f3f4f7" stroke="#9aa3b6"/><text x="160" y="150" text-anchor="middle" fill="#555">model 3</text>
+          <g stroke="#9aa3b6" stroke-width="1.4" fill="none">
+            <path d="M190,45 C230,55 240,80 250,92"/><path d="M190,95 L250,95"/><path d="M190,145 C230,135 240,110 250,98"/>
+          </g>
+          <circle cx="270" cy="95" r="18" fill="#2e7d32"/><text x="270" y="99" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">vote</text>
+        </svg>
+      </div>
+      <p class="small">Train many models on different random slices, then <b>average</b> them. Reduces variance. <br><b>Example: Random Forest.</b></p>
+    </div>
+    <div class="col rv d2">
+      <h3 style="color:var(--amber)">Boosting — work in sequence</h3>
+      <div class="illustration">
+        <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="12">
+          <rect x="10" y="80" width="46" height="30" rx="5" fill="#e7edf9" stroke="#1e5bb8"/><text x="33" y="100" text-anchor="middle" fill="#16337e">data</text>
+          <rect x="80" y="30" width="60" height="28" rx="5" fill="#fff3d6" stroke="#f6a600"/><text x="110" y="49" text-anchor="middle" fill="#8a6100">model 1</text>
+          <rect x="120" y="82" width="60" height="28" rx="5" fill="#fff3d6" stroke="#f6a600"/><text x="150" y="101" text-anchor="middle" fill="#8a6100">model 2</text>
+          <rect x="160" y="134" width="60" height="28" rx="5" fill="#fff3d6" stroke="#f6a600"/><text x="190" y="153" text-anchor="middle" fill="#8a6100">model 3</text>
+          <g stroke="#f6a600" stroke-width="1.6" fill="none" marker-end="url(#b3)">
+            <path d="M56,90 L80,50"/><path d="M110,58 L140,86"/><path d="M150,110 L178,138"/>
+          </g>
+          <line x1="222" y1="148" x2="262" y2="110" stroke="#f6a600" stroke-width="1.6" marker-end="url(#b3)"/>
+          <circle cx="272" cy="98" r="18" fill="#f6a600"/><text x="272" y="102" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">sum</text>
+          <defs><marker id="b3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#f6a600"/></marker></defs>
+        </svg>
+      </div>
+      <p class="small">Each new model <b>fixes the mistakes</b> of the one before, focusing on hard cases. Reduces bias. <br><b>Example: Gradient Boosting.</b></p>
+    </div>
+  </div>
+</div>
+
+<!-- 3.3 What is gradient boosting -->
+<div class="slide">
+  <div class="slide-number">3.3</div>
+  <h2>3.3 &nbsp;What is gradient boosting?</h2>
+  <div class="box definition rv d1"><div class="lbl">Definition</div><b>Gradient boosting</b> combines many <b>weak models</b> (usually small decision trees) into one strong model. The trees are built <b>one after another</b>, each one trained to reduce the errors left by the previous ones.</div>
+  <div class="cols rv d2">
+    <div class="col">
+      <h3>Why “weak” models?</h3>
+      <p>Each small tree on its own is barely better than guessing. But stacked in sequence, each correcting the last, they add up to a highly accurate model.</p>
+    </div>
+    <div class="col">
+      <h3>What it's good at</h3>
+      <p>Capturing complex relationships in <b>structured/tabular</b> business data — churn, credit risk, demand — often achieving top accuracy.</p>
+    </div>
+  </div>
+</div>
+
+<!-- 3.4 How it works animated -->
+<div class="slide">
+  <div class="slide-number">3.4</div>
+  <h2>3.4 &nbsp;How it works: learning from mistakes</h2>
+  <p class="lead rv d1">Each round, the errors (red) that remain get more attention, and the next tree shrinks them further.</p>
+  <div class="illustration rv d2">
+    <svg viewBox="0 0 660 220" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif" font-size="13">
+      <!-- Round 1 -->
+      <rect x="20" y="40" width="150" height="130" rx="8" fill="#f6f8fc" stroke="#d5dbe8"/>
+      <text x="95" y="30" text-anchor="middle" fill="#16337e" font-weight="700">Round 1</text>
+      <g fill="#c0392b"><circle cx="55" cy="80" r="9"/><circle cx="95" cy="70" r="9"/><circle cx="130" cy="95" r="9"/><circle cx="70" cy="120" r="9"/><circle cx="115" cy="130" r="9"/><circle cx="90" cy="150" r="9"/></g>
+      <text x="95" y="192" text-anchor="middle" fill="#c0392b" font-size="11">many errors remain</text>
+      <!-- arrow -->
+      <line x1="178" y1="105" x2="212" y2="105" stroke="#9aa3b6" stroke-width="2" marker-end="url(#g4)"/>
+      <!-- Round 2 -->
+      <rect x="220" y="40" width="150" height="130" rx="8" fill="#f6f8fc" stroke="#d5dbe8"/>
+      <text x="295" y="30" text-anchor="middle" fill="#16337e" font-weight="700">Round 2</text>
+      <g fill="#e0a0a0"><circle cx="255" cy="80" r="5"/><circle cx="295" cy="70" r="5"/><circle cx="330" cy="95" r="5"/></g>
+      <g fill="#c0392b"><circle cx="270" cy="120" r="7"/><circle cx="315" cy="135" r="7"/></g>
+      <text x="295" y="192" text-anchor="middle" fill="#c0392b" font-size="11">fewer, smaller errors</text>
+      <line x1="378" y1="105" x2="412" y2="105" stroke="#9aa3b6" stroke-width="2" marker-end="url(#g4)"/>
+      <!-- Round 3 -->
+      <rect x="420" y="40" width="150" height="130" rx="8" fill="#f6f8fc" stroke="#d5dbe8"/>
+      <text x="495" y="30" text-anchor="middle" fill="#16337e" font-weight="700">Round 3</text>
+      <g fill="#cfe3cf"><circle cx="455" cy="80" r="4"/><circle cx="500" cy="95" r="4"/><circle cx="470" cy="125" r="4"/><circle cx="520" cy="120" r="4"/></g>
+      <circle cx="495" cy="105" r="6" fill="#c0392b"/>
+      <text x="495" y="192" text-anchor="middle" fill="#2e7d32" font-size="11">almost all corrected</text>
+      <!-- final -->
+      <line x1="578" y1="105" x2="605" y2="105" stroke="#2e7d32" stroke-width="2" marker-end="url(#g4b)"/>
+      <text x="632" y="100" text-anchor="middle" fill="#2e7d32" font-weight="800" font-size="13">strong</text>
+      <text x="632" y="116" text-anchor="middle" fill="#2e7d32" font-weight="800" font-size="13">model</text>
+      <defs>
+        <marker id="g4" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9aa3b6"/></marker>
+        <marker id="g4b" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2e7d32"/></marker>
+      </defs>
+    </svg>
+  </div>
+  <div class="box key rv d3"><div class="lbl">In one sentence</div>Gradient boosting trains each new tree on the <b>leftover errors</b> of the trees so far — steadily correcting the model's hardest mistakes.</div>
+</div>
+
+<!-- 3.5 Strengths/weaknesses -->
+<div class="slide">
+  <div class="slide-number">3.5</div>
+  <h2>3.5 &nbsp;Gradient boosting — strengths &amp; weaknesses</h2>
+  <table class="rv d1">
+    <tr><th style="width:50%">Strengths</th><th>Weaknesses</th></tr>
+    <tr><td style="text-align:left"><b>High accuracy</b> on complex problems.</td><td style="text-align:left"><b>Computationally intensive</b> — slow to train on big data.</td></tr>
+    <tr><td style="text-align:left"><b>Handles missing data</b> reasonably well.</td><td style="text-align:left"><b>Can overfit</b> if not carefully tuned, especially with noise.</td></tr>
+    <tr><td style="text-align:left"><b>Feature importance</b> — shows which variables matter.</td><td style="text-align:left"><b>Harder to interpret</b> than a single tree.</td></tr>
+    <tr><td style="text-align:left"><b>Excels on tabular/business data.</b></td><td style="text-align:left"><b>Needs tuning</b> (learning rate, tree count, depth).</td></tr>
+    <tr><td style="text-align:left"><b>Robust to outliers</b> vs a plain tree.</td><td style="text-align:left"><b>Slower predictions</b> — less ideal for real-time.</td></tr>
+  </table>
+</div>
+
+<!-- 3.6 GB vs RF -->
+<div class="slide">
+  <div class="slide-number">3.6</div>
+  <h2>3.6 &nbsp;Gradient Boosting vs Random Forest</h2>
+  <table class="rv d1 small">
+    <tr><th style="width:22%">Feature</th><th>Random Forest (bagging)</th><th>Gradient Boosting</th></tr>
+    <tr><td class="lbl">Training</td><td style="text-align:left">Many trees built <b>independently</b> and in parallel.</td><td style="text-align:left">Trees built <b>sequentially</b>, each fixing prior errors.</td></tr>
+    <tr><td class="lbl">Performance</td><td style="text-align:left">Stable across datasets.</td><td style="text-align:left">Often higher accuracy, more sensitive to noise.</td></tr>
+    <tr><td class="lbl">Overfitting</td><td style="text-align:left">Less prone (averaging).</td><td style="text-align:left">More prone if not tuned.</td></tr>
+    <tr><td class="lbl">Speed</td><td style="text-align:left">Faster (parallel).</td><td style="text-align:left">Slower (sequential).</td></tr>
+    <tr><td class="lbl">Interpretability</td><td style="text-align:left">Easier.</td><td style="text-align:left">Harder.</td></tr>
+    <tr><td class="lbl">Best for</td><td style="text-align:left">Large datasets, many features.</td><td style="text-align:left">Smaller, cleaner data needing high accuracy.</td></tr>
+  </table>
+</div>
+
+<!-- 3.7 Activity model comparison -->
+<div class="slide">
+  <div class="slide-number">3.7</div>
+  <h2>3.7 &nbsp;Activity — compare every model in Orange</h2>
+  <div class="box scenario rv d1"><div class="lbl">Your role</div>You are an HR analyst predicting <b>employee churn</b> — who is at high risk of leaving. Dataset in Orange: <b>“Employee attrition”</b>.</div>
+  <div class="cols rv d2">
+    <div class="col">
+      <h3>The challenge</h3>
+      <p>Build every classifier you have learned so far and compare their predictive performance side by side:</p>
+      <ul>
+        <li>Logistic Regression</li>
+        <li>k-Nearest Neighbours (k-NN)</li>
+        <li>Decision Tree &amp; Random Forest</li>
+        <li>Support Vector Machine</li>
+        <li>Gradient Boosting</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="box definition"><div class="lbl">In Orange</div>Wire: <b>File → Test &amp; Score</b>, then attach each learner widget. Compare <b>AUC, accuracy and F1</b> in one table, and inspect the confusion matrix for the best model.</div>
+      <div class="box key"><div class="lbl">Discussion</div>Which model wins on this data — and does the “best accuracy” model also give the clearest business explanation?</div>
+    </div>
+  </div>
+</div>
+
+<!-- 3.Q Knowledge check ensembles -->
+<div class="slide">
+  <div class="slide-number">3.Q</div>
+  <h2>Knowledge Check — Ensembles</h2>
+  <div class="quiz rv d1">
+    <div class="quiz-question">Q1. The key difference between bagging and boosting is:</div>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">A) Bagging builds models in parallel; boosting builds them in sequence, each fixing prior errors</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">B) Bagging only works for regression; boosting only for classification</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) Bagging uses trees; boosting never uses trees</button>
+    <div class="quiz-explanation">Random Forest (bagging) averages independent trees; Gradient Boosting (boosting) adds trees one at a time to correct mistakes.</div>
+  </div>
+  <div class="quiz rv d2">
+    <div class="quiz-question">Q2. Each new tree in gradient boosting is trained mainly on:</div>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">A) A completely fresh random dataset</button>
+    <button class="quiz-option" onclick="checkAnswer(this,true)" data-correct="true">B) The errors still left by the trees built so far</button>
+    <button class="quiz-option" onclick="checkAnswer(this,false)">C) Only the easiest, correctly-classified points</button>
+    <div class="quiz-explanation">Boosting focuses attention on the remaining mistakes, shrinking them round after round.</div>
+  </div>
+</div>
+
+<!-- ================= WRAP UP ================= -->
+<div class="slide">
+  <div class="slide-number">4.1</div>
+  <h2>4.1 &nbsp;Three tools, three jobs</h2>
+  <table class="rv d1">
+    <tr><th>Method</th><th>Core idea</th><th>Reach for it when…</th></tr>
+    <tr><td class="lbl">Naïve Bayes</td><td style="text-align:left">Combine clue probabilities; pick the most likely class.</td><td style="text-align:left">Text/spam, fast baselines, many categorical features.</td></tr>
+    <tr><td class="lbl">SVM</td><td style="text-align:left">Widest possible boundary between classes.</td><td style="text-align:left">Clear separation, medium-sized data, high-dimensional features.</td></tr>
+    <tr><td class="lbl">Gradient Boosting</td><td style="text-align:left">Many small trees, each fixing the last one's errors.</td><td style="text-align:left">Structured business data where accuracy is the priority.</td></tr>
+  </table>
+  <div class="box key rv d2"><div class="lbl">The habit to build</div>No single model wins everywhere. Try several, <b>compare them fairly</b> (as in the Orange activity), and weigh accuracy against interpretability for the business question at hand.</div>
+</div>
+
+<div class="slide center">
+  <div class="slide-number">4.2</div>
+  <h1 class="rv d1" style="color:var(--blue)">Coming next — Week 7</h1>
+  <p class="lead rv d2" style="font-size:1.25rem">Introduction to Neural Networks</p>
+  <p class="rv d3 muted">Questions? Bring your Orange workflows and the breast-cancer notebook to the lab.</p>
+</div>
+
+<div class="nav-indicator" id="navIndicator"></div>
+<div class="nav-hint">← → to navigate &middot; T for contents</div>
+
+<div class="toc-overlay" id="tocOverlay">
+  <h2>Table of Contents</h2>
+  <div class="toc-grid" id="tocList"></div>
+  <p style="margin-top:18px;color:#999;font-size:.82rem">Press T or Escape to close</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  function showSlide(n){
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    const s = slides[current];
+    s.classList.add('active');
+    void s.offsetWidth; // force reflow so CSS animations restart
+    document.getElementById('navIndicator').textContent = (current+1)+' / '+slides.length;
+    document.getElementById('progressBar').style.width = ((current+1)/slides.length*100)+'%';
+  }
+  function buildTOC(){
+    const list = document.getElementById('tocList');
+    slides.forEach((s,i)=>{
+      const h = s.querySelector('h1,h2');
+      if(h){
+        const div = document.createElement('div');
+        div.className = 'toc-item' + (s.classList.contains('divider') ? ' toc-section' : '');
+        div.textContent = h.textContent.replace(/\s+/g,' ').trim();
+        div.onclick = ()=>{ showSlide(i); toggleTOC(); };
+        list.appendChild(div);
+      }
+    });
+  }
+  function toggleTOC(){ document.getElementById('tocOverlay').classList.toggle('active'); }
+
+  // step-by-step reveal
+  function nextStep(btn){
+    const w = btn.closest('.worked');
+    const steps = w.querySelectorAll('.wstep');
+    const ans = w.querySelector('.wans');
+    let shown = +(w.dataset.shown||0);
+    if(shown < steps.length){
+      steps[shown].classList.add('visible');
+      shown++; w.dataset.shown = shown;
+      renderMathInElement(steps[shown-1], mathOpts);
+    } else if(ans && !ans.classList.contains('visible')){
+      ans.classList.add('visible');
+      renderMathInElement(ans, mathOpts);
+      btn.style.display='none';
+      return;
+    }
+    if(shown < steps.length){ btn.textContent = 'Reveal Step '+(shown+1)+' →'; }
+    else if(ans){ btn.textContent = 'Reveal result ✓'; }
+    else { btn.style.display='none'; }
+  }
+
+  // quizzes
+  function checkAnswer(btn, isCorrect){
+    const quiz = btn.closest('.quiz');
+    if(quiz.classList.contains('answered')) return;
+    quiz.classList.add('answered');
+    quiz.querySelectorAll('.quiz-option').forEach(o=>{
+      if(o.dataset.correct==='true') o.classList.add('correct');
+      else if(o===btn && !isCorrect) o.classList.add('incorrect');
+      else o.classList.add('dimmed');
+    });
+    quiz.querySelector('.quiz-explanation').classList.add('visible');
+  }
+
+  document.addEventListener('keydown',(e)=>{
+    if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); showSlide(current+1); }
+    else if(e.key==='ArrowLeft'){ e.preventDefault(); showSlide(current-1); }
+    else if(e.key==='t'||e.key==='T'){ toggleTOC(); }
+    else if(e.key==='Escape'){ document.getElementById('tocOverlay').classList.remove('active'); }
+  });
+
+  const mathOpts = {
+    delimiters:[
+      {left:"$$",right:"$$",display:true},
+      {left:"\\(",right:"\\)",display:false}
+    ],
+    throwOnError:false
+  };
+
+  buildTOC();
+  showSlide(0);
+  renderMathInElement(document.body, mathOpts);
+</script>
 </body>
 </html>
