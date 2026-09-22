@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DATA4500 Week 11: Forecast, predict, keep</title>
+<style>
+:root{
+  --navy:#1F246E; --azure:#009EE0; --cream:#F5F3EE; --ink:#1a1a1a;
+  --mute:#6b6f80; --line:#dfe1ea; --green:#1f7a4d; --red:#c0392b; --amber:#e0a51e;
+  --sky:#e6f5fc;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:"Segoe UI",Helvetica,Arial,sans-serif;background:#fff;color:var(--ink);overflow:hidden}
+.slide{display:none;width:100vw;height:100vh;padding:56px 80px 70px;position:relative;flex-direction:column}
+.slide.active{display:flex}
+.slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;background:var(--navy)}
+.slide::after{content:"";position:absolute;left:14px;top:0;width:34px;height:60px;background:var(--azure);clip-path:polygon(100% 0,0 50%,100% 100%,60% 50%)}
+.tag{font-size:.85rem;color:var(--azure);font-weight:600;margin-bottom:6px}
+h1{font-size:2.6rem;color:var(--navy);line-height:1.15;margin-bottom:18px}
+h2{font-size:1.9rem;color:var(--navy);line-height:1.2;margin-bottom:22px;max-width:1100px}
+h3{font-size:1.15rem;color:var(--navy);margin:14px 0 6px}
+p,li{font-size:1.12rem;line-height:1.6;margin-bottom:8px}
+ul,ol{padding-left:26px}
+.content{flex:1;display:flex;flex-direction:column;min-height:0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:start;flex:1;min-height:0}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;flex:1}
+.box{background:var(--cream);border-left:5px solid var(--navy);padding:16px 20px;border-radius:0 6px 6px 0;margin:12px 0}
+.box.blue{background:var(--sky);border-color:var(--azure)}
+.box.warn{background:#fdf3e3;border-color:var(--amber)}
+.box .lbl{font-weight:700;color:var(--navy);margin-bottom:4px;font-size:1rem}
+.big{font-size:1.5rem;font-weight:700;color:var(--navy)}
+.eq{font-family:Georgia,serif;font-size:1.35rem;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:16px 22px;margin:12px 0;line-height:1.7}
+.eq .k{color:var(--azure);font-weight:700}
+.eq .n{color:var(--red);font-weight:700}
+.card{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:18px 20px}
+.card h3{margin-top:0}
+.fig{display:flex;justify-content:center;align-items:center;min-height:0}
+.fig svg{max-width:100%;max-height:100%;height:auto}
+.cap{text-align:center;color:var(--mute);font-size:.92rem;margin-top:6px}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:1.02rem}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:var(--cream);color:var(--navy)}
+.divider{justify-content:center;align-items:flex-start;background:var(--navy);color:#fff}
+.divider::before,.divider::after{display:none}
+.divider .tag{color:var(--azure);font-size:1.1rem}
+.divider h1{color:#fff;font-size:3.2rem;max-width:900px}
+.divider p{color:#c9d2ff;font-size:1.35rem;max-width:800px}
+.title{justify-content:center;background:linear-gradient(135deg,#fff 55%,var(--cream) 55%)}
+.title h1{font-size:3.4rem}
+.title .sub{font-size:1.5rem;color:var(--azure);font-weight:600}
+.title .meta{color:var(--mute);font-size:1.1rem;margin-top:30px}
+.steps{list-style:none;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
+.steps li::before{content:counter(s);flex:0 0 32px;height:32px;border-radius:50%;background:var(--azure);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.pill{display:inline-block;background:var(--sky);color:var(--navy);border-radius:20px;padding:3px 12px;font-size:.92rem;font-weight:600;margin-right:6px}
+/* reveal */
+.rv{opacity:0;transform:translateY(10px);transition:opacity .35s ease,transform .35s ease}
+.slide.active .rv.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{transition:none;opacity:1;transform:none}}
+/* chrome */
+.progress{position:fixed;top:0;left:0;height:5px;background:var(--azure);z-index:100;transition:width .3s}
+.nav{position:fixed;bottom:18px;right:30px;font-size:.9rem;color:var(--mute);z-index:100}
+.hint{position:fixed;bottom:18px;left:30px;font-size:.8rem;color:#aaa;z-index:100}
+.foot{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-size:.8rem;color:var(--navy);font-weight:700;z-index:100;letter-spacing:.5px}
+.toc{display:none;position:fixed;inset:0;background:rgba(255,255,255,.97);z-index:200;padding:60px 90px;overflow-y:auto}
+.toc.open{display:block}
+.toc h2{border:none}
+.toc-i{padding:7px 0;cursor:pointer;color:var(--azure);border-bottom:1px solid #f0f0f0;font-size:1rem}
+.toc-i:hover{color:var(--navy)}
+.toc-s{font-weight:700;color:var(--navy);margin-top:14px;font-size:1.1rem}
+/* quiz */
+.q{margin:8px 0 16px}
+.q .qq{font-weight:600;margin-bottom:8px}
+.opt{display:block;width:100%;text-align:left;padding:10px 14px;margin:5px 0;background:#fff;border:2px solid var(--line);border-radius:7px;cursor:pointer;font:inherit;font-size:1rem;color:var(--ink);transition:border-color .2s,background .2s}
+.opt:hover{border-color:var(--azure)}
+.opt.ok{border-color:var(--green);background:#eaf5ea;cursor:default}
+.opt.no{border-color:var(--red);background:#fdf0ef;cursor:default}
+.opt.dim{opacity:.5;cursor:default}
+.exp{display:none;margin-top:10px;padding:10px 14px;background:var(--sky);border-left:4px solid var(--azure);border-radius:4px;font-size:.98rem}
+.exp.show{display:block}
+/* widget */
+.widget{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
+.widget label{display:block;font-weight:600;color:var(--navy);margin:10px 0 4px}
+.widget input[type=range]{width:100%;accent-color:var(--azure)}
+.widget .val{font-weight:700;color:var(--azure)}
+.gauge{height:34px;background:#eee;border-radius:17px;overflow:hidden;position:relative;margin:10px 0}
+.gauge .fill{height:100%;width:50%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));transition:width .3s}
+.gauge .mark{position:absolute;left:50%;top:0;bottom:0;width:3px;background:var(--navy)}
+.widget .lab{position:absolute;left:50%;top:-22px;transform:translateX(-50%);font-size:.8rem;color:var(--navy);font-weight:600}
+.pout{font-size:2.6rem;font-weight:800;color:var(--navy);text-align:center}
+.zout{text-align:center;color:var(--mute);font-size:1.05rem}
+.risk{text-align:center;font-size:1.3rem;font-weight:700;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+
+<!-- 0 TITLE -->
+<div class="slide title">
+  <div class="tag">DATA4500 Marketing and Social Media Analytics</div>
+  <h1>Week 11<br>Forecast, predict, keep</h1>
+  <div class="sub">Predictive modelling for a coffee shop that wants to keep its customers</div>
+  <p class="meta">Kaplan Business School &middot; Lesson 11 of 12</p>
+</div>
+
+<!-- 1 -->
+<div class="slide">
+  <div class="tag">Where we are</div>
+  <h2>Last week we measured customer value and churn. This week we predict them, then act.</h2>
+  <div class="cols">
+    <div>
+      <table>
+        <tr><th>Week</th><th>Topic</th></tr>
+        <tr><td>9</td><td>Strategy optimisation: SEO, A/B tests, crisis handling</td></tr>
+        <tr><td>10</td><td>Customer lifetime value and churn: what they are, how to measure them</td></tr>
+        <tr style="background:var(--sky)"><td><b>11</b></td><td><b>Predictive modelling: forecast sales, predict who leaves, decide what to do</b></td></tr>
+        <tr><td>12</td><td>Assessment</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="box blue">
+        <div class="lbl">Three things you will be able to do by the end</div>
+        <ol class="steps">
+          <li>Use a sales forecast model and explain it in plain words</li>
+          <li>Use a churn model to say how likely each customer is to leave</li>
+          <li>Turn that prediction into a decision about keeping customers</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="slide">
+  <div class="tag">The one idea for today</div>
+  <h2>A prediction model does the same three jobs as your weather app</h2>
+  <div class="grid3" style="flex:1;align-content:start">
+    <div class="card rv">
+      <div class="fig"><svg viewBox="0 0 200 110" width="200"><circle cx="60" cy="50" r="26" fill="#f6c94b"/><text x="120" y="60" font-size="34" font-weight="700" fill="#1F246E">24&deg;</text></svg></div>
+      <h3>Job 1: forecast a number</h3>
+      <p>Tomorrow will be 24 degrees.</p>
+      <p class="pill">BrewLab: how much will we sell next week?</p>
+    </div>
+    <div class="card rv">
+      <div class="fig"><svg viewBox="0 0 200 110" width="200"><path d="M40 55 q10-30 40-20 q15-25 45-5 q30-5 30 25 H40z" fill="#9bb7d4"/><g stroke="#009EE0" stroke-width="3" stroke-linecap="round"><line x1="60" y1="75" x2="52" y2="95"/><line x1="90" y1="75" x2="82" y2="95"/><line x1="120" y1="75" x2="112" y2="95"/></g><text x="145" y="98" font-size="22" font-weight="700" fill="#1F246E">60%</text></svg></div>
+      <h3>Job 2: give a chance</h3>
+      <p>There is a 60% chance of rain.</p>
+      <p class="pill">BrewLab: how likely is this member to leave?</p>
+    </div>
+    <div class="card rv">
+      <div class="fig"><svg viewBox="0 0 200 110" width="200"><path d="M30 60 q70-60 140 0 z" fill="#1F246E"/><line x1="100" y1="60" x2="100" y2="100" stroke="#1F246E" stroke-width="4"/><path d="M100 100 q0 10 10 8" stroke="#1F246E" stroke-width="4" fill="none"/></svg></div>
+      <h3>Job 3: make a decision</h3>
+      <p>Take an umbrella, or don't.</p>
+      <p class="pill">BrewLab: what do we do about it?</p>
+    </div>
+  </div>
+  <div class="box rv" style="margin-top:14px"><b>A model is only useful when it changes what somebody does.</b> Keep asking: what decision does this number help Dana make?</div>
+</div>
+
+<!-- 3 -->
+<div class="slide">
+  <div class="tag">Our case</div>
+  <h2>Meet Dana, who owns BrewLab and has three questions</h2>
+  <div class="cols">
+    <div>
+      <p>BrewLab is a specialty coffee shop in Melbourne. Dana runs a loyalty app: members earn a free drink after every ten purchases. Four thousand people have joined.</p>
+      <p>Dana is not a data person. She wants answers she can act on, in words she understands.</p>
+      <div class="box blue">
+        <div class="lbl">Dana's questions this week</div>
+        <ol>
+          <li>How much will we sell next week?</li>
+          <li>Which members are about to stop coming?</li>
+          <li>What should we do to keep them?</li>
+        </ol>
+      </div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 420 300">
+        <rect x="20" y="40" width="380" height="220" rx="14" fill="#F5F3EE" stroke="#dfe1ea"/>
+        <rect x="40" y="60" width="160" height="60" rx="8" fill="#fff" stroke="#009EE0" stroke-width="2"/>
+        <text x="120" y="86" text-anchor="middle" font-size="13" fill="#1F246E" font-weight="700">Sales history</text>
+        <text x="120" y="105" text-anchor="middle" font-size="12" fill="#6b6f80">2 years, weekly</text>
+        <rect x="220" y="60" width="160" height="60" rx="8" fill="#fff" stroke="#009EE0" stroke-width="2"/>
+        <text x="300" y="86" text-anchor="middle" font-size="13" fill="#1F246E" font-weight="700">Loyalty app data</text>
+        <text x="300" y="105" text-anchor="middle" font-size="12" fill="#6b6f80">4,000 members</text>
+        <path d="M120 120 V160 M300 120 V160" stroke="#1F246E" stroke-width="2"/>
+        <rect x="90" y="160" width="240" height="44" rx="22" fill="#1F246E"/>
+        <text x="210" y="188" text-anchor="middle" font-size="15" fill="#fff" font-weight="700">Models</text>
+        <path d="M210 204 V235" stroke="#1F246E" stroke-width="2"/>
+        <text x="210" y="252" text-anchor="middle" font-size="14" fill="#1F246E" font-weight="700">Decisions Dana can make</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 1 ===== -->
+<div class="slide divider">
+  <div class="tag">Part 1 of 3</div>
+  <h1>Forecasting a number</h1>
+  <p>How much will BrewLab sell next week? Regression is a recipe that turns known facts into a sales estimate.</p>
+</div>
+
+<!-- 5 -->
+<div class="slide">
+  <div class="tag">1.1</div>
+  <h2>A regression model is a recipe: a few ingredients, each with a fixed amount</h2>
+  <div class="cols">
+    <div>
+      <p>Look at two years of BrewLab weeks. Weeks with more marketing spend sold more. The dots do not sit on a perfect line, but a line through the middle captures the pattern.</p>
+      <p>That line is the model. Give it a spend, it gives back a sales estimate.</p>
+      <div class="box">
+        <div class="lbl">In words</div>
+        <p style="margin:0">Start with base sales of about $1,800. Every extra $100 of marketing adds about $12.</p>
+      </div>
+      <div class="eq rv">Sales = <span class="k">1,800</span> + <span class="k">12</span> &times; Spend</div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 460 320">
+        <line x1="50" y1="270" x2="430" y2="270" stroke="#1a1a1a" stroke-width="1.5"/>
+        <line x1="50" y1="270" x2="50" y2="30" stroke="#1a1a1a" stroke-width="1.5"/>
+        <text x="240" y="300" text-anchor="middle" font-size="13">Marketing spend that week ($)</text>
+        <text x="18" y="150" text-anchor="middle" font-size="13" transform="rotate(-90 18 150)">Weekly sales ($)</text>
+        <text x="60" y="285" font-size="11" fill="#6b6f80">300</text><text x="400" y="285" font-size="11" fill="#6b6f80">2,000</text>
+        <text x="30" y="255" font-size="11" fill="#6b6f80" text-anchor="end">1,800</text><text x="30" y="80" font-size="11" fill="#6b6f80" text-anchor="end">2,600</text>
+        <g fill="#009EE0" opacity=".8">
+          <circle cx="80" cy="240" r="5"/><circle cx="105" cy="250" r="5"/><circle cx="120" cy="222" r="5"/><circle cx="150" cy="235" r="5"/><circle cx="170" cy="205" r="5"/><circle cx="195" cy="215" r="5"/><circle cx="210" cy="190" r="5"/><circle cx="240" cy="200" r="5"/><circle cx="255" cy="170" r="5"/><circle cx="280" cy="185" r="5"/><circle cx="300" cy="150" r="5"/><circle cx="320" cy="165" r="5"/><circle cx="345" cy="135" r="5"/><circle cx="365" cy="150" r="5"/><circle cx="390" cy="118" r="5"/><circle cx="410" cy="130" r="5"/>
+          <circle cx="135" cy="260" r="5"/><circle cx="230" cy="230" r="5"/><circle cx="330" cy="120" r="5"/>
+        </g>
+        <line x1="60" y1="252" x2="420" y2="122" stroke="#1F246E" stroke-width="3"/>
+        <text x="300" y="100" font-size="12" fill="#1F246E" font-weight="700">The model (the line)</text>
+        <text x="120" y="290" font-size="0"></text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="slide">
+  <div class="tag">1.2</div>
+  <h2>Real recipes have more than one ingredient. Each number tells Dana one thing.</h2>
+  <div class="eq">Sales = <span class="k">1,800</span> + <span class="k">12</span>&times;Spend + <span class="k">650</span>&times;Promo &minus; <span class="n">90</span>&times;Rain + <span class="k">400</span>&times;Dec</div>
+  <div class="cols">
+    <div>
+      <table>
+        <tr><th>Number</th><th>What it means for Dana</th></tr>
+        <tr class="rv"><td><b>1,800</b></td><td>Base sales when nothing special happens: no marketing, no promo, no rain, not December</td></tr>
+        <tr class="rv"><td><b>+12</b> per $100 spend</td><td>Each extra $100 of marketing adds about $12 in sales</td></tr>
+        <tr class="rv"><td><b>+650</b> if promo</td><td>A promotion week sells about $650 more than one without</td></tr>
+        <tr class="rv"><td><b>&minus;90</b> per rainy day</td><td>Each rainy day costs about $90</td></tr>
+        <tr class="rv"><td><b>+400</b> if December</td><td>A December week sells about $400 more</td></tr>
+      </table>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 460 270">
+        <text x="230" y="20" text-anchor="middle" font-size="13" fill="#6b6f80">How much each ingredient moves weekly sales</text>
+        <line x1="230" y1="40" x2="230" y2="240" stroke="#1a1a1a"/>
+        <g font-size="13" fill="#1F246E" font-weight="600" style="paint-order:stroke;stroke:#fff;stroke-width:5px">
+          <text x="230" y="76" text-anchor="middle" dy="-22">Promo week</text><rect x="230" y="62" width="163" height="18" fill="#009EE0"/><text x="400" y="76" font-size="12">+650</text>
+          <text x="230" y="120" text-anchor="middle" dy="-22">December</text><rect x="230" y="106" width="100" height="18" fill="#009EE0"/><text x="337" y="120" font-size="12">+400</text>
+          <text x="230" y="164" text-anchor="middle" dy="-22">$100 more spend</text><rect x="230" y="150" width="3" height="18" fill="#009EE0"/><text x="240" y="164" font-size="12">+12</text>
+          <text x="230" y="208" text-anchor="middle" dy="-22">One rainy day</text><rect x="208" y="194" width="22" height="18" fill="#c0392b"/><text x="200" y="208" font-size="12" fill="#c0392b" text-anchor="end">&minus;90</text>
+          <text x="230" y="250" text-anchor="middle" dy="-22">Five rainy days</text><rect x="118" y="236" width="112" height="18" fill="#c0392b"/><text x="110" y="250" font-size="12" fill="#c0392b" text-anchor="end">&minus;450</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div class="box warn" style="margin-top:6px"><b>The hidden phrase in every row:</b> "if everything else stays the same". Each number describes one change on its own.</div>
+</div>
+
+<!-- 7 -->
+<div class="slide">
+  <div class="tag">1.3</div>
+  <h2>Using the recipe: forecasting one week, step by step</h2>
+  <div class="cols">
+    <div>
+      <div class="box blue"><div class="lbl">Next week</div><p style="margin:0">Marketing spend $1,200 &middot; promotion on &middot; 2 rainy days forecast &middot; not December</p></div>
+      <ol class="steps">
+        <li class="rv">Write spend in hundreds: $1,200 becomes <b>12</b></li>
+        <li class="rv">Promo is on, so Promo = <b>1</b>. Not December, so Dec = <b>0</b></li>
+        <li class="rv">Fill in the recipe and add it up</li>
+      </ol>
+      <div class="eq rv">1,800 + 12&times;<span class="k">12</span> + 650&times;<span class="k">1</span> &minus; 90&times;<span class="k">2</span> + 400&times;<span class="k">0</span><br>= 1,800 + 144 + 650 &minus; 180 + 0<br>= <span class="k">$2,414</span></div>
+    </div>
+    <div>
+      <div class="card rv">
+        <h3>What Dana hears</h3>
+        <p>"Expect about $2,400 next week. The promotion is worth roughly $650 of that. If the rain clears, add another $180."</p>
+      </div>
+      <div class="card rv" style="margin-top:14px;border-color:var(--red)">
+        <h3 style="color:var(--red)">Common slip</h3>
+        <p>Typing 1,200 instead of 12 for spend. The forecast jumps to $16,000 for a coffee shop. If a number feels silly, it usually is.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8 -->
+<div class="slide">
+  <div class="tag">1.4</div>
+  <h2>The recipe only works inside the range it was built from</h2>
+  <div class="cols">
+    <div>
+      <p>Dana asks: "If I spend $9,000 in one week, the recipe says $3,530. Let's do it."</p>
+      <p>Her maths is right. Her trust is wrong. The model only ever saw weeks with spend between $300 and $2,000. It has no idea what happens at $9,000.</p>
+      <p>A coffee shop fills up. Extra advertising past a point brings nobody new through the door. The straight line keeps climbing anyway, because a straight line does not know about full shops.</p>
+      <div class="box warn"><div class="lbl">Rule</div><p style="margin:0">Trust a forecast inside the data range. Outside it, the model is guessing, and so are you.</p></div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 460 300">
+        <rect x="50" y="30" width="200" height="240" fill="#e6f5fc"/>
+        <text x="150" y="50" text-anchor="middle" font-size="12" fill="#1F246E" font-weight="700">Data the model saw</text>
+        <rect x="250" y="30" width="190" height="240" fill="#fdf3e3"/>
+        <text x="345" y="50" text-anchor="middle" font-size="12" fill="#b07a00" font-weight="700">No data here</text>
+        <line x1="50" y1="270" x2="440" y2="270" stroke="#1a1a1a" stroke-width="1.5"/>
+        <line x1="50" y1="270" x2="50" y2="30" stroke="#1a1a1a" stroke-width="1.5"/>
+        <text x="245" y="292" text-anchor="middle" font-size="13">Marketing spend ($)</text>
+        <text x="60" y="285" font-size="11" fill="#6b6f80">300</text><text x="235" y="285" font-size="11" fill="#6b6f80">2,000</text><text x="415" y="285" font-size="11" fill="#6b6f80">9,000</text>
+        <g fill="#009EE0" opacity=".8"><circle cx="70" cy="245" r="4"/><circle cx="95" cy="235" r="4"/><circle cx="120" cy="225" r="4"/><circle cx="145" cy="228" r="4"/><circle cx="170" cy="210" r="4"/><circle cx="195" cy="205" r="4"/><circle cx="220" cy="195" r="4"/><circle cx="240" cy="190" r="4"/></g>
+        <line x1="55" y1="250" x2="430" y2="70" stroke="#1F246E" stroke-width="3" stroke-dasharray="0"/>
+        <path d="M250 185 q60 -15 180 -10" stroke="#c0392b" stroke-width="3" fill="none" stroke-dasharray="7 5"/>
+        <text x="300" y="100" font-size="12" fill="#1F246E" font-weight="700">What the line says</text>
+        <text x="330" y="205" font-size="12" fill="#c0392b" font-weight="700">What probably happens</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 9 -->
+<div class="slide">
+  <div class="tag">1.5</div>
+  <h2>There are many kinds of regression. You need two of them.</h2>
+  <div class="cols">
+    <div class="card">
+      <h3>Linear regression: forecast a number</h3>
+      <p>Answers "how much?" Sales, price, visits, spend.</p>
+      <p>Output: any number, like $2,414.</p>
+      <p class="pill">Part 1</p>
+    </div>
+    <div class="card">
+      <h3>Logistic regression: predict a chance</h3>
+      <p>Answers "will it happen?" Will they buy, will they leave, will they click.</p>
+      <p>Output: a chance between 0 and 1, like 0.82.</p>
+      <p class="pill">Part 2</p>
+    </div>
+  </div>
+  <div class="box" style="margin-top:14px">
+    <div class="lbl">The others you may hear about</div>
+    <p style="margin:0">Ridge, Lasso and ElasticNet are linear regression with a brake that stops the model over-reacting to noisy data. Polynomial regression lets the line bend. Quantile regression forecasts a "worst case" or "best case" instead of the middle. All are variations on the same recipe idea. You will meet them properly in DATA4400.</p>
+  </div>
+</div>
+
+<!-- 10 QUIZ -->
+<div class="slide">
+  <div class="tag">Check</div>
+  <h2>Knowledge check: forecasting a number</h2>
+  <div class="cols">
+    <div class="q">
+      <div class="qq">In the BrewLab recipe, the number next to Rain is &minus;90. What does it mean?</div>
+      <button class="opt" onclick="qa(this,false)">Rain cuts sales by 90%</button>
+      <button class="opt" onclick="qa(this,true)" data-c="1">Each rainy day lowers sales by about $90, other things equal</button>
+      <button class="opt" onclick="qa(this,false)">Sales are $90 on rainy weeks</button>
+      <div class="exp">A coefficient is the change in sales for one unit of that ingredient, holding the rest still. One rainy day, about $90 less.</div>
+    </div>
+    <div class="q">
+      <div class="qq">Dana wants a forecast for a week with $6,000 of marketing. The model was built on spend between $300 and $2,000. What is the right advice?</div>
+      <button class="opt" onclick="qa(this,false)">Use the forecast; the recipe works for any number</button>
+      <button class="opt" onclick="qa(this,false)">Double the forecast to be safe</button>
+      <button class="opt" onclick="qa(this,true)" data-c="1">Do not trust it; the model has never seen spend that high</button>
+      <div class="exp">A model is reliable inside the range of the data it learned from. Far outside, it extrapolates a straight line the real world may not follow.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 2 ===== -->
+<div class="slide divider">
+  <div class="tag">Part 2 of 3</div>
+  <h1>Predicting a chance</h1>
+  <p>Which members are about to leave? Logistic regression gives every customer a number between 0 and 1, like a chance of rain.</p>
+</div>
+
+<!-- 12 -->
+<div class="slide">
+  <div class="tag">2.1</div>
+  <h2>"Will this member leave?" is a yes/no question, and a straight line answers it badly</h2>
+  <div class="cols">
+    <div>
+      <p>Try the Part 1 recipe on a yes/no question. Leaving = 1, staying = 0. The straight line quickly predicts values like 1.4 or &minus;0.3. There is no such thing as "140% leaving".</p>
+      <p>We want a curve that starts near 0, ends near 1, and never goes outside. That curve is logistic regression.</p>
+      <div class="box blue"><div class="lbl">Weather app version</div><p style="margin:0">The app never says "140% chance of rain". It squeezes everything it knows into a number between 0% and 100%.</p></div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 460 300">
+        <line x1="50" y1="240" x2="440" y2="240" stroke="#1a1a1a" stroke-width="1.5"/>
+        <line x1="50" y1="240" x2="50" y2="30" stroke="#1a1a1a" stroke-width="1.5"/>
+        <text x="245" y="270" text-anchor="middle" font-size="13">Months since last visit</text>
+        <text x="40" y="244" text-anchor="end" font-size="11">0</text><text x="40" y="70" text-anchor="end" font-size="11">1</text>
+        <text x="18" y="150" text-anchor="middle" font-size="13" transform="rotate(-90 18 150)">Left?</text>
+        <line x1="50" y1="66" x2="440" y2="66" stroke="#dfe1ea" stroke-dasharray="4 4"/>
+        <g fill="#1F246E"><circle cx="70" cy="240" r="5"/><circle cx="100" cy="240" r="5"/><circle cx="130" cy="240" r="5"/><circle cx="170" cy="240" r="5"/><circle cx="200" cy="240" r="5"/><circle cx="220" cy="66" r="5"/><circle cx="250" cy="240" r="5"/><circle cx="280" cy="66" r="5"/><circle cx="310" cy="66" r="5"/><circle cx="340" cy="240" r="5"/><circle cx="370" cy="66" r="5"/><circle cx="400" cy="66" r="5"/><circle cx="425" cy="66" r="5"/></g>
+        <line x1="50" y1="262" x2="440" y2="20" stroke="#c0392b" stroke-width="2.5" stroke-dasharray="6 5"/>
+        <text x="330" y="40" font-size="12" fill="#c0392b" font-weight="700">Straight line: goes past 1</text>
+        <path d="M50 236 C 180 236, 200 200, 245 150 S 320 72, 440 68" stroke="#009EE0" stroke-width="3.5" fill="none"/>
+        <text x="110" y="205" font-size="12" fill="#009EE0" font-weight="700">S-curve: stays between 0 and 1</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 13 -->
+<div class="slide">
+  <div class="tag">2.2</div>
+  <h2>Logistic regression in two steps: add up risk points, then read the chance off a curve</h2>
+  <div class="cols">
+    <div>
+      <h3>Step 1: the risk checklist gives a score</h3>
+      <div class="eq" style="font-size:1.15rem">Score = &minus;1.5 + <span class="k">0.8</span>&times;Months away &minus; <span class="k">0.4</span>&times;App orders + <span class="k">1.0</span>&times;Complaint</div>
+      <ul>
+        <li class="rv">Every month away adds 0.8 points</li>
+        <li class="rv">Every app order last month takes off 0.4</li>
+        <li class="rv">A complaint adds a full point</li>
+        <li class="rv">Start at &minus;1.5, so a fresh, happy member sits low</li>
+      </ul>
+      <h3>Step 2: the S-curve turns the score into a chance</h3>
+      <p>High score, high chance. Score 0 lands exactly on 0.50. The curve never leaves 0 to 1.</p>
+    </div>
+    <div>
+      <div class="fig">
+        <svg viewBox="0 0 440 260">
+          <line x1="50" y1="220" x2="420" y2="220" stroke="#1a1a1a" stroke-width="1.5"/>
+          <line x1="50" y1="220" x2="50" y2="30" stroke="#1a1a1a" stroke-width="1.5"/>
+          <text x="235" y="250" text-anchor="middle" font-size="13">Score</text>
+          <text x="20" y="125" text-anchor="middle" font-size="13" transform="rotate(-90 20 125)">Chance of leaving</text>
+          <g font-size="11" fill="#6b6f80"><text x="60" y="236">&minus;3</text><text x="228" y="236">0</text><text x="400" y="236">3</text><text x="42" y="224" text-anchor="end">0</text><text x="42" y="129" text-anchor="end">0.5</text><text x="42" y="40" text-anchor="end">1</text></g>
+          <line x1="50" y1="125" x2="420" y2="125" stroke="#dfe1ea" stroke-dasharray="4 4"/>
+          <line x1="235" y1="30" x2="235" y2="220" stroke="#dfe1ea" stroke-dasharray="4 4"/>
+          <path d="M50 211 C 130 211, 180 195, 235 125 S 340 40, 420 38" stroke="#009EE0" stroke-width="3.5" fill="none"/>
+          <circle cx="328" cy="64" r="6" fill="#c0392b"/><text x="340" y="60" font-size="12" fill="#c0392b" font-weight="700">Score 1.5 = 0.82</text>
+          <circle cx="142" cy="187" r="6" fill="#1f7a4d"/><text x="60" y="180" font-size="12" fill="#1f7a4d" font-weight="700">Score &minus;1.5 = 0.18</text>
+        </svg>
+      </div>
+      <table style="font-size:.9rem">
+        <tr><th>Score</th><td>&minus;3</td><td>&minus;2</td><td>&minus;1</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+        <tr><th>Chance</th><td>0.05</td><td>0.12</td><td>0.27</td><td>0.50</td><td>0.73</td><td>0.88</td><td>0.95</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 14 WIDGET -->
+<div class="slide">
+  <div class="tag">2.3 &middot; Try it</div>
+  <h2>Score a BrewLab member yourself</h2>
+  <div class="widget">
+    <div>
+      <label>Months since last visit: <span class="val" id="vM">3</span></label>
+      <input type="range" min="0" max="6" value="3" id="iM" oninput="calc()">
+      <label>App orders last month: <span class="val" id="vA">1</span></label>
+      <input type="range" min="0" max="10" value="1" id="iA" oninput="calc()">
+      <label><input type="checkbox" id="iC" onchange="calc()"> Has made a complaint</label>
+      <div class="box" style="margin-top:18px"><div class="lbl">Try these</div>
+        <p style="margin:0;font-size:1rem">Mia: 1 month, 2 orders, no complaint.<br>Tom: 3 months, 1 order, complaint.<br>Priya: same as Tom but no complaint. One complaint moves Priya from 0.62 to Tom's 0.82.</p></div>
+    </div>
+    <div class="card">
+      <div class="zout" id="zOut">Score = &minus;1.5 + 0.8&times;3 &minus; 0.4&times;1 + 0 = 0.5</div>
+      <div class="pout" id="pOut">0.62</div>
+      <div class="zout">chance of leaving in the next 3 months</div>
+      <div style="position:relative;margin-top:30px"><div class="lab">0.50 cut-off</div><div class="gauge"><div class="fill" id="fill"></div><div class="mark"></div></div></div>
+      <div class="risk" id="rOut" style="color:var(--red)">Flagged: at risk</div>
+    </div>
+  </div>
+</div>
+
+<!-- 15 -->
+<div class="slide">
+  <div class="tag">2.4</div>
+  <h2>The 0.50 cut-off is a choice, not a fact. Use the chance, not just the label.</h2>
+  <div class="cols">
+    <div>
+      <p>The model labels anyone above 0.50 "at risk". That is a shortcut. Priya at 0.62 and Tom at 0.82 both get the same label, but Tom is the more urgent call.</p>
+      <p>A chance of 0.62 means: out of 100 members like Priya, about 62 would leave and 38 would stay. Priya is not certain to leave.</p>
+      <div class="box blue"><div class="lbl">Dana can move the line</div>
+        <p style="margin:0">Set it at <b>0.70</b> if she can only afford to contact the most likely leavers.<br>Set it at <b>0.30</b> if she wants to catch people early, before they drift.</p></div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 440 280">
+        <rect x="40" y="90" width="360" height="60" rx="30" fill="#eee"/>
+        <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#1f7a4d"/><stop offset=".5" stop-color="#e0a51e"/><stop offset="1" stop-color="#c0392b"/></linearGradient></defs>
+        <rect x="40" y="90" width="360" height="60" rx="30" fill="url(#g1)" opacity=".85"/>
+        <g font-size="12" fill="#1a1a1a"><text x="40" y="175" text-anchor="middle">0</text><text x="220" y="175" text-anchor="middle">0.50</text><text x="400" y="175" text-anchor="middle">1</text></g>
+        <line x1="220" y1="70" x2="220" y2="160" stroke="#1F246E" stroke-width="3"/>
+        <text x="220" y="60" text-anchor="middle" font-size="12" fill="#1F246E" font-weight="700">Default cut-off</text>
+        <g><circle cx="105" cy="120" r="14" fill="#fff" stroke="#1F246E" stroke-width="2"/><text x="105" y="125" text-anchor="middle" font-size="11" font-weight="700" fill="#1F246E">Mia</text><text x="105" y="205" text-anchor="middle" font-size="12">0.18</text></g>
+        <g><circle cx="263" cy="120" r="14" fill="#fff" stroke="#1F246E" stroke-width="2"/><text x="263" y="125" text-anchor="middle" font-size="10" font-weight="700" fill="#1F246E">Priya</text><text x="263" y="205" text-anchor="middle" font-size="12">0.62</text></g>
+        <g><circle cx="335" cy="120" r="14" fill="#fff" stroke="#1F246E" stroke-width="2"/><text x="335" y="125" text-anchor="middle" font-size="11" font-weight="700" fill="#1F246E">Tom</text><text x="335" y="205" text-anchor="middle" font-size="12">0.82</text></g>
+        <line x1="292" y1="230" x2="292" y2="160" stroke="#c0392b" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="292" y="248" text-anchor="middle" font-size="12" fill="#c0392b">Cut-off at 0.70: only Tom</text>
+        <line x1="148" y1="230" x2="148" y2="160" stroke="#1f7a4d" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="148" y="248" text-anchor="middle" font-size="12" fill="#1f7a4d">Cut-off at 0.30: Priya and Tom</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 16 -->
+<div class="slide">
+  <div class="tag">2.5</div>
+  <h2>A decision tree asks the same questions, but as a flowchart a manager can follow</h2>
+  <div class="cols">
+    <div>
+      <p>Instead of adding points, a decision tree asks one question at a time and splits the customers. It ends in groups, each with its own leaving rate.</p>
+      <p>Trees are easy to read out loud. Logistic regression gives a smoother, more precise chance. In the lab today you will run both on the same data and compare.</p>
+      <div class="box"><div class="lbl">Which should Dana use?</div><p style="margin:0">Use the tree to explain the story to staff. Use logistic regression to rank who to contact first.</p></div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 460 300">
+        <g font-size="12" text-anchor="middle">
+          <rect x="150" y="20" width="160" height="44" rx="8" fill="#1F246E"/><text x="230" y="47" fill="#fff" font-weight="700">Months away &gt; 2?</text>
+          <line x1="190" y1="64" x2="120" y2="110" stroke="#1a1a1a" stroke-width="1.5"/><text x="140" y="82" fill="#6b6f80">no</text>
+          <line x1="270" y1="64" x2="340" y2="110" stroke="#1a1a1a" stroke-width="1.5"/><text x="320" y="82" fill="#6b6f80">yes</text>
+          <rect x="50" y="110" width="140" height="44" rx="8" fill="#009EE0"/><text x="120" y="137" fill="#fff" font-weight="700">App orders &gt; 2?</text>
+          <rect x="270" y="110" width="140" height="44" rx="8" fill="#009EE0"/><text x="340" y="137" fill="#fff" font-weight="700">Complained?</text>
+          <line x1="90" y1="154" x2="60" y2="205" stroke="#1a1a1a" stroke-width="1.5"/><line x1="150" y1="154" x2="180" y2="205" stroke="#1a1a1a" stroke-width="1.5"/>
+          <line x1="310" y1="154" x2="280" y2="205" stroke="#1a1a1a" stroke-width="1.5"/><line x1="370" y1="154" x2="400" y2="205" stroke="#1a1a1a" stroke-width="1.5"/>
+          <text x="66" y="185" fill="#6b6f80">yes</text><text x="176" y="185" fill="#6b6f80">no</text><text x="286" y="185" fill="#6b6f80">no</text><text x="404" y="185" fill="#6b6f80">yes</text>
+          <rect x="20" y="205" width="80" height="60" rx="8" fill="#eaf5ea" stroke="#1f7a4d"/><text x="60" y="230" fill="#1f7a4d" font-weight="700">Safe</text><text x="60" y="250" fill="#1f7a4d">8% leave</text>
+          <rect x="140" y="205" width="80" height="60" rx="8" fill="#fdf3e3" stroke="#e0a51e"/><text x="180" y="230" fill="#b07a00" font-weight="700">Watch</text><text x="180" y="250" fill="#b07a00">30% leave</text>
+          <rect x="240" y="205" width="80" height="60" rx="8" fill="#fdf3e3" stroke="#e0a51e"/><text x="280" y="230" fill="#b07a00" font-weight="700">Watch</text><text x="280" y="250" fill="#b07a00">55% leave</text>
+          <rect x="360" y="205" width="80" height="60" rx="8" fill="#fdf0ef" stroke="#c0392b"/><text x="400" y="230" fill="#c0392b" font-weight="700">At risk</text><text x="400" y="250" fill="#c0392b">85% leave</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 17 LAB -->
+<div class="slide">
+  <div class="tag">2.6 &middot; Lab</div>
+  <h2>Lab: run the churn models on real telco data in Colab</h2>
+  <div class="cols">
+    <div>
+      <p>Data: <b>WA_Fn-UseC_-Telco-Customer-Churn.csv</b> (7,000 phone customers, with a column saying who left).</p>
+      <ol class="steps">
+        <li>Open Google Colab and upload the notebook from MyKBS</li>
+        <li>Click the folder icon on the left, then the upload icon, and add the CSV</li>
+        <li>Run one cell at a time. Read the output before you run the next one</li>
+        <li>Your facilitator will help you read the results</li>
+      </ol>
+    </div>
+    <div>
+      <div class="card"><h3>Notebook 1: clustering</h3><p><b>DATA4500-cluster-analysis-on-customer-churn.ipynb</b></p><p>Groups similar customers together so you can see which groups leave most. No target needed; the computer finds the groups.</p></div>
+      <div class="card" style="margin-top:12px"><h3>Notebook 2: logistic regression and decision tree</h3><p><b>DATA4500_Telco_Churn_prediction_and_explanation.ipynb</b></p><p>Builds both Part 2 models on the same data and shows which columns matter most.</p></div>
+      <div class="box blue" style="margin-top:12px"><p style="margin:0">While it runs, ask: which three columns would you expect to push the chance of leaving up? Check whether the model agrees.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 18 QUIZ -->
+<div class="slide">
+  <div class="tag">Check</div>
+  <h2>Knowledge check: predicting a chance</h2>
+  <div class="cols">
+    <div class="q">
+      <div class="qq">A member's chance of leaving comes out at 0.62. Which statement is right?</div>
+      <button class="opt" onclick="qa(this,false)">The member will definitely leave</button>
+      <button class="opt" onclick="qa(this,true)" data-c="1">About 62 of 100 similar members would leave; this one might stay</button>
+      <button class="opt" onclick="qa(this,false)">The member has 62 months left</button>
+      <div class="exp">A chance is a rate across similar people, not a verdict on one person. 0.62 is above the cut-off but far from certain.</div>
+    </div>
+    <div class="q">
+      <div class="qq">Dana can only phone 50 members this month. How should she use the model output?</div>
+      <button class="opt" onclick="qa(this,false)">Phone anyone labelled "at risk", in alphabetical order</button>
+      <button class="opt" onclick="qa(this,true)" data-c="1">Sort by chance of leaving and phone the top 50</button>
+      <button class="opt" onclick="qa(this,false)">Phone the 50 members who spend the least</button>
+      <div class="exp">The label throws information away. The chance lets Dana rank customers and spend limited effort where it matters most.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 ===== -->
+<div class="slide divider">
+  <div class="tag">Part 3 of 3</div>
+  <h1>Deciding what to do</h1>
+  <p>The umbrella moment. A list of at-risk members is worth nothing until Dana does something with it.</p>
+</div>
+
+<!-- 20 -->
+<div class="slide">
+  <div class="tag">3.1</div>
+  <h2>People leave for reasons. Find the reason and you can often fix it.</h2>
+  <div class="grid3" style="flex:1;align-content:start">
+    <div class="card rv"><h3>Bad experience with the product</h3><p>The app checkout freezes. The coffee is inconsistent. The queue is too long at 8am.</p><p class="pill">Fixable</p></div>
+    <div class="card rv"><h3>Bad customer service</h3><p>A complaint went unanswered. Staff were rude on a bad day. A refund took three weeks.</p><p class="pill">Fixable</p></div>
+    <div class="card rv"><h3>Bad fit</h3><p>They moved suburbs. They stopped drinking coffee. The product never suited them.</p><p class="pill">Let them go gracefully</p></div>
+  </div>
+  <div class="box rv" style="margin-top:14px"><div class="lbl">Why this matters for the model</div><p style="margin:0">The churn model tells Dana <b>who</b>. Only the reason tells her <b>what to do</b>. A voucher does not fix a frozen checkout.</p></div>
+</div>
+
+<!-- 21 -->
+<div class="slide">
+  <div class="tag">3.2</div>
+  <h2>Customers do not give many second chances</h2>
+  <div class="cols">
+    <div>
+      <p>A PwC survey asked people when they would stop dealing with a brand they love.</p>
+      <ul>
+        <li class="rv">About <b>1 in 3</b> walk away after a single bad experience</li>
+        <li class="rv">Almost <b>half</b> walk away after a few bad experiences</li>
+        <li class="rv">In Australia, <b>74%</b> say customer experience decides which option they buy</li>
+      </ul>
+      <div class="box warn"><p style="margin:0">Every frozen checkout at BrewLab is not one annoyed customer. It is a coin flip on whether they ever come back.</p></div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 420 280">
+        <line x1="60" y1="230" x2="400" y2="230" stroke="#1a1a1a" stroke-width="1.5"/>
+        <g font-size="12" text-anchor="middle">
+          <rect x="110" y="140" width="80" height="90" fill="#009EE0"/><text x="150" y="130" font-weight="700" fill="#1F246E">32%</text><text x="150" y="250">After one bad</text><text x="150" y="266">experience</text>
+          <rect x="250" y="95" width="80" height="135" fill="#1F246E"/><text x="290" y="85" font-weight="700" fill="#1F246E">47%</text><text x="290" y="250">After several bad</text><text x="290" y="266">experiences</text>
+        </g>
+        <text x="220" y="30" text-anchor="middle" font-size="12" fill="#6b6f80">Share of customers who stop interacting with a brand they love (all countries)</text>
+      </svg>
+      <div class="cap" style="position:absolute;bottom:60px;right:80px">Source: PwC Future of Customer Experience Survey 2017/18</div>
+    </div>
+  </div>
+</div>
+
+<!-- 22 -->
+<div class="slide">
+  <div class="tag">3.3</div>
+  <h2>Six moves that keep customers</h2>
+  <div class="grid3" style="flex:1;align-content:start">
+    <div class="card rv"><h3>1. Ask for feedback at the right moments</h3><p>Just after the first purchase, and when visits start to drop. Listen before they decide.</p></div>
+    <div class="card rv"><h3>2. Reach out before they complain</h3><p>Spot the problem first. A short "sorry, here is a free drink" beats a long apology later.</p></div>
+    <div class="card rv"><h3>3. Watch the Net Promoter Score</h3><p>"How likely are you to recommend us?" Promoters (9 to 10) minus detractors (0 to 6).</p></div>
+    <div class="card rv"><h3>4. Give members a path</h3><p>Onboarding for new members. Extra recognition for the loyal ones.</p></div>
+    <div class="card rv"><h3>5. Show the value, not the features</h3><p>"Free coffee every fortnight", not "10-stamp digital card".</p></div>
+    <div class="card rv"><h3>6. Set expectations and meet them</h3><p>Promise what you can deliver, then deliver it. Over-promising creates leavers.</p></div>
+  </div>
+</div>
+
+<!-- 23 ACTIVITY -->
+<div class="slide">
+  <div class="tag">3.4 &middot; Activity</div>
+  <h2>Activity: what is Starbucks Rewards really collecting?</h2>
+  <div class="cols">
+    <div>
+      <p>In pairs. Watch the short clip <i>My Starbucks Rewards: Now on Android and iOS</i>, then discuss and be ready to share.</p>
+      <ol class="steps">
+        <li>What are the key features of the program?</li>
+        <li>What customer data does Starbucks collect through it?</li>
+        <li>Which of that data would go straight into a churn model like BrewLab's?</li>
+      </ol>
+      <div class="box blue"><p style="margin:0">Question 3 is the one that matters. Every "feature" in a loyalty app is also a data column.</p></div>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 420 280">
+        <rect x="20" y="20" width="380" height="240" rx="12" fill="#F5F3EE" stroke="#dfe1ea"/>
+        <text x="210" y="50" text-anchor="middle" font-size="14" font-weight="700" fill="#1F246E">A loyalty app seen as a data pipe</text>
+        <g font-size="12" fill="#1a1a1a">
+          <rect x="40" y="70" width="150" height="34" rx="6" fill="#fff" stroke="#009EE0"/><text x="115" y="92" text-anchor="middle">Order ahead</text>
+          <rect x="40" y="114" width="150" height="34" rx="6" fill="#fff" stroke="#009EE0"/><text x="115" y="136" text-anchor="middle">Pay in app</text>
+          <rect x="40" y="158" width="150" height="34" rx="6" fill="#fff" stroke="#009EE0"/><text x="115" y="180" text-anchor="middle">Collect stars</text>
+          <rect x="40" y="202" width="150" height="34" rx="6" fill="#fff" stroke="#009EE0"/><text x="115" y="224" text-anchor="middle">Personal offers</text>
+          <rect x="230" y="70" width="150" height="34" rx="6" fill="#1F246E"/><text x="305" y="92" text-anchor="middle" fill="#fff">Time, store, drink</text>
+          <rect x="230" y="114" width="150" height="34" rx="6" fill="#1F246E"/><text x="305" y="136" text-anchor="middle" fill="#fff">Spend per visit</text>
+          <rect x="230" y="158" width="150" height="34" rx="6" fill="#1F246E"/><text x="305" y="180" text-anchor="middle" fill="#fff">Visit frequency</text>
+          <rect x="230" y="202" width="150" height="34" rx="6" fill="#1F246E"/><text x="305" y="224" text-anchor="middle" fill="#fff">Offer response</text>
+        </g>
+        <g stroke="#009EE0" stroke-width="2"><line x1="190" y1="87" x2="230" y2="87"/><line x1="190" y1="131" x2="230" y2="131"/><line x1="190" y1="175" x2="230" y2="175"/><line x1="190" y1="219" x2="230" y2="219"/></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 24 -->
+<div class="slide">
+  <div class="tag">3.5</div>
+  <h2>A CRM system is the shared notebook where predictions and actions meet</h2>
+  <div class="cols">
+    <div>
+      <p>Imagine every staff member keeping notes on customers in their own head. Nothing is shared, nothing is followed up. A CRM system is one shared notebook for the whole business.</p>
+      <p>A good CRM helps Dana:</p>
+      <ul>
+        <li class="rv"><b>Predict</b> who is at risk (the Part 2 model runs inside it)</li>
+        <li class="rv"><b>Act</b> with the right offer, at the right time, through the right channel</li>
+        <li class="rv"><b>Report</b> so she can show the results to her business partner</li>
+        <li class="rv"><b>Share</b> so the barista and the marketing person see the same customer</li>
+      </ul>
+      <p style="font-size:.95rem;color:var(--mute)">Common tools: Salesforce, Microsoft Dynamics, Zoho, SAS Customer Intelligence.</p>
+    </div>
+    <div class="fig">
+      <svg viewBox="0 0 400 320">
+        <circle cx="200" cy="160" r="58" fill="#1F246E"/>
+        <text x="200" y="155" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">Shared</text>
+        <text x="200" y="174" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">customer view</text>
+        <g font-size="12" text-anchor="middle" fill="#1F246E" font-weight="600">
+          <circle cx="200" cy="50" r="30" fill="#e6f5fc" stroke="#009EE0"/><text x="200" y="54">Predict</text>
+          <circle cx="310" cy="110" r="30" fill="#e6f5fc" stroke="#009EE0"/><text x="310" y="114">Promote</text>
+          <circle cx="310" cy="215" r="30" fill="#e6f5fc" stroke="#009EE0"/><text x="310" y="219">Serve</text>
+          <circle cx="200" cy="270" r="30" fill="#e6f5fc" stroke="#009EE0"/><text x="200" y="274">Report</text>
+          <circle cx="90" cy="215" r="30" fill="#e6f5fc" stroke="#009EE0"/><text x="90" y="219">Order</text>
+          <circle cx="90" cy="110" r="30" fill="#e6f5fc" stroke="#009EE0"/><text x="90" y="114">Loyalty</text>
+        </g>
+        <g stroke="#009EE0" stroke-width="2"><line x1="200" y1="80" x2="200" y2="102"/><line x1="283" y1="125" x2="252" y2="140"/><line x1="283" y1="200" x2="252" y2="185"/><line x1="200" y1="240" x2="200" y2="218"/><line x1="117" y1="200" x2="148" y2="185"/><line x1="117" y1="125" x2="148" y2="140"/></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- 25 -->
+<div class="slide">
+  <div class="tag">3.6</div>
+  <h2>CRM can be a piece of software or a way of running the business. Aim for the second.</h2>
+  <div class="fig" style="flex:0 0 auto">
+    <svg viewBox="0 0 800 150" width="800">
+      <defs><marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#1F246E"/></marker></defs>
+      <line x1="60" y1="60" x2="740" y2="60" stroke="#1F246E" stroke-width="6" marker-end="url(#ah)"/>
+      <g font-size="13" text-anchor="middle">
+        <circle cx="100" cy="60" r="8" fill="#009EE0"/><text x="100" y="100" font-weight="700" fill="#1F246E">Narrow</text><text x="100" y="118">"We bought Salesforce"</text>
+        <circle cx="400" cy="60" r="8" fill="#009EE0"/><text x="400" y="100" font-weight="700" fill="#1F246E">Middle</text><text x="400" y="118">"Our tools talk to each other"</text>
+        <circle cx="700" cy="60" r="8" fill="#009EE0"/><text x="700" y="100" font-weight="700" fill="#1F246E">Broad</text><text x="700" y="118">"Every decision starts with the customer"</text>
+      </g>
+    </svg>
+  </div>
+  <div class="cols" style="flex:0 0 auto;margin-top:16px">
+    <div class="box"><div class="lbl">Workforce benefits</div><ul style="margin:0"><li>Data shared across the team, fewer silos</li><li>Clear ownership: who is doing what for which customer</li><li>Routine tasks automated, so staff spend time on people</li></ul></div>
+    <div class="box blue"><div class="lbl">For BrewLab</div><p style="margin:0">The churn model, the voucher, the follow-up call and the result all live in one place. Next month, Dana can see whether the umbrella worked.</p></div>
+  </div>
+  <p class="cap" style="text-align:left;margin-top:10px">Source: Payne and Frow (2005), A Strategic Framework for Customer Relationship Management, Journal of Marketing 69(4).</p>
+</div>
+
+<!-- 26 CASE -->
+<div class="slide">
+  <div class="tag">3.7 &middot; Case</div>
+  <h2>Case: Philips turned a product company into a customer-relationship company</h2>
+  <div class="cols">
+    <div>
+      <p>Watch <i>Salesforce: Philips is a Trailblazer</i>, a short video about how the Dutch health-technology company uses CRM.</p>
+      <div class="box blue"><div class="lbl">Discuss</div>
+        <ol>
+          <li>What stands out about Philips' approach to its customers?</li>
+          <li>Where on the narrow-to-broad line from the last slide does Philips sit?</li>
+          <li>Which of the three model jobs (forecast, chance, decision) can you spot in the video?</li>
+        </ol></div>
+    </div>
+    <div>
+      <div class="card"><h3>Why a health company in a coffee lesson?</h3><p>Because the pattern is the same at any size. Philips connects devices, patients and hospitals in one customer view. BrewLab connects an app, a till and a barista. Both are trying to notice a problem before the customer walks away.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 27 QUIZ -->
+<div class="slide">
+  <div class="tag">Check</div>
+  <h2>Knowledge check: deciding what to do</h2>
+  <div class="cols">
+    <div class="q">
+      <div class="qq">The churn model flags 400 members. 60% of their complaints are about the app checkout freezing. Dana has $2,000. Which move fits the evidence best?</div>
+      <button class="opt" onclick="qa(this,false)">Send everyone a $5 voucher</button>
+      <button class="opt" onclick="qa(this,true)" data-c="1">Fix the checkout, then contact the members who complained about it</button>
+      <button class="opt" onclick="qa(this,false)">Ignore it; 400 out of 4,000 is only 10%</button>
+      <div class="exp">The model says who; the complaints say why. Fixing the cause helps every future customer too. A voucher treats the symptom.</div>
+    </div>
+    <div class="q">
+      <div class="qq">Three months later Dana asks whether the money was wasted. What is the fairest test?</div>
+      <button class="opt" onclick="qa(this,false)">Ask the staff if things feel better</button>
+      <button class="opt" onclick="qa(this,true)" data-c="1">Compare spending by the contacted members against a similar group that was not contacted</button>
+      <button class="opt" onclick="qa(this,false)">Check whether total sales went up</button>
+      <div class="exp">Total sales move for many reasons. A comparison group removes the effect of things that changed for everyone, so any difference is down to the action.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 28 SUMMARY -->
+<div class="slide">
+  <div class="tag">Summary</div>
+  <h2>Three jobs, one test: did the model change what Dana did?</h2>
+  <div class="grid3" style="flex:1;align-content:start">
+    <div class="card"><h3>Forecast a number</h3><p>Linear regression is a recipe. Each number is a plain sentence. Trust it inside the data range only.</p></div>
+    <div class="card"><h3>Predict a chance</h3><p>Logistic regression adds up risk points and reads a chance off an S-curve. Use the chance to rank, not just the label to sort.</p></div>
+    <div class="card"><h3>Make a decision</h3><p>Find the reason people leave. Choose the action that fixes it. Measure against a comparison group.</p></div>
+  </div>
+  <div class="box" style="margin-top:14px">
+    <div class="lbl">Before next week</div>
+    <p style="margin:0">Complete the three pen-and-paper exercises on MyKBS (Dana's sales recipe, the risk checklist, the umbrella decision). Week 12 is the final assessment.</p>
+  </div>
+</div>
+
+<div class="nav" id="nav"></div>
+<div class="hint">&larr; &rarr; or click to move &middot; T for contents</div>
+<div class="foot">KAPLAN BUSINESS SCHOOL</div>
+<div class="toc" id="toc"><h2>Contents</h2><div id="tocList"></div><p style="margin-top:16px;color:var(--mute);font-size:.85rem">Press T or Esc to close</p></div>
+
+<script>
+const S=document.querySelectorAll('.slide');let cur=0;
+function reveal(sl){const r=sl.querySelectorAll('.rv');r.forEach((e,i)=>{e.classList.remove('on');setTimeout(()=>e.classList.add('on'),120+i*140)})}
+function go(n){S[cur].classList.remove('active');cur=Math.max(0,Math.min(n,S.length-1));S[cur].classList.add('active');reveal(S[cur]);
+  document.getElementById('nav').textContent=(cur+1)+' / '+S.length;document.getElementById('prog').style.width=((cur+1)/S.length*100)+'%';}
+function toc(){document.getElementById('toc').classList.toggle('open')}
+(function(){const L=document.getElementById('tocList');S.forEach((s,i)=>{const h=s.querySelector('h1,h2');if(!h)return;const d=document.createElement('div');d.className='toc-i'+(s.classList.contains('divider')?' toc-s':'');d.textContent=(s.classList.contains('divider')?'':(i+1)+'. ')+h.textContent;d.onclick=()=>{go(i);toc()};L.appendChild(d)})})();
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(cur+1)}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1)}else if(e.key==='t'||e.key==='T'){toc()}else if(e.key==='Escape'){document.getElementById('toc').classList.remove('open')}});
+document.addEventListener('click',e=>{if(e.target.closest('button,input,label,.toc,a'))return;if(document.getElementById('toc').classList.contains('open'))return;go(e.clientX>window.innerWidth*0.25?cur+1:cur-1)});
+function qa(b,ok){const q=b.closest('.q');if(q.classList.contains('done'))return;q.classList.add('done');q.querySelectorAll('.opt').forEach(o=>{if(o.dataset.c==='1')o.classList.add('ok');else if(o===b&&!ok)o.classList.add('no');else o.classList.add('dim')});q.querySelector('.exp').classList.add('show')}
+function calc(){const m=+document.getElementById('iM').value,a=+document.getElementById('iA').value,c=document.getElementById('iC').checked?1:0;
+  document.getElementById('vM').textContent=m;document.getElementById('vA').textContent=a;
+  const z=-1.5+0.8*m-0.4*a+1.0*c;const p=1/(1+Math.exp(-z));
+  document.getElementById('zOut').innerHTML='Score = &minus;1.5 + 0.8&times;'+m+' &minus; 0.4&times;'+a+' + '+c+' = '+z.toFixed(1).replace('-','&minus;');
+  document.getElementById('pOut').textContent=p.toFixed(2);document.getElementById('fill').style.width=(p*100)+'%';
+  const r=document.getElementById('rOut');if(p>0.5){r.textContent='Flagged: at risk';r.style.color='var(--red)'}else{r.textContent='Labelled: safe';r.style.color='var(--green)'}}
+go(0);calc();
+</script>
+</body>
+</html>
